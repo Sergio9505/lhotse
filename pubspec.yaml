@@ -1,0 +1,96 @@
+name: lhotse
+description: "Lhotse Group — Investor App"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # UI
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.17
+
+  # Models
+  freezed_annotation: ^3.0.0
+  json_annotation: ^4.9.0
+  lucide_icons: ^0.257.0
+  auto_size_text: ^3.0.0
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code generation
+  build_runner: ^2.4.14
+  freezed: ^3.0.0
+  json_serializable: ^6.9.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/fonts/
+    - assets/icons/
+    - assets/icons/brands/
+    - assets/images/
+
+  fonts:
+    - family: Campton
+      fonts:
+        - asset: assets/fonts/campton-thin.otf
+          weight: 100
+        - asset: assets/fonts/campton-thinitalic.otf
+          weight: 100
+          style: italic
+        - asset: assets/fonts/campton-extralight.otf
+          weight: 200
+        - asset: assets/fonts/campton-extralightitalic.otf
+          weight: 200
+          style: italic
+        - asset: assets/fonts/campton-light.otf
+          weight: 300
+        - asset: assets/fonts/campton-lightitalic.otf
+          weight: 300
+          style: italic
+        - asset: assets/fonts/campton-book.otf
+          weight: 400
+        - asset: assets/fonts/campton-bookitalic.otf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/campton-medium.otf
+          weight: 500
+        - asset: assets/fonts/campton-mediumitalic.otf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/campton-semibold.otf
+          weight: 600
+        - asset: assets/fonts/campton-semibolditalic.otf
+          weight: 600
+          style: italic
+        - asset: assets/fonts/campton-bold.otf
+          weight: 700
+        - asset: assets/fonts/campton-bolditalic.otf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/campton-extrabold.otf
+          weight: 800
+        - asset: assets/fonts/campton-extrabolditalic.otf
+          weight: 800
+          style: italic
+        - asset: assets/fonts/campton-black.otf
+          weight: 900
+        - asset: assets/fonts/campton-blackitalic.otf
+          weight: 900
+          style: italic
