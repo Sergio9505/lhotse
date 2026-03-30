@@ -32,6 +32,7 @@ final mockInvestments = [
     durationMonths: 48,
     expectedEndDate: DateTime(2029, 3),
     constructionPhase: 'Fase 2',
+    isDelayed: true,
     purchaseValue: 680000,
     cashPayment: 340000,
     mortgage: 340000,
@@ -105,6 +106,7 @@ final mockInvestments = [
     durationMonths: 30,
     expectedEndDate: DateTime(2028, 6),
     constructionPhase: 'Fase 2',
+    isDelayed: true,
   ),
 
   // Renta Fija

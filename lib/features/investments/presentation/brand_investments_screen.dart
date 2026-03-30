@@ -141,7 +141,7 @@ class BrandInvestmentsScreen extends StatelessWidget {
               title: inv.projectName.toUpperCase(),
               subtitle: project?.location.toUpperCase(),
               amount: inv.amount,
-              returnLabel: '${inv.returnRate.toStringAsFixed(0)}% rent. est.',
+              returnLabel: '${inv.returnRate.toStringAsFixed(0)}% rent. estimada',
               isLast: entry.$1 == summary.investments.length - 1,
               onTap: () => context.push('/investments/detail/${inv.id}'),
             );

@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
+import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/investment_data.dart';
 import '../../../core/theme/app_theme.dart';
@@ -48,7 +49,12 @@ class InvestmentDetailScreen extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          LhotseAppHeader(title: investment.projectName.toUpperCase()),
+          LhotseAppHeader(
+            title: investment.projectName.toUpperCase(),
+            subtitle: findProjectById(investment.projectId)
+                ?.location
+                .toUpperCase(),
+          ),
 
           const SizedBox(height: AppSpacing.md),
 
@@ -264,7 +270,7 @@ class _CoinversionDetail extends StatelessWidget {
               Expanded(
                 child: _MetricBlock(
                   value: '${investment.returnRate.toStringAsFixed(0)}%',
-                  label: 'Rentabilidad est.',
+                  label: 'Rentabilidad estimada',
                 ),
               ),
             ],
@@ -275,29 +281,24 @@ class _CoinversionDetail extends StatelessWidget {
               Expanded(
                 child: _MetricBlock(
                   value: '${investment.durationMonths} meses',
-                  label: 'Duración',
+                  label: 'Duración estimada',
                 ),
               ),
               Expanded(
                 child: _MetricBlock(
-                  value: investment.constructionPhase ?? '—',
-                  label: 'Estado de la obra',
+                  value: investment.expectedEndDate != null
+                      ? _dateFormat.format(investment.expectedEndDate!)
+                      : '—',
+                  label: 'Fecha prevista',
                 ),
               ),
             ],
           ),
-          if (investment.expectedEndDate != null) ...[
+          if (investment.constructionPhase != null) ...[
             const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetricBlock(
-                    value: _dateFormat.format(investment.expectedEndDate!),
-                    label: 'Fecha prevista',
-                  ),
-                ),
-                const Expanded(child: SizedBox()),
-              ],
+            _ConstructionStatus(
+              phase: investment.constructionPhase!,
+              isDelayed: investment.isDelayed,
             ),
           ],
         ],
@@ -332,7 +333,7 @@ class _CicloDetail extends StatelessWidget {
               Expanded(
                 child: _MetricBlock(
                   value: '${investment.returnRate.toStringAsFixed(0)}%',
-                  label: 'Rentabilidad est.',
+                  label: 'Rentabilidad estimada',
                 ),
               ),
             ],
@@ -343,29 +344,24 @@ class _CicloDetail extends StatelessWidget {
               Expanded(
                 child: _MetricBlock(
                   value: '${investment.durationMonths} meses',
-                  label: 'Duración',
+                  label: 'Duración estimada',
                 ),
               ),
               Expanded(
                 child: _MetricBlock(
-                  value: investment.constructionPhase ?? '—',
-                  label: 'Estado de la obra',
+                  value: investment.expectedEndDate != null
+                      ? _dateFormat.format(investment.expectedEndDate!)
+                      : '—',
+                  label: 'Fecha prevista',
                 ),
               ),
             ],
           ),
-          if (investment.expectedEndDate != null) ...[
+          if (investment.constructionPhase != null) ...[
             const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetricBlock(
-                    value: _dateFormat.format(investment.expectedEndDate!),
-                    label: 'Fecha prevista',
-                  ),
-                ),
-                const Expanded(child: SizedBox()),
-              ],
+            _ConstructionStatus(
+              phase: investment.constructionPhase!,
+              isDelayed: investment.isDelayed,
             ),
           ],
         ],
@@ -426,6 +422,58 @@ class _RentaFijaDetail extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Shared components
 // ---------------------------------------------------------------------------
+
+class _ConstructionStatus extends StatelessWidget {
+  const _ConstructionStatus({
+    required this.phase,
+    required this.isDelayed,
+  });
+
+  final String phase;
+  final bool isDelayed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              phase,
+              style: AppTypography.headingSmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              color: isDelayed
+                  ? AppColors.danger.withValues(alpha: 0.1)
+                  : AppColors.textPrimary.withValues(alpha: 0.06),
+              child: Text(
+                isDelayed ? 'Retrasado' : 'En plazo',
+                style: AppTypography.caption.copyWith(
+                  color: isDelayed ? AppColors.danger : AppColors.accentMuted,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3),
+        Text(
+          'Estado de la obra',
+          style: AppTypography.bodySmall.copyWith(
+            color: AppColors.accentMuted,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _MetricBlock extends StatelessWidget {
   const _MetricBlock({required this.value, required this.label});

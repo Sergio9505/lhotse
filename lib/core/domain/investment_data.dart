@@ -18,6 +18,7 @@ class InvestmentData {
     this.rentalIncome,
     this.revaluation,
     this.unitName,
+    this.isDelayed = false,
     this.isCompleted = false,
   });
 
@@ -42,6 +43,7 @@ class InvestmentData {
   final double? revaluation; // revalorización %
 
   final String? unitName; // e.g. "Piso 1"
+  final bool isDelayed;
   final bool isCompleted;
 }
 
