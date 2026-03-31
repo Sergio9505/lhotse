@@ -51,9 +51,11 @@ class InvestmentDetailScreen extends StatelessWidget {
         children: [
           LhotseAppHeader(
             title: investment.projectName.toUpperCase(),
-            subtitle: findProjectById(investment.projectId)
-                ?.location
-                .toUpperCase(),
+            subtitle: model != BusinessModel.rentaFija
+                ? findProjectById(investment.projectId)
+                    ?.location
+                    .toUpperCase()
+                : null,
           ),
 
           const SizedBox(height: AppSpacing.md),
@@ -406,11 +408,35 @@ class _RentaFijaDetail extends StatelessWidget {
             children: [
               Expanded(
                 child: _MetricBlock(
+                  value: '${_eurFormat.format(investment.amount * investment.returnRate / 100 * investment.durationMonths / 12)}€',
+                  label: 'Rendimiento estimado',
+                ),
+              ),
+              Expanded(
+                child: _MetricBlock(
                   value: '${investment.durationMonths} meses',
                   label: 'Duración',
                 ),
               ),
-              const Expanded(child: SizedBox()),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: _MetricBlock(
+                  value: investment.expectedEndDate != null
+                      ? _dateFormat.format(investment.expectedEndDate!)
+                      : '—',
+                  label: 'Vencimiento',
+                ),
+              ),
+              Expanded(
+                child: _MetricBlock(
+                  value: investment.paymentFrequency ?? '—',
+                  label: 'Frecuencia de pago',
+                ),
+              ),
             ],
           ),
         ],

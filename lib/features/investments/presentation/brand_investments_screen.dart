@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
 import '../../../core/widgets/lhotse_ledger_row.dart';
@@ -23,6 +25,9 @@ class BrandInvestmentsScreen extends StatelessWidget {
     final completed = completedInvestments
         .where((i) => i.brandName == brandName)
         .toList();
+    final brand =
+        mockBrands.where((b) => b.name == brandName).firstOrNull;
+    final showLocation = brand?.businessModel != BusinessModel.rentaFija;
     if (summary == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -139,7 +144,7 @@ class BrandInvestmentsScreen extends StatelessWidget {
             return LhotseLedgerRow(
               leading: _ProjectThumbnail(imageUrl: project?.imageUrl),
               title: inv.projectName.toUpperCase(),
-              subtitle: project?.location.toUpperCase(),
+              subtitle: showLocation ? project?.location.toUpperCase() : null,
               amount: inv.amount,
               returnLabel: '${inv.returnRate.toStringAsFixed(0)}% rent. estimada',
               isLast: entry.$1 == summary.investments.length - 1,
@@ -169,7 +174,7 @@ class BrandInvestmentsScreen extends StatelessWidget {
                 leading: _ProjectThumbnail(
                     imageUrl: project?.imageUrl, muted: true),
                 title: inv.projectName.toUpperCase(),
-                subtitle: project?.location.toUpperCase(),
+                subtitle: showLocation ? project?.location.toUpperCase() : null,
                 amount: inv.amount,
                 returnLabel:
                     '${inv.returnRate.toStringAsFixed(0)}% rentabilidad',

@@ -118,6 +118,9 @@ final mockInvestments = [
     amount: 500000,
     returnRate: 5,
     durationMonths: 36,
+    expectedEndDate: DateTime(2029, 3),
+    paymentFrequency: 'Trimestral',
+    isCapitalGuaranteed: true,
   ),
   InvestmentData(
     id: 'inv-8',
@@ -127,6 +130,9 @@ final mockInvestments = [
     amount: 300000,
     returnRate: 4.5,
     durationMonths: 24,
+    expectedEndDate: DateTime(2028, 6),
+    paymentFrequency: 'Mensual',
+    isCapitalGuaranteed: true,
   ),
 
   // Vellte (coinversión)
@@ -345,6 +351,8 @@ final mockInvestments = [
     amount: 400000,
     returnRate: 4.5,
     durationMonths: 24,
+    paymentFrequency: 'Trimestral',
+    isCapitalGuaranteed: true,
     isCompleted: true,
   ),
 ];

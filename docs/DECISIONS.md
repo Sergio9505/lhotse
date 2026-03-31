@@ -179,3 +179,52 @@ Both: 44px touch target, 20px icon, defaults to `context.pop()`.
 - (+) Images communicate Lhotse's differentiator (luxury, not generic finance)
 - (+) Compact cards maintain financial screen tone
 - (+) Full screen available for deeper exploration with filters (brand, location, search)
+
+---
+
+## ADR-11: Model-Aware Investment Detail
+
+**Date:** 2026-03-31
+**Status:** Accepted
+
+**Context:** Each brand has a different business model (compraDirecta, coinversión, ciclo, rentaFija). A generic detail screen can't properly represent each model's data.
+
+**Decision:** `InvestmentDetailScreen` switches layout based on `BusinessModel` enum from `BrandData`. CompraDirecta shows 2×2 metrics grid + financing section. Coinversión/Ciclo show grid + construction status badge. Renta Fija shows 3×2 grid with rendimiento estimado, vencimiento, frecuencia de pago. No location subtitle for Renta Fija (financial product, not property).
+
+**Consequences:**
+- (+) Each business model displays relevant data without showing irrelevant fields
+- (+) `BusinessModel` enum on `BrandData` makes model detection clean
+- (+) Same visual language (metric blocks, data rows) across all models — only content varies
+
+---
+
+## ADR-12: Documents Bottom Sheet with Type Filters
+
+**Date:** 2026-03-31
+**Status:** Accepted
+
+**Context:** Investment detail screens can have 10+ documents. Showing all inline would dominate the screen. Needed a way to browse and filter without leaving the context.
+
+**Decision:** Show 3 most recent documents inline with "Ver todos (N)" link. Full list opens in a `showLhotseBottomSheet` with document type filter tabs (Legal, Financiero, Obra, Fiscal). Filter uses same underline-tab pattern as rest of app. Bottom sheet height fixed based on total docs count (doesn't resize when filtering).
+
+**Consequences:**
+- (+) Documents don't dominate the investment detail screen
+- (+) Type filters help find specific documents quickly
+- (+) Consistent with news bottom sheet pattern
+- (+) Fixed height prevents jarring resize when filtering
+
+---
+
+## ADR-13: Consistent Ledger Row Format Across Models
+
+**Date:** 2026-03-31
+**Status:** Accepted
+
+**Context:** Considered showing different data per business model in the brand investments list (e.g., vencimiento for Renta Fija instead of location). This would optimize each model but break scanning consistency.
+
+**Decision:** All brand investment rows use the same format: thumbnail + project name + location (or null for Renta Fija) + amount + return. Model-specific data only appears in the detail screen (L3).
+
+**Consequences:**
+- (+) User can scan consistently across all brands
+- (+) Predictable layout regardless of business model
+- (+) Model-specific details reserved for the right level of depth

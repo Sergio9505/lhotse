@@ -18,6 +18,8 @@ class InvestmentData {
     this.rentalIncome,
     this.revaluation,
     this.unitName,
+    this.paymentFrequency,
+    this.isCapitalGuaranteed = false,
     this.isDelayed = false,
     this.isCompleted = false,
   });
@@ -43,6 +45,8 @@ class InvestmentData {
   final double? revaluation; // revalorización %
 
   final String? unitName; // e.g. "Piso 1"
+  final String? paymentFrequency; // e.g. "Trimestral", "Mensual"
+  final bool isCapitalGuaranteed;
   final bool isDelayed;
   final bool isCompleted;
 }

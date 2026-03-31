@@ -55,19 +55,21 @@ To be extracted from Figma as screens are built:
 - [x] Bottom navigation (5 tabs) — custom `_LhotseNavBar` in `shell_screen.dart`. All Lucide icons (home, layers, search, compass, user), labels always visible (white active / gray inactive), no filled variants. Tabs: INICIO, FIRMAS, BUSCAR, ESTRATEGIA, PERFIL
 - [x] Project card — `ProjectCard` in `home/presentation/widgets/project_card.dart`. Dynamic overlay (padding-based height), AutoSizeText title (40px, 1 line), brand+location metadata, ↗ icon
 - [x] Brand card — `_BrandCard` in `brands/presentation/brands_screen.dart`. 192px, cover image + gradient overlay + centered SVG logo (48px height) + name bottom-left
-- [x] News card — `NewsSection` in `home/presentation/widgets/news_section.dart`. Horizontal scroll, 320×213px cards
+- [x] News card — `LhotseNewsCard` in `core/widgets/lhotse_news_card.dart`. Beige overlay (surface 75%), title (1 line, ellipsis) + brand·subtitle metadata. Full (320×213) and compact (260×160) constructors. No "Explorar todo" card — ↗ header handles navigation
 - [x] Project carousel — `ProjectCarousel` in `home/presentation/widgets/project_carousel.dart`. PageView with 5s auto-scroll + progress bar
 - [x] Search field — `LhotseSearchField` in `core/widgets/lhotse_search_field.dart`
-- [x] Brand filter row — `_BrandFilterRow` in `all_projects_screen.dart`. Horizontal scroll of SVG logos (32px) with multi-select (opacity-based)
+- [x] Brand filter row — `LhotseBrandFilterRow` in `core/widgets/lhotse_brand_filter_row.dart`. Horizontal scroll of SVG logos/initials (32px) with multi-select (opacity-based). Used in AllProjects, Opportunities, AllNews
 - [x] Filter bar — `_FilterBar` in `all_projects_screen.dart`. Status filters + brand/search tool icons after separator
 - [x] Back button — `LhotseBackButton` in `core/widgets/lhotse_back_button.dart`. Two variants: `.onImage()` (frosted glass circle, backdrop blur, white arrow) and `.onSurface()` (minimal navy arrow, opacity feedback). 44px touch target, 20px icon. Defaults to `context.pop()`
-- [x] Brand ledger row — `_BrandRow` in `investments/presentation/investments_screen.dart`. Full-width row: logo/initial + name (bodyMedium uppercase) + operations count left, amount (bodyMedium tabular figures) + return % right. Ledger line 0.5px at 8% opacity. Opacity tap feedback
-- [x] Opportunity card — `_OpportunityCard` in `investments/presentation/investments_screen.dart`. 180×160px, image + beige overlay (surface 75%), project name + brand·location metadata + ↗ arrow. Same visual language as Home ProjectCards, scaled down. No border radius (sharp edges, consistent with app)
-- [x] Investment row — `_InvestmentRow` in `investments/presentation/brand_investments_screen.dart`. Card with white 30% bg, project name + unit + amount + return. Tappable
-- [x] Data row — `_DataRow` in `investments/presentation/investment_detail_screen.dart`. Label left + value right, used for financial data display
-- [x] Filter tab — `_FilterTab` in `investments/presentation/opportunities_screen.dart`. Text label + animated underline + dot indicator when filter has selection
+- [x] Ledger row — `LhotseLedgerRow` in `core/widgets/lhotse_ledger_row.dart`. Leading widget + title/subtitle + amount/return. isLast (no border), muted (for completed). Used in strategy and brand investments
+- [x] App header — `LhotseAppHeader` in `core/widgets/lhotse_app_header.dart`. Back button + centered title + optional subtitle + Lhotse logo. 44px balanced sides
+- [x] Bottom sheet — `showLhotseBottomSheet` in `core/widgets/lhotse_bottom_sheet.dart`. Drag handle + title + scrollable list. Dynamic height (clamp 0.3–0.8), safe area padding
+- [x] Opportunity card — `_OpportunityCard` in `investments_screen.dart`. 180×160px, beige overlay, sharp edges
+- [x] Metric block — `_MetricBlock` in `investment_detail_screen.dart`. Value (headingSmall 18px) + label (bodySmall 12px). Used in 2x2 grids
+- [x] Construction status — `_ConstructionStatus` in `investment_detail_screen.dart`. Phase (18px) + "En plazo"/"Retrasado" badge (navy 6% / danger 10% bg)
+- [x] Document row — `_DocumentRow` in `investment_detail_screen.dart`. Type icon (scale/banknote/hardHat/receipt) + name + date + preview/download actions
+- [x] Filter tab — `_FilterTab` in `opportunities_screen.dart`. Text + animated underline + dot indicator. Multi-select support
 - [ ] Button variants (primary, secondary, text)
-- [ ] Bottom sheet
 - [x] Trending chip — `_TrendingChip` in `search/presentation/search_screen.dart`. Pill shape (borderRadiusFull), white 40% bg, subtle border, Campton 12px medium
 - [x] Collection card — `_CollectionCard` in `search/presentation/search_screen.dart`. Image + bottom gradient + brand name, same visual language as brand cards
 - [x] Search result item — `_ProjectResultItem` in `search/presentation/search_screen.dart`. 64px thumbnail + name/brand/location metadata + arrow icon
@@ -83,7 +85,8 @@ To be extracted from Figma as screens are built:
 - [x] Strategy screen — InvestmentsScreen (navy hero + brand ledger + opportunity section)
 - [x] Opportunities screen — OpportunitiesScreen (text-tab filters: firma/ubicación/buscar + project list)
 - [x] Brand investments screen — BrandInvestmentsScreen (centered header + summary + investment cards)
-- [x] Investment detail screen — InvestmentDetailScreen (data rows + operation card + documents + CTA)
+- [x] Investment detail screen — InvestmentDetailScreen (model-aware: compraDirecta 2x2+financing, coinversión/ciclo grid+status, rentaFija 3x2. Documents list+bottom sheet with type filters. News carousel+bottom sheet. Navy CTA button)
+- [x] All news screen — AllNewsScreen (firma logos/región flags/buscar text-tab filters + full-size news cards)
 - [ ] Dashboard screen (home, investments overview)
 - [ ] Form screen (profile edit, login)
 

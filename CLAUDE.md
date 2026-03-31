@@ -42,7 +42,7 @@ Data flow: Screen → Controller → Repository (mock) → Model
 When Supabase connects: only Repository layer changes.
 
 ## Navigation
-5 bottom tabs: Inicio, Firmas, Buscar, Estrategia, Perfil
+5 bottom tabs: Inicio, Firmas, Buscar, Estrategia, Perfil. Strategy tab title: "MI PATRIMONIO"
 
 ## User Roles
 - **Viewer** (mirón): registered, browses projects/brands/news — no investment data
@@ -63,7 +63,7 @@ After completing any task that changes code:
 3. Do NOT skip or defer — update docs in the same conversation
 
 ## Status
-Home screen with project carousel (5 projects max) + news. Project detail with SliverAppBar + LhotseBackButton (frosted/surface variants). Firmas screen with brand cards + SVG logos (nullable logoAsset, Text initial fallback). AllProjects screen with centered title, status filters, brand filter (multi-select), and search. Search screen with trending tags, collections grid, project results, documents placeholder. Navbar: all Lucide icons, labels always visible, "ESTRATEGIA" tab. Strategy screen: navy hero (total patrimony + return), brand ledger rows (sorted desc), opportunity cards. Opportunities screen with brand/location/search text-tab filters. Mock data: 20 projects, 8 brands (5 with SVG + 3 with initial fallback), 17 investments.
+Home screen with project carousel (5 max) + news (5 from centralized mock, beige overlay cards). Project detail with SliverAppBar + LhotseBackButton. Firmas screen with brand cards (nullable logoAsset). AllProjects with centered title, status/brand/search filters. AllNews screen with firma (logo row)/región (flag emoji)/buscar text-tab filters. Search screen with trending tags, collections, results. Navbar: Lucide icons, labels always visible, "ESTRATEGIA" tab. Strategy ("MI PATRIMONIO"): navy hero, brand ledger rows (total ops count incl. completed, sorted desc), opportunity compact cards. Brand investments: header+subtitle, active/completed sections with thumbnails. Investment detail: model-aware (compraDirecta 2x2 grid + financiación, coinversión/ciclo grid + status badge, rentaFija 3x2 grid), documents with type icons + bottom sheet filters, news carousel + bottom sheet. Opportunities screen with firma/ubicación/buscar filters. Mock: 20 projects, 8 brands (businessModel enum), 10 news, 24 investments, 10 documents.
 
 ## TODO
 - [x] Flutter project scaffold (pubspec, theme, router, shell)
@@ -77,7 +77,8 @@ Home screen with project carousel (5 projects max) + news. Project detail with S
 - [x] Strategy screen (navy hero, brand ledger, opportunity cards + section)
 - [x] Opportunities screen (brand/location/search filters, project list)
 - [x] Brand investments screen (per-brand detail, investment cards)
-- [x] Investment detail screen (participación, operation details, documents, "ver proyecto")
+- [x] Investment detail screen (model-aware: compraDirecta/coinversión/ciclo/rentaFija, documents + news)
+- [x] All news screen (firma/región/buscar filters, full-size news cards)
 - [ ] Profile screen
 - [ ] Auth flow (register, login)
 - [ ] Repository interfaces (abstract + mock impl)

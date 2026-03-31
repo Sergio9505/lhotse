@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/brands/presentation/brands_screen.dart';
+import '../features/home/presentation/all_news_screen.dart';
 import '../features/home/presentation/all_projects_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/home/presentation/project_detail_screen.dart';
@@ -17,6 +18,7 @@ import 'shell_screen.dart';
 abstract final class AppRoutes {
   static const home = '/';
   static const projects = '/projects';
+  static const news = '/news';
   static const projectDetail = '/projects/:id';
   static const brands = '/brands';
   static const search = '/search';
@@ -43,6 +45,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.home,
               pageBuilder: (context, state) => const NoTransitionPage(
                 child: HomeScreen(),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.news,
+              pageBuilder: (context, state) => const MaterialPage(
+                child: AllNewsScreen(),
               ),
             ),
             GoRoute(

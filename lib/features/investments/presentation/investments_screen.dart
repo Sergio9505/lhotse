@@ -52,7 +52,7 @@ class InvestmentsScreen extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      'MI ESTRATEGIA',
+                      'MI PATRIMONIO',
                       style: AppTypography.headingLarge.copyWith(
                         color: AppColors.textOnDark,
                       ),
@@ -131,16 +131,22 @@ class InvestmentsScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
 
           // Brand breakdown
-          ...summaries.indexed.map((entry) => LhotseLedgerRow(
-                leading: _BrandLeading(brandName: entry.$2.brandName),
-                title: entry.$2.brandName.toUpperCase(),
-                subtitle: '${entry.$2.investments.length} operaciones',
+          ...summaries.indexed.map((entry) {
+            final brandName = entry.$2.brandName;
+            final totalOps = mockInvestments
+                .where((i) => i.brandName == brandName)
+                .length;
+            return LhotseLedgerRow(
+                leading: _BrandLeading(brandName: brandName),
+                title: brandName.toUpperCase(),
+                subtitle: '$totalOps operaciones',
                 amount: entry.$2.totalAmount,
                 returnLabel: '${entry.$2.averageReturn.toStringAsFixed(0)}% rentabilidad',
                 isLast: entry.$1 == summaries.length - 1,
                 onTap: () => context.push(
-                    '/investments/brand/${Uri.encodeComponent(entry.$2.brandName)}'),
-              )),
+                    '/investments/brand/${Uri.encodeComponent(brandName)}'),
+              );
+          }),
 
           const SizedBox(height: AppSpacing.xxl),
 

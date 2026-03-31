@@ -29,12 +29,18 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 ## Features
 
 ### Home (Inicio)
-- Project carousel (auto-scroll 5s, full-width cards with overlay)
-- News section (horizontal scroll cards)
+- Project carousel (auto-scroll 5s, 5 projects max, full-width cards with beige overlay)
+- News section (5 from centralized mockNews, beige overlay cards with brand·subtitle metadata, no "Explorar todo" card)
+- "NOTICIAS ↗" → AllNews screen
 - Tap project → project detail screen (SliverAppBar with collapsing hero image)
 
+### All News (sub-screen of Home)
+- Full news listing with text-tab filters: FIRMA (brand logo row), REGIÓN (flag emoji row: 🇪🇸🇲🇽🇺🇸🇵🇹🇦🇪), BUSCAR (search field)
+- Brand and region combinable; search exclusive
+- Full-size LhotseNewsCard (320×213px) with beige overlay
+
 ### Firmas (formerly Marcas)
-- List of all brands within Lhotse Group (Myttas, Lacomb & Bos, Vellte, NUVE, Domorato)
+- List of all brands within Lhotse Group (Myttas, Lacomb & Bos, Vellte, NUVE, Domorato, Andhy, Ciclo, Renta Fija)
 - Each brand shown as card with cover image + SVG logo + name
 - Brand detail: TBD (description, active projects, key metrics)
 

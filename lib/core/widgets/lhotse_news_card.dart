@@ -2,40 +2,40 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Reusable news card with image background + navy gradient overlay.
-/// Supports two layouts:
-/// - Full (Home): brand badge top-left, title + subtitle bottom
-/// - Compact (investment detail): title + date bottom, no badge
+/// Reusable news card with image background + beige overlay (same as ProjectCard).
+/// Supports two sizes:
+/// - Full (Home, AllNews): 320×213px
+/// - Compact (investment detail): 260×160px
 class LhotseNewsCard extends StatelessWidget {
-  /// Full-size card with brand badge (for Home).
+  /// Full-size card.
   const LhotseNewsCard({
     super.key,
     required this.title,
     required this.imageUrl,
+    this.brand,
     this.subtitle,
-    this.badge,
     this.width = 320,
     this.height = 213,
     this.hasPlayButton = false,
     this.onTap,
   });
 
-  /// Compact card for project context (no badge).
+  /// Compact card for project context.
   const LhotseNewsCard.compact({
     super.key,
     required this.title,
     required this.imageUrl,
+    this.brand,
     this.subtitle,
     this.onTap,
-  })  : badge = null,
-        width = 260,
+  })  : width = 260,
         height = 160,
         hasPlayButton = false;
 
   final String title;
   final String imageUrl;
+  final String? brand;
   final String? subtitle;
-  final String? badge;
   final double width;
   final double height;
   final bool hasPlayButton;
@@ -43,10 +43,11 @@ class LhotseNewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final padding = height > 180 ? 24.0 : 16.0;
-    final titleStyle = height > 180
-        ? AppTypography.headingSmall
-        : AppTypography.bodySmall;
+    final isCompact = height <= 180;
+    final padding = isCompact ? 14.0 : 24.0;
+    final titleStyle = isCompact
+        ? AppTypography.bodySmall
+        : AppTypography.headingSmall;
 
     return GestureDetector(
       onTap: onTap,
@@ -64,80 +65,12 @@ class LhotseNewsCard extends StatelessWidget {
                   Container(color: AppColors.surface),
             ),
 
-            // Gradient overlay
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    AppColors.primary,
-                    AppColors.primary.withValues(alpha: 0.4),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-
-            // Badge (optional)
-            if (badge != null)
-              Positioned(
-                top: padding,
-                left: padding,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  color: AppColors.primary,
-                  child: Text(
-                    badge!.toUpperCase(),
-                    style: AppTypography.captionSmall.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-
-            // Title + subtitle
-            Positioned(
-              left: padding,
-              right: padding,
-              bottom: padding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title.toUpperCase(),
-                    style: titleStyle.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle!.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            // Play button (optional)
+            // Play button (optional, above overlay)
             if (hasPlayButton)
               Center(
                 child: Container(
-                  width: 56,
-                  height: 56,
+                  width: isCompact ? 40 : 56,
+                  height: isCompact ? 40 : 56,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
@@ -151,13 +84,86 @@ class LhotseNewsCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.play_arrow_rounded,
                     color: Colors.white,
-                    size: 28,
+                    size: isCompact ? 20 : 28,
                   ),
                 ),
               ),
+
+            // Beige overlay — same pattern as ProjectCard
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: padding,
+                  vertical: isCompact ? 10 : 14,
+                ),
+                color: AppColors.surface.withValues(alpha: 0.75),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title.toUpperCase(),
+                      style: titleStyle.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (brand != null) ...[
+                          Text(
+                            brand!.toUpperCase(),
+                            style: (isCompact
+                                    ? AppTypography.captionSmall
+                                    : AppTypography.caption)
+                                .copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          if (subtitle != null)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
+                              child: Text(
+                                '·',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.textPrimary
+                                      .withValues(alpha: 0.4),
+                                ),
+                              ),
+                            ),
+                        ],
+                        if (subtitle != null)
+                          Flexible(
+                            child: Text(
+                              subtitle!.toUpperCase(),
+                              style: (isCompact
+                                      ? AppTypography.captionSmall
+                                      : AppTypography.caption)
+                                  .copyWith(
+                                color: AppColors.accentMuted,
+                                letterSpacing: 1.2,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
