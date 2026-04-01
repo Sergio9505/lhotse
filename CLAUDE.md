@@ -42,7 +42,7 @@ Data flow: Screen → Controller → Repository (mock) → Model
 When Supabase connects: only Repository layer changes.
 
 ## Navigation
-5 bottom tabs: Inicio, Firmas, Buscar, Estrategia, Perfil. Strategy tab title: "MI PATRIMONIO"
+5 bottom tabs: Inicio, Firmas, Buscar, Estrategia, Perfil. Strategy tab title: "MI ESTRATEGIA PATRIMONIAL"
 
 ## User Roles
 - **Viewer** (mirón): registered, browses projects/brands/news — no investment data
@@ -63,7 +63,7 @@ After completing any task that changes code:
 3. Do NOT skip or defer — update docs in the same conversation
 
 ## Status
-Home screen with project carousel (5 max) + news (5 from centralized mock, beige overlay cards). Project detail with SliverAppBar + LhotseBackButton. Firmas screen with brand cards (nullable logoAsset). AllProjects with centered title, status/brand/search filters. AllNews screen with firma (logo row)/región (flag emoji)/buscar text-tab filters. Search screen with trending tags, collections, results. Navbar: Lucide icons, labels always visible, "ESTRATEGIA" tab. Strategy ("MI PATRIMONIO"): navy hero, brand ledger rows (total ops count incl. completed, sorted desc), opportunity compact cards. Brand investments: header+subtitle, active/completed sections with thumbnails. Investment detail: model-aware (compraDirecta 2x2 grid + financiación, coinversión/ciclo grid + status badge, rentaFija 3x2 grid), documents with type icons + bottom sheet filters, news carousel + bottom sheet. Opportunities screen with firma/ubicación/buscar filters. Mock: 20 projects, 8 brands (businessModel enum), 10 news, 24 investments, 10 documents.
+Home screen with project carousel (5 max) + news (5 from centralized mock, beige overlay cards). Project detail with SliverAppBar + LhotseBackButton. Firmas screen with 2-column grid brand cards (ratio 1:1, centered logo+name). AllProjects with centered title, status/brand/search filters. AllNews screen with firma (logo row)/región (flag emoji)/buscar text-tab filters. Search screen with trending tags, collections, results (sharp edge thumbnails). Navbar: Lucide icons, labels always visible, "ESTRATEGIA" tab. Strategy ("MI ESTRATEGIA PATRIMONIAL"): collapsing black hero (title fades, amount 50→28px, logo slides in), sticky "RENTABILIDAD" column header, brand rows with cross layout (name+amount left, % right, initials in black squares), opportunity compact cards. Brand investments: header+subtitle, active/completed sections with thumbnails. Investment detail: model-aware (compraDirecta 2x2 grid + financiación, coinversión grid + status badge, rentaFija 3x2 grid), documents with type icons + bottom sheet filters, news carousel + bottom sheet. Opportunities screen with firma/ubicación/buscar filters. Mock: 20 projects, 8 brands (3 businessModel variants: compraDirecta/coinversion/rentaFija), 10 news, 24 investments, 10 documents. Brand color: black (#000000), sharp edges everywhere.
 
 ## TODO
 - [x] Flutter project scaffold (pubspec, theme, router, shell)

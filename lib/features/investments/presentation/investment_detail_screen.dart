@@ -66,7 +66,6 @@ class InvestmentDetailScreen extends StatelessWidget {
               _CompraDirectaDetail(investment: investment),
             BusinessModel.coinversion =>
               _CoinversionDetail(investment: investment),
-            BusinessModel.ciclo => _CicloDetail(investment: investment),
             BusinessModel.rentaFija =>
               _RentaFijaDetail(investment: investment),
           },
@@ -252,69 +251,6 @@ class _CompraDirectaDetail extends StatelessWidget {
 
 class _CoinversionDetail extends StatelessWidget {
   const _CoinversionDetail({required this.investment});
-
-  final InvestmentData investment;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _MetricBlock(
-                  value: '${_eurFormat.format(investment.amount)}€',
-                  label: 'Participación',
-                ),
-              ),
-              Expanded(
-                child: _MetricBlock(
-                  value: '${investment.returnRate.toStringAsFixed(0)}%',
-                  label: 'Rentabilidad estimada',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: [
-              Expanded(
-                child: _MetricBlock(
-                  value: '${investment.durationMonths} meses',
-                  label: 'Duración estimada',
-                ),
-              ),
-              Expanded(
-                child: _MetricBlock(
-                  value: investment.expectedEndDate != null
-                      ? _dateFormat.format(investment.expectedEndDate!)
-                      : '—',
-                  label: 'Fecha prevista',
-                ),
-              ),
-            ],
-          ),
-          if (investment.constructionPhase != null) ...[
-            const SizedBox(height: AppSpacing.lg),
-            _ConstructionStatus(
-              phase: investment.constructionPhase!,
-              isDelayed: investment.isDelayed,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Ciclo — international
-// ---------------------------------------------------------------------------
-
-class _CicloDetail extends StatelessWidget {
-  const _CicloDetail({required this.investment});
 
   final InvestmentData investment;
 

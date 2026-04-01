@@ -1,4 +1,4 @@
-enum BusinessModel { compraDirecta, coinversion, ciclo, rentaFija }
+enum BusinessModel { compraDirecta, coinversion, rentaFija }
 
 class BrandData {
   const BrandData({

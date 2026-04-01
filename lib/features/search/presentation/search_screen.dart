@@ -377,7 +377,7 @@ class _SearchResults extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderRadius: BorderRadius.circular(0),
             ),
             child: Row(
               children: [
@@ -425,7 +425,7 @@ class _ProjectResultItem extends StatelessWidget {
           children: [
             // Thumbnail
             ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
+              borderRadius: BorderRadius.circular(0),
               child: SizedBox(
                 width: 64,
                 height: 64,

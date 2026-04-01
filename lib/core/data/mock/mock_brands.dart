@@ -54,7 +54,7 @@ final mockBrands = [
     id: '7',
     name: 'Ciclo',
     coverImageUrl: _kBrandCovers[2],
-    businessModel: BusinessModel.ciclo,
+    businessModel: BusinessModel.coinversion,
   ),
   BrandData(
     id: '8',

@@ -42,13 +42,17 @@ class BrandsScreen extends StatelessWidget {
             ),
           ),
 
-          // Brand list
+          // Brand grid
           Expanded(
-            child: ListView.separated(
+            child: GridView.builder(
               padding: const EdgeInsets.fromLTRB(26, 0, 26, 32),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
+                childAspectRatio: 1.0,
+              ),
               itemCount: mockBrands.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppSpacing.md),
               itemBuilder: (context, i) =>
                   _BrandCard(brand: mockBrands[i]),
             ),
@@ -67,7 +71,6 @@ class _BrandCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 192,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         boxShadow: const [
@@ -115,39 +118,37 @@ class _BrandCard extends StatelessWidget {
           // Dark tint overlay
           const ColoredBox(color: Color(0x1A000000)),
 
-          // Logo (centered)
-          if (brand.logoAsset != null)
-            Center(
-              child: SvgPicture.asset(
-                brand.logoAsset!,
-                height: 48,
-                colorFilter: const ColorFilter.mode(
-                  Colors.white,
-                  BlendMode.srcIn,
+          // Logo + name (centered)
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (brand.logoAsset != null)
+                  SvgPicture.asset(
+                    brand.logoAsset!,
+                    height: 36,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  )
+                else
+                  Text(
+                    brand.name[0],
+                    style: AppTypography.displayLarge.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  brand.name.toUpperCase(),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            )
-          else
-            Center(
-              child: Text(
-                brand.name[0],
-                style: AppTypography.displayLarge.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-
-          // Brand name (bottom-left)
-          Positioned(
-            left: 16,
-            bottom: 16,
-            child: Text(
-              brand.name.toUpperCase(),
-              style: AppTypography.labelSmall.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
+              ],
             ),
           ),
         ],

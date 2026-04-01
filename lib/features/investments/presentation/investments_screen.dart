@@ -7,18 +7,10 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
-import '../../../core/domain/investment_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/lhotse_ledger_row.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
-
-double _avgReturn(List<BrandInvestmentSummary> summaries) {
-  if (summaries.isEmpty) return 0;
-  return summaries.fold(0.0, (sum, s) => sum + s.averageReturn) /
-      summaries.length;
-}
 
 class InvestmentsScreen extends StatelessWidget {
   const InvestmentsScreen({super.key});
@@ -35,165 +27,403 @@ class InvestmentsScreen extends StatelessWidget {
     final availableProjects =
         mockProjects.where((p) => !investedProjectIds.contains(p.id)).toList();
 
+    final totalFormatted = _eurFormat.format(total);
+    final collapsedHeight = topPadding + 72.0;
+    final expandedHeight = topPadding + 200.0;
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: ListView(
-        padding: EdgeInsets.zero,
+      body: CustomScrollView(
+        slivers: [
+          // Hero — collapses from full to compact
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _HeroDelegate(
+              expandedHeight: expandedHeight,
+              collapsedHeight: collapsedHeight,
+              topPadding: topPadding,
+              totalFormatted: totalFormatted,
+            ),
+          ),
+
+          // "RENTABILIDAD" sticky header
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _StickyHeaderDelegate(
+              child: Container(
+                color: AppColors.background,
+                padding: const EdgeInsets.only(
+                    top: AppSpacing.sm, right: AppSpacing.lg, bottom: AppSpacing.xs),
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: 76,
+                  child: Text(
+                    'RENTABILIDAD',
+                    textAlign: TextAlign.right,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.accentMuted,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Brand rows
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, i) {
+                final summary = summaries[i];
+                return _BrandRow(
+                  brandName: summary.brandName,
+                  amount: summary.totalAmount,
+                  averageReturn: summary.averageReturn,
+                  isLast: i == summaries.length - 1,
+                  onTap: () => context.push(
+                      '/investments/brand/${Uri.encodeComponent(summary.brandName)}'),
+                );
+              },
+              childCount: summaries.length,
+            ),
+          ),
+
+          // Opportunities
+          if (availableProjects.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.xxl),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: GestureDetector(
+                      onTap: () => context.push('/investments/opportunities'),
+                      child: Row(
+                        children: [
+                          Text(
+                            'NUEVAS OPORTUNIDADES',
+                            style: AppTypography.headingLarge.copyWith(
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          const Icon(
+                            LucideIcons.arrowUpRight,
+                            size: 18,
+                            color: AppColors.textPrimary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(
+                    height: 160,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                      itemCount: availableProjects.length.clamp(0, 4),
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(width: AppSpacing.sm),
+                      itemBuilder: (context, i) {
+                        final project = availableProjects[i];
+                        return _OpportunityCard(project: project);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          SliverToBoxAdapter(
+            child: SizedBox(
+                height: MediaQuery.of(context).padding.bottom + AppSpacing.xl),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroDelegate extends SliverPersistentHeaderDelegate {
+  const _HeroDelegate({
+    required this.expandedHeight,
+    required this.collapsedHeight,
+    required this.topPadding,
+    required this.totalFormatted,
+  });
+
+  final double expandedHeight;
+  final double collapsedHeight;
+  final double topPadding;
+  final String totalFormatted;
+
+  @override
+  double get maxExtent => expandedHeight;
+
+  @override
+  double get minExtent => collapsedHeight;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final expandRatio =
+        (1 - shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
+
+    // Amount font size: 50 expanded → 28 collapsed
+    final amountSize = 28 + (22 * expandRatio);
+    final euroSize = 20 + (14 * expandRatio);
+
+    return Container(
+      color: AppColors.primary,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          // Hero section — navy background
-          Container(
-            color: AppColors.primary,
-            padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg, topPadding + AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header — same size as all other screens
-                Row(
-                  children: [
-                    Text(
-                      'MI PATRIMONIO',
+          // Title + logo — fades out on collapse
+          Positioned(
+            top: topPadding + AppSpacing.md,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            child: Opacity(
+              opacity: expandRatio,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'MI ESTRATEGIA PATRIMONIAL',
                       style: AppTypography.headingLarge.copyWith(
                         color: AppColors.textOnDark,
                       ),
                     ),
-                    const Spacer(),
-                    SvgPicture.asset(
-                      'assets/images/lhotse_logo.svg',
-                      width: 20,
-                      height: 18,
-                      colorFilter: const ColorFilter.mode(
-                        AppColors.textOnDark,
-                        BlendMode.srcIn,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  SizedBox(
+                    height: 24 * 1.2,
+                    child: Center(
+                      child: SvgPicture.asset(
+                        'assets/images/lhotse_logo.svg',
+                        width: 20,
+                        height: 18,
+                        colorFilter: const ColorFilter.mode(
+                          AppColors.textOnDark,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
-                const SizedBox(height: AppSpacing.xl),
-
-                // Amount
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: _eurFormat.format(total),
-                        style: const TextStyle(
-                          fontFamily: 'Campton',
-                          fontSize: 50,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textOnDark,
-                          letterSpacing: -1.2,
-                          height: 1.0,
-                          fontFeatures: [FontFeature.tabularFigures()],
+          // Amount + logo — anchored to bottom, always visible
+          Positioned(
+            bottom: AppSpacing.md,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: totalFormatted,
+                          style: TextStyle(
+                            fontFamily: 'Campton',
+                            fontSize: amountSize,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textOnDark,
+                            letterSpacing: -1.2,
+                            height: 1.0,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
-                      ),
-                      const TextSpan(
-                        text: '€',
-                        style: TextStyle(
-                          fontFamily: 'Campton',
-                          fontSize: 34,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.textOnDark,
-                          letterSpacing: -0.5,
+                        TextSpan(
+                          text: '€',
+                          style: TextStyle(
+                            fontFamily: 'Campton',
+                            fontSize: euroSize,
+                            fontWeight: FontWeight.w400,
+                            color: AppColors.textOnDark,
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-
-                const SizedBox(height: 10),
-
-                // Return
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '${_avgReturn(summaries).toStringAsFixed(1)}%',
-                        style: AppTypography.bodyLarge.copyWith(
-                          color: AppColors.textOnDark,
-                          fontWeight: FontWeight.w600,
+                // Logo slides in when collapsed
+                Opacity(
+                  opacity: 1 - expandRatio,
+                  child: SizedBox(
+                    height: amountSize,
+                    child: Center(
+                      child: SvgPicture.asset(
+                        'assets/images/lhotse_logo.svg',
+                        width: 20,
+                        height: 18,
+                        colorFilter: const ColorFilter.mode(
+                          AppColors.textOnDark,
+                          BlendMode.srcIn,
                         ),
                       ),
-                      TextSpan(
-                        text: '  rentabilidad media',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.textOnDark.withValues(alpha: 0.65),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: AppSpacing.md),
+  @override
+  bool shouldRebuild(covariant _HeroDelegate oldDelegate) =>
+      expandedHeight != oldDelegate.expandedHeight ||
+      collapsedHeight != oldDelegate.collapsedHeight ||
+      totalFormatted != oldDelegate.totalFormatted;
+}
 
-          // Brand breakdown
-          ...summaries.indexed.map((entry) {
-            final brandName = entry.$2.brandName;
-            final totalOps = mockInvestments
-                .where((i) => i.brandName == brandName)
-                .length;
-            return LhotseLedgerRow(
-                leading: _BrandLeading(brandName: brandName),
-                title: brandName.toUpperCase(),
-                subtitle: '$totalOps operaciones',
-                amount: entry.$2.totalAmount,
-                returnLabel: '${entry.$2.averageReturn.toStringAsFixed(0)}% rentabilidad',
-                isLast: entry.$1 == summaries.length - 1,
-                onTap: () => context.push(
-                    '/investments/brand/${Uri.encodeComponent(brandName)}'),
-              );
-          }),
+class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const _StickyHeaderDelegate({required this.child});
 
-          const SizedBox(height: AppSpacing.xxl),
+  final Widget child;
 
-          // New opportunities
-          if (availableProjects.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: GestureDetector(
-                onTap: () => context.push('/investments/opportunities'),
-                child: Row(
+  @override
+  double get minExtent => 28;
+
+  @override
+  double get maxExtent => 28;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickyHeaderDelegate oldDelegate) => false;
+}
+
+class _BrandRow extends StatefulWidget {
+  const _BrandRow({
+    required this.brandName,
+    required this.amount,
+    required this.averageReturn,
+    this.isLast = false,
+    this.onTap,
+  });
+
+  final String brandName;
+  final double amount;
+  final double averageReturn;
+  final bool isLast;
+  final VoidCallback? onTap;
+
+  @override
+  State<_BrandRow> createState() => _BrandRowState();
+}
+
+class _BrandRowState extends State<_BrandRow> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: widget.onTap != null
+          ? (_) => setState(() => _pressed = true)
+          : null,
+      onTapUp: widget.onTap != null
+          ? (_) {
+              setState(() => _pressed = false);
+              widget.onTap!();
+            }
+          : null,
+      onTapCancel: widget.onTap != null
+          ? () => setState(() => _pressed = false)
+          : null,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: 20,
+          ),
+          decoration: widget.isLast
+              ? null
+              : BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.textPrimary.withValues(alpha: 0.08),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Logo
+              _BrandLeading(brandName: widget.brandName),
+              const SizedBox(width: 14),
+
+              // Left col: name (label) + amount (value)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'NUEVAS OPORTUNIDADES',
-                      style: AppTypography.headingLarge.copyWith(
-                        color: AppColors.textPrimary,
+                      widget.brandName.toUpperCase(),
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.accentMuted,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.0,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    const Icon(
-                      LucideIcons.arrowUpRight,
-                      size: 18,
-                      color: AppColors.textPrimary,
+                    const SizedBox(height: 2),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: _eurFormat.format(widget.amount),
+                            style: AppTypography.headingSmall.copyWith(
+                              color: AppColors.textPrimary,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                          TextSpan(
+                            text: '€',
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            SizedBox(
-              height: 160,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                itemCount: availableProjects.length.clamp(0, 4),
-                separatorBuilder: (_, _) =>
-                    const SizedBox(width: AppSpacing.sm),
-                itemBuilder: (context, i) {
-                  final project = availableProjects[i];
-                  return _OpportunityCard(project: project);
-                },
-              ),
-            ),
-          ],
 
-          SizedBox(
-              height: MediaQuery.of(context).padding.bottom + AppSpacing.xl),
-        ],
+              // Return %
+              SizedBox(
+                width: 76,
+                child: Text(
+                  '${widget.averageReturn.toStringAsFixed(0)}%',
+                  textAlign: TextAlign.right,
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -211,7 +441,7 @@ class _BrandLeading extends StatelessWidget {
     if (brand?.logoAsset != null) {
       return SizedBox(
         width: 36,
-        height: 28,
+        height: 36,
         child: SvgPicture.asset(
           brand!.logoAsset!,
           colorFilter: const ColorFilter.mode(
@@ -222,16 +452,16 @@ class _BrandLeading extends StatelessWidget {
       );
     }
 
-    return SizedBox(
+    return Container(
       width: 36,
-      height: 28,
-      child: Center(
-        child: Text(
-          brandName[0],
-          style: AppTypography.bodyLarge.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
+      height: 36,
+      color: AppColors.primary,
+      alignment: Alignment.center,
+      child: Text(
+        brandName[0],
+        style: AppTypography.bodyLarge.copyWith(
+          color: AppColors.textOnDark,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
