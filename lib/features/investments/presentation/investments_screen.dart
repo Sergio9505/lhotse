@@ -53,7 +53,7 @@ class InvestmentsScreen extends StatelessWidget {
               child: Container(
                 color: AppColors.background,
                 padding: const EdgeInsets.only(
-                    top: AppSpacing.sm, right: AppSpacing.lg, bottom: AppSpacing.xs),
+                    top: AppSpacing.md, right: AppSpacing.lg, bottom: AppSpacing.sm),
                 alignment: Alignment.centerRight,
                 child: SizedBox(
                   width: 76,
@@ -294,10 +294,10 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
 
   @override
-  double get minExtent => 28;
+  double get minExtent => 36;
 
   @override
-  double get maxExtent => 28;
+  double get maxExtent => 36;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
@@ -365,7 +365,7 @@ class _BrandRowState extends State<_BrandRow> {
                   ),
                 ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Logo
               _BrandLeading(brandName: widget.brandName),

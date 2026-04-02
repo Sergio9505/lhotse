@@ -96,7 +96,7 @@ To be extracted from Figma as screens are built:
 - [x] Search screen — SearchScreen (header + search field + idle: trending tags + collections grid / active: project results + documents placeholder)
 - [x] Strategy screen — InvestmentsScreen (collapsing black hero: title fades out, amount scales 50→28px + logo slides in; sticky "RENTABILIDAD" header; brand rows with cross layout: name+amount left, % right; initial letters in black square; opportunity section)
 - [x] Opportunities screen — OpportunitiesScreen (text-tab filters: firma/ubicación/buscar + project list)
-- [x] Brand investments screen — BrandInvestmentsScreen (centered header + summary + investment cards)
+- [x] Brand investments screen — BrandInvestmentsScreen (collapsing beige hero: "MI PATRIMONIO CON [brand]" editorial title + amount, collapses to centered amount+subtitle; sticky section label; compraDirecta: _AssetRow with 80×60 thumbnail + name/location/amount stacked + chevron, no return/completed section, "MIS ACTIVOS" label; other models: LhotseLedgerRow with return)
 - [x] Investment detail screen — InvestmentDetailScreen (model-aware: compraDirecta 2x2+financing, coinversión grid+status, rentaFija 3x2. Documents list+bottom sheet with type filters. News carousel+bottom sheet. Black CTA button)
 - [x] All news screen — AllNewsScreen (firma logos/región flags/buscar text-tab filters + full-size news cards)
 - [ ] Dashboard screen (home, investments overview)

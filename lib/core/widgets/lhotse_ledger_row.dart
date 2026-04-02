@@ -14,7 +14,7 @@ class LhotseLedgerRow extends StatefulWidget {
     required this.title,
     this.subtitle,
     required this.amount,
-    required this.returnLabel,
+    this.returnLabel,
     this.muted = false,
     this.isLast = false,
     this.onTap,
@@ -24,7 +24,7 @@ class LhotseLedgerRow extends StatefulWidget {
   final String title;
   final String? subtitle;
   final double amount;
-  final String returnLabel;
+  final String? returnLabel;
   final bool muted;
   final bool isLast;
   final VoidCallback? onTap;
@@ -131,13 +131,15 @@ class _LhotseLedgerRowState extends State<LhotseLedgerRow> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    widget.returnLabel,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.accentMuted,
+                  if (widget.returnLabel != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      widget.returnLabel!,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.accentMuted,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ],
