@@ -257,7 +257,9 @@ class BrandInvestmentsScreen extends StatelessWidget {
 
           SliverToBoxAdapter(
             child: SizedBox(
-                height: MediaQuery.of(context).padding.bottom + AppSpacing.xl),
+                height: (expandedHeight - collapsedHeight) +
+                    MediaQuery.of(context).padding.bottom +
+                    AppSpacing.xl),
           ),
         ],
       ),
@@ -350,12 +352,34 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     final expandRatio =
         (1 - shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
+
+    // Sequential fade — no overlap
+    final expandedOpacity = ((expandRatio - 0.5) / 0.5).clamp(0.0, 1.0);
+    final collapsedOpacity = ((0.5 - expandRatio) / 0.5).clamp(0.0, 1.0);
+
+    // Amount size interpolation (42→24 / 28→16)
+    final amountSize = 24.0 + (18.0 * expandRatio);
+    final euroSize = 16.0 + (12.0 * expandRatio);
+
+    // Amount vertical position: expanded (below title) → collapsed (top bar)
+    const expandedAmountY = 150.0; // md(16) + backBtn(44) + md(16) + title(~58) + md(16)
+    const collapsedAmountY = 16.0; // md(16), aligned with back button
+    final amountTop =
+        topPadding + collapsedAmountY + ((expandedAmountY - collapsedAmountY) * expandRatio);
+
+    // Amount horizontal: full-width → centered between back button and logo
+    final amountLeft =
+        AppSpacing.lg + ((44 + AppSpacing.sm - AppSpacing.lg) * (1 - expandRatio));
+    final amountRight =
+        AppSpacing.lg + (44.0 * (1 - expandRatio));
+
     return Container(
       color: AppColors.background,
       child: Stack(
         fit: StackFit.expand,
+        clipBehavior: Clip.hardEdge,
         children: [
-          // Header row (← logo) — always visible
+          // Back button + logo — always visible
           Positioned(
             top: topPadding + AppSpacing.md,
             left: AppSpacing.sm,
@@ -377,72 +401,108 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // Expanded: label + amount + metadata — fades out
+          // Title — fades out first half, slides up
           Positioned(
-            top: topPadding + AppSpacing.md + 44 + AppSpacing.md, // below header row
+            top: topPadding + AppSpacing.md + 44 + AppSpacing.md -
+                (shrinkOffset * 0.3),
             left: AppSpacing.lg,
             right: AppSpacing.lg,
             child: Opacity(
-              opacity: expandRatio,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    heroTitle,
-                    style: AppTypography.headingLarge.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: totalFormatted,
-                              style: const TextStyle(
-                                fontFamily: 'Campton',
-                                fontSize: 42,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                                letterSpacing: -1.0,
-                                height: 1.0,
-                                fontFeatures: [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                            const TextSpan(
-                              text: '€',
-                              style: TextStyle(
-                                fontFamily: 'Campton',
-                                fontSize: 28,
-                                fontWeight: FontWeight.w400,
-                                color: AppColors.textPrimary,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                          ],
-                        ),
+              opacity: expandedOpacity,
+              child: Text(
+                heroTitle,
+                style: AppTypography.headingLarge.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+
+          // Amount — always visible, interpolates position + size
+          Positioned(
+            top: amountTop,
+            left: amountLeft,
+            right: amountRight,
+            child: Align(
+              alignment: Alignment(-expandRatio, 0),
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: totalFormatted,
+                      style: TextStyle(
+                        fontFamily: 'Campton',
+                        fontSize: amountSize,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -1.0,
+                        height: 1.0,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
-                      if (isRentaFija) ...[
-                        const Spacer(),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            '8% anual',
-                            style: AppTypography.bodyLarge.copyWith(
-                              color: AppColors.accentMuted,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
+                    TextSpan(
+                      text: '€',
+                      style: TextStyle(
+                        fontFamily: 'Campton',
+                        fontSize: euroSize,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Brand subtitle — fades in second half (below amount)
+          Positioned(
+            top: amountTop + amountSize + 2,
+            left: amountLeft,
+            right: amountRight,
+            child: Opacity(
+              opacity: collapsedOpacity,
+              child: Text(
+                brandName.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.accentMuted,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
+
+          // "8% anual" — fades with title (rentaFija only)
+          if (isRentaFija)
+            Positioned(
+              top: topPadding + expandedAmountY + 12,
+              right: AppSpacing.lg,
+              child: Opacity(
+                opacity: expandedOpacity,
+                child: Text(
+                  '8% anual',
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.accentMuted,
+                    fontWeight: FontWeight.w600,
                   ),
-                  if (!isCompraDirecta && !isRentaFija) ...[
-                    const SizedBox(height: AppSpacing.md),
+                ),
+              ),
+            ),
+
+          // Metadata — fades with title (coinversión only)
+          if (!isCompraDirecta && !isRentaFija)
+            Positioned(
+              top: topPadding + expandedAmountY + 42 + AppSpacing.md,
+              left: AppSpacing.lg,
+              right: AppSpacing.lg,
+              child: Opacity(
+                opacity: expandedOpacity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     RichText(
                       text: TextSpan(
                         children: [
@@ -470,46 +530,9 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-
-          // Collapsed: centered amount + brand subtitle — fades in
-          Positioned(
-            top: topPadding + AppSpacing.md,
-            left: 44 + AppSpacing.sm, // after back button
-            right: 44 + AppSpacing.lg, // before logo
-            child: Opacity(
-              opacity: 1 - expandRatio,
-              child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '$totalFormatted€',
-                              style: AppTypography.headingLarge.copyWith(
-                                color: AppColors.textPrimary,
-                                fontFeatures: const [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        brandName.toUpperCase(),
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.accentMuted,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-              ),
-            ),
-          ),
         ],
       ),
     );

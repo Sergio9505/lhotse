@@ -179,13 +179,13 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Title + logo — fades out on collapse
+          // Title + logo — fades out first half, slides up
           Positioned(
-            top: topPadding + AppSpacing.md,
+            top: topPadding + AppSpacing.md - (shrinkOffset * 0.3),
             left: AppSpacing.lg,
             right: AppSpacing.lg,
             child: Opacity(
-              opacity: expandRatio,
+              opacity: ((expandRatio - 0.5) / 0.5).clamp(0.0, 1.0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -255,9 +255,9 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
                     ),
                   ),
                 ),
-                // Logo slides in when collapsed
+                // Logo slides in second half
                 Opacity(
-                  opacity: 1 - expandRatio,
+                  opacity: ((0.5 - expandRatio) / 0.5).clamp(0.0, 1.0),
                   child: SizedBox(
                     height: amountSize,
                     child: Center(

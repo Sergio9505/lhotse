@@ -229,3 +229,24 @@ Both: 44px touch target, 20px icon, defaults to `context.pop()`.
 - (+) Predictable layout regardless of business model
 - (+) Model-specific details reserved for the right level of depth
 - (+) Renta Fija avoids a redundant detail screen
+
+---
+
+## ADR-14: Sequential Fade for Collapsing Heroes
+
+**Date:** 2026-04-05
+**Status:** Accepted
+
+**Context:** Linear cross-fade between expanded and collapsed header states caused both to be visible simultaneously at ~50% scroll, creating a messy overlap. Especially noticeable on brand investments where the expanded content is large.
+
+**Decision:** All collapsing heroes use sequential fade with no overlap:
+- **First half of scroll** (expandRatio 1→0.5): expanded content fades out (opacity 1→0) and slides up (`shrinkOffset * 0.3`)
+- **Second half** (expandRatio 0.5→0): collapsed content fades in (opacity 0→1)
+- **Key data always visible**: amount interpolates position + size (42→24px) + alignment (left→center) throughout the transition, never disappears. Only editorial content (title, metadata) fades.
+- **Bottom padding**: `expandedHeight - collapsedHeight` added to ensure enough scroll room for full collapse.
+
+**Consequences:**
+- (+) No visual overlap between states at any scroll position
+- (+) Amount (key info) always visible — matches Revolut/N26 pattern
+- (+) Smooth, professional transition
+- (-) More complex delegate code with position/size interpolation
