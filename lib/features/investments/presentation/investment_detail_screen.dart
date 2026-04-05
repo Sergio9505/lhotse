@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
@@ -10,6 +9,7 @@ import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/investment_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
+import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 
@@ -75,7 +75,15 @@ class InvestmentDetailScreen extends StatelessWidget {
           // Documents
           _SectionLabel(label: 'DOCUMENTOS'),
           const SizedBox(height: AppSpacing.sm),
-          _DocumentsList(),
+          LhotseDocumentsSection(
+            documents: _investmentDocs,
+            filterLabels: const {
+              DocCategory.legal: 'Legal',
+              DocCategory.financiero: 'Financiero',
+              DocCategory.obra: 'Obra',
+              DocCategory.fiscal: 'Fiscal',
+            },
+          ),
 
           const SizedBox(height: AppSpacing.xl),
 
@@ -521,278 +529,19 @@ class _DataRow extends StatelessWidget {
   }
 }
 
-enum DocType { legal, financiero, obra, fiscal }
-
-IconData _docTypeIcon(DocType type) => switch (type) {
-      DocType.legal => LucideIcons.scale,
-      DocType.financiero => LucideIcons.banknote,
-      DocType.obra => LucideIcons.hardHat,
-      DocType.fiscal => LucideIcons.receipt,
-    };
-
-final _mockDocs = [
-  (name: 'Escritura de compraventa', date: '15 MAR. 2026', type: DocType.legal),
-  (name: 'Contrato de arras', date: '28 FEB. 2026', type: DocType.legal),
-  (name: 'Nota simple registral', date: '10 FEB. 2026', type: DocType.legal),
-  (name: 'Certificado fiscal', date: '02 FEB. 2026', type: DocType.fiscal),
-  (name: 'Factura notaría', date: '15 ENE. 2026', type: DocType.financiero),
-  (name: 'Licencia urbanística', date: '20 DIC. 2025', type: DocType.obra),
-  (name: 'Recibo hipoteca Q4', date: '01 DIC. 2025', type: DocType.financiero),
-  (name: 'Planos definitivos', date: '15 NOV. 2025', type: DocType.obra),
-  (name: 'Poder notarial', date: '01 NOV. 2025', type: DocType.legal),
-  (name: 'Informe de tasación', date: '10 OCT. 2025', type: DocType.financiero),
+final _investmentDocs = [
+  LhotseDocument(name: 'Escritura de compraventa', date: '15 MAR. 2026', category: DocCategory.legal),
+  LhotseDocument(name: 'Contrato de arras', date: '28 FEB. 2026', category: DocCategory.legal),
+  LhotseDocument(name: 'Nota simple registral', date: '10 FEB. 2026', category: DocCategory.legal),
+  LhotseDocument(name: 'Certificado fiscal', date: '02 FEB. 2026', category: DocCategory.fiscal),
+  LhotseDocument(name: 'Factura notaría', date: '15 ENE. 2026', category: DocCategory.financiero),
+  LhotseDocument(name: 'Licencia urbanística', date: '20 DIC. 2025', category: DocCategory.obra),
+  LhotseDocument(name: 'Recibo hipoteca Q4', date: '01 DIC. 2025', category: DocCategory.financiero),
+  LhotseDocument(name: 'Planos definitivos', date: '15 NOV. 2025', category: DocCategory.obra),
+  LhotseDocument(name: 'Poder notarial', date: '01 NOV. 2025', category: DocCategory.legal),
+  LhotseDocument(name: 'Informe de tasación', date: '10 OCT. 2025', category: DocCategory.financiero),
 ];
 
-const _kMaxVisibleDocs = 3;
-
-class _DocumentsList extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final visibleDocs = _mockDocs.take(_kMaxVisibleDocs).toList();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        children: [
-          ...visibleDocs.map((doc) => _DocumentRow(
-                name: doc.name,
-                date: doc.date,
-                type: doc.type,
-              )),
-          if (_mockDocs.length > _kMaxVisibleDocs) ...[
-            const SizedBox(height: AppSpacing.sm),
-            GestureDetector(
-              onTap: () => _showAllDocs(context),
-              child: Text(
-                'Ver todos (${_mockDocs.length})',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _DocumentRow extends StatelessWidget {
-  const _DocumentRow({
-    required this.name,
-    required this.date,
-    this.type = DocType.legal,
-  });
-
-  final String name;
-  final String date;
-  final DocType type;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(_docTypeIcon(type),
-              size: 18, color: AppColors.textPrimary),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  date,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.accentMuted,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () {}, // Preview — placeholder
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(LucideIcons.eye,
-                  size: 16, color: AppColors.accentMuted),
-            ),
-          ),
-          GestureDetector(
-            onTap: () {}, // Download — placeholder
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(LucideIcons.download,
-                  size: 16, color: AppColors.accentMuted),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-void _showAllDocs(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: AppColors.background,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-    ),
-    builder: (context) => const _DocsBottomSheet(),
-  );
-}
-
-class _DocsBottomSheet extends StatefulWidget {
-  const _DocsBottomSheet();
-
-  @override
-  State<_DocsBottomSheet> createState() => _DocsBottomSheetState();
-}
-
-class _DocsBottomSheetState extends State<_DocsBottomSheet> {
-  final Set<DocType> _activeFilters = {};
-
-  List<({String name, String date, DocType type})> get _filteredDocs {
-    if (_activeFilters.isEmpty) return _mockDocs;
-    return _mockDocs.where((d) => _activeFilters.contains(d.type)).toList();
-  }
-
-  void _toggleFilter(DocType type) {
-    setState(() {
-      if (_activeFilters.contains(type)) {
-        _activeFilters.remove(type);
-      } else {
-        _activeFilters.add(type);
-      }
-    });
-  }
-
-  static const _filterLabels = {
-    DocType.legal: 'Legal',
-    DocType.financiero: 'Financiero',
-    DocType.obra: 'Obra',
-    DocType.fiscal: 'Fiscal',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final docs = _filteredDocs;
-    final headerHeight = 120.0;
-    final screenHeight = MediaQuery.of(context).size.height;
-    // Size based on ALL docs, not filtered — stays stable when filtering
-    final contentHeight = headerHeight + (_mockDocs.length * 64);
-    final size = (contentHeight / screenHeight).clamp(0.4, 0.8);
-
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: size,
-      minChildSize: 0.3,
-      maxChildSize: 0.8,
-      builder: (context, scrollController) => Column(
-        children: [
-          // Drag handle
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 4),
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textPrimary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-
-          // Title
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.lg),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'DOCUMENTOS',
-                style: AppTypography.headingLarge.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-
-          // Filter tabs — same underline pattern as rest of app
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
-            child: Row(
-              children: DocType.values.map((type) {
-                final active = _activeFilters.contains(type);
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => _toggleFilter(type),
-                    behavior: HitTestBehavior.opaque,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _filterLabels[type]!.toUpperCase(),
-                          style: AppTypography.labelLarge.copyWith(
-                            color: active
-                                ? AppColors.textPrimary
-                                : AppColors.accentMuted,
-                            fontWeight:
-                                active ? FontWeight.w700 : FontWeight.w400,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                          height: 1.5,
-                          width: active ? 24.0 : 0.0,
-                          color: AppColors.textPrimary,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-
-          // Documents list
-          Expanded(
-            child: ListView.separated(
-              controller: scrollController,
-              padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg, 0, AppSpacing.lg, bottomPadding + AppSpacing.md),
-              itemCount: docs.length,
-              separatorBuilder: (_, _) => Container(
-                height: 0.5,
-                color: AppColors.textPrimary.withValues(alpha: 0.08),
-              ),
-              itemBuilder: (context, i) => _DocumentRow(
-                name: docs[i].name,
-                date: docs[i].date,
-                type: docs[i].type,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Bottom sheet for all news

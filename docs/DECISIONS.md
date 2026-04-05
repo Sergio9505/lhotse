@@ -205,12 +205,12 @@ Both: 44px touch target, 20px icon, defaults to `context.pop()`.
 
 **Context:** Investment detail screens can have 10+ documents. Showing all inline would dominate the screen. Needed a way to browse and filter without leaving the context.
 
-**Decision:** Show 3 most recent documents inline with "Ver todos (N)" link. Full list opens in a `showLhotseBottomSheet` with document type filter tabs (Legal, Financiero, Obra, Fiscal). Filter uses same underline-tab pattern as rest of app. Bottom sheet height fixed based on total docs count (doesn't resize when filtering).
+**Decision:** Show 3 most recent documents inline with "Ver todos (N)" link (left-aligned, accentMuted w500). Full list opens in a `showLhotseBottomSheet` with document type filter tabs (Legal, Financiero, Obra, Fiscal). Filter uses same underline-tab pattern as rest of app. Bottom sheet has fixed height adapted to content (cannot expand, only drag down to dismiss).
 
 **Consequences:**
 - (+) Documents don't dominate the investment detail screen
 - (+) Type filters help find specific documents quickly
-- (+) Consistent with news bottom sheet pattern
+- (+) Consistent with news and renta fija operations bottom sheet pattern
 - (+) Fixed height prevents jarring resize when filtering
 
 ---
@@ -222,9 +222,10 @@ Both: 44px touch target, 20px icon, defaults to `context.pop()`.
 
 **Context:** Considered showing different data per business model in the brand investments list (e.g., vencimiento for Renta Fija instead of location). This would optimize each model but break scanning consistency.
 
-**Decision:** All brand investment rows use the same format: thumbnail + project name + location (or null for Renta Fija) + amount + return. Model-specific data only appears in the detail screen (L3).
+**Decision:** All brand investment rows use the same format: thumbnail + project name + location (or null for Renta Fija) + amount + return. Model-specific data only appears in the detail screen (L3). Exception: Renta Fija has no L3 detail screen — its data is simple enough (date, duration, amount) that L2 rows are self-contained. Renta Fija shows max 3 operations inline with "Ver todos (N)" bottom sheet for overflow.
 
 **Consequences:**
 - (+) User can scan consistently across all brands
 - (+) Predictable layout regardless of business model
 - (+) Model-specific details reserved for the right level of depth
+- (+) Renta Fija avoids a redundant detail screen

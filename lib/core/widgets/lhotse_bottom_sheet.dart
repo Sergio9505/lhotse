@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 /// Reusable bottom sheet with drag handle + title + scrollable list.
-/// Calculates initial height dynamically based on item count.
+/// Fixed height adapted to content (capped at 80% of screen).
+/// Drag down to dismiss; tap outside to dismiss.
 void showLhotseBottomSheet({
   required BuildContext context,
   required String title,
@@ -11,11 +12,12 @@ void showLhotseBottomSheet({
   required double estimatedItemHeight,
   required IndexedWidgetBuilder itemBuilder,
   IndexedWidgetBuilder? separatorBuilder,
+  EdgeInsetsGeometry? listPadding,
 }) {
-  final headerHeight = 60.0;
+  final headerHeight = 80.0; // drag handle + title + padding
   final screenHeight = MediaQuery.of(context).size.height;
   final contentHeight = headerHeight + (itemCount * estimatedItemHeight);
-  final initialSize = (contentHeight / screenHeight).clamp(0.3, 0.8);
+  final size = (contentHeight / screenHeight).clamp(0.3, 0.8);
 
   showModalBottomSheet(
     context: context,
@@ -29,9 +31,9 @@ void showLhotseBottomSheet({
 
       return DraggableScrollableSheet(
         expand: false,
-        initialChildSize: initialSize,
-        minChildSize: 0.3,
-        maxChildSize: 0.8,
+        initialChildSize: size,
+        minChildSize: 0.2,
+        maxChildSize: size,
         builder: (context, scrollController) => Column(
           children: [
             // Drag handle
@@ -64,8 +66,9 @@ void showLhotseBottomSheet({
             Expanded(
               child: ListView.separated(
                 controller: scrollController,
-                padding: EdgeInsets.fromLTRB(
-                    AppSpacing.lg, 0, AppSpacing.lg, bottomPadding + AppSpacing.md),
+                padding: listPadding ??
+                    EdgeInsets.fromLTRB(
+                        AppSpacing.lg, 0, AppSpacing.lg, bottomPadding + AppSpacing.md),
                 itemCount: itemCount,
                 separatorBuilder: separatorBuilder ??
                     (_, _) => Container(

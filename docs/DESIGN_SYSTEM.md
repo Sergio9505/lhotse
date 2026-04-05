@@ -75,7 +75,7 @@ To be extracted from Figma as screens are built:
 - [x] Back button — `LhotseBackButton` in `core/widgets/lhotse_back_button.dart`. Two variants: `.onImage()` (frosted glass circle, backdrop blur, white arrow) and `.onSurface()` (minimal navy arrow, opacity feedback). 44px touch target, 20px icon. Defaults to `context.pop()`
 - [x] Ledger row — `LhotseLedgerRow` in `core/widgets/lhotse_ledger_row.dart`. Leading widget + title/subtitle + amount/return. isLast (no border), muted (for completed). Used in brand investments. Strategy screen uses custom `_BrandRow` with cross layout
 - [x] App header — `LhotseAppHeader` in `core/widgets/lhotse_app_header.dart`. Back button + centered title + optional subtitle + Lhotse logo. 44px balanced sides
-- [x] Bottom sheet — `showLhotseBottomSheet` in `core/widgets/lhotse_bottom_sheet.dart`. Drag handle + title + scrollable list. Dynamic height (clamp 0.3–0.8), safe area padding
+- [x] Bottom sheet — `showLhotseBottomSheet` in `core/widgets/lhotse_bottom_sheet.dart`. Drag handle + title + scrollable list. Fixed height adapted to content (clamp 0.3–0.8), cannot expand (maxChildSize = initialSize), drag down to dismiss. Optional `listPadding` for items with own padding
 - [x] Opportunity card — `_OpportunityCard` in `investments_screen.dart`. 180×160px, beige overlay, sharp edges
 - [x] Metric block — `_MetricBlock` in `investment_detail_screen.dart`. Value (headingSmall 18px) + label (bodySmall 12px). Used in 2x2 grids
 - [x] Construction status — `_ConstructionStatus` in `investment_detail_screen.dart`. Phase (18px) + "En plazo"/"Retrasado" badge (navy 6% / danger 10% bg)

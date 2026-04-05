@@ -7,6 +7,7 @@ class InvestmentData {
     required this.amount,
     required this.returnRate,
     required this.durationMonths,
+    this.startDate,
     this.expectedEndDate,
     this.constructionPhase,
     this.purchaseValue,
@@ -31,6 +32,7 @@ class InvestmentData {
   final double amount; // participación
   final double returnRate; // rentabilidad estimada (%)
   final int durationMonths;
+  final DateTime? startDate;
   final DateTime? expectedEndDate;
   final String? constructionPhase; // "Fase 1", "Fase 2", etc.
 

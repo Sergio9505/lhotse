@@ -8,8 +8,11 @@ import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/brand_data.dart';
+import '../../../core/domain/investment_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/widgets/lhotse_bottom_sheet.dart';
+import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_ledger_row.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
@@ -47,10 +50,19 @@ class BrandInvestmentsScreen extends StatelessWidget {
     final topPadding = MediaQuery.of(context).padding.top;
     final totalFormatted = _eurFormat.format(summary.totalAmount);
     final isCompraDirecta = brand?.businessModel == BusinessModel.compraDirecta;
+    final isRentaFija = brand?.businessModel == BusinessModel.rentaFija;
     final collapsedHeight = topPadding + 84.0;
     final expandedHeight = topPadding + 210.0;
 
-    final sectionLabel = isCompraDirecta ? 'MIS ACTIVOS' : 'ACTIVAS';
+    final sectionLabel = isCompraDirecta
+        ? 'MIS ACTIVOS'
+        : isRentaFija
+            ? 'MIS OPERACIONES'
+            : 'ACTIVAS';
+
+    final heroTitle = isRentaFija
+        ? 'MIS INVERSIONES\nA RENTA FIJA'
+        : 'MI PATRIMONIO\nCON ${brandName.toUpperCase()}';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -69,6 +81,8 @@ class BrandInvestmentsScreen extends StatelessWidget {
               activeCount: summary.investments.length,
               completedCount: completed.length,
               isCompraDirecta: isCompraDirecta,
+              isRentaFija: isRentaFija,
+              heroTitle: heroTitle,
               onBack: () => context.pop(),
             ),
           ),
@@ -98,16 +112,59 @@ class BrandInvestmentsScreen extends StatelessWidget {
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, i) {
-                final inv = summary.investments[i];
+                final allInvestments = summary.investments;
+                const maxVisibleRentaFija = 3;
+                final hasOverflow =
+                    isRentaFija && allInvestments.length > maxVisibleRentaFija;
+
+                // "Ver todos" row
+                if (hasOverflow && i == maxVisibleRentaFija) {
+                  return GestureDetector(
+                    onTap: () => _showAllRentaFija(
+                        context, allInvestments, brand),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: AppSpacing.lg,
+                        right: AppSpacing.lg,
+                        top: AppSpacing.sm,
+                        bottom: AppSpacing.md,
+                      ),
+                      child: Text(
+                        'Ver todos (${allInvestments.length})',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.accentMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                final inv = allInvestments[i];
                 final project = findProjectById(inv.projectId);
-                if (isCompraDirecta) {
+                if (isCompraDirecta || isRentaFija) {
+                  String? subtitle;
+                  if (isRentaFija) {
+                    final startStr = inv.startDate != null
+                        ? '${inv.startDate!.day.toString().padLeft(2, '0')}/${inv.startDate!.month.toString().padLeft(2, '0')}/${inv.startDate!.year}'
+                        : '—';
+                    subtitle = '$startStr  ·  ${inv.durationMonths} meses';
+                  }
+                  final isLastVisible = hasOverflow
+                      ? i == maxVisibleRentaFija - 1
+                      : i == allInvestments.length - 1;
                   return _AssetRow(
-                    projectName: inv.projectName,
-                    location: project?.location,
+                    projectName: isRentaFija ? '' : inv.projectName,
+                    location: isRentaFija ? subtitle : (showLocation ? project?.location : null),
                     imageUrl: project?.imageUrl,
                     amount: inv.amount,
-                    isLast: i == summary.investments.length - 1,
-                    onTap: () => context.push('/investments/detail/${inv.id}'),
+                    showThumbnail: !isRentaFija,
+                    index: isRentaFija ? i + 1 : null,
+                    isLast: isLastVisible,
+                    onTap: isRentaFija
+                        ? null
+                        : () => context.push('/investments/detail/${inv.id}'),
                   );
                 }
                 return LhotseLedgerRow(
@@ -116,16 +173,19 @@ class BrandInvestmentsScreen extends StatelessWidget {
                   subtitle: showLocation ? project?.location.toUpperCase() : null,
                   amount: inv.amount,
                   returnLabel: '${inv.returnRate.toStringAsFixed(0)}% rent. estimada',
-                  isLast: i == summary.investments.length - 1,
+                  isLast: i == allInvestments.length - 1,
                   onTap: () => context.push('/investments/detail/${inv.id}'),
                 );
               },
-              childCount: summary.investments.length,
+              childCount: isRentaFija &&
+                      summary.investments.length > 3
+                  ? 3 + 1 // 3 visible + "Ver todos"
+                  : summary.investments.length,
             ),
           ),
 
           // Completed section (not shown for compraDirecta)
-          if (completed.isNotEmpty && !isCompraDirecta)
+          if (completed.isNotEmpty && !isCompraDirecta && !isRentaFija)
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,6 +223,38 @@ class BrandInvestmentsScreen extends StatelessWidget {
               ),
             ),
 
+          // Documents section (rentaFija only)
+          if (isRentaFija)
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.xxl),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: Text(
+                      'DOCUMENTOS',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.accentMuted,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.8,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  LhotseDocumentsSection(
+                    documents: _rfDocuments,
+                    filterLabels: const {
+                      DocCategory.contrato: 'Contrato',
+                      DocCategory.certificado: 'Certificado',
+                      DocCategory.informe: 'Informe',
+                      DocCategory.fiscal: 'Fiscal',
+                    },
+                  ),
+                ],
+              ),
+            ),
+
           SliverToBoxAdapter(
             child: SizedBox(
                 height: MediaQuery.of(context).padding.bottom + AppSpacing.xl),
@@ -171,6 +263,47 @@ class BrandInvestmentsScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Bottom sheet — all renta fija operations
+// ---------------------------------------------------------------------------
+
+void _showAllRentaFija(
+  BuildContext context,
+  List<InvestmentData> investments,
+  BrandData? brand,
+) {
+  final bottomPadding = MediaQuery.of(context).padding.bottom;
+  showLhotseBottomSheet(
+    context: context,
+    title: 'MIS OPERACIONES',
+    itemCount: investments.length,
+    estimatedItemHeight: 80,
+    listPadding: EdgeInsets.only(bottom: bottomPadding + AppSpacing.md),
+    itemBuilder: (context, i) {
+      final inv = investments[i];
+      final startStr = inv.startDate != null
+          ? '${inv.startDate!.day.toString().padLeft(2, '0')}/${inv.startDate!.month.toString().padLeft(2, '0')}/${inv.startDate!.year}'
+          : '—';
+      final subtitle = '$startStr  ·  ${inv.durationMonths} meses';
+      return _AssetRow(
+        projectName: '',
+        location: subtitle,
+        amount: inv.amount,
+        showThumbnail: false,
+        index: i + 1,
+        isLast: true,
+      );
+    },
+    separatorBuilder: (_, _) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Container(
+        height: 0.5,
+        color: AppColors.textPrimary.withValues(alpha: 0.08),
+      ),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +321,8 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
     required this.activeCount,
     required this.completedCount,
     required this.isCompraDirecta,
+    required this.isRentaFija,
+    required this.heroTitle,
     required this.onBack,
   });
 
@@ -200,6 +335,8 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
   final int activeCount;
   final int completedCount;
   final bool isCompraDirecta;
+  final bool isRentaFija;
+  final String heroTitle;
   final VoidCallback onBack;
 
   @override
@@ -252,41 +389,59 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'MI PATRIMONIO\nCON ${brandName.toUpperCase()}',
+                    heroTitle,
                     style: AppTypography.headingLarge.copyWith(
                       color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: totalFormatted,
-                          style: const TextStyle(
-                            fontFamily: 'Campton',
-                            fontSize: 42,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                            letterSpacing: -1.0,
-                            height: 1.0,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: totalFormatted,
+                              style: const TextStyle(
+                                fontFamily: 'Campton',
+                                fontSize: 42,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                                letterSpacing: -1.0,
+                                height: 1.0,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                            const TextSpan(
+                              text: '€',
+                              style: TextStyle(
+                                fontFamily: 'Campton',
+                                fontSize: 28,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.textPrimary,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ],
                         ),
-                        const TextSpan(
-                          text: '€',
-                          style: TextStyle(
-                            fontFamily: 'Campton',
-                            fontSize: 28,
-                            fontWeight: FontWeight.w400,
-                            color: AppColors.textPrimary,
-                            letterSpacing: -0.3,
+                      ),
+                      if (isRentaFija) ...[
+                        const Spacer(),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '8% anual',
+                            style: AppTypography.bodyLarge.copyWith(
+                              color: AppColors.accentMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
-                  if (!isCompraDirecta) ...[
+                  if (!isCompraDirecta && !isRentaFija) ...[
                     const SizedBox(height: AppSpacing.md),
                     RichText(
                       text: TextSpan(
@@ -393,6 +548,8 @@ class _AssetRow extends StatefulWidget {
     this.location,
     this.imageUrl,
     required this.amount,
+    this.showThumbnail = true,
+    this.index,
     this.isLast = false,
     this.onTap,
   });
@@ -401,6 +558,8 @@ class _AssetRow extends StatefulWidget {
   final String? location;
   final String? imageUrl;
   final double amount;
+  final bool showThumbnail;
+  final int? index;
   final bool isLast;
   final VoidCallback? onTap;
 
@@ -448,25 +607,45 @@ class _AssetRowState extends State<_AssetRow> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Thumbnail
-              _ProjectThumbnail(imageUrl: widget.imageUrl),
-              const SizedBox(width: 14),
+              // Leading: thumbnail or index badge
+              if (widget.showThumbnail) ...[
+                _ProjectThumbnail(imageUrl: widget.imageUrl),
+                const SizedBox(width: 14),
+              ] else if (widget.index != null) ...[
+                Container(
+                  width: 36,
+                  height: 36,
+                  color: AppColors.primary,
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${widget.index}',
+                    style: AppTypography.bodyLarge.copyWith(
+                      color: AppColors.textOnDark,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+              ],
 
-              // Name + location + amount stacked
+              // Content stacked
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.projectName.toUpperCase(),
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
+                    if (widget.projectName.isNotEmpty) ...[
+                      Text(
+                        widget.projectName.toUpperCase(),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.8,
+                        ),
                       ),
-                    ),
+                    ],
                     if (widget.location != null) ...[
-                      const SizedBox(height: 2),
+                      if (widget.projectName.isNotEmpty)
+                        const SizedBox(height: 2),
                       Text(
                         widget.location!.toUpperCase(),
                         style: AppTypography.bodySmall.copyWith(
@@ -475,7 +654,8 @@ class _AssetRowState extends State<_AssetRow> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 4),
+                    if (widget.projectName.isNotEmpty || widget.location != null)
+                      const SizedBox(height: 4),
                     RichText(
                       text: TextSpan(
                         children: [
@@ -515,6 +695,18 @@ class _AssetRowState extends State<_AssetRow> {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Renta Fija documents
+// ---------------------------------------------------------------------------
+
+final _rfDocuments = [
+  LhotseDocument(name: 'Contrato de inversión', date: '15 MAR. 2026', category: DocCategory.contrato),
+  LhotseDocument(name: 'Certificado de depósito', date: '15 MAR. 2026', category: DocCategory.certificado),
+  LhotseDocument(name: 'Condiciones generales', date: '01 MAR. 2026', category: DocCategory.contrato),
+  LhotseDocument(name: 'Informe trimestral Q1', date: '01 ABR. 2026', category: DocCategory.informe),
+  LhotseDocument(name: 'Certificado fiscal', date: '02 ENE. 2026', category: DocCategory.fiscal),
+];
 
 class _ProjectThumbnail extends StatelessWidget {
   const _ProjectThumbnail({this.imageUrl, this.muted = false});
