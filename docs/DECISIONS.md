@@ -255,3 +255,46 @@ When content is shorter than the full collapse range (e.g. renta fija with 3 ope
 - (+) Header adapts to content height — no stuck halfway states
 - (+) iOS bounce physics preserved (no snap hacks or custom physics)
 - (-) More complex delegate code with position/size interpolation
+
+---
+
+## ADR-15: Coinversion Investment Detail — Rich Content Layout
+
+**Date:** 2026-04-06
+**Status:** Draft (iterating)
+
+**Context:** The web portal shows extensive project data for coinversion investments: hero image, renders, progress photos, videos, floor plans, property info, economic analysis, profitability scenarios (P90/P50/P10), and a project timeline. The mobile app needed to surface this content without overwhelming the investor.
+
+**Decision:** Full-screen layout with 40% hero image (SliverAppBar collapsible, same mechanics as ProjectDetailScreen but smaller — investor reviews finances, not discovers projects). Key sections:
+- **Metrics 2×2**: participación, ROI, TIR, duración — visible without scroll
+- **Profitability scenarios**: tab pills (P90/P50/P10), P50 default, Bloomberg base/bull/bear pattern
+- **Timeline**: horizontal node-line stepper (filled=past, large=current, outline=future)
+- **Gallery**: unified carousel with RENDERS/OBRA tabs + video thumbnail
+- **Info activo + análisis económico**: expandable tiles (not documents — quick-reference)
+- **Documents + news**: existing patterns
+
+**Status:** Draft — hero size, scenario presentation, and gallery layout pending final review.
+
+**Consequences:**
+- (+) Rich web content adapted for mobile without information overload
+- (+) P50-first scenarios give quick answer to "how much will I earn?"
+- (+) Expandable tiles keep the page scannable
+- (+) Hero image preserves Lhotse's luxury visual identity
+- (-) Complex screen with many sections — needs iteration on spacing/weights
+
+---
+
+## ADR-16: Per-Operation Documents for Renta Fija
+
+**Date:** 2026-04-06
+**Status:** Accepted
+
+**Context:** Renta fija had a standalone "DOCUMENTOS" section with global documents. Each operation is an independent contract with its own documents — the global section lost this association.
+
+**Decision:** Remove the standalone documents section. Add a document icon (`fileText`) to each operation row. Tapping opens `showDocsBottomSheet` with that operation's documents + filter tabs. All operations shown inline (removed 3-operation cap + "Ver todos" bottom sheet). Documents bottom sheet reuses the existing `_DocsBottomSheet` widget via new public `showDocsBottomSheet()` helper.
+
+**Consequences:**
+- (+) Documents contextually linked to their operation
+- (+) Less vertical content — helps with short-scroll issues
+- (+) Consistent filter pattern across all document bottom sheets
+- (+) `showDocsBottomSheet` reusable from any screen

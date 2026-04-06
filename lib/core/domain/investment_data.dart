@@ -1,3 +1,7 @@
+import 'asset_info.dart';
+import 'profit_scenario.dart';
+import 'project_phase.dart';
+
 class InvestmentData {
   const InvestmentData({
     required this.id,
@@ -23,6 +27,16 @@ class InvestmentData {
     this.isCapitalGuaranteed = false,
     this.isDelayed = false,
     this.isCompleted = false,
+    this.profitScenarios,
+    this.phases,
+    this.currentPhaseIndex,
+    this.renderImages,
+    this.progressImages,
+    this.videoThumbnailUrl,
+    this.videoUrl,
+    this.floorPlanUrl,
+    this.assetInfo,
+    this.economicAnalysis,
   });
 
   final String id;
@@ -51,6 +65,18 @@ class InvestmentData {
   final bool isCapitalGuaranteed;
   final bool isDelayed;
   final bool isCompleted;
+
+  // Coinversion detail — profitability, timeline, gallery
+  final List<ProfitScenario>? profitScenarios;
+  final List<ProjectPhase>? phases;
+  final int? currentPhaseIndex;
+  final List<String>? renderImages;
+  final List<String>? progressImages;
+  final String? videoThumbnailUrl;
+  final String? videoUrl;
+  final String? floorPlanUrl;
+  final AssetInfo? assetInfo;
+  final List<AssetInfoEntry>? economicAnalysis;
 }
 
 class BrandInvestmentSummary {
