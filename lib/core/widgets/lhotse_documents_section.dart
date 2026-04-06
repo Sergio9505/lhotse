@@ -157,6 +157,29 @@ class _DocumentRow extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Public helper — open documents bottom sheet from anywhere
+// ---------------------------------------------------------------------------
+
+void showDocsBottomSheet({
+  required BuildContext context,
+  required List<LhotseDocument> documents,
+  required Map<DocCategory, String> filterLabels,
+}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.background,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+    ),
+    builder: (context) => _DocsBottomSheet(
+      documents: documents,
+      filterLabels: filterLabels,
+    ),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Bottom sheet with filters
 // ---------------------------------------------------------------------------
 

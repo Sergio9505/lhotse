@@ -16,8 +16,10 @@ void showLhotseBottomSheet({
 }) {
   final headerHeight = 80.0; // drag handle + title + padding
   final screenHeight = MediaQuery.of(context).size.height;
-  final contentHeight = headerHeight + (itemCount * estimatedItemHeight);
-  final size = (contentHeight / screenHeight).clamp(0.3, 0.8);
+  final bottomPadding = MediaQuery.of(context).padding.bottom;
+  final contentHeight =
+      headerHeight + (itemCount * estimatedItemHeight) + bottomPadding + AppSpacing.lg;
+  final fitSize = (contentHeight / screenHeight).clamp(0.2, 0.8);
 
   showModalBottomSheet(
     context: context,
@@ -31,9 +33,9 @@ void showLhotseBottomSheet({
 
       return DraggableScrollableSheet(
         expand: false,
-        initialChildSize: size,
+        initialChildSize: fitSize,
         minChildSize: 0.2,
-        maxChildSize: size,
+        maxChildSize: fitSize,
         builder: (context, scrollController) => Column(
           children: [
             // Drag handle

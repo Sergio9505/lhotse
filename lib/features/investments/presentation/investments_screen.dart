@@ -51,7 +51,14 @@ class InvestmentsScreen extends StatelessWidget {
             pinned: true,
             delegate: _StickyHeaderDelegate(
               child: Container(
-                color: AppColors.background,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.7, 1.0],
+                    colors: [AppColors.background, Color(0x00E5E2DC)],
+                  ),
+                ),
                 padding: const EdgeInsets.only(
                     top: AppSpacing.md, right: AppSpacing.lg, bottom: AppSpacing.sm),
                 alignment: Alignment.centerRight,
@@ -294,10 +301,10 @@ class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
 
   @override
-  double get minExtent => 36;
+  double get minExtent => 70;
 
   @override
-  double get maxExtent => 36;
+  double get maxExtent => 70;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
