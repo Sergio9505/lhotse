@@ -255,11 +255,11 @@ class BrandInvestmentsScreen extends StatelessWidget {
               ),
             ),
 
-          SliverToBoxAdapter(
+          SliverFillRemaining(
+            hasScrollBody: false,
             child: SizedBox(
-                height: (expandedHeight - collapsedHeight) +
-                    MediaQuery.of(context).padding.bottom +
-                    AppSpacing.xl),
+              height: MediaQuery.of(context).padding.bottom + AppSpacing.xl,
+            ),
           ),
         ],
       ),
@@ -350,8 +350,17 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final collapseRange = maxExtent - minExtent;
+    final position = Scrollable.maybeOf(context)?.position;
+    final maxScroll = position != null && position.hasContentDimensions
+        ? position.maxScrollExtent
+        : null;
+    final effectiveRange =
+        (maxScroll != null && maxScroll > 0 && maxScroll < collapseRange)
+            ? maxScroll
+            : collapseRange;
     final expandRatio =
-        (1 - shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
+        (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0);
 
     // Sequential fade — no overlap
     final expandedOpacity = ((expandRatio - 0.5) / 0.5).clamp(0.0, 1.0);
@@ -407,12 +416,14 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                 (shrinkOffset * 0.3),
             left: AppSpacing.lg,
             right: AppSpacing.lg,
-            child: Opacity(
-              opacity: expandedOpacity,
-              child: Text(
-                heroTitle,
-                style: AppTypography.headingLarge.copyWith(
-                  color: AppColors.textPrimary,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: expandedOpacity,
+                child: Text(
+                  heroTitle,
+                  style: AppTypography.headingLarge.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ),

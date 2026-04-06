@@ -245,8 +245,13 @@ Both: 44px touch target, 20px icon, defaults to `context.pop()`.
 - **Key data always visible**: amount interpolates position + size (42→24px) + alignment (left→center) throughout the transition, never disappears. Only editorial content (title, metadata) fades.
 - **Bottom padding**: `expandedHeight - collapsedHeight` added to ensure enough scroll room for full collapse.
 
+**Additional:** Adaptive collapse range for variable content heights.
+When content is shorter than the full collapse range (e.g. renta fija with 3 operations + docs), the header would get stuck halfway collapsed. Fix: the delegate reads `Scrollable.maybeOf(context)?.position.maxScrollExtent` (guarded by `hasContentDimensions`) and remaps `expandRatio` to `effectiveRange = min(maxScroll, collapseRange)`, so the full visual transition (title fade, amount reposition, subtitle appear) completes within whatever scroll distance is available. For zero-scroll pages (coinversión, compraDirecta), `SliverFillRemaining(hasScrollBody: false)` fills the viewport gap so the header can't collapse at all. Non-interactive elements in the Stack (title, subtitle) are wrapped in `IgnorePointer` to prevent invisible widgets from stealing taps from the back button when collapsed.
+
 **Consequences:**
 - (+) No visual overlap between states at any scroll position
 - (+) Amount (key info) always visible — matches Revolut/N26 pattern
 - (+) Smooth, professional transition
+- (+) Header adapts to content height — no stuck halfway states
+- (+) iOS bounce physics preserved (no snap hacks or custom physics)
 - (-) More complex delegate code with position/size interpolation

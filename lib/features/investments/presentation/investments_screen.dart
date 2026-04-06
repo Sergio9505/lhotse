@@ -410,17 +410,22 @@ class _BrandRowState extends State<_BrandRow> {
               ),
 
               // Return %
-              SizedBox(
-                width: 76,
-                child: Text(
-                  '${widget.averageReturn.toStringAsFixed(0)}%',
-                  textAlign: TextAlign.right,
-                  style: AppTypography.bodyLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
+              Text(
+                '${widget.averageReturn.toStringAsFixed(0)}%',
+                style: AppTypography.bodyLarge.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
+
+              if (widget.onTap != null) ...[
+                const SizedBox(width: AppSpacing.sm),
+                Icon(
+                  LucideIcons.chevronRight,
+                  size: 16,
+                  color: AppColors.accentMuted,
+                ),
+              ],
             ],
           ),
         ),
