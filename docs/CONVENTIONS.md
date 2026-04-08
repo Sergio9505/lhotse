@@ -88,3 +88,42 @@ When connecting Supabase:
 - Images in `assets/images/`
 - Icons in `assets/icons/` (prefer SVG)
 - Fonts in `assets/fonts/`
+
+## Scroll + Tabs Patterns
+
+### When to use each pattern:
+| Pattern | Use When | Example |
+|---------|----------|---------|
+| `ListView` / `CustomScrollView` | Simple vertical scroll, no tabs, no collapsing headers | AllProjects, Search results |
+| `SliverAppBar` (pinned) | Collapsing hero image → pinned title on scroll. No tabs. | ProjectDetail |
+| `SliverPersistentHeader` | A single sticky section header within a scroll | BrandInvestments sticky labels |
+| **`NestedScrollView` + `SliverAppBar` + `TabBarView`** | Collapsing header + pinned tabs + independent scroll per tab | CoinversionDetail |
+
+### NestedScrollView pattern (for tabbed detail screens):
+```dart
+DefaultTabController(
+  length: tabCount,
+  child: NestedScrollView(
+    headerSliverBuilder: (context, innerBoxIsScrolled) => [
+      SliverAppBar(
+        pinned: true,
+        expandedHeight: heroHeight,
+        title: collapsedTitle,       // fades in natively on collapse
+        bottom: TabBar(tabs: [...]), // always pinned
+        flexibleSpace: FlexibleSpaceBar(
+          background: headerContent, // hero + identity — scrolls away
+        ),
+      ),
+    ],
+    body: TabBarView(
+      children: [tab1, tab2, tab3],  // each scrolls independently
+    ),
+  ),
+)
+```
+
+### Rules:
+- **Never manually track collapse state** with scroll listeners + hardcoded thresholds. Flutter's `SliverAppBar` handles title fade-in natively.
+- **Never use `AnimatedSwitcher` for tab content** — it destroys and rebuilds widgets, losing state. Use `TabBarView` or `IndexedStack`.
+- **Never put tabs in SliverAppBar `bottom` AND identity data in a separate sliver** — this creates duplicate-info states during scroll. Keep everything that collapses inside `flexibleSpace`.
+- If a change requires hacking scroll offsets or managing multiple boolean flags (`_heroGone`, `_identityGone`), the architecture is wrong — restructure.

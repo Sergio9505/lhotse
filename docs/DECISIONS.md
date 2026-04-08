@@ -260,27 +260,28 @@ When content is shorter than the full collapse range (e.g. renta fija with 3 ope
 
 ## ADR-15: Coinversion Investment Detail — Rich Content Layout
 
-**Date:** 2026-04-06
-**Status:** Draft (iterating)
+**Date:** 2026-04-06 (updated 2026-04-07)
+**Status:** Accepted
 
-**Context:** The web portal shows extensive project data for coinversion investments: hero image, renders, progress photos, videos, floor plans, property info, economic analysis, profitability scenarios (P90/P50/P10), and a project timeline. The mobile app needed to surface this content without overwhelming the investor.
+**Context:** The web portal shows extensive project data for coinversion investments: hero image, renders, progress photos, videos, floor plans, property info, economic analysis, profitability scenarios (P90/P50/P10), and a project timeline. The mobile app needed to surface this content without overwhelming the investor while maintaining a premium editorial + fintech feel.
 
-**Decision:** Full-screen layout with 40% hero image (SliverAppBar collapsible, same mechanics as ProjectDetailScreen but smaller — investor reviews finances, not discovers projects). Key sections:
-- **Metrics 2×2**: participación, ROI, TIR, duración — visible without scroll
-- **Profitability scenarios**: tab pills (P90/P50/P10), P50 default, Bloomberg base/bull/bear pattern
-- **Timeline**: horizontal node-line stepper (filled=past, large=current, outline=future)
-- **Gallery**: unified carousel with RENDERS/OBRA tabs + video thumbnail
-- **Info activo + análisis económico**: expandable tiles (not documents — quick-reference)
-- **Documents + news**: existing patterns
-
-**Status:** Draft — hero size, scenario presentation, and gallery layout pending final review.
+**Decision:** Extracted to `CoinversionDetailScreen` (own file). Premium editorial layout:
+- **Hero image 45%**: SliverAppBar with cinematic gradients (stronger bottom 0xCC), displayMedium (28px) project name, location with decorative divider line, construction badge repositioned to top-right (status ≠ identity), AnimatedSwitcher on logo color
+- **Hero participation metric**: 28px displayMedium amount as the visual anchor ("my money"), followed by 3-column secondary row (ROI, TIR, duration at headingMedium 20px) separated by vertical dividers
+- **Bloomberg scenario panel**: bordered tab pills with AnimatedContainer color transitions, hero ROI+TIR at displayMedium (28px), detail metrics (sale price, net profit) at headingSmall (18px), AnimatedSwitcher (300ms fade) between scenarios
+- **Square-node timeline**: sharp-edge squares instead of circles (design system consistency), 2px lines, phase.title shown for current phase, pulsing animation on current node
+- **Immersive gallery**: 80% screen width cards (was 280px), subtle shadows, square play button, page indicator squares
+- **Premium expandable tiles**: AnimatedSize + FadeTransition (replacing AnimatedCrossFade), row dividers between entries, bold total row with thicker divider
+- **CTA polish**: haptic feedback, press-state opacity, arrow icon
+- **Global widget promotion**: LhotseMetricBlock, LhotseSectionLabel extracted to core/widgets/
 
 **Consequences:**
-- (+) Rich web content adapted for mobile without information overload
-- (+) P50-first scenarios give quick answer to "how much will I earn?"
-- (+) Expandable tiles keep the page scannable
-- (+) Hero image preserves Lhotse's luxury visual identity
-- (-) Complex screen with many sections — needs iteration on spacing/weights
+- (+) Bloomberg × Sotheby's editorial feel — numbers are heroes, generous whitespace
+- (+) Participation amount as visual anchor answers "how much is here?" instantly
+- (+) Scenario panel with animated transitions feels like a financial terminal
+- (+) Consistent sharp edges (square timeline nodes, square play buttons)
+- (+) Extracted to own file — cleaner separation, easier iteration
+- (-) More animation code — but well-contained in individual widgets
 
 ---
 
@@ -298,3 +299,48 @@ When content is shorter than the full collapse range (e.g. renta fija with 3 ope
 - (+) Less vertical content — helps with short-scroll issues
 - (+) Consistent filter pattern across all document bottom sheets
 - (+) `showDocsBottomSheet` reusable from any screen
+
+---
+
+## ADR-17: Editorial/Fintech Calibration by Screen Type
+
+**Date:** 2026-04-08
+**Status:** Accepted
+
+**Context:** The app blends two design DNAs — editorial (Zara: full-bleed imagery, bold typography, sharp edges, whitespace as luxury) and fintech (Revolut: numbers as heroes, data-first, progressive disclosure, minimal chrome). Early screens applied the same editorial weight everywhere. This caused portfolio screens (where investors manage money) to feel like discovery screens (where users explore projects). A 45% hero image makes sense when discovering a project, but steals viewport from financial data when an investor is checking their €280K position.
+
+**Decision:** Calibrate the editorial vs fintech weight based on the screen's primary purpose. The criterion is: **"Is the user discovering or managing?"**
+
+| Screen | Purpose | Editorial (Zara) | Fintech (Revolut) | Rationale |
+|--------|---------|:-:|:-:|-----------|
+| Home | Discovery | **80%** | 20% | First impression — aspirational, visual, emotional. Carousel hero images, editorial overlay cards. The investor is being inspired. |
+| Project Detail | Exploration | **70%** | 30% | Deep-dive into a specific project. 55% hero image, editorial content panel with shadow. Still selling the dream. |
+| Search | Discovery | **60%** | 40% | Active search with functional filters, but collections and results retain editorial thumbnails. Balanced. |
+| All News | Discovery | **60%** | 40% | Content browsing with editorial full-size cards but functional filter tabs. |
+| Firmas (Brands) | Discovery | **70%** | 30% | Brand showcase — 2-column grid with cover images and centered logos. Purely visual. |
+| Strategy | Portfolio mgmt | 30% | **70%** | "How is my total portfolio?" — collapsing black hero with amount as the visual anchor (50→28px interpolation). Brand rows with financial data. Data-dominant. |
+| Brand Investments | Portfolio mgmt | 40% | **60%** | "How are my investments with this brand?" — editorial title ("MI PATRIMONIO CON...") but beige hero (not image), asset rows with amounts, sticky labels. Mixed. |
+| Investment Detail (coinversión) | Position review | 30% | **70%** | "How is my money in this specific project?" — 32% compact hero (editorial context), 40px participation amount as undisputed hero number, Bloomberg-style scenario panel, compact timeline, immersive gallery as visual break. Data-first. |
+| Investment Detail (compraDirecta) | Position review | 20% | **80%** | Pure metrics — no hero image, 2×2 grid + financing section. Header with title only. Most Revolut. |
+| Investment Detail (rentaFija) | Position review | 20% | **80%** | Pure metrics — no hero image, 3×2 grid. Simplest screen. |
+| Opportunities | Discovery + mgmt | 50% | 50% | Investor actively scanning for next investment — project cards are editorial but filter tabs are functional. True 50/50. |
+
+**How this translates to implementation:**
+
+| Signal | Editorial (Zara) | Fintech (Revolut) |
+|--------|-------------------|-------------------|
+| Hero image | Full-bleed, 45-55% viewport | Compact 30-35% or none |
+| Typography anchor | Project/brand name (displayLarge 40px) | Financial amount (displayLarge 40px) |
+| Content density | Generous xxl (48px) spacing between all sections | xxl for key content, xl (32px) for utility/archive sections |
+| Imagery | Immersive carousels, full-width cards | Thumbnails or compact carousels |
+| Data presentation | Minimal — name, tagline, description | Metrics grids, scenario panels, expandable tables |
+| Disclosure | Everything visible (scroll to experience) | Progressive (expandable, bottom sheets, collapsed previews) |
+| Section rhythm | Visual → text → visual → text (magazine flow) | Data → data → visual break → data → reference (report flow) |
+
+**Consequences:**
+- (+) Each screen optimized for its user intent — discovery feels aspirational, portfolio feels authoritative
+- (+) Same design tokens, components, and brand identity across all screens — only the weight changes
+- (+) Clear criteria ("discovering or managing?") makes calibration decisions consistent and predictable
+- (+) Investors get financial data faster on portfolio screens without sacrificing the luxury feel on discovery screens
+- (-) Requires conscious calibration for every new screen — can't just default to one approach
+- (-) The "mixed" screens (Opportunities, Brand Investments) need the most judgment to balance

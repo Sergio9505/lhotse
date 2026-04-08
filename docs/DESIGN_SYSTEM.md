@@ -12,6 +12,7 @@ These rules apply to ALL UI built in the app. Check before every screen/widget i
 | Sharp edges everywhere | `borderRadius: 0` on all containers, cards, thumbnails, pills, badges, buttons. No rounded corners. Only exception: avatars (full circle) |
 | Brand color is black | `AppColors.primary` = `#000000`. No navy (`#1A1E2F`) |
 | Editorial + fintech premium | Generous whitespace, typographic hierarchy over labels/headers. Numbers are heroes. Minimal UI chrome |
+| Calibrate by screen type | Criterion: "Is the user discovering or managing?" Discovery (Home, Project Detail, Brands, Search) → editorial-heavy: large hero images, aspirational, visual rhythm. Portfolio (Strategy, Brand Investments, Investment Detail) → fintech-heavy: data-first, numbers as heroes, progressive disclosure. See ADR-17 for full calibration table |
 | No redundant labels | If a value is self-explanatory (€, %) don't add repeated labels per row. Use section context or a single header |
 | Business models | 3 variants: `compraDirecta`, `coinversion`, `rentaFija` (no `ciclo`) |
 
@@ -77,7 +78,8 @@ To be extracted from Figma as screens are built:
 - [x] App header — `LhotseAppHeader` in `core/widgets/lhotse_app_header.dart`. Back button + centered title + optional subtitle + Lhotse logo. 44px balanced sides
 - [x] Bottom sheet — `showLhotseBottomSheet` in `core/widgets/lhotse_bottom_sheet.dart`. Drag handle + title + scrollable list. Fixed height adapted to content (clamp 0.3–0.8), cannot expand (maxChildSize = initialSize), drag down to dismiss. Optional `listPadding` for items with own padding
 - [x] Opportunity card — `_OpportunityCard` in `investments_screen.dart`. 180×160px, beige overlay, sharp edges
-- [x] Metric block — `_MetricBlock` in `investment_detail_screen.dart`. Value (headingSmall 18px) + label (bodySmall 12px). Used in 2x2 grids
+- [x] Metric block — `LhotseMetricBlock` in `core/widgets/lhotse_metric_block.dart`. Value (headingSmall 18px) + label (bodySmall 12px). Used in 2x2 grids across all investment detail variants
+- [x] Section label — `LhotseSectionLabel` in `core/widgets/lhotse_section_label.dart`. Uppercase text (labelLarge 11px/700, letterSpacing 1.8, accentMuted). Used across all detail screens
 - [x] Construction status — `_ConstructionStatus` in `investment_detail_screen.dart`. Phase (18px) + "En plazo"/"Retrasado" badge (navy 6% / danger 10% bg)
 - [x] Document row — `_DocumentRow` in `investment_detail_screen.dart`. Type icon (scale/banknote/hardHat/receipt) + name + date + preview/download actions
 - [x] Filter tab — `_FilterTab` in `opportunities_screen.dart`. Text + animated underline + dot indicator. Multi-select support
@@ -97,7 +99,7 @@ To be extracted from Figma as screens are built:
 - [x] Strategy screen — InvestmentsScreen (collapsing black hero: title fades out, amount scales 50→28px + logo slides in; sticky "RENTABILIDAD" header; brand rows with cross layout: name+amount left, % right; initial letters in black square; opportunity section)
 - [x] Opportunities screen — OpportunitiesScreen (text-tab filters: firma/ubicación/buscar + project list)
 - [x] Brand investments screen — BrandInvestmentsScreen (collapsing beige hero: "MI PATRIMONIO CON [brand]" editorial title + amount, collapses to centered amount+subtitle; sticky section label; compraDirecta: _AssetRow with 80×60 thumbnail + name/location/amount stacked + chevron, no return/completed section, "MIS ACTIVOS" label; other models: LhotseLedgerRow with return)
-- [x] Investment detail screen — InvestmentDetailScreen (model-aware: compraDirecta 2x2+financing, coinversión grid+status, rentaFija 3x2. Documents list+bottom sheet with type filters. News carousel+bottom sheet. Black CTA button)
+- [x] Investment detail screen — InvestmentDetailScreen (model-aware). compraDirecta: 2x2 metrics+financing section. rentaFija: 3x2 metrics. coinversión: extracted to CoinversionDetailScreen (30% Zara / 70% Revolut calibration) — 32% compact hero (headingLarge 24px title + location·phase inline on image, construction badge top-right, AnimatedSwitcher logo), hero participation at displayLarge (40px/900) + 3-column secondary row at headingLarge (24px) with vertical dividers, Bloomberg scenario panel (bordered tab pills, hero ROI+TIR at displayMedium 28px, detail pair at headingSmall 18px, AnimatedSwitcher 300ms), compact timeline (6/10px square nodes, 1.5px lines, phase.title + pulse), immersive gallery (75% width × 200px cards, shadows, square play, page indicators), premium expandable tiles with collapsedPreview (AnimatedSize+FadeTransition, row dividers, bold total visible when collapsed). Archive zone (xl spacing): Documents (maxVisible 3) + News carousel
 - [x] All news screen — AllNewsScreen (firma logos/región flags/buscar text-tab filters + full-size news cards)
 - [ ] Dashboard screen (home, investments overview)
 - [ ] Form screen (profile edit, login)
