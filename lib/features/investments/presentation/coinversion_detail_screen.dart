@@ -271,21 +271,21 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen> {
             body: TabBarView(
               children: [
                 _TabScrollWrapper(
-                  child: _FinancieroTab(
-                    investment: inv,
-                    selectedScenario: _selectedScenario,
-                    onScenarioSelected: (i) =>
-                        setState(() => _selectedScenario = i),
-                  ),
-                  bottomPadding: bottomPadding,
-                ),
-                _TabScrollWrapper(
                   child: _SeguimientoTab(
                     investment: inv,
                     galleryTab: _galleryTab,
                     onGalleryTabChanged: (i) =>
                         setState(() => _galleryTab = i),
                     cardWidth: screenWidth * 0.75,
+                  ),
+                  bottomPadding: bottomPadding,
+                ),
+                _TabScrollWrapper(
+                  child: _FinancieroTab(
+                    investment: inv,
+                    selectedScenario: _selectedScenario,
+                    onScenarioSelected: (i) =>
+                        setState(() => _selectedScenario = i),
                   ),
                   bottomPadding: bottomPadding,
                 ),
@@ -318,7 +318,7 @@ class _TabScrollWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.only(bottom: bottomPadding + AppSpacing.xxl),
+      padding: EdgeInsets.only(bottom: bottomPadding + AppSpacing.lg),
       child: child,
     );
   }
@@ -343,12 +343,9 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
         children: [
           Expanded(
             child: TabBar(
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg),
-              labelPadding:
-                  const EdgeInsets.only(right: AppSpacing.lg),
+              labelPadding: EdgeInsets.zero,
               labelStyle: AppTypography.labelLarge.copyWith(
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.5,
@@ -360,15 +357,19 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
               ),
               labelColor: AppColors.textPrimary,
               unselectedLabelColor: AppColors.accentMuted,
-              indicatorColor: AppColors.textPrimary,
-              indicatorWeight: 1.5,
+              indicator: const UnderlineTabIndicator(
+                borderSide: BorderSide(
+                  width: 1.5,
+                  color: AppColors.textPrimary,
+                ),
+              ),
               indicatorSize: TabBarIndicatorSize.label,
               dividerColor: Colors.transparent,
               overlayColor:
                   WidgetStateProperty.all(Colors.transparent),
               tabs: const [
+                Tab(text: 'PROYECTO'),
                 Tab(text: 'FINANCIERO'),
-                Tab(text: 'SEGUIMIENTO'),
                 Tab(text: 'DOCUMENTOS'),
               ],
             ),
@@ -411,7 +412,7 @@ class _FinancieroTab extends StatelessWidget {
             inv.profitScenarios!.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
           const LhotseSectionLabel(
-              label: 'ESCENARIOS DE RENTABILIDAD'),
+              label: 'ESCENARIOS'),
           const SizedBox(height: AppSpacing.md),
           _ScenarioPanel(
             scenarios: inv.profitScenarios!,
@@ -475,7 +476,7 @@ class _SeguimientoTab extends StatelessWidget {
         ],
         if (inv.floorPlanUrl != null) ...[
           const SizedBox(height: AppSpacing.xxl),
-          const LhotseSectionLabel(label: 'PLANO'),
+          const LhotseSectionLabel(label: 'PLANO DEL INMUEBLE'),
           const SizedBox(height: AppSpacing.md),
           Padding(
             padding:
@@ -484,33 +485,24 @@ class _SeguimientoTab extends StatelessWidget {
               onTap: () => _showFloorPlan(context, inv.floorPlanUrl!),
               child: Container(
                 width: double.infinity,
-                height: 200,
-                decoration: const BoxDecoration(
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x1A000000),
-                      blurRadius: 20,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
-                ),
+                padding: const EdgeInsets.symmetric(
+                    vertical: AppSpacing.lg),
+                color: AppColors.background,
                 child: Stack(
-                  fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      inv.floorPlanUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          Container(color: AppColors.surface),
+                    Center(
+                      child: Image.asset(
+                        'assets/images/mock_floor_plan.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     Positioned(
-                      right: AppSpacing.sm,
-                      bottom: AppSpacing.sm,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        color: Colors.black.withValues(alpha: 0.5),
-                        child: const Icon(LucideIcons.maximize2,
-                            color: Colors.white, size: 16),
+                      right: 0,
+                      bottom: 0,
+                      child: Icon(
+                        LucideIcons.maximize2,
+                        color: AppColors.accentMuted,
+                        size: 16,
                       ),
                     ),
                   ],
@@ -569,38 +561,73 @@ class _SeguimientoTab extends StatelessWidget {
 }
 
 void _showFloorPlan(BuildContext context, String url) {
-  showDialog(
-    context: context,
-    builder: (context) => GestureDetector(
-      onTap: () => Navigator.of(context).pop(),
-      child: Scaffold(
-        backgroundColor: Colors.black.withValues(alpha: 0.9),
-        body: Stack(
-          children: [
-            Center(
-              child: InteractiveViewer(
-                child: Image.network(url,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) =>
-                        const SizedBox.shrink()),
-              ),
-            ),
-            Positioned(
-              top: MediaQuery.of(context).padding.top + AppSpacing.md,
-              right: AppSpacing.lg,
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  color: Colors.white.withValues(alpha: 0.15),
-                  child: const Icon(LucideIcons.x,
-                      color: Colors.white, size: 20),
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      opaque: false,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final topPadding = MediaQuery.of(context).padding.top;
+        final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) => Opacity(
+            opacity: animation.value,
+            child: child,
+          ),
+          child: Scaffold(
+            extendBodyBehindAppBar: true,
+            extendBody: true,
+            backgroundColor: AppColors.background,
+            body: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: SizedBox.expand(
+                child: Stack(
+                  children: [
+                    // Image fills everything edge-to-edge
+                    Positioned.fill(
+                      child: InteractiveViewer(
+                        maxScale: 4.0,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            topPadding + kToolbarHeight,
+                            AppSpacing.lg,
+                            bottomPadding + AppSpacing.lg,
+                          ),
+                          child: Image.asset(
+                            'assets/images/mock_floor_plan.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Close button — respects safe area
+                    Positioned(
+                      top: topPadding + AppSpacing.md,
+                      right: AppSpacing.lg,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          alignment: Alignment.center,
+                          color: AppColors.textPrimary
+                              .withValues(alpha: 0.08),
+                          child: Icon(
+                            LucideIcons.x,
+                            color: AppColors.textPrimary,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     ),
   );
 }
@@ -722,18 +749,18 @@ class _ScenarioData extends StatelessWidget {
         _ScenarioRow(
           left: _ScenarioMetric(
             value: '${scenario.roiProject.toStringAsFixed(2)}%',
-            label: 'ROI Proyecto',
+            label: 'ROI proyecto',
           ),
           right: _ScenarioMetric(
             value: '${scenario.roiInvestor.toStringAsFixed(2)}%',
-            label: 'ROI Inversor',
+            label: 'ROI inversor',
           ),
         ),
         _scenarioDivider(),
         _ScenarioRow(
           left: _ScenarioMetric(
             value: '${scenario.tirAnnualized.toStringAsFixed(2)}%',
-            label: 'TIR Anualizada',
+            label: 'TIR anualizada',
           ),
           right: _ScenarioMetric(
             value: '${scenario.durationMonths} meses',
@@ -756,10 +783,10 @@ class _ScenarioData extends StatelessWidget {
   }
 
   Widget _scenarioDivider() => Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Container(
           height: 0.5,
-          color: AppColors.textPrimary.withValues(alpha: 0.06),
+          color: AppColors.textPrimary.withValues(alpha: 0.10),
         ),
       );
 }

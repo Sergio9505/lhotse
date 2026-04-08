@@ -122,7 +122,7 @@ final mockInvestments = [
     ],
     videoThumbnailUrl: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=600&q=80',
     videoUrl: 'https://example.com/video',
-    floorPlanUrl: 'https://images.unsplash.com/photo-1574362848149-11496d93a7c7?w=600&q=80',
+    floorPlanUrl: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800&q=80',
     assetInfo: const AssetInfo(entries: [
       AssetInfoEntry(label: 'Dirección', value: 'Ayala 94, Madrid'),
       AssetInfoEntry(label: 'Superficie', value: '308 m²'),
