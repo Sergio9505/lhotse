@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -8,6 +7,7 @@ import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
+import '../../../core/widgets/lhotse_shell_header.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -58,7 +58,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
     final hasQuery = _query.isNotEmpty;
 
     return Scaffold(
@@ -67,28 +66,12 @@ class _SearchScreenState extends State<SearchScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg, topPadding + AppSpacing.md, AppSpacing.lg, AppSpacing.md),
-            child: Row(
-              children: [
-                Text(
-                  'BUSCAR',
-                  style: AppTypography.headingLarge.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const Spacer(),
-                SvgPicture.asset(
-                  'assets/images/lhotse_logo.svg',
-                  width: 20,
-                  height: 18,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.primary,
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ],
+          LhotseShellHeader(
+            child: Text(
+              'BUSCAR',
+              style: AppTypography.headingLarge.copyWith(
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
 

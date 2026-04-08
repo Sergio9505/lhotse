@@ -8,6 +8,7 @@ import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/project_data.dart';
+import '../../../core/widgets/lhotse_notification_bell.dart';
 import '../../../core/theme/app_theme.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
@@ -186,37 +187,50 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Title + logo — fades out first half, slides up
+          // Title — fades out first half, slides up
           Positioned(
             top: topPadding + AppSpacing.md - (shrinkOffset * 0.3),
             left: AppSpacing.lg,
-            right: AppSpacing.lg,
+            right: AppSpacing.lg + 44, // leave room for bell
             child: Opacity(
               opacity: ((expandRatio - 0.5) / 0.5).clamp(0.0, 1.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Text(
+                'MI ESTRATEGIA PATRIMONIAL',
+                style: AppTypography.headingLarge.copyWith(
+                  color: AppColors.textOnDark,
+                ),
+              ),
+            ),
+          ),
+
+          // Amount — anchored to bottom, always visible
+          Positioned(
+            bottom: AppSpacing.md,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg + 44, // leave room for bell
+            child: RichText(
+              text: TextSpan(
                 children: [
-                  Expanded(
-                    child: Text(
-                      'MI ESTRATEGIA PATRIMONIAL',
-                      style: AppTypography.headingLarge.copyWith(
-                        color: AppColors.textOnDark,
-                      ),
+                  TextSpan(
+                    text: totalFormatted,
+                    style: TextStyle(
+                      fontFamily: 'Campton',
+                      fontSize: amountSize,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textOnDark,
+                      letterSpacing: -1.2,
+                      height: 1.0,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  SizedBox(
-                    height: 24 * 1.2,
-                    child: Center(
-                      child: SvgPicture.asset(
-                        'assets/images/lhotse_logo.svg',
-                        width: 20,
-                        height: 18,
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.textOnDark,
-                          BlendMode.srcIn,
-                        ),
-                      ),
+                  TextSpan(
+                    text: '€',
+                    style: TextStyle(
+                      fontFamily: 'Campton',
+                      fontSize: euroSize,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textOnDark,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
@@ -224,63 +238,12 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // Amount + logo — anchored to bottom, always visible
+          // Bell — fixed top-right, independent of collapse
           Positioned(
-            bottom: AppSpacing.md,
-            left: AppSpacing.lg,
+            top: topPadding + 16,
             right: AppSpacing.lg,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: totalFormatted,
-                          style: TextStyle(
-                            fontFamily: 'Campton',
-                            fontSize: amountSize,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textOnDark,
-                            letterSpacing: -1.2,
-                            height: 1.0,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                        TextSpan(
-                          text: '€',
-                          style: TextStyle(
-                            fontFamily: 'Campton',
-                            fontSize: euroSize,
-                            fontWeight: FontWeight.w400,
-                            color: AppColors.textOnDark,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Logo slides in second half
-                Opacity(
-                  opacity: ((0.5 - expandRatio) / 0.5).clamp(0.0, 1.0),
-                  child: SizedBox(
-                    height: amountSize,
-                    child: Center(
-                      child: SvgPicture.asset(
-                        'assets/images/lhotse_logo.svg',
-                        width: 20,
-                        height: 18,
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.textOnDark,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            child: const LhotseNotificationBell(
+              color: AppColors.textOnDark,
             ),
           ),
         ],
@@ -583,3 +546,4 @@ class _OpportunityCard extends StatelessWidget {
     );
   }
 }
+

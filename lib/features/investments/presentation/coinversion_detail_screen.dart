@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -109,20 +108,7 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen> {
                 leading: _heroGone
                     ? const LhotseBackButton.onSurface()
                     : const LhotseBackButton.onImage(),
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.lg),
-                    child: SvgPicture.asset(
-                      'assets/images/lhotse_logo.svg',
-                      width: 20,
-                      height: 18,
-                      colorFilter: ColorFilter.mode(
-                        _heroGone ? AppColors.primary : Colors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                ],
+                actions: const [SizedBox(width: 44)],
                 centerTitle: true,
                 title: AnimatedOpacity(
                   opacity: _showCollapsedTitle ? 1.0 : 0.0,

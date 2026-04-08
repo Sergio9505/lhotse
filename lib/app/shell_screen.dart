@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../core/data/mock/mock_notifications.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/lhotse_notification_badge.dart';
 
 // Navbar labels — uppercase, consistent with app typography
 const _kLabelInicio = 'INICIO';
@@ -81,12 +83,16 @@ class _LhotseNavBar extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      _items[i].icon,
-                      size: 22,
-                      color: selected
-                          ? AppColors.textOnDark
-                          : AppColors.textSecondary,
+                    LhotseNotificationBadge(
+                      show: i == 3 && // ESTRATEGIA tab
+                          mockNotifications.any((n) => !n.isRead),
+                      child: Icon(
+                        _items[i].icon,
+                        size: 22,
+                        color: selected
+                            ? AppColors.textOnDark
+                            : AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(

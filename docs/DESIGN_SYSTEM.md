@@ -9,7 +9,7 @@ These rules apply to ALL UI built in the app. Check before every screen/widget i
 
 | Rule | Detail |
 |------|--------|
-| Sharp edges everywhere | `borderRadius: 0` on all containers, cards, thumbnails, pills, badges, buttons. No rounded corners. Only exception: avatars (full circle) |
+| Sharp edges everywhere | `borderRadius: 0` on all containers, cards, thumbnails, pills, buttons. No rounded corners. Exceptions: avatars (full circle), notification badges (pill/circle — universal UI standard) |
 | Brand color is black | `AppColors.primary` = `#000000`. No navy (`#1A1E2F`) |
 | Editorial + fintech premium | Generous whitespace, typographic hierarchy over labels/headers. Numbers are heroes. Minimal UI chrome |
 | Calibrate by screen type | Criterion: "Is the user discovering or managing?" Discovery (Home, Project Detail, Brands, Search) → editorial-heavy: large hero images, aspirational, visual rhythm. Portfolio (Strategy, Brand Investments, Investment Detail) → fintech-heavy: data-first, numbers as heroes, progressive disclosure. See ADR-17 for full calibration table |
@@ -88,6 +88,10 @@ To be extracted from Figma as screens are built:
 - [x] Collection card — `_CollectionCard` in `search/presentation/search_screen.dart`. Image + bottom gradient + brand name, same visual language as brand cards
 - [x] Search result item — `_ProjectResultItem` in `search/presentation/search_screen.dart`. 64px thumbnail + name/brand/location metadata + arrow icon
 - [x] Empty results — `_EmptyResults` in `search/presentation/search_screen.dart`. Heading + subtitle, no illustration
+- [x] Shell header — `LhotseShellHeader` in `core/widgets/lhotse_shell_header.dart`. Row with child (title) + notification bell. Safe area aware. Used in Home, Brands, Search
+- [x] Notification bell — `LhotseNotificationBell` in `core/widgets/lhotse_notification_bell.dart`. Bell icon + badge (count or dot). Accepts `color` param. Used in LhotseShellHeader (dark) and Strategy hero (white)
+- [x] Notification badge — `LhotseNotificationBadge` in `core/widgets/lhotse_notification_badge.dart`. Red dot (6px circle) or pill counter. Exception to sharp-edges rule
+- [x] Notifications sheet — `showNotificationsSheet()` in `features/notifications/presentation/notifications_sheet.dart`. Bottom sheet with date-grouped notifications (HOY/ESTA SEMANA/ANTERIORES), type icons, read/unread state
 - [ ] Empty state
 - [ ] Skeleton/shimmer loading
 - [ ] Modal VIP

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -318,15 +317,7 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
               children: [
                 LhotseBackButton.onSurface(onTap: onBack),
                 const Spacer(),
-                SvgPicture.asset(
-                  'assets/images/lhotse_logo.svg',
-                  width: 20,
-                  height: 18,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.primary,
-                    BlendMode.srcIn,
-                  ),
-                ),
+                const SizedBox(width: 44),
               ],
             ),
           ),

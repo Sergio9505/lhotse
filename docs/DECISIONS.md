@@ -344,3 +344,29 @@ When content is shorter than the full collapse range (e.g. renta fija with 3 ope
 - (+) Investors get financial data faster on portfolio screens without sacrificing the luxury feel on discovery screens
 - (-) Requires conscious calibration for every new screen — can't just default to one approach
 - (-) The "mixed" screens (Opportunities, Brand Investments) need the most judgment to balance
+
+---
+
+## ADR-18: Notification System — Bell + Center + Contextual Badges
+
+**Date:** 2026-04-08
+**Status:** Accepted
+
+**Context:** Investors had no way to know about updates (new documents, news, phase changes) without navigating to the correct tab and scrolling. For a premium investment app, passive discovery is unacceptable.
+
+**Decision:** Three-layer notification system:
+1. **Bell icon** in shell-level headers (Home, Brands, Search via `LhotseShellHeader`; Strategy via `Positioned` in hero delegate). Shows unread count badge. Tap opens notification center. Replaces the Lhotse logo that was in that position.
+2. **Notification center** as bottom sheet (`showNotificationsSheet`). Date-grouped list (HOY/ESTA SEMANA/ANTERIORES) with type icons (document, news, phase, financial, delay), read/unread state, and navigation to the relevant investment detail + tab.
+3. **Contextual badges** (red dots) on nav bar ESTRATEGIA tab, and planned for brand rows, investment rows, and detail tabs.
+
+Architecture: `LhotseNotificationBell` (single widget, accepts `color`) used by both `LhotseShellHeader` (Row layout) and Strategy (Positioned layout). `LhotseNotificationBadge` handles both dot (6px) and counter (pill) variants. Badge is circular — exception to sharp-edges rule (universal UI standard).
+
+Push notifications: deferred to Supabase connection. The in-app system is mock-first, ready to swap to realtime.
+
+**Consequences:**
+- (+) Investor always knows about updates without navigating
+- (+) Bell replaces redundant logo — more functional use of space
+- (+) Single `LhotseNotificationBell` widget works in both Row and Positioned layouts
+- (+) Mock-first: ready for Supabase realtime swap
+- (-) No push notifications until backend is connected
+- (-) Bell position in Strategy required Positioned (not Row) due to custom hero delegate

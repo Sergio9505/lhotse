@@ -4,41 +4,24 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lhotse_shell_header.dart';
 
 class BrandsScreen extends StatelessWidget {
   const BrandsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
           // Header
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg + 2, topPadding + 16, AppSpacing.lg, 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'FIRMAS',
-                  style: AppTypography.headingLarge.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SvgPicture.asset(
-                  'assets/images/lhotse_logo.svg',
-                  width: 20,
-                  height: 18,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.primary,
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ],
+          LhotseShellHeader(
+            child: Text(
+              'FIRMAS',
+              style: AppTypography.headingLarge.copyWith(
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
 

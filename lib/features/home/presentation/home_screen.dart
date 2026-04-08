@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/data/mock/mock_news.dart';
 import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lhotse_shell_header.dart';
 import 'widgets/news_section.dart';
 import 'widgets/project_carousel.dart';
 
@@ -85,46 +85,29 @@ class HomeScreen extends StatelessWidget {
 class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24, topPadding + 16, 24, 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          GestureDetector(
-            onTap: () => context.push('/projects'),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'PROYECTOS',
-                  style: AppTypography.headingLarge.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Icon(
-                    LucideIcons.arrowUpRight,
-                    size: 18,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
+    return LhotseShellHeader(
+      child: GestureDetector(
+        onTap: () => context.push('/projects'),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'PROYECTOS',
+              style: AppTypography.headingLarge.copyWith(
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-          SvgPicture.asset(
-            'assets/images/lhotse_logo.svg',
-            width: 20,
-            height: 18,
-            colorFilter: const ColorFilter.mode(
-              AppColors.primary,
-              BlendMode.srcIn,
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(
+                LucideIcons.arrowUpRight,
+                size: 18,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
