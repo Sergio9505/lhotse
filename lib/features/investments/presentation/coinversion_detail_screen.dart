@@ -332,7 +332,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
         children: [
           Expanded(
             child: TabBar(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               labelPadding: EdgeInsets.zero,
               tabAlignment: TabAlignment.fill,
               isScrollable: false,
@@ -359,8 +359,8 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
                   WidgetStateProperty.all(Colors.transparent),
               tabs: const [
                 Tab(text: 'AVANCE'),
-                Tab(text: 'PROYECTO'),
-                Tab(text: 'FINANCIERO'),
+                Tab(text: 'ACTIVO'),
+                Tab(text: 'FINANZAS'),
                 Tab(text: 'DOCS'),
               ],
             ),
@@ -399,26 +399,72 @@ class _FinancieroTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // --- Análisis económico (open, before scenarios) ---
+        if (inv.economicAnalysis != null &&
+            inv.economicAnalysis!.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xl),
+          const LhotseSectionLabel(label: 'ANÁLISIS ECONÓMICO'),
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Column(
+              children: inv.economicAnalysis!.indexed.map((entry) {
+                final i = entry.$1;
+                final e = entry.$2;
+                final isLast = i == inv.economicAnalysis!.length - 1;
+                return Column(
+                  children: [
+                    if (i > 0)
+                      Container(
+                        height: isLast ? 1 : 0.5,
+                        color: AppColors.textPrimary
+                            .withValues(alpha: isLast ? 0.2 : 0.08),
+                      ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                          vertical: isLast ? 14.0 : 10.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              e.label,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.accentMuted,
+                                fontWeight: isLast
+                                    ? FontWeight.w700
+                                    : FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            e.value,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: isLast
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+        // --- Escenarios ---
         if (inv.profitScenarios != null &&
             inv.profitScenarios!.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.xl),
-          const LhotseSectionLabel(
-              label: 'ESCENARIOS'),
+          const SizedBox(height: AppSpacing.xxl),
+          const LhotseSectionLabel(label: 'ESCENARIOS'),
           const SizedBox(height: AppSpacing.md),
           _ScenarioPanel(
             scenarios: inv.profitScenarios!,
             selectedIndex: selectedScenario,
             onSelected: onScenarioSelected,
-          ),
-        ],
-        if (inv.economicAnalysis != null &&
-            inv.economicAnalysis!.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.sm),
-          _PremiumExpandableTile(
-            label: 'ANÁLISIS ECONÓMICO',
-            entries: inv.economicAnalysis!,
-            highlightLast: true,
-            collapsedPreview: inv.economicAnalysis!.last.value,
           ),
         ],
       ],
@@ -490,13 +536,10 @@ class _AvanceTab extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 GestureDetector(
                   onTap: () => _showAllNews(context),
-                  child: const Padding(
-                    padding: EdgeInsets.only(top: 2),
-                    child: Icon(
-                      LucideIcons.arrowUpRight,
-                      size: 18,
-                      color: AppColors.textPrimary,
-                    ),
+                  child: const Icon(
+                    LucideIcons.arrowUpRight,
+                    size: 14,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -550,9 +593,54 @@ class _ProyectoTab extends StatelessWidget {
       children: [
         if (inv.assetInfo != null) ...[
           const SizedBox(height: AppSpacing.xl),
-          _PremiumExpandableTile(
-            label: 'INFORMACIÓN DEL ACTIVO',
-            entries: inv.assetInfo!.entries,
+          const LhotseSectionLabel(label: 'INFORMACIÓN'),
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Column(
+              children: inv.assetInfo!.entries.indexed.map((entry) {
+                final i = entry.$1;
+                final e = entry.$2;
+                final isLast = i == inv.assetInfo!.entries.length - 1;
+                return Column(
+                  children: [
+                    if (i > 0)
+                      Container(
+                        height: 0.5,
+                        color: AppColors.textPrimary.withValues(alpha: 0.08),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              e.label,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.accentMuted,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            e.value,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isLast)
+                      Container(
+                        height: 0.5,
+                        color: AppColors.textPrimary.withValues(alpha: 0.08),
+                      ),
+                  ],
+                );
+              }).toList(),
+            ),
           ),
         ],
         if (inv.floorPlanUrl != null) ...[
@@ -650,13 +738,10 @@ class _GallerySectionHeader extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             GestureDetector(
               onTap: () => _showAllGallery(context, title, images),
-              child: const Padding(
-                padding: EdgeInsets.only(top: 2),
-                child: Icon(
-                  LucideIcons.arrowUpRight,
-                  size: 14,
-                  color: AppColors.textPrimary,
-                ),
+              child: const Icon(
+                LucideIcons.arrowUpRight,
+                size: 14,
+                color: AppColors.textPrimary,
               ),
             ),
           ],
@@ -1005,7 +1090,11 @@ class _ScenarioRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: [Expanded(child: left), Expanded(child: right)],
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: AppSpacing.lg),
+        Expanded(child: right),
+      ],
     );
   }
 }
@@ -1396,13 +1485,9 @@ class _PremiumExpandableTile extends StatefulWidget {
   const _PremiumExpandableTile({
     required this.label,
     required this.entries,
-    this.highlightLast = false,
-    this.collapsedPreview,
   });
   final String label;
   final List<AssetInfoEntry> entries;
-  final bool highlightLast;
-  final String? collapsedPreview;
 
   @override
   State<_PremiumExpandableTile> createState() =>
@@ -1460,16 +1545,6 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                         letterSpacing: 1.8,
                       )),
                   const Spacer(),
-                  if (widget.collapsedPreview != null && !_expanded)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          right: AppSpacing.sm),
-                      child: Text(widget.collapsedPreview!,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          )),
-                    ),
                   AnimatedRotation(
                     turns: _expanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 300),
@@ -1493,17 +1568,8 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                           widget.entries.indexed.map((entry) {
                         final i = entry.$1;
                         final e = entry.$2;
-                        final isLast =
-                            i == widget.entries.length - 1;
-                        final isBold =
-                            isLast && widget.highlightLast;
                         return Column(children: [
-                          if (isBold)
-                            Container(
-                                height: 1,
-                                color: AppColors.textPrimary
-                                    .withValues(alpha: 0.2))
-                          else if (i > 0)
+                          if (i > 0)
                             Container(
                                 height: 0.5,
                                 color: AppColors.textPrimary
@@ -1511,7 +1577,7 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                           Padding(
                             padding: EdgeInsets.symmetric(
                                 vertical:
-                                    isBold ? 14.0 : 10.0),
+                                    10.0),
                             child: Row(
                               mainAxisAlignment:
                                   MainAxisAlignment
@@ -1524,11 +1590,7 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                                             .copyWith(
                                           color: AppColors
                                               .accentMuted,
-                                          fontWeight: isBold
-                                              ? FontWeight
-                                                  .w700
-                                              : FontWeight
-                                                  .w400,
+                                          fontWeight: FontWeight.w400,
                                         ))),
                                 Text(e.value,
                                     style: AppTypography
@@ -1536,9 +1598,7 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                                         .copyWith(
                                       color: AppColors
                                           .textPrimary,
-                                      fontWeight: isBold
-                                          ? FontWeight.w700
-                                          : FontWeight.w600,
+                                      fontWeight: FontWeight.w600,
                                     )),
                               ],
                             ),
