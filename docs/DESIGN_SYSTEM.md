@@ -9,7 +9,7 @@ These rules apply to ALL UI built in the app. Check before every screen/widget i
 
 | Rule | Detail |
 |------|--------|
-| Sharp edges everywhere | `borderRadius: 0` on all containers, cards, thumbnails, pills, buttons. No rounded corners. Exceptions: avatars (full circle), notification badges (pill/circle — universal UI standard) |
+| Sharp edges everywhere | `borderRadius: 0` on all containers, cards, thumbnails, pills, buttons. No rounded corners. Exceptions: avatars (full circle), notification badges (pill/circle), navigation buttons (back button — circular frosted glass on images) |
 | Brand color is black | `AppColors.primary` = `#000000`. No navy (`#1A1E2F`) |
 | Editorial + fintech premium | Generous whitespace, typographic hierarchy over labels/headers. Numbers are heroes. Minimal UI chrome |
 | Calibrate by screen type | Criterion: "Is the user discovering or managing?" Discovery (Home, Project Detail, Brands, Search) → editorial-heavy: large hero images, aspirational, visual rhythm. Portfolio (Strategy, Brand Investments, Investment Detail) → fintech-heavy: data-first, numbers as heroes, progressive disclosure. See ADR-17 for full calibration table |
