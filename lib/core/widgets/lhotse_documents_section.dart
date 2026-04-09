@@ -19,7 +19,7 @@ class LhotseDocument {
   final DocCategory category;
 }
 
-IconData _docCategoryIcon(DocCategory cat) => switch (cat) {
+IconData docCategoryIcon(DocCategory cat) => switch (cat) {
       DocCategory.legal => LucideIcons.scale,
       DocCategory.financiero => LucideIcons.banknote,
       DocCategory.obra => LucideIcons.hardHat,
@@ -52,11 +52,24 @@ class LhotseDocumentsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...visibleDocs.map((doc) => _DocumentRow(
-                name: doc.name,
-                date: doc.date,
-                icon: _docCategoryIcon(doc.category),
-              )),
+          ...visibleDocs.indexed.map((entry) {
+            final i = entry.$1;
+            final doc = entry.$2;
+            return Column(
+              children: [
+                if (i > 0)
+                  Container(
+                    height: 0.5,
+                    color: AppColors.textPrimary.withValues(alpha: 0.08),
+                  ),
+                _DocumentRow(
+                  name: doc.name,
+                  date: doc.date,
+                  icon: docCategoryIcon(doc.category),
+                ),
+              ],
+            );
+          }),
           if (documents.length > maxVisible) ...[
             const SizedBox(height: AppSpacing.sm),
             GestureDetector(
@@ -95,7 +108,7 @@ class LhotseDocumentsSection extends StatelessWidget {
 // Document row
 // ---------------------------------------------------------------------------
 
-class _DocumentRow extends StatelessWidget {
+class _DocumentRow extends StatefulWidget {
   const _DocumentRow({
     required this.name,
     required this.date,
@@ -107,50 +120,64 @@ class _DocumentRow extends StatelessWidget {
   final IconData icon;
 
   @override
+  State<_DocumentRow> createState() => _DocumentRowState();
+}
+
+class _DocumentRowState extends State<_DocumentRow> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: AppColors.textPrimary),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: () {
+        // TODO: preview document
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+          children: [
+            Icon(widget.icon, size: 18, color: AppColors.textPrimary),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.name,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-                Text(
-                  date,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.accentMuted,
-                    letterSpacing: 0.8,
+                  Text(
+                    widget.date,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.accentMuted,
+                      letterSpacing: 0.8,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          GestureDetector(
-            onTap: () {},
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child:
-                  Icon(LucideIcons.eye, size: 16, color: AppColors.accentMuted),
+            GestureDetector(
+              onTap: () {
+                // TODO: download document
+              },
+              child: const Padding(
+                padding: EdgeInsets.all(8),
+                child: Icon(LucideIcons.download,
+                    size: 16, color: AppColors.accentMuted),
+              ),
             ),
-          ),
-          GestureDetector(
-            onTap: () {},
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(LucideIcons.download,
-                  size: 16, color: AppColors.accentMuted),
-            ),
-          ),
-        ],
+          ],
+        ),
+      ),
       ),
     );
   }
@@ -319,7 +346,7 @@ class _DocsBottomSheetState extends State<_DocsBottomSheet> {
               itemBuilder: (context, i) => _DocumentRow(
                 name: docs[i].name,
                 date: docs[i].date,
-                icon: _docCategoryIcon(docs[i].category),
+                icon: docCategoryIcon(docs[i].category),
               ),
             ),
           ),

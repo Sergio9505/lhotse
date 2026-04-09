@@ -42,20 +42,57 @@ class CoinversionDetailScreen extends StatefulWidget {
       _CoinversionDetailScreenState();
 }
 
-class _CoinversionDetailScreenState extends State<CoinversionDetailScreen> {
+class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
+    with SingleTickerProviderStateMixin {
   final _outerController = ScrollController();
+  late final TabController _tabController;
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
   int _selectedScenario = 1; // P50
+  int _tabIndex = 0;
+
+  // Doc filter state (lives here so the pinned header can access it)
+  static const _docFilterLabels = {
+    DocCategory.legal: 'Escrituras',
+    DocCategory.financiero: 'Facturas',
+    DocCategory.obra: 'Licencias',
+    DocCategory.fiscal: 'Certificados',
+  };
+  final Set<DocCategory> _activeDocFilters = {};
+
+  List<LhotseDocument> get _filteredDocs {
+    if (_activeDocFilters.isEmpty) return _investmentDocs;
+    return _investmentDocs
+        .where((d) => _activeDocFilters.contains(d.category))
+        .toList();
+  }
+
+  void _toggleDocFilter(DocCategory cat) {
+    setState(() {
+      if (_activeDocFilters.contains(cat)) {
+        _activeDocFilters.remove(cat);
+      } else {
+        _activeDocFilters.add(cat);
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _outerController.addListener(_onOuterScroll);
+    _tabController = TabController(length: 4, vsync: this)
+      ..addListener(() {
+        if (_tabController.index != _tabIndex) {
+          setState(() => _tabIndex = _tabController.index);
+        }
+      });
   }
 
   @override
   void dispose() {
     _outerController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -87,9 +124,7 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: DefaultTabController(
-        length: 4,
-        child: Scaffold(
+      child: Scaffold(
           backgroundColor: AppColors.background,
           body: NestedScrollView(
             controller: _outerController,
@@ -246,7 +281,7 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen> {
               // =========================================================
               SliverPersistentHeader(
                 pinned: true,
-                delegate: _TabBarDelegate(),
+                delegate: _TabBarDelegate(controller: _tabController),
               ),
             ],
 
@@ -254,6 +289,7 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen> {
             // TAB CONTENT — each tab scrolls independently
             // ===========================================================
             body: TabBarView(
+              controller: _tabController,
               children: [
                 _TabScrollWrapper(
                   child: _AvanceTab(
@@ -279,17 +315,86 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen> {
                   bottomPadding: bottomPadding,
                 ),
                 _TabScrollWrapper(
-                  child: _DocumentosTab(investment: inv),
+                  child: _DocumentosTab(
+                    documents: _filteredDocs,
+                    chips: _buildDocChips(),
+                  ),
                   bottomPadding: bottomPadding,
                 ),
               ],
             ),
           ),
         ),
+    );
+  }
+
+  Widget _buildDocChips() {
+    return Container(
+      color: AppColors.background,
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            ..._docFilterLabels.entries.map((entry) {
+              final active = _activeDocFilters.contains(entry.key);
+              return Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.sm),
+                child: GestureDetector(
+                  onTap: () => _toggleDocFilter(entry.key),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: active
+                          ? AppColors.primary
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: active
+                            ? AppColors.primary
+                            : AppColors.textPrimary
+                                .withValues(alpha: 0.1),
+                      ),
+                    ),
+                    child: Text(
+                      entry.value.toUpperCase(),
+                      style: AppTypography.caption.copyWith(
+                        color: active
+                            ? AppColors.textOnDark
+                            : AppColors.accentMuted,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+            if (_activeDocFilters.isNotEmpty)
+              GestureDetector(
+                onTap: () => setState(() => _activeDocFilters.clear()),
+                behavior: HitTestBehavior.opaque,
+                child: const Padding(
+                  padding: EdgeInsets.all(6),
+                  child: Icon(
+                    LucideIcons.x,
+                    size: 14,
+                    color: AppColors.accentMuted,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
+
 
 // ===========================================================================
 // Tab scroll wrapper — handles NestedScrollView overlap
@@ -318,6 +423,9 @@ class _TabScrollWrapper extends StatelessWidget {
 // ===========================================================================
 
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  const _TabBarDelegate({required this.controller});
+  final TabController controller;
+
   @override
   double get minExtent => _kTabBarHeight;
   @override
@@ -332,6 +440,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
         children: [
           Expanded(
             child: TabBar(
+              controller: controller,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               labelPadding: EdgeInsets.zero,
               tabAlignment: TabAlignment.fill,
@@ -375,8 +484,10 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) => false;
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) =>
+      controller != oldDelegate.controller;
 }
+
 
 // ===========================================================================
 // TAB: FINANCIERO
@@ -928,26 +1039,117 @@ void _showFloorPlan(BuildContext context, String url) {
 // ===========================================================================
 
 class _DocumentosTab extends StatelessWidget {
-  const _DocumentosTab({required this.investment});
-  final InvestmentData investment;
+  const _DocumentosTab({required this.documents, required this.chips});
+  final List<LhotseDocument> documents;
+  final Widget chips;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: AppSpacing.xl),
-        LhotseDocumentsSection(
-          documents: _investmentDocs,
-          maxVisible: _investmentDocs.length,
-          filterLabels: const {
-            DocCategory.legal: 'Legal',
-            DocCategory.financiero: 'Financiero',
-            DocCategory.obra: 'Obra',
-            DocCategory.fiscal: 'Fiscal',
-          },
+        const SizedBox(height: AppSpacing.md),
+        chips,
+        const SizedBox(height: AppSpacing.sm),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Column(
+            children: documents.indexed.map((entry) {
+              final i = entry.$1;
+              final doc = entry.$2;
+              return Column(
+                children: [
+                  if (i > 0)
+                    Container(
+                      height: 0.5,
+                      color: AppColors.textPrimary.withValues(alpha: 0.08),
+                    ),
+                  _DocRow(
+                    name: doc.name,
+                    date: doc.date,
+                    icon: docCategoryIcon(doc.category),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _DocRow extends StatefulWidget {
+  const _DocRow({
+    required this.name,
+    required this.date,
+    required this.icon,
+  });
+
+  final String name;
+  final String date;
+  final IconData icon;
+
+  @override
+  State<_DocRow> createState() => _DocRowState();
+}
+
+class _DocRowState extends State<_DocRow> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: () {
+        // TODO: preview document
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              Icon(widget.icon, size: 18, color: AppColors.textPrimary),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.name,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      widget.date,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // TODO: download document
+                },
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(LucideIcons.download,
+                      size: 16, color: AppColors.accentMuted),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
