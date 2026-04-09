@@ -1058,78 +1058,68 @@ class _InvestmentTimeline extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         children: [
-          Row(
-            children: phases.indexed.map((entry) {
-              final i = entry.$1;
-              final isCurrent = i == currentIndex;
-              final isPast = i < currentIndex;
-              final isFuture = i > currentIndex;
-              return Expanded(
-                child: Row(
-                  children: [
-                    if (i > 0)
-                      Expanded(
-                        child: Container(
-                          height: 1.5,
-                          color: isPast || isCurrent
-                              ? AppColors.primary
-                              : AppColors.textPrimary
-                                  .withValues(alpha: 0.10),
-                        ),
+          // --- Track: single row, perfectly aligned ---
+          SizedBox(
+            height: 20,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                for (int i = 0; i < phases.length; i++) ...[
+                  if (i > 0)
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: i <= currentIndex
+                            ? AppColors.primary
+                            : AppColors.textPrimary
+                                .withValues(alpha: 0.08),
                       ),
-                    isCurrent
-                        ? _PulsingNode(size: 10)
-                        : Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: isFuture
-                                  ? Colors.transparent
-                                  : AppColors.primary,
-                              border: isFuture
-                                  ? Border.all(
-                                      color: AppColors.textPrimary
-                                          .withValues(alpha: 0.3),
-                                      width: 1.5)
-                                  : null,
-                            ),
-                          ),
-                    if (i < phases.length - 1)
-                      Expanded(
-                        child: Container(
-                          height: 1.5,
-                          color: isPast
-                              ? AppColors.primary
-                              : AppColors.textPrimary
-                                  .withValues(alpha: 0.10),
-                        ),
+                    ),
+                  if (i == currentIndex)
+                    _PulsingNode(size: 10)
+                  else
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: i < currentIndex
+                            ? AppColors.primary
+                            : Colors.transparent,
+                        border: i > currentIndex
+                            ? Border.all(
+                                color: AppColors.textPrimary
+                                    .withValues(alpha: 0.15),
+                                width: 1.5)
+                            : null,
                       ),
-                  ],
-                ),
-              );
-            }).toList(),
+                    ),
+                ],
+              ],
+            ),
           ),
+          // --- Labels ---
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: phases.indexed.map((entry) {
               final i = entry.$1;
               final phase = entry.$2;
               final isCurrent = i == currentIndex;
+              final isPast = i < currentIndex;
               final month =
-                  DateFormat('MM/yy').format(phase.startDate);
+                  DateFormat('MM/yy').format(phase.startDate).toUpperCase();
               return Expanded(
                 child: Column(
                   children: [
                     Text(
                       phase.name.toUpperCase(),
                       textAlign: TextAlign.center,
-                      style: (isCurrent
-                              ? AppTypography.labelLarge
-                              : AppTypography.caption)
-                          .copyWith(
+                      style: AppTypography.caption.copyWith(
                         color: isCurrent
                             ? AppColors.textPrimary
-                            : AppColors.accentMuted,
+                            : isPast
+                                ? AppColors.accentMuted
+                                : AppColors.textPrimary
+                                    .withValues(alpha: 0.25),
                         fontWeight: isCurrent
                             ? FontWeight.w700
                             : FontWeight.w400,
@@ -1142,7 +1132,7 @@ class _InvestmentTimeline extends StatelessWidget {
                         phase.title!,
                         textAlign: TextAlign.center,
                         style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.accentMuted,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1150,10 +1140,13 @@ class _InvestmentTimeline extends StatelessWidget {
                     ],
                     const SizedBox(height: 2),
                     Text(
-                      month.toUpperCase(),
+                      month,
                       textAlign: TextAlign.center,
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.accentMuted,
+                        color: isCurrent
+                            ? AppColors.accentMuted
+                            : AppColors.textPrimary
+                                .withValues(alpha: 0.2),
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -1178,16 +1171,16 @@ class _PulsingNode extends StatefulWidget {
 class _PulsingNodeState extends State<_PulsingNode>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _opacity;
+  late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
     )..repeat(reverse: true);
-    _opacity = Tween(begin: 1.0, end: 0.6).animate(
+    _scale = Tween(begin: 1.0, end: 1.4).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -1200,14 +1193,21 @@ class _PulsingNodeState extends State<_PulsingNode>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _opacity,
-      builder: (context, child) => Opacity(
-        opacity: _opacity.value,
-        child: Container(
-          width: widget.size,
-          height: widget.size,
-          color: AppColors.primary,
+    return SizedBox(
+      width: widget.size + 8,
+      height: widget.size + 8,
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _scale,
+          builder: (context, child) => Transform.scale(
+            scale: _scale.value,
+            child: child,
+          ),
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            color: AppColors.primary,
+          ),
         ),
       ),
     );
