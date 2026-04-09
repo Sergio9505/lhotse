@@ -6,6 +6,7 @@ import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/brand_data.dart';
+import 'completed_detail_screen.dart';
 import '../../../core/domain/investment_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
@@ -47,8 +48,14 @@ class InvestmentDetailScreen extends StatelessWidget {
         mockBrands.where((b) => b.name == investment.brandName).firstOrNull;
     final model = brand?.businessModel ?? BusinessModel.coinversion;
 
-    // Coinversion gets its own full layout with hero image
+    // Coinversion — completed vs active
     if (model == BusinessModel.coinversion) {
+      if (investment.isCompleted) {
+        return CompletedDetailScreen(
+          investment: investment,
+          project: findProjectById(investment.projectId),
+        );
+      }
       return CoinversionDetailScreen(
         investment: investment,
         project: findProjectById(investment.projectId),

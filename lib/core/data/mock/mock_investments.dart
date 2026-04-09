@@ -487,7 +487,7 @@ final mockInvestments = [
     isCompleted: true,
   ),
 
-  // Lacomb & Bos — completed
+  // Lacomb & Bos — completed (coinversion with results)
   InvestmentData(
     id: 'inv-c2',
     projectId: '1',
@@ -497,9 +497,35 @@ final mockInvestments = [
     returnRate: 22,
     durationMonths: 18,
     isCompleted: true,
+    actualRoi: 24.3,
+    netProfit: 53460,
+    totalReturn: 273460,
+    projectedRoi: 22,
+    completionDate: DateTime(2026, 2, 15),
+    actualDuration: 16,
+    actualTir: 18.1,
+    assetInfo: const AssetInfo(entries: [
+      AssetInfoEntry(label: 'Dirección', value: 'Serrano 42, Madrid'),
+      AssetInfoEntry(label: 'Superficie', value: '195 m²'),
+      AssetInfoEntry(label: 'Año de construcción', value: '1935'),
+      AssetInfoEntry(label: 'Planta', value: '2º piso'),
+      AssetInfoEntry(label: 'Orientación', value: 'Este'),
+    ]),
+    economicAnalysis: const [
+      AssetInfoEntry(label: 'Precio compra', value: '1.850.000 €'),
+      AssetInfoEntry(label: 'Reforma', value: '620.000 €'),
+      AssetInfoEntry(label: 'Mobiliario', value: '145.000 €'),
+      AssetInfoEntry(label: 'Gastos compra', value: '42.000 €'),
+      AssetInfoEntry(label: 'Gastos totales', value: '2.657.000 €'),
+    ],
+    renderImages: const [
+      'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=600&q=80',
+      'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600&q=80',
+      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&q=80',
+    ],
   ),
 
-  // Vellte — completed
+  // Vellte — completed (coinversion with results)
   InvestmentData(
     id: 'inv-c3',
     projectId: '4',
@@ -509,6 +535,19 @@ final mockInvestments = [
     returnRate: 19,
     durationMonths: 24,
     isCompleted: true,
+    actualRoi: 21.5,
+    netProfit: 66650,
+    totalReturn: 376650,
+    projectedRoi: 19,
+    completionDate: DateTime(2025, 12, 1),
+    actualDuration: 22,
+    actualTir: 11.7,
+    economicAnalysis: const [
+      AssetInfoEntry(label: 'Precio compra', value: '2.400.000 €'),
+      AssetInfoEntry(label: 'Reforma', value: '480.000 €'),
+      AssetInfoEntry(label: 'Gastos compra', value: '36.000 €'),
+      AssetInfoEntry(label: 'Gastos totales', value: '2.916.000 €'),
+    ],
   ),
 
   // NUVE — completed

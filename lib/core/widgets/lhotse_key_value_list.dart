@@ -1,0 +1,77 @@
+import 'package:flutter/material.dart';
+
+import '../domain/asset_info.dart';
+import '../theme/app_theme.dart';
+
+/// Reusable key-value list with dividers.
+/// Used for asset info, economic analysis, and similar data displays.
+class LhotseKeyValueList extends StatelessWidget {
+  const LhotseKeyValueList({
+    super.key,
+    required this.entries,
+    this.highlightLast = false,
+  });
+
+  final List<AssetInfoEntry> entries;
+
+  /// Makes the last row bold with a thicker divider (e.g. "Gastos totales").
+  final bool highlightLast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        children: entries.indexed.map((entry) {
+          final i = entry.$1;
+          final e = entry.$2;
+          final isLast = i == entries.length - 1;
+          final isBold = isLast && highlightLast;
+
+          return Column(
+            children: [
+              if (i > 0)
+                Container(
+                  height: isBold ? 1 : 0.5,
+                  color: AppColors.textPrimary
+                      .withValues(alpha: isBold ? 0.2 : 0.08),
+                ),
+              Padding(
+                padding: EdgeInsets.symmetric(
+                    vertical: isBold ? 14.0 : 12.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        e.label,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.accentMuted,
+                          fontWeight:
+                              isBold ? FontWeight.w700 : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      e.value,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight:
+                            isBold ? FontWeight.w700 : FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isLast && !highlightLast)
+                Container(
+                  height: 0.5,
+                  color: AppColors.textPrimary.withValues(alpha: 0.08),
+                ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}

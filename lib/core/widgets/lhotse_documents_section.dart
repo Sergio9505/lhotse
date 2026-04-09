@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/app_theme.dart';
+import 'lhotse_doc_row.dart';
 
 /// Document category for filtering.
 enum DocCategory { legal, financiero, obra, fiscal, contrato, certificado, informe }
@@ -62,7 +63,7 @@ class LhotseDocumentsSection extends StatelessWidget {
                     height: 0.5,
                     color: AppColors.textPrimary.withValues(alpha: 0.08),
                   ),
-                _DocumentRow(
+                LhotseDocRow(
                   name: doc.name,
                   date: doc.date,
                   icon: docCategoryIcon(doc.category),
@@ -99,85 +100,6 @@ class LhotseDocumentsSection extends StatelessWidget {
       builder: (context) => _DocsBottomSheet(
         documents: documents,
         filterLabels: filterLabels,
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Document row
-// ---------------------------------------------------------------------------
-
-class _DocumentRow extends StatefulWidget {
-  const _DocumentRow({
-    required this.name,
-    required this.date,
-    required this.icon,
-  });
-
-  final String name;
-  final String date;
-  final IconData icon;
-
-  @override
-  State<_DocumentRow> createState() => _DocumentRowState();
-}
-
-class _DocumentRowState extends State<_DocumentRow> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTap: () {
-        // TODO: preview document
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 120),
-        opacity: _pressed ? 0.5 : 1.0,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-          children: [
-            Icon(widget.icon, size: 18, color: AppColors.textPrimary),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.name,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    widget.date,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.accentMuted,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                // TODO: download document
-              },
-              child: const Padding(
-                padding: EdgeInsets.all(8),
-                child: Icon(LucideIcons.download,
-                    size: 16, color: AppColors.accentMuted),
-              ),
-            ),
-          ],
-        ),
-      ),
       ),
     );
   }
@@ -343,7 +265,7 @@ class _DocsBottomSheetState extends State<_DocsBottomSheet> {
                 height: 0.5,
                 color: AppColors.textPrimary.withValues(alpha: 0.08),
               ),
-              itemBuilder: (context, i) => _DocumentRow(
+              itemBuilder: (context, i) => LhotseDocRow(
                 name: docs[i].name,
                 date: docs[i].date,
                 icon: docCategoryIcon(docs[i].category),

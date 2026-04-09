@@ -10,6 +10,8 @@ import '../../../core/domain/project_data.dart';
 import '../../../core/domain/project_phase.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/widgets/lhotse_doc_row.dart';
+import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
@@ -516,54 +518,9 @@ class _FinancieroTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
           const LhotseSectionLabel(label: 'ANÁLISIS ECONÓMICO'),
           const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Column(
-              children: inv.economicAnalysis!.indexed.map((entry) {
-                final i = entry.$1;
-                final e = entry.$2;
-                final isLast = i == inv.economicAnalysis!.length - 1;
-                return Column(
-                  children: [
-                    if (i > 0)
-                      Container(
-                        height: isLast ? 1 : 0.5,
-                        color: AppColors.textPrimary
-                            .withValues(alpha: isLast ? 0.2 : 0.08),
-                      ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                          vertical: isLast ? 14.0 : 10.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              e.label,
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.accentMuted,
-                                fontWeight: isLast
-                                    ? FontWeight.w700
-                                    : FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            e.value,
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: isLast
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
+          LhotseKeyValueList(
+            entries: inv.economicAnalysis!,
+            highlightLast: true,
           ),
         ],
         // --- Escenarios ---
@@ -706,53 +663,7 @@ class _ProyectoTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
           const LhotseSectionLabel(label: 'INFORMACIÓN'),
           const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Column(
-              children: inv.assetInfo!.entries.indexed.map((entry) {
-                final i = entry.$1;
-                final e = entry.$2;
-                final isLast = i == inv.assetInfo!.entries.length - 1;
-                return Column(
-                  children: [
-                    if (i > 0)
-                      Container(
-                        height: 0.5,
-                        color: AppColors.textPrimary.withValues(alpha: 0.08),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              e.label,
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.accentMuted,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            e.value,
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (isLast)
-                      Container(
-                        height: 0.5,
-                        color: AppColors.textPrimary.withValues(alpha: 0.08),
-                      ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
+          LhotseKeyValueList(entries: inv.assetInfo!.entries),
         ],
         if (inv.floorPlanUrl != null) ...[
           const SizedBox(height: AppSpacing.xxl),
@@ -1064,7 +975,7 @@ class _DocumentosTab extends StatelessWidget {
                       height: 0.5,
                       color: AppColors.textPrimary.withValues(alpha: 0.08),
                     ),
-                  _DocRow(
+                  LhotseDocRow(
                     name: doc.name,
                     date: doc.date,
                     icon: docCategoryIcon(doc.category),
@@ -1079,80 +990,6 @@ class _DocumentosTab extends StatelessWidget {
   }
 }
 
-class _DocRow extends StatefulWidget {
-  const _DocRow({
-    required this.name,
-    required this.date,
-    required this.icon,
-  });
-
-  final String name;
-  final String date;
-  final IconData icon;
-
-  @override
-  State<_DocRow> createState() => _DocRowState();
-}
-
-class _DocRowState extends State<_DocRow> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTap: () {
-        // TODO: preview document
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 120),
-        opacity: _pressed ? 0.5 : 1.0,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              Icon(widget.icon, size: 18, color: AppColors.textPrimary),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.name,
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      widget.date,
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.accentMuted,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  // TODO: download document
-                },
-                child: const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Icon(LucideIcons.download,
-                      size: 16, color: AppColors.accentMuted),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ===========================================================================
 // Scenario panel

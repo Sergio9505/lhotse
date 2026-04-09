@@ -27,6 +27,13 @@ class InvestmentData {
     this.isCapitalGuaranteed = false,
     this.isDelayed = false,
     this.isCompleted = false,
+    this.actualRoi,
+    this.netProfit,
+    this.totalReturn,
+    this.projectedRoi,
+    this.completionDate,
+    this.actualDuration,
+    this.actualTir,
     this.profitScenarios,
     this.phases,
     this.currentPhaseIndex,
@@ -65,6 +72,15 @@ class InvestmentData {
   final bool isCapitalGuaranteed;
   final bool isDelayed;
   final bool isCompleted;
+
+  // Completed investment results
+  final double? actualRoi;
+  final double? netProfit;
+  final double? totalReturn;
+  final double? projectedRoi;
+  final DateTime? completionDate;
+  final int? actualDuration; // months
+  final double? actualTir;
 
   // Coinversion detail — profitability, timeline, gallery
   final List<ProfitScenario>? profitScenarios;
