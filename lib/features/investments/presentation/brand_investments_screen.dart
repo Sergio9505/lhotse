@@ -180,16 +180,20 @@ class BrandInvestmentsScreen extends StatelessWidget {
                   ...completed.indexed.map((entry) {
                     final inv = entry.$2;
                     final project = findProjectById(inv.projectId);
-                    return Opacity(
-                      opacity: 0.5,
-                      child: _AssetRow(
-                        projectName: inv.projectName,
-                        imageUrl: project?.imageUrl,
-                        amount: inv.amount,
-                        returnLabel: '${inv.returnRate.toStringAsFixed(0)}% rentabilidad',
-                        isLast: entry.$1 == completed.length - 1,
-                        onTap: () => context.push('/investments/detail/${inv.id}'),
-                      ),
+                    final hasResults = inv.actualRoi != null;
+                    final returnLabel = hasResults
+                        ? '+${inv.actualRoi!.toStringAsFixed(1)}% · +${_eurFormat.format(inv.netProfit ?? 0)}€'
+                        : '${inv.returnRate.toStringAsFixed(0)}% rentabilidad';
+                    return _AssetRow(
+                      projectName: inv.projectName,
+                      imageUrl: project?.imageUrl,
+                      amount: inv.totalReturn ?? inv.amount,
+                      returnLabel: returnLabel,
+                      returnLabelColor: hasResults
+                          ? const Color(0xFF2D6A4F)
+                          : null,
+                      isLast: entry.$1 == completed.length - 1,
+                      onTap: () => context.push('/investments/detail/${inv.id}'),
                     );
                   }),
                 ],
@@ -500,6 +504,7 @@ class _AssetRow extends StatefulWidget {
     this.onTap,
     this.onDocsTap,
     this.returnLabel,
+    this.returnLabelColor,
   });
 
   final String projectName;
@@ -512,6 +517,7 @@ class _AssetRow extends StatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onDocsTap;
   final String? returnLabel;
+  final Color? returnLabelColor;
 
   @override
   State<_AssetRow> createState() => _AssetRowState();
@@ -631,7 +637,7 @@ class _AssetRowState extends State<_AssetRow> {
                       Text(
                         widget.returnLabel!.toUpperCase(),
                         style: AppTypography.caption.copyWith(
-                          color: AppColors.accentMuted,
+                          color: widget.returnLabelColor ?? AppColors.accentMuted,
                           letterSpacing: 1.2,
                         ),
                       ),
