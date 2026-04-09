@@ -15,7 +15,7 @@ class LhotseNewsCard extends StatelessWidget {
     this.brand,
     this.subtitle,
     this.width = 320,
-    this.height = 213,
+    this.height = 208,
     this.hasPlayButton = false,
     this.onTap,
   });

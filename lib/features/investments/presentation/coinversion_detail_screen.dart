@@ -474,7 +474,35 @@ class _AvanceTab extends StatelessWidget {
           ),
         ],
         const SizedBox(height: AppSpacing.xxl),
-        const LhotseSectionLabel(label: 'NOTICIAS DEL PROYECTO'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Row(
+            children: [
+              Text(
+                'NOTICIAS DEL PROYECTO',
+                style: AppTypography.labelLarge.copyWith(
+                  color: AppColors.accentMuted,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.8,
+                ),
+              ),
+              if (_mockNews.length > _kMaxVisibleNews) ...[
+                const SizedBox(width: AppSpacing.sm),
+                GestureDetector(
+                  onTap: () => _showAllNews(context),
+                  child: const Padding(
+                    padding: EdgeInsets.only(top: 2),
+                    child: Icon(
+                      LucideIcons.arrowUpRight,
+                      size: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
         const SizedBox(height: AppSpacing.sm),
         SizedBox(
           height: 160,
@@ -483,18 +511,11 @@ class _AvanceTab extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg),
             itemCount: _mockNews.length > _kMaxVisibleNews
-                ? _kMaxVisibleNews + 1
+                ? _kMaxVisibleNews
                 : _mockNews.length,
             separatorBuilder: (_, _) =>
                 const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, i) {
-              if (i == _kMaxVisibleNews &&
-                  _mockNews.length > _kMaxVisibleNews) {
-                return _SeeAllNewsCard(
-                  count: _mockNews.length,
-                  onTap: () => _showAllNews(context),
-                );
-              }
               return LhotseNewsCard.compact(
                 title: _mockNews[i].title,
                 imageUrl: _mockNews[i].imageUrl,
@@ -633,7 +654,7 @@ class _GallerySectionHeader extends StatelessWidget {
                 padding: EdgeInsets.only(top: 2),
                 child: Icon(
                   LucideIcons.arrowUpRight,
-                  size: 18,
+                  size: 14,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -651,38 +672,24 @@ void _showAllGallery(
     context: context,
     title: title,
     itemCount: images.length,
-    estimatedItemHeight: 160,
+    estimatedItemHeight: 210,
     listPadding: EdgeInsets.fromLTRB(
       AppSpacing.lg,
       0,
       AppSpacing.lg,
       MediaQuery.of(context).padding.bottom + AppSpacing.md,
     ),
-    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.lg),
     itemBuilder: (context, i) => GestureDetector(
       onTap: () => _showFullImage(context, images[i]),
       child: SizedBox(
-        height: 140,
+        height: 200,
         width: double.infinity,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              images[i],
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  Container(color: AppColors.surface),
-            ),
-            Positioned(
-              right: AppSpacing.sm,
-              bottom: AppSpacing.sm,
-              child: Icon(
-                LucideIcons.maximize2,
-                color: Colors.white.withValues(alpha: 0.8),
-                size: 16,
-              ),
-            ),
-          ],
+        child: Image.network(
+          images[i],
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) =>
+              Container(color: AppColors.surface),
         ),
       ),
     ),
@@ -1340,24 +1347,26 @@ class _GalleryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      decoration: const BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 20,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.network(imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  Container(color: AppColors.surface)),
+    return GestureDetector(
+      onTap: isVideo ? null : () => _showFullImage(context, imageUrl),
+      child: Container(
+        width: width,
+        decoration: const BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 20,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) =>
+                    Container(color: AppColors.surface)),
           if (isVideo)
             Center(
               child: Container(
@@ -1373,6 +1382,7 @@ class _GalleryCard extends StatelessWidget {
               ),
             ),
         ],
+      ),
       ),
     );
   }
@@ -1553,83 +1563,28 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
 // See all news
 // ===========================================================================
 
-class _SeeAllNewsCard extends StatelessWidget {
-  const _SeeAllNewsCard({required this.count, required this.onTap});
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 160,
-        height: 160,
-        child: Container(
-          color: AppColors.primary,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('VER TODAS',
-                    style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.5)),
-                const SizedBox(height: 6),
-                Text('$count noticias',
-                    style: AppTypography.caption.copyWith(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        letterSpacing: 1.0)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 void _showAllNews(BuildContext context) {
   showLhotseBottomSheet(
     context: context,
     title: 'NOTICIAS',
     itemCount: _mockNews.length,
-    estimatedItemHeight: 84,
+    estimatedItemHeight: 232,
+    listPadding: EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      0,
+      AppSpacing.lg,
+      MediaQuery.of(context).padding.bottom + AppSpacing.md,
+    ),
+    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.lg),
     itemBuilder: (context, i) {
       final news = _mockNews[i];
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(
-          children: [
-            SizedBox(
-                width: 56,
-                height: 56,
-                child: Image.network(news.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        Container(color: AppColors.surface))),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(news.title,
-                      style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 3),
-                  Text(news.date,
-                      style: AppTypography.caption.copyWith(
-                          color: AppColors.accentMuted,
-                          letterSpacing: 1.0)),
-                ],
-              ),
-            ),
-          ],
-        ),
+      return LhotseNewsCard(
+        title: news.title,
+        imageUrl: news.imageUrl,
+        subtitle: news.date,
+        width: double.infinity,
+        height: 208,
       );
     },
   );
