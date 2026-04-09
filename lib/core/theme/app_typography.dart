@@ -67,7 +67,7 @@ abstract final class AppTypography {
   // Labels (uppercase)
   static const labelLarge = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: FontWeight.w700,
     height: 1.4,
     letterSpacing: 0.5,
@@ -83,7 +83,7 @@ abstract final class AppTypography {
   // Caption
   static const caption = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: FontWeight.w400,
     height: 1.5,
   );

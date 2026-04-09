@@ -24,6 +24,7 @@ final _eurFormat = NumberFormat('#,##0', 'es_ES');
 // ---------------------------------------------------------------------------
 
 const _kHeroHeight = 200.0;
+const _kMaxVisibleGallery = 5;
 const _kTabBarHeight = 49.0;
 
 class CoinversionDetailScreen extends StatefulWidget {
@@ -46,8 +47,6 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen> {
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
   int _selectedScenario = 1; // P50
-  int _galleryTab = 0;
-
   @override
   void initState() {
     super.initState();
@@ -89,7 +88,7 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: DefaultTabController(
-        length: 3,
+        length: 4,
         child: Scaffold(
           backgroundColor: AppColors.background,
           body: NestedScrollView(
@@ -257,11 +256,15 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen> {
             body: TabBarView(
               children: [
                 _TabScrollWrapper(
-                  child: _SeguimientoTab(
+                  child: _AvanceTab(
                     investment: inv,
-                    galleryTab: _galleryTab,
-                    onGalleryTabChanged: (i) =>
-                        setState(() => _galleryTab = i),
+                    cardWidth: screenWidth * 0.75,
+                  ),
+                  bottomPadding: bottomPadding,
+                ),
+                _TabScrollWrapper(
+                  child: _ProyectoTab(
+                    investment: inv,
                     cardWidth: screenWidth * 0.75,
                   ),
                   bottomPadding: bottomPadding,
@@ -329,9 +332,10 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
         children: [
           Expanded(
             child: TabBar(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg),
+              padding: EdgeInsets.zero,
               labelPadding: EdgeInsets.zero,
+              tabAlignment: TabAlignment.fill,
+              isScrollable: false,
               labelStyle: AppTypography.labelLarge.copyWith(
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.5,
@@ -354,9 +358,10 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
               overlayColor:
                   WidgetStateProperty.all(Colors.transparent),
               tabs: const [
+                Tab(text: 'AVANCE'),
                 Tab(text: 'PROYECTO'),
                 Tab(text: 'FINANCIERO'),
-                Tab(text: 'DOCUMENTOS'),
+                Tab(text: 'DOCS'),
               ],
             ),
           ),
@@ -406,13 +411,6 @@ class _FinancieroTab extends StatelessWidget {
             onSelected: onScenarioSelected,
           ),
         ],
-        if (inv.assetInfo != null) ...[
-          const SizedBox(height: AppSpacing.xxl),
-          _PremiumExpandableTile(
-            label: 'INFORMACIÓN DEL ACTIVO',
-            entries: inv.assetInfo!.entries,
-          ),
-        ],
         if (inv.economicAnalysis != null &&
             inv.economicAnalysis!.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.sm),
@@ -429,20 +427,16 @@ class _FinancieroTab extends StatelessWidget {
 }
 
 // ===========================================================================
-// TAB: SEGUIMIENTO
+// TAB: AVANCE — dynamic, why the investor comes back
 // ===========================================================================
 
-class _SeguimientoTab extends StatelessWidget {
-  const _SeguimientoTab({
+class _AvanceTab extends StatelessWidget {
+  const _AvanceTab({
     required this.investment,
-    required this.galleryTab,
-    required this.onGalleryTabChanged,
     required this.cardWidth,
   });
 
   final InvestmentData investment;
-  final int galleryTab;
-  final ValueChanged<int> onGalleryTabChanged;
   final double cardWidth;
 
   @override
@@ -458,6 +452,86 @@ class _SeguimientoTab extends StatelessWidget {
           _InvestmentTimeline(
             phases: inv.phases!,
             currentIndex: inv.currentPhaseIndex ?? 0,
+          ),
+        ],
+        if (inv.progressImages?.isNotEmpty ?? false) ...[
+          const SizedBox(height: AppSpacing.xxl),
+          _GallerySectionHeader(
+            label: 'AVANCE DE OBRA',
+            images: inv.progressImages!,
+            title: 'AVANCE DE OBRA',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _InvestmentGallery(
+            renderImages: inv.progressImages!.length > _kMaxVisibleGallery
+                ? inv.progressImages!.sublist(0, _kMaxVisibleGallery)
+                : inv.progressImages!,
+            progressImages: const [],
+            videoThumbnailUrl: inv.videoThumbnailUrl,
+            selectedTab: 0,
+            onTabChanged: (_) {},
+            cardWidth: cardWidth,
+          ),
+        ],
+        const SizedBox(height: AppSpacing.xxl),
+        const LhotseSectionLabel(label: 'NOTICIAS DEL PROYECTO'),
+        const SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          height: 160,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg),
+            itemCount: _mockNews.length > _kMaxVisibleNews
+                ? _kMaxVisibleNews + 1
+                : _mockNews.length,
+            separatorBuilder: (_, _) =>
+                const SizedBox(width: AppSpacing.sm),
+            itemBuilder: (context, i) {
+              if (i == _kMaxVisibleNews &&
+                  _mockNews.length > _kMaxVisibleNews) {
+                return _SeeAllNewsCard(
+                  count: _mockNews.length,
+                  onTap: () => _showAllNews(context),
+                );
+              }
+              return LhotseNewsCard.compact(
+                title: _mockNews[i].title,
+                imageUrl: _mockNews[i].imageUrl,
+                subtitle: _mockNews[i].date,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ===========================================================================
+// TAB: PROYECTO — static reference, what the property IS
+// ===========================================================================
+
+class _ProyectoTab extends StatelessWidget {
+  const _ProyectoTab({
+    required this.investment,
+    required this.cardWidth,
+  });
+
+  final InvestmentData investment;
+  final double cardWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final inv = investment;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (inv.assetInfo != null) ...[
+          const SizedBox(height: AppSpacing.xl),
+          _PremiumExpandableTile(
+            label: 'INFORMACIÓN DEL ACTIVO',
+            entries: inv.assetInfo!.entries,
           ),
         ],
         if (inv.floorPlanUrl != null) ...[
@@ -497,53 +571,192 @@ class _SeguimientoTab extends StatelessWidget {
             ),
           ),
         ],
-        if ((inv.renderImages?.isNotEmpty ?? false) ||
-            (inv.progressImages?.isNotEmpty ?? false)) ...[
+        if (inv.renderImages?.isNotEmpty ?? false) ...[
           const SizedBox(height: AppSpacing.xxl),
-          const LhotseSectionLabel(label: 'GALERÍA'),
+          _GallerySectionHeader(
+            label: 'RENDERS',
+            images: inv.renderImages!,
+            title: 'RENDERS',
+          ),
           const SizedBox(height: AppSpacing.md),
           _InvestmentGallery(
-            renderImages: inv.renderImages ?? [],
-            progressImages: inv.progressImages ?? [],
-            videoThumbnailUrl: inv.videoThumbnailUrl,
-            selectedTab: galleryTab,
-            onTabChanged: onGalleryTabChanged,
+            renderImages: inv.renderImages!.length > _kMaxVisibleGallery
+                ? inv.renderImages!.sublist(0, _kMaxVisibleGallery)
+                : inv.renderImages!,
+            progressImages: const [],
+            videoThumbnailUrl: null,
+            selectedTab: 0,
+            onTabChanged: (_) {},
             cardWidth: cardWidth,
           ),
         ],
-        const SizedBox(height: AppSpacing.xxl),
-        const LhotseSectionLabel(label: 'NOTICIAS DEL PROYECTO'),
-        const SizedBox(height: AppSpacing.sm),
-        SizedBox(
-          height: 160,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg),
-            itemCount: _mockNews.length > _kMaxVisibleNews
-                ? _kMaxVisibleNews + 1
-                : _mockNews.length,
-            separatorBuilder: (_, _) =>
-                const SizedBox(width: AppSpacing.sm),
-            itemBuilder: (context, i) {
-              if (i == _kMaxVisibleNews &&
-                  _mockNews.length > _kMaxVisibleNews) {
-                return _SeeAllNewsCard(
-                  count: _mockNews.length,
-                  onTap: () => _showAllNews(context),
-                );
-              }
-              return LhotseNewsCard.compact(
-                title: _mockNews[i].title,
-                imageUrl: _mockNews[i].imageUrl,
-                subtitle: _mockNews[i].date,
-              );
-            },
-          ),
-        ),
       ],
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Gallery section header with ↗ action
+// ---------------------------------------------------------------------------
+
+class _GallerySectionHeader extends StatelessWidget {
+  const _GallerySectionHeader({
+    required this.label,
+    required this.images,
+    required this.title,
+  });
+
+  final String label;
+  final List<String> images;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMore = images.length > _kMaxVisibleGallery;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: AppTypography.labelLarge.copyWith(
+              color: AppColors.accentMuted,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.8,
+            ),
+          ),
+          if (hasMore) ...[
+            const SizedBox(width: AppSpacing.sm),
+            GestureDetector(
+              onTap: () => _showAllGallery(context, title, images),
+              child: const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Icon(
+                  LucideIcons.arrowUpRight,
+                  size: 18,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+void _showAllGallery(
+    BuildContext context, String title, List<String> images) {
+  showLhotseBottomSheet(
+    context: context,
+    title: title,
+    itemCount: images.length,
+    estimatedItemHeight: 160,
+    listPadding: EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      0,
+      AppSpacing.lg,
+      MediaQuery.of(context).padding.bottom + AppSpacing.md,
+    ),
+    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+    itemBuilder: (context, i) => GestureDetector(
+      onTap: () => _showFullImage(context, images[i]),
+      child: SizedBox(
+        height: 140,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              images[i],
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  Container(color: AppColors.surface),
+            ),
+            Positioned(
+              right: AppSpacing.sm,
+              bottom: AppSpacing.sm,
+              child: Icon(
+                LucideIcons.maximize2,
+                color: Colors.white.withValues(alpha: 0.8),
+                size: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+void _showFullImage(BuildContext context, String imageUrl) {
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      opaque: false,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final topPadding = MediaQuery.of(context).padding.top;
+        final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) => Opacity(
+            opacity: animation.value,
+            child: child,
+          ),
+          child: Scaffold(
+            backgroundColor: AppColors.background,
+            body: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: SizedBox.expand(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: InteractiveViewer(
+                        maxScale: 4.0,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            0,
+                            topPadding + kToolbarHeight,
+                            0,
+                            bottomPadding + AppSpacing.lg,
+                          ),
+                          child: Image.network(
+                            imageUrl,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) =>
+                                Container(color: AppColors.surface),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: topPadding + AppSpacing.md,
+                      right: AppSpacing.lg,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          alignment: Alignment.center,
+                          color: AppColors.textPrimary
+                              .withValues(alpha: 0.08),
+                          child: const Icon(
+                            LucideIcons.x,
+                            color: AppColors.textPrimary,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }
 
 void _showFloorPlan(BuildContext context, String url) {

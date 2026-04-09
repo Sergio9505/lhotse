@@ -44,9 +44,9 @@ These rules apply to ALL UI built in the app. Check before every screen/widget i
 | bodyLarge | 16 | Book (400) | General text |
 | bodyMedium | 14 | Book (400) | Secondary text |
 | bodySmall | 12 | Book (400) | Descriptions, paragraphs |
-| labelLarge | 11 | Bold (700) | Menu items, buttons (uppercase) |
+| labelLarge | 12 | Bold (700) | Menu items, buttons (uppercase) |
 | labelSmall | 10 | Book (400) | Nav labels, tags |
-| caption | 9 | Book (400) | Metadata, dates (uppercase) |
+| caption | 10 | Book (400) | Metadata, dates (uppercase) |
 | captionSmall | 8 | Book (400) | Version info |
 
 Note: Figma uses Outfit, Cormorant Garamond, Menlo as placeholders — the brand standard is **Campton exclusively**.
