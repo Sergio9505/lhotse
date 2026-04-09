@@ -10,6 +10,7 @@ import '../../../core/domain/project_data.dart';
 import '../../../core/domain/project_phase.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
@@ -759,7 +760,7 @@ class _GallerySectionHeader extends StatelessWidget {
           if (hasMore) ...[
             const SizedBox(width: AppSpacing.sm),
             GestureDetector(
-              onTap: () => _showAllGallery(context, title, images),
+              onTap: () => showAllGallery(context, title, images),
               child: const Icon(
                 LucideIcons.arrowUpRight,
                 size: 14,
@@ -771,106 +772,6 @@ class _GallerySectionHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-void _showAllGallery(
-    BuildContext context, String title, List<String> images) {
-  showLhotseBottomSheet(
-    context: context,
-    title: title,
-    itemCount: images.length,
-    estimatedItemHeight: 210,
-    listPadding: EdgeInsets.fromLTRB(
-      AppSpacing.lg,
-      0,
-      AppSpacing.lg,
-      MediaQuery.of(context).padding.bottom + AppSpacing.md,
-    ),
-    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.lg),
-    itemBuilder: (context, i) => GestureDetector(
-      onTap: () => _showFullImage(context, images[i]),
-      child: SizedBox(
-        height: 200,
-        width: double.infinity,
-        child: Image.network(
-          images[i],
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) =>
-              Container(color: AppColors.surface),
-        ),
-      ),
-    ),
-  );
-}
-
-void _showFullImage(BuildContext context, String imageUrl) {
-  Navigator.of(context).push(
-    PageRouteBuilder(
-      opaque: false,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        final topPadding = MediaQuery.of(context).padding.top;
-        final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-        return AnimatedBuilder(
-          animation: animation,
-          builder: (context, child) => Opacity(
-            opacity: animation.value,
-            child: child,
-          ),
-          child: Scaffold(
-            backgroundColor: AppColors.background,
-            body: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: SizedBox.expand(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: InteractiveViewer(
-                        maxScale: 4.0,
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            0,
-                            topPadding + kToolbarHeight,
-                            0,
-                            bottomPadding + AppSpacing.lg,
-                          ),
-                          child: Image.network(
-                            imageUrl,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) =>
-                                Container(color: AppColors.surface),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: topPadding + AppSpacing.md,
-                      right: AppSpacing.lg,
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          alignment: Alignment.center,
-                          color: AppColors.textPrimary
-                              .withValues(alpha: 0.08),
-                          child: const Icon(
-                            LucideIcons.x,
-                            color: AppColors.textPrimary,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    ),
-  );
 }
 
 void _showFloorPlan(BuildContext context, String url) {
@@ -1476,7 +1377,7 @@ class _GalleryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: isVideo ? null : () => _showFullImage(context, imageUrl),
+      onTap: isVideo ? null : () => showFullImage(context, imageUrl),
       child: Container(
         width: width,
         decoration: const BoxDecoration(

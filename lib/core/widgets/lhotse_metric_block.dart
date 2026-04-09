@@ -3,10 +3,16 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 class LhotseMetricBlock extends StatelessWidget {
-  const LhotseMetricBlock({super.key, required this.value, required this.label});
+  const LhotseMetricBlock({
+    super.key,
+    required this.value,
+    required this.label,
+    this.valueColor,
+  });
 
   final String value;
   final String label;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +22,7 @@ class LhotseMetricBlock extends StatelessWidget {
         Text(
           value,
           style: AppTypography.headingSmall.copyWith(
-            color: AppColors.textPrimary,
+            color: valueColor ?? AppColors.textPrimary,
             fontWeight: FontWeight.w700,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),

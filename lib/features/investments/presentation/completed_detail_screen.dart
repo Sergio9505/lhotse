@@ -7,6 +7,7 @@ import '../../../core/domain/investment_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
@@ -75,7 +76,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
   void initState() {
     super.initState();
     _outerController.addListener(_onOuterScroll);
-    _tabController = TabController(length: 3, vsync: this)
+    _tabController = TabController(length: 2, vsync: this)
       ..addListener(() {
         if (_tabController.index != _tabIndex) {
           setState(() => _tabIndex = _tabController.index);
@@ -243,23 +244,39 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'MI PARTICIPACIÓN',
+                      'RETORNO TOTAL',
                       style: AppTypography.caption.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 2.0,
                       ),
                     ),
-                    // Gain line
-                    if (inv.netProfit != null && inv.actualRoi != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        '+${_eurFormat.format(inv.netProfit)}€  (+${inv.actualRoi!.toStringAsFixed(1)}%)',
-                        style: AppTypography.headingSmall.copyWith(
-                          color: const Color(0xFF2D6A4F), // success green
-                          fontFeatures: const [FontFeature.tabularFigures()],
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: LhotseMetricBlock(
+                            value: '${_eurFormat.format(inv.amount)}€',
+                            label: 'Invertido',
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: AppSpacing.lg),
+                        Expanded(
+                          child: LhotseMetricBlock(
+                            value: '+${_eurFormat.format(inv.netProfit ?? 0)}€',
+                            label: 'Plusvalía',
+                            valueColor: const Color(0xFF2D6A4F),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                        Expanded(
+                          child: LhotseMetricBlock(
+                            value: '+${inv.actualRoi?.toStringAsFixed(1) ?? '-'}%',
+                            label: 'ROI',
+                            valueColor: const Color(0xFF2D6A4F),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -277,10 +294,6 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
           body: TabBarView(
             controller: _tabController,
             children: [
-              _TabScrollWrapper(
-                child: _ResultadoTab(investment: inv),
-                bottomPadding: bottomPadding,
-              ),
               _TabScrollWrapper(
                 child: _ActivoTab(
                   investment: inv,
@@ -402,10 +415,10 @@ class _CompletedTabBarDelegate extends SliverPersistentHeaderDelegate {
           Expanded(
             child: TabBar(
               controller: controller,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              labelPadding: EdgeInsets.zero,
-              tabAlignment: TabAlignment.fill,
-              isScrollable: false,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              labelPadding: const EdgeInsets.only(right: AppSpacing.xl),
+              tabAlignment: TabAlignment.start,
+              isScrollable: true,
               labelStyle: AppTypography.labelLarge.copyWith(
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.5,
@@ -423,7 +436,6 @@ class _CompletedTabBarDelegate extends SliverPersistentHeaderDelegate {
               dividerColor: Colors.transparent,
               overlayColor: WidgetStateProperty.all(Colors.transparent),
               tabs: const [
-                Tab(text: 'RESULTADO'),
                 Tab(text: 'ACTIVO'),
                 Tab(text: 'DOCS'),
               ],
@@ -441,156 +453,6 @@ class _CompletedTabBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _CompletedTabBarDelegate oldDelegate) =>
       controller != oldDelegate.controller;
-}
-
-// ===========================================================================
-// TAB: RESULTADO
-// ===========================================================================
-
-class _ResultadoTab extends StatelessWidget {
-  const _ResultadoTab({required this.investment});
-  final InvestmentData investment;
-
-  @override
-  Widget build(BuildContext context) {
-    final inv = investment;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // --- Resumen metrics ---
-        const SizedBox(height: AppSpacing.xl),
-        const LhotseSectionLabel(label: 'RESUMEN'),
-        const SizedBox(height: AppSpacing.md),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: LhotseMetricBlock(
-                      value: '${inv.actualRoi?.toStringAsFixed(1) ?? '-'}%',
-                      label: 'ROI real',
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: LhotseMetricBlock(
-                      value: '+${_eurFormat.format(inv.netProfit ?? 0)}€',
-                      label: 'Plusvalía',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: LhotseMetricBlock(
-                      value: '${inv.actualTir?.toStringAsFixed(1) ?? '-'}%',
-                      label: 'TIR real',
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: LhotseMetricBlock(
-                      value: '${inv.actualDuration ?? inv.durationMonths} meses',
-                      label: 'Duración',
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // --- Comparativa ---
-        if (inv.projectedRoi != null) ...[
-          const SizedBox(height: AppSpacing.xxl),
-          const LhotseSectionLabel(label: 'PROYECTADO VS REAL'),
-          const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Column(
-              children: [
-                _ComparisonRow(
-                  label: 'ROI',
-                  projected: '${inv.projectedRoi!.toStringAsFixed(1)}%',
-                  actual: '${inv.actualRoi?.toStringAsFixed(1) ?? '-'}%',
-                ),
-                Container(
-                  height: 0.5,
-                  color: AppColors.textPrimary.withValues(alpha: 0.08),
-                ),
-                _ComparisonRow(
-                  label: 'Duración',
-                  projected: '${inv.durationMonths} meses',
-                  actual: '${inv.actualDuration ?? '-'} meses',
-                ),
-              ],
-            ),
-          ),
-        ],
-
-        // --- Análisis económico ---
-        if (inv.economicAnalysis != null &&
-            inv.economicAnalysis!.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.xxl),
-          const LhotseSectionLabel(label: 'ANÁLISIS ECONÓMICO'),
-          const SizedBox(height: AppSpacing.sm),
-          LhotseKeyValueList(
-            entries: inv.economicAnalysis!,
-            highlightLast: true,
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _ComparisonRow extends StatelessWidget {
-  const _ComparisonRow({
-    required this.label,
-    required this.projected,
-    required this.actual,
-  });
-  final String label;
-  final String projected;
-  final String actual;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(label,
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.accentMuted,
-                )),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(projected,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textPrimary.withValues(alpha: 0.4),
-                  decoration: TextDecoration.lineThrough,
-                )),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(actual,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                )),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ===========================================================================
@@ -616,7 +478,33 @@ class _ActivoTab extends StatelessWidget {
         ],
         if (inv.renderImages?.isNotEmpty ?? false) ...[
           const SizedBox(height: AppSpacing.xxl),
-          const LhotseSectionLabel(label: 'RENDERS'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Row(
+              children: [
+                Text(
+                  'GALERÍA',
+                  style: AppTypography.labelLarge.copyWith(
+                    color: AppColors.accentMuted,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.8,
+                  ),
+                ),
+                if (inv.renderImages!.length > _kMaxVisibleGallery) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  GestureDetector(
+                    onTap: () => showAllGallery(
+                        context, 'GALERÍA', inv.renderImages!),
+                    child: const Icon(
+                      LucideIcons.arrowUpRight,
+                      size: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             height: 200,
@@ -627,22 +515,25 @@ class _ActivoTab extends StatelessWidget {
                       ? _kMaxVisibleGallery
                       : inv.renderImages!.length),
               separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (context, i) => Container(
-                width: cardWidth,
-                decoration: const BoxDecoration(
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x1A000000),
-                      blurRadius: 20,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Image.network(
-                  inv.renderImages![i],
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
-                      Container(color: AppColors.surface),
+              itemBuilder: (context, i) => GestureDetector(
+                onTap: () => showFullImage(context, inv.renderImages![i]),
+                child: Container(
+                  width: cardWidth,
+                  decoration: const BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0x1A000000),
+                        blurRadius: 20,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Image.network(
+                    inv.renderImages![i],
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        Container(color: AppColors.surface),
+                  ),
                 ),
               ),
             ),
@@ -700,6 +591,10 @@ class _DocsTab extends StatelessWidget {
 
 // ===========================================================================
 // Mock docs for completed investments
+// ===========================================================================
+
+// ===========================================================================
+// Mock docs
 // ===========================================================================
 
 final _completedDocs = [
