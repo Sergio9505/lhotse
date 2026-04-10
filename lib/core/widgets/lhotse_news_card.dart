@@ -28,10 +28,10 @@ class LhotseNewsCard extends StatelessWidget {
     required this.imageUrl,
     this.brand,
     this.subtitle,
+    this.hasPlayButton = false,
     this.onTap,
   })  : width = 260,
-        height = 160,
-        hasPlayButton = false;
+        height = 160;
 
   final String title;
   final String imageUrl;
@@ -44,7 +44,7 @@ class LhotseNewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = height <= 180;
+    final isCompact = height <= 210;
 
     if (isCompact) return _buildCompact();
     return _buildFull();

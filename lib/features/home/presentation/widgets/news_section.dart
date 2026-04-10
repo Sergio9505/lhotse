@@ -26,7 +26,7 @@ class NewsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 213,
+      height: 200,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -40,6 +40,8 @@ class NewsSection extends StatelessWidget {
             brand: data.brand,
             subtitle: data.subtitle,
             hasPlayButton: data.hasPlayButton,
+            height: 200,
+            width: 300,
           );
         },
       ),

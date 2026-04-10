@@ -32,10 +32,10 @@ class HomeScreen extends StatelessWidget {
           // Header: "PROYECTOS" + logo
           SliverToBoxAdapter(child: _Header()),
 
-          // Project carousel
+          // Project carousel — fills ~65% of viewport for editorial impact
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 520,
+              height: MediaQuery.of(context).size.height * 0.65,
               child: ProjectCarousel(projects: mockProjects.take(5).toList()),
             ),
           ),
