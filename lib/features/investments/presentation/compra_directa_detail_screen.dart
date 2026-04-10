@@ -249,92 +249,78 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                         letterSpacing: 2.0,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.xl),
                     // 3-col secondary metrics
-                    IntrinsicHeight(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  inv.rentalIncome != null
-                                      ? '${_eurFormat.format(inv.rentalIncome)}€/mes'
-                                      : '—',
-                                  style: AppTypography.headingLarge.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                inv.rentalIncome != null
+                                    ? '${_eurFormat.format(inv.rentalIncome)}€'
+                                    : '—',
+                                style: AppTypography.headingLarge.copyWith(
+                                  color: AppColors.textPrimary,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'ALQUILER',
-                                  style: AppTypography.caption.copyWith(
-                                    color: AppColors.accentMuted,
-                                    letterSpacing: 1.5,
-                                  ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'ALQUILER',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.accentMuted,
+                                  letterSpacing: 0.8,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          Container(
-                            width: 0.5,
-                            color:
-                                AppColors.textPrimary.withValues(alpha: 0.12),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${inv.returnRate.toStringAsFixed(0)}%',
-                                  style: AppTypography.headingLarge.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${inv.returnRate.toStringAsFixed(0)}%',
+                                style: AppTypography.headingLarge.copyWith(
+                                  color: AppColors.textPrimary,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'RENTABILIDAD',
-                                  style: AppTypography.caption.copyWith(
-                                    color: AppColors.accentMuted,
-                                    letterSpacing: 1.5,
-                                  ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'RENTABILIDAD',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.accentMuted,
+                                  letterSpacing: 0.8,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          Container(
-                            width: 0.5,
-                            color:
-                                AppColors.textPrimary.withValues(alpha: 0.12),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  inv.revaluation != null
-                                      ? '${inv.revaluation!.toStringAsFixed(0)}%'
-                                      : '—',
-                                  style: AppTypography.headingLarge.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                inv.revaluation != null
+                                    ? '${inv.revaluation!.toStringAsFixed(0)}%'
+                                    : '—',
+                                style: AppTypography.headingLarge.copyWith(
+                                  color: AppColors.textPrimary,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'REVALORIZACIÓN',
-                                  style: AppTypography.caption.copyWith(
-                                    color: AppColors.accentMuted,
-                                    letterSpacing: 1.5,
-                                  ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'REVALORIZACIÓN',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.accentMuted,
+                                  letterSpacing: 0.8,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -350,7 +336,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                   controller: _tabController,
                   tabs: const [
                     Tab(text: 'ACTIVO'),
-                    Tab(text: 'FINANZAS'),
+                    Tab(text: 'FINANCIACIÓN'),
                     Tab(text: 'DOCS'),
                   ],
                 ),
@@ -488,6 +474,41 @@ class _ActivoTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           LhotseKeyValueList(entries: inv.assetInfo!.entries),
         ],
+        if (inv.floorPlanUrl != null) ...[
+          const SizedBox(height: AppSpacing.xxl),
+          const LhotseSectionLabel(label: 'PLANO'),
+          const SizedBox(height: AppSpacing.md),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: GestureDetector(
+              onTap: () => _showFloorPlan(context, inv.floorPlanUrl!),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                color: AppColors.background,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Image.asset(
+                        'assets/images/mock_floor_plan.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Icon(
+                        LucideIcons.maximize2,
+                        color: AppColors.accentMuted,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
         if (inv.renderImages?.isNotEmpty ?? false) ...[
           const SizedBox(height: AppSpacing.xxl),
           Padding(
@@ -593,7 +614,7 @@ class _FinanzasTab extends StatelessWidget {
     }
     if (inv.monthlyPayment != null) {
       entries.add(AssetInfoEntry(
-        label: 'Cuota mensual',
+        label: 'Cuota',
         value: '${_eurFormat.format(inv.monthlyPayment)}€/mes',
       ));
     }
@@ -609,8 +630,6 @@ class _FinanzasTab extends StatelessWidget {
       children: [
         if (entries.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
-          const LhotseSectionLabel(label: 'FINANCIACIÓN'),
-          const SizedBox(height: AppSpacing.sm),
           LhotseKeyValueList(entries: entries),
         ],
       ],
@@ -662,6 +681,80 @@ class _DocumentosTab extends StatelessWidget {
       ],
     );
   }
+}
+
+// ===========================================================================
+// Floor plan fullscreen
+// ===========================================================================
+
+void _showFloorPlan(BuildContext context, String url) {
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      opaque: false,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final topPadding = MediaQuery.of(context).padding.top;
+        final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) => Opacity(
+            opacity: animation.value,
+            child: child,
+          ),
+          child: Scaffold(
+            extendBodyBehindAppBar: true,
+            extendBody: true,
+            backgroundColor: AppColors.background,
+            body: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: SizedBox.expand(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: InteractiveViewer(
+                        maxScale: 4.0,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            topPadding + kToolbarHeight,
+                            AppSpacing.lg,
+                            bottomPadding + AppSpacing.lg,
+                          ),
+                          child: Image.asset(
+                            'assets/images/mock_floor_plan.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: topPadding + AppSpacing.md,
+                      right: AppSpacing.lg,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          alignment: Alignment.center,
+                          color: AppColors.textPrimary
+                              .withValues(alpha: 0.08),
+                          child: Icon(
+                            LucideIcons.x,
+                            color: AppColors.textPrimary,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }
 
 // ===========================================================================

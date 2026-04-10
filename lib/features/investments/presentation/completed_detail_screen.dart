@@ -251,7 +251,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                         letterSpacing: 2.0,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.xl),
                     Row(
                       children: [
                         Expanded(

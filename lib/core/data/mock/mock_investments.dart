@@ -31,10 +31,14 @@ final mockInvestments = [
       AssetInfoEntry(label: 'Planta', value: '4ª'),
       AssetInfoEntry(label: 'Referencia catastral', value: '9872054VK4797S0004WX'),
     ]),
+    floorPlanUrl: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800',
     renderImages: [
       'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
       'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
+      'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?w=800',
+      'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800',
     ],
   ),
   InvestmentData(
@@ -64,11 +68,15 @@ final mockInvestments = [
       AssetInfoEntry(label: 'Año construcción', value: '2023'),
       AssetInfoEntry(label: 'Referencia catastral', value: '1234567VK4797S0012AB'),
     ]),
+    floorPlanUrl: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800',
     renderImages: [
       'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800',
       'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800',
       'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
       'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800',
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800',
+      'https://images.unsplash.com/photo-1600573472591-ee6981cf81f0?w=800',
+      'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800',
     ],
   ),
 
