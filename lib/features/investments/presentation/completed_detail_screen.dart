@@ -436,7 +436,6 @@ class _ActivoTab extends StatelessWidget {
                   'GALERÍA',
                   style: AppTypography.labelLarge.copyWith(
                     color: AppColors.accentMuted,
-                    fontWeight: FontWeight.w500,
                     letterSpacing: 1.8,
                   ),
                 ),

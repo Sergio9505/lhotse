@@ -142,7 +142,6 @@ class _TrendingSection extends StatelessWidget {
             'TENDENCIAS',
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
               letterSpacing: 1.8,
             ),
           ),
@@ -215,7 +214,6 @@ class _CollectionsSection extends StatelessWidget {
             'COLECCIONES',
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
               letterSpacing: 1.8,
             ),
           ),
@@ -329,7 +327,6 @@ class _SearchResults extends StatelessWidget {
             'PROYECTOS',
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
               letterSpacing: 1.8,
             ),
           ),
@@ -348,7 +345,6 @@ class _SearchResults extends StatelessWidget {
             'DOCUMENTOS',
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
               letterSpacing: 1.8,
             ),
           ),

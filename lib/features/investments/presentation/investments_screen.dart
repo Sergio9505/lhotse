@@ -354,8 +354,7 @@ class _BrandRowState extends State<_BrandRow> {
                             text: '€',
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w400,
-                            ),
+                              ),
                           ),
                           TextSpan(
                             text: '  ·  ${widget.averageReturn.toStringAsFixed(0)}%${widget.isEstimated ? '*' : ''}',
@@ -476,8 +475,7 @@ class _OpportunityCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: AppTypography.headingSmall.copyWith(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
+                                ),
                             ),
                             const SizedBox(height: 3),
                             Row(

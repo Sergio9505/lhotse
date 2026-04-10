@@ -36,7 +36,6 @@ class LhotseTabBarDelegate extends SliverPersistentHeaderDelegate {
               isScrollable: false,
               labelPadding: labelPadding,
               labelStyle: AppTypography.labelLarge.copyWith(
-                fontWeight: FontWeight.w500,
                 letterSpacing: 1.5,
               ),
               unselectedLabelStyle: AppTypography.labelLarge.copyWith(

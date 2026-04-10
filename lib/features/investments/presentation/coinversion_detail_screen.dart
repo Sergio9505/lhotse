@@ -538,7 +538,6 @@ class _AvanceTab extends StatelessWidget {
                 'NOTICIAS DEL PROYECTO',
                 style: AppTypography.labelLarge.copyWith(
                   color: AppColors.accentMuted,
-                  fontWeight: FontWeight.w500,
                   letterSpacing: 1.8,
                 ),
               ),
@@ -694,7 +693,6 @@ class _GallerySectionHeader extends StatelessWidget {
             label,
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.accentMuted,
-              fontWeight: FontWeight.w500,
               letterSpacing: 1.8,
             ),
           ),
@@ -1422,7 +1420,6 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                   Text(widget.label,
                       style: AppTypography.labelLarge.copyWith(
                         color: AppColors.accentMuted,
-                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.8,
                       )),
                   const Spacer(),

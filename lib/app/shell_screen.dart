@@ -83,7 +83,6 @@ class _LhotseNavBar extends StatelessWidget {
                                   maxLines: 1,
                                   style: AppTypography.bodyMedium.copyWith(
                                     color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w400,
                                     letterSpacing: 0,
                                   ),
                                 ),

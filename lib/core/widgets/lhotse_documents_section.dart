@@ -84,8 +84,7 @@ class LhotseDocumentsSection extends StatelessWidget {
                 'Ver todos (${documents.length})',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.accentMuted,
-                  fontWeight: FontWeight.w400,
-                ),
+                  ),
               ),
             ),
           ],
@@ -166,7 +165,6 @@ void showDocsBottomSheet({
                               color: active
                                   ? AppColors.textOnDark
                                   : AppColors.accentMuted,
-                              fontWeight: FontWeight.w400,
                               letterSpacing: 1.0,
                             ),
                           ),

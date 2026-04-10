@@ -317,7 +317,6 @@ class _RegionFilterRow extends StatelessWidget {
                           region.toUpperCase(),
                           style: AppTypography.captionSmall.copyWith(
                             color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w400,
                             letterSpacing: 1.0,
                           ),
                         ),
@@ -346,7 +345,6 @@ class _RegionFilterRow extends StatelessWidget {
                       'LIMPIAR',
                       style: AppTypography.captionSmall.copyWith(
                         color: AppColors.accentMuted,
-                        fontWeight: FontWeight.w400,
                         letterSpacing: 1.0,
                       ),
                     ),

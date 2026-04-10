@@ -112,7 +112,6 @@ class BrandInvestmentsScreen extends StatelessWidget {
                   sectionLabel,
                   style: AppTypography.labelLarge.copyWith(
                     color: AppColors.accentMuted,
-                    fontWeight: FontWeight.w500,
                     letterSpacing: 1.8,
                   ),
                 ),
@@ -192,7 +191,6 @@ class BrandInvestmentsScreen extends StatelessWidget {
                       'FINALIZADAS',
                       style: AppTypography.labelLarge.copyWith(
                         color: AppColors.accentMuted,
-                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.8,
                       ),
                     ),
@@ -627,8 +625,7 @@ class _AssetRowState extends State<_AssetRow> {
                             text: '€',
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w400,
-                            ),
+                              ),
                           ),
                         ],
                       ),
@@ -819,8 +816,7 @@ class _RentaFijaRow extends StatelessWidget {
                         text: '€',
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w400,
-                        ),
+                          ),
                       ),
                     ],
                   ),

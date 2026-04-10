@@ -125,8 +125,7 @@ class _LhotseLedgerRowState extends State<LhotseLedgerRow> {
                           text: '€',
                           style: AppTypography.bodySmall.copyWith(
                             color: textColor,
-                            fontWeight: FontWeight.w400,
-                          ),
+                            ),
                         ),
                       ],
                     ),

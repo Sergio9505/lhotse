@@ -252,7 +252,6 @@ class _BrandFilterRow extends StatelessWidget {
                     'LIMPIAR',
                     style: AppTypography.captionSmall.copyWith(
                       color: AppColors.accentMuted,
-                      fontWeight: FontWeight.w400,
                       letterSpacing: 1.0,
                     ),
                   ),
@@ -296,7 +295,6 @@ class _BrandFilterRow extends StatelessWidget {
                     brand.name.toUpperCase(),
                     style: AppTypography.captionSmall.copyWith(
                       color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w400,
                       letterSpacing: 1.0,
                     ),
                   ),
