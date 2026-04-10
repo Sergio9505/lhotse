@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../theme/app_theme.dart';
+import 'lhotse_bottom_sheet.dart';
 import 'lhotse_doc_row.dart';
 
 /// Document category for filtering.
@@ -74,7 +75,11 @@ class LhotseDocumentsSection extends StatelessWidget {
           if (documents.length > maxVisible) ...[
             const SizedBox(height: AppSpacing.sm),
             GestureDetector(
-              onTap: () => _showAllDocs(context),
+              onTap: () => showDocsBottomSheet(
+                context: context,
+                documents: documents,
+                filterLabels: filterLabels,
+              ),
               child: Text(
                 'Ver todos (${documents.length})',
                 style: AppTypography.bodySmall.copyWith(
@@ -85,21 +90,6 @@ class LhotseDocumentsSection extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  void _showAllDocs(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
-      builder: (context) => _DocsBottomSheet(
-        documents: documents,
-        filterLabels: filterLabels,
       ),
     );
   }
@@ -114,6 +104,8 @@ void showDocsBottomSheet({
   required List<LhotseDocument> documents,
   required Map<DocCategory, String> filterLabels,
 }) {
+  final activeFilters = <DocCategory>{};
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -121,159 +113,98 @@ void showDocsBottomSheet({
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
     ),
-    builder: (context) => _DocsBottomSheet(
-      documents: documents,
-      filterLabels: filterLabels,
-    ),
-  );
-}
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) {
+        final filteredDocs = activeFilters.isEmpty
+            ? documents
+            : documents
+                .where((d) => activeFilters.contains(d.category))
+                .toList();
 
-// ---------------------------------------------------------------------------
-// Bottom sheet with filters
-// ---------------------------------------------------------------------------
-
-class _DocsBottomSheet extends StatefulWidget {
-  const _DocsBottomSheet({
-    required this.documents,
-    required this.filterLabels,
-  });
-
-  final List<LhotseDocument> documents;
-  final Map<DocCategory, String> filterLabels;
-
-  @override
-  State<_DocsBottomSheet> createState() => _DocsBottomSheetState();
-}
-
-class _DocsBottomSheetState extends State<_DocsBottomSheet> {
-  final Set<DocCategory> _activeFilters = {};
-
-  List<LhotseDocument> get _filteredDocs {
-    if (_activeFilters.isEmpty) return widget.documents;
-    return widget.documents
-        .where((d) => _activeFilters.contains(d.category))
-        .toList();
-  }
-
-  void _toggleFilter(DocCategory cat) {
-    setState(() {
-      if (_activeFilters.contains(cat)) {
-        _activeFilters.remove(cat);
-      } else {
-        _activeFilters.add(cat);
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final docs = _filteredDocs;
-    final headerHeight = 120.0;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final contentHeight = headerHeight + (widget.documents.length * 64);
-    final size = (contentHeight / screenHeight).clamp(0.4, 0.8);
-
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: size,
-      minChildSize: 0.2,
-      maxChildSize: size,
-      builder: (context, scrollController) => Column(
-        children: [
-          // Drag handle
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 4),
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textPrimary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-
-          // Title
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.lg),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'DOCUMENTOS',
-                style: AppTypography.headingLarge.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-
-          // Filter tabs — scrollable
-          Padding(
+        return LhotseBottomSheetBody(
+          title: 'DOCUMENTOS',
+          header: Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.lg),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Row(
-                children: widget.filterLabels.entries.map((entry) {
-                  final active = _activeFilters.contains(entry.key);
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.lg),
-                    child: GestureDetector(
-                      onTap: () => _toggleFilter(entry.key),
-                      behavior: HitTestBehavior.opaque,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            entry.value.toUpperCase(),
-                            style: AppTypography.labelLarge.copyWith(
+                children: [
+                  ...filterLabels.entries.map((entry) {
+                    final active = activeFilters.contains(entry.key);
+                    return Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: GestureDetector(
+                        onTap: () => setState(() {
+                          if (activeFilters.contains(entry.key)) {
+                            activeFilters.remove(entry.key);
+                          } else {
+                            activeFilters.add(entry.key);
+                          }
+                        }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            border: Border.all(
                               color: active
-                                  ? AppColors.textPrimary
-                                  : AppColors.accentMuted,
-                              fontWeight:
-                                  active ? FontWeight.w700 : FontWeight.w400,
-                              letterSpacing: 1.5,
+                                  ? AppColors.primary
+                                  : AppColors.textPrimary
+                                      .withValues(alpha: 0.1),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeInOut,
-                            height: 1.5,
-                            width: active ? 24.0 : 0.0,
-                            color: AppColors.textPrimary,
+                          child: Text(
+                            entry.value.toUpperCase(),
+                            style: AppTypography.caption.copyWith(
+                              color: active
+                                  ? AppColors.textOnDark
+                                  : AppColors.accentMuted,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.0,
+                            ),
                           ),
-                        ],
+                        ),
+                      ),
+                    );
+                  }),
+                  if (activeFilters.isNotEmpty)
+                    GestureDetector(
+                      onTap: () => setState(() => activeFilters.clear()),
+                      behavior: HitTestBehavior.opaque,
+                      child: const Padding(
+                        padding: EdgeInsets.all(6),
+                        child: Icon(LucideIcons.x,
+                            size: 14, color: AppColors.accentMuted),
                       ),
                     ),
-                  );
-                }).toList(),
+                ],
               ),
             ),
           ),
-
-          // Documents list
-          Expanded(
-            child: ListView.separated(
-              controller: scrollController,
-              padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg, 0, AppSpacing.lg, bottomPadding + AppSpacing.md),
-              itemCount: docs.length,
-              separatorBuilder: (_, _) => Container(
-                height: 0.5,
-                color: AppColors.textPrimary.withValues(alpha: 0.08),
-              ),
-              itemBuilder: (context, i) => LhotseDocRow(
-                name: docs[i].name,
-                date: docs[i].date,
-                icon: docCategoryIcon(docs[i].category),
-              ),
+          bodyBuilder: (bottomPadding) => ListView.separated(
+            shrinkWrap: true,
+            padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg, 0, AppSpacing.lg, bottomPadding + AppSpacing.md),
+            itemCount: filteredDocs.length,
+            separatorBuilder: (_, _) => Container(
+              height: 0.5,
+              color: AppColors.textPrimary.withValues(alpha: 0.08),
+            ),
+            itemBuilder: (context, i) => LhotseDocRow(
+              name: filteredDocs[i].name,
+              date: filteredDocs[i].date,
+              icon: docCategoryIcon(filteredDocs[i].category),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        );
+      },
+    ),
+  );
 }

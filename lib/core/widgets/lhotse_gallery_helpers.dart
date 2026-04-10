@@ -11,7 +11,7 @@ void showAllGallery(
     context: context,
     title: title,
     itemCount: images.length,
-    estimatedItemHeight: 210,
+
     listPadding: EdgeInsets.fromLTRB(
       AppSpacing.lg,
       0,

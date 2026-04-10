@@ -1569,7 +1569,7 @@ void _showAllNews(BuildContext context) {
     context: context,
     title: 'NOTICIAS',
     itemCount: _mockNews.length,
-    estimatedItemHeight: 232,
+
     listPadding: EdgeInsets.fromLTRB(
       AppSpacing.lg,
       0,

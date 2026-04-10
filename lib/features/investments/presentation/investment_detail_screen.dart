@@ -456,7 +456,7 @@ void _showAllNews(BuildContext context) {
     context: context,
     title: 'NOTICIAS',
     itemCount: _mockNews.length,
-    estimatedItemHeight: 84,
+
     itemBuilder: (context, i) {
       final news = _mockNews[i];
       return Padding(

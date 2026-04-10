@@ -427,13 +427,15 @@ class _BrandLeading extends StatelessWidget {
       );
     }
 
+    final initials = brandName.split(' ').map((w) => w[0]).join();
+
     return Container(
       width: 36,
       height: 36,
       color: AppColors.primary,
       alignment: Alignment.center,
       child: Text(
-        brandName[0],
+        initials,
         style: AppTypography.bodyLarge.copyWith(
           color: AppColors.textOnDark,
           fontWeight: FontWeight.w700,

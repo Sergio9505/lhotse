@@ -444,23 +444,6 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // "8% anual" — fades with title (rentaFija only)
-          if (isRentaFija)
-            Positioned(
-              top: topPadding + expandedAmountY + 12,
-              right: AppSpacing.lg,
-              child: Opacity(
-                opacity: expandedOpacity,
-                child: Text(
-                  '8% anual',
-                  style: AppTypography.bodyLarge.copyWith(
-                    color: AppColors.accentMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-
           // Metadata — fades with title (coinversión only)
           if (!isCompraDirecta && !isRentaFija)
             Positioned(
@@ -723,6 +706,11 @@ final _rfDocsByInvestment = <String, List<LhotseDocument>>{
     LhotseDocument(name: 'Informe trimestral Q1', date: '01 ABR. 2026', category: DocCategory.informe),
     LhotseDocument(name: 'Certificado fiscal', date: '02 ENE. 2026', category: DocCategory.fiscal),
   ],
+  'inv-c7': [
+    LhotseDocument(name: 'Contrato de inversión', date: '15 SEP. 2023', category: DocCategory.contrato),
+    LhotseDocument(name: 'Certificado de liquidación', date: '15 SEP. 2025', category: DocCategory.certificado),
+    LhotseDocument(name: 'Certificado fiscal', date: '01 OCT. 2025', category: DocCategory.fiscal),
+  ],
 };
 
 // ---------------------------------------------------------------------------
@@ -865,7 +853,7 @@ class _RentaFijaRow extends StatelessWidget {
                 ] else ...[
                   const SizedBox(height: 3),
                   Text(
-                    '${inv.durationMonths} MESES',
+                    '${inv.durationMonths} MESES  ·  ${inv.returnRate.toStringAsFixed(0)}%',
                     style: AppTypography.caption.copyWith(
                       color: AppColors.accentMuted,
                       letterSpacing: 1.2,
