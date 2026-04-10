@@ -28,11 +28,12 @@ class BrandsScreen extends StatelessWidget {
           // Brand grid
           Expanded(
             child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(26, 0, 26, 32),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.xl),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                crossAxisSpacing: AppSpacing.md,
-                mainAxisSpacing: AppSpacing.md,
+                crossAxisSpacing: AppSpacing.xl,
+                mainAxisSpacing: AppSpacing.xl,
                 childAspectRatio: 1.0,
               ),
               itemCount: mockBrands.length,
@@ -54,11 +55,8 @@ class _BrandCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (brand.logoAsset != null)
-            SvgPicture.asset(
+      child: brand.logoAsset != null
+          ? SvgPicture.asset(
               brand.logoAsset!,
               height: 40,
               colorFilter: const ColorFilter.mode(
@@ -66,23 +64,12 @@ class _BrandCard extends StatelessWidget {
                 BlendMode.srcIn,
               ),
             )
-          else
-            Text(
-              brand.name[0],
-              style: AppTypography.displayLarge.copyWith(
+          : Text(
+              brand.name.toUpperCase(),
+              style: AppTypography.headingSmall.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            brand.name.toUpperCase(),
-            style: AppTypography.caption.copyWith(
-              color: AppColors.accentMuted,
-              letterSpacing: 1.8,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

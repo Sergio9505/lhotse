@@ -9,17 +9,18 @@ const _kBrandCovers = [
 ];
 
 final mockBrands = [
+  // Existing brands (with investments in strategy)
   BrandData(
     id: '1',
     name: 'Myttas',
-    logoAsset: 'assets/icons/brands/myttas.svg',
+    logoAsset: 'assets/icons/brands/mytas.svg',
     coverImageUrl: _kBrandCovers[0],
     businessModel: BusinessModel.compraDirecta,
   ),
   BrandData(
     id: '2',
     name: 'Lacomb & Bos',
-    logoAsset: 'assets/icons/brands/lacomb_bos.svg',
+    logoAsset: 'assets/icons/brands/L&B.svg',
     coverImageUrl: _kBrandCovers[1],
     businessModel: BusinessModel.coinversion,
   ),
@@ -47,12 +48,14 @@ final mockBrands = [
   BrandData(
     id: '6',
     name: 'Andhy',
+    logoAsset: 'assets/icons/brands/andhy.svg',
     coverImageUrl: _kBrandCovers[0],
     businessModel: BusinessModel.compraDirecta,
   ),
   BrandData(
     id: '7',
     name: 'Ciclo',
+    logoAsset: 'assets/icons/brands/ciclo.svg',
     coverImageUrl: _kBrandCovers[2],
     businessModel: BusinessModel.coinversion,
   ),
@@ -61,5 +64,41 @@ final mockBrands = [
     name: 'Renta Fija',
     coverImageUrl: _kBrandCovers[3],
     businessModel: BusinessModel.rentaFija,
+  ),
+  // New brands (firmas only — no investments/projects yet)
+  BrandData(
+    id: '9',
+    name: 'Casa Tessela',
+    logoAsset: 'assets/icons/brands/casaTessela.svg',
+    coverImageUrl: _kBrandCovers[0],
+    businessModel: BusinessModel.compraDirecta,
+  ),
+  BrandData(
+    id: '10',
+    name: 'Llabe',
+    logoAsset: 'assets/icons/brands/llabe.svg',
+    coverImageUrl: _kBrandCovers[1],
+    businessModel: BusinessModel.coinversion,
+  ),
+  BrandData(
+    id: '11',
+    name: 'Nytido',
+    logoAsset: 'assets/icons/brands/nytido.svg',
+    coverImageUrl: _kBrandCovers[2],
+    businessModel: BusinessModel.coinversion,
+  ),
+  BrandData(
+    id: '12',
+    name: 'Comono',
+    logoAsset: 'assets/icons/brands/comono.svg',
+    coverImageUrl: _kBrandCovers[3],
+    businessModel: BusinessModel.compraDirecta,
+  ),
+  BrandData(
+    id: '13',
+    name: 'Ammaca',
+    logoAsset: 'assets/icons/brands/ammaca.svg',
+    coverImageUrl: _kBrandCovers[4],
+    businessModel: BusinessModel.coinversion,
   ),
 ];
