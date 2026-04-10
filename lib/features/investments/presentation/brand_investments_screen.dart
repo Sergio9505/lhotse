@@ -63,9 +63,7 @@ class BrandInvestmentsScreen extends StatelessWidget {
 
     final sectionLabel = isCompraDirecta
         ? 'MIS ACTIVOS'
-        : isRentaFija
-            ? 'MIS OPERACIONES'
-            : 'ACTIVAS';
+        : 'ACTIVAS';
 
     final heroTitle = isRentaFija
         ? 'MIS INVERSIONES\nA RENTA FIJA'

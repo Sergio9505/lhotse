@@ -200,35 +200,40 @@ Both: 44px touch target, 20px icon, defaults to `context.pop()`.
 
 ## ADR-12: Documents Bottom Sheet with Type Filters
 
-**Date:** 2026-03-31
+**Date:** 2026-03-31 (updated 2026-04-10)
 **Status:** Accepted
 
 **Context:** Investment detail screens can have 10+ documents. Showing all inline would dominate the screen. Needed a way to browse and filter without leaving the context.
 
-**Decision:** Show 3 most recent documents inline with "Ver todos (N)" link (left-aligned, accentMuted w500). Full list opens in a `showLhotseBottomSheet` with document type filter tabs (Legal, Financiero, Obra, Fiscal). Filter uses same underline-tab pattern as rest of app. Bottom sheet has fixed height adapted to content (cannot expand, only drag down to dismiss).
+**Decision:** Show 3 most recent documents inline with "Ver todos (N)" link (left-aligned, accentMuted w500). Full list opens via `showDocsBottomSheet` which uses `LhotseBottomSheetBody` (shared architecture) with `StatefulBuilder` for filter state. Filter chips are square (sharp edges, black fill when active, transparent when inactive, AnimatedContainer color transition, X button to clear). Bottom sheet sizes dynamically to content via `ConstrainedBox(maxHeight: 80%)` + `Column(mainAxisSize: MainAxisSize.min)` — no manual height estimation, safe area handled automatically.
 
 **Consequences:**
 - (+) Documents don't dominate the investment detail screen
-- (+) Type filters help find specific documents quickly
-- (+) Consistent with news and renta fija operations bottom sheet pattern
-- (+) Fixed height prevents jarring resize when filtering
+- (+) Square filter chips consistent with design system (sharp edges) and coinversion detail docs tab
+- (+) Dynamic sizing adapts to any number of documents without manual tuning
+- (+) `LhotseBottomSheetBody` shared between all bottom sheets — single source of truth for drag handle, title, sizing
 
 ---
 
 ## ADR-13: Consistent Ledger Row Format Across Models
 
-**Date:** 2026-03-31
+**Date:** 2026-03-31 (updated 2026-04-10)
 **Status:** Accepted
 
-**Context:** Considered showing different data per business model in the brand investments list (e.g., vencimiento for Renta Fija instead of location). This would optimize each model but break scanning consistency.
+**Context:** Each business model has different key metrics. Considered a single format for all, but RF operations are fundamentally different (no project, no location, no photo). Needed model-specific rows while maintaining visual consistency.
 
-**Decision:** All brand investment rows use the same format: thumbnail + project name + location (or null for Renta Fija) + amount + return. Model-specific data only appears in the detail screen (L3). Exception: Renta Fija has no L3 detail screen — its data is simple enough (date, duration, amount) that L2 rows are self-contained. Renta Fija shows max 3 operations inline with "Ver todos (N)" bottom sheet for overflow.
+**Decision:** Shared visual structure (leading + content left + trailing right) with model-specific content:
+- **compraDirecta**: _AssetRow — 80×60 thumbnail + name/location/amount + chevron. "MIS ACTIVOS" label.
+- **coinversión**: _AssetRow — thumbnail + name/amount + "duration·%*" caption + chevron. Active footnote "* Rentabilidad estimada". Completed: returnLabelSpans "invested·duration·+ROI%" (green w600 for ROI).
+- **rentaFija**: _RentaFijaRow — 42×42 date badge (MES/AÑO as identifier) + amount + "duration·%" caption. No L3 detail. Completed: amount (totalReturn) + "invested·duration·+ROI%" (green). Sorted by soonest maturity. ACTIVAS/FINALIZADAS sections. Doc icon per row.
+
+Unified completed metrics across all models: **invertido · duración · ROI%** (L2 rows + L3 detail). Duration before ROI everywhere. Green = realized returns only.
 
 **Consequences:**
-- (+) User can scan consistently across all brands
-- (+) Predictable layout regardless of business model
-- (+) Model-specific details reserved for the right level of depth
-- (+) Renta Fija avoids a redundant detail screen
+- (+) Each model shows its relevant data without showing irrelevant fields
+- (+) Same visual rhythm: [leading 36-80px] + [content stacked] + [trailing icon]
+- (+) Completed metrics consistent across models — user learns the pattern once
+- (+) Renta Fija avoids a redundant detail screen — L2 is self-contained
 
 ---
 
@@ -370,3 +375,52 @@ Push notifications: deferred to Supabase connection. The in-app system is mock-f
 - (+) Mock-first: ready for Supabase realtime swap
 - (-) No push notifications until backend is connected
 - (-) Bell position in Strategy required Positioned (not Row) due to custom hero delegate
+
+---
+
+## ADR-19: Renta Fija L2 Design — Date Badge + No L3
+
+**Date:** 2026-04-10
+**Status:** Accepted
+
+**Context:** Renta fija operations are simple (fixed duration, fixed rate, monthly payments). An L3 detail screen would be redundant. The L2 screen needed to be the terminal view while showing enough data and maintaining premium design.
+
+**Decision:** Dedicated `_RentaFijaRow` widget with:
+- **Date badge** (42×42 black square): shows start month + year (e.g., "MAR 26") as the operation identifier. Replaces numbered badges (1, 2, 3) which had no meaning. Start date is a real identifier — each operation started on a different date.
+- **Active rows**: amount (headingSmall 18px) + "duration MESES · 8%" (caption 10px). Two lines, proportional with badge.
+- **Completed rows**: totalReturn as hero amount + "invested · duration · +ROI%" with green w600 for ROI (realized return).
+- **Sorting**: active by soonest maturity first; completed by most recent completion.
+- **No L3**: doc icon per row opens `showDocsBottomSheet` with per-operation documents. No navigation to detail screen.
+- **Sections**: "ACTIVAS" + "FINALIZADAS" matching coinversión pattern.
+
+Model fields added to `InvestmentData`: `accumulatedInterest`, `periodicPaymentAmount`, `paymentsReceived`, `totalPayments`, `nextPaymentDate`. All optional, RF-only.
+
+**Consequences:**
+- (+) Date badge is a meaningful identifier (vs arbitrary numbering)
+- (+) Two-line rows proportional with 42px badge — no visual imbalance
+- (+) Sorting by maturity answers "what's ending soonest?" — the key RF question
+- (+) No redundant L3 screen — all info fits in L2 row + doc bottom sheet
+- (+) ACTIVAS/FINALIZADAS sections consistent with coinversión
+- (-) Date badge pattern unique to RF — but justified by the model's nature (no project photo, no brand logo)
+
+---
+
+## ADR-20: Unified Completed Metrics — Invertido · Duración · ROI
+
+**Date:** 2026-04-10
+**Status:** Accepted
+
+**Context:** Completed investments showed different metrics per model: coinversión had ROI + plusvalía, RF had nothing (was hidden). Needed a consistent pattern.
+
+**Decision:** All completed investments show 3 metrics: **invertido · duración · ROI%**. Duration before ROI. Applied to:
+- L1 (Strategy): not applicable (shows active summary only)
+- L2 (Brand investments): subtitle in caption, ROI in green w600
+- L3 (Completed detail): 3 LhotseMetricBlock widgets (invertido, duración, ROI)
+
+Plusvalía removed — derivable from hero (totalReturn) minus invested. Duration added — contextualizes the ROI (16% in 24 months ≠ 16% in 48 months). RF uses contractual duration; coinversión uses `actualDuration` (real). Green (#2D6A4F) only for realized returns.
+
+**Consequences:**
+- (+) User learns one pattern for all completed investments
+- (+) Duration contextualizes ROI — critical for comparing operations
+- (+) No redundant data (plusvalía derivable from hero - invested)
+- (+) Green = realized returns creates trust (not used for estimates)
