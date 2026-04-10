@@ -14,7 +14,6 @@ final mockInvestments = [
     returnRate: 12,
     durationMonths: 36,
     expectedEndDate: DateTime(2028, 6),
-    constructionPhase: 'Fase 3',
     purchaseValue: 420000,
     cashPayment: 168000,
     mortgage: 252000,
@@ -24,6 +23,19 @@ final mockInvestments = [
     rentalIncome: 2100,
     revaluation: 9,
     unitName: 'Piso 4B',
+    assetInfo: AssetInfo(entries: [
+      AssetInfoEntry(label: 'Dirección', value: 'Calle Serrano 42, Madrid'),
+      AssetInfoEntry(label: 'Superficie', value: '120 m²'),
+      AssetInfoEntry(label: 'Habitaciones', value: '3'),
+      AssetInfoEntry(label: 'Año construcción', value: '2024'),
+      AssetInfoEntry(label: 'Planta', value: '4ª'),
+      AssetInfoEntry(label: 'Referencia catastral', value: '9872054VK4797S0004WX'),
+    ]),
+    renderImages: [
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
+      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800',
+    ],
   ),
   InvestmentData(
     id: 'inv-2',
@@ -34,7 +46,6 @@ final mockInvestments = [
     returnRate: 15,
     durationMonths: 48,
     expectedEndDate: DateTime(2029, 3),
-    constructionPhase: 'Fase 2',
     isDelayed: true,
     purchaseValue: 680000,
     cashPayment: 340000,
@@ -45,6 +56,20 @@ final mockInvestments = [
     rentalIncome: 3200,
     revaluation: 11,
     unitName: 'Villa 7',
+    assetInfo: AssetInfo(entries: [
+      AssetInfoEntry(label: 'Dirección', value: 'Urb. La Moraleja, Alcobendas'),
+      AssetInfoEntry(label: 'Superficie', value: '380 m²'),
+      AssetInfoEntry(label: 'Habitaciones', value: '5'),
+      AssetInfoEntry(label: 'Parcela', value: '1.200 m²'),
+      AssetInfoEntry(label: 'Año construcción', value: '2023'),
+      AssetInfoEntry(label: 'Referencia catastral', value: '1234567VK4797S0012AB'),
+    ]),
+    renderImages: [
+      'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
+      'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800',
+    ],
   ),
 
   // Lacomb & Bos

@@ -261,26 +261,6 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
       totalFormatted != oldDelegate.totalFormatted;
 }
 
-class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const _StickyHeaderDelegate({required this.child});
-
-  final Widget child;
-
-  @override
-  double get minExtent => 70;
-
-  @override
-  double get maxExtent => 70;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(covariant _StickyHeaderDelegate oldDelegate) => false;
-}
-
 class _BrandRow extends StatefulWidget {
   const _BrandRow({
     required this.brandName,

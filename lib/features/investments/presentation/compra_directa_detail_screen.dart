@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../../core/domain/asset_info.dart';
 import '../../../core/domain/investment_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
@@ -10,23 +11,23 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
-import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
-import '../../../core/widgets/lhotse_metric_block.dart';
+import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
+final _dateFormat = DateFormat('MM/yyyy');
 
 const _kHeroHeight = 200.0;
 
 const _kMaxVisibleGallery = 5;
 
 // ===========================================================================
-// Completed Investment Detail — 3 tabs: RESULTADO / ACTIVO / DOCS
+// CompraDirecta Detail — NestedScrollView + 3 tabs
 // ===========================================================================
 
-class CompletedDetailScreen extends StatefulWidget {
-  const CompletedDetailScreen({
+class CompraDirectaDetailScreen extends StatefulWidget {
+  const CompraDirectaDetailScreen({
     super.key,
     required this.investment,
     this.project,
@@ -36,16 +37,16 @@ class CompletedDetailScreen extends StatefulWidget {
   final ProjectData? project;
 
   @override
-  State<CompletedDetailScreen> createState() => _CompletedDetailScreenState();
+  State<CompraDirectaDetailScreen> createState() =>
+      _CompraDirectaDetailScreenState();
 }
 
-class _CompletedDetailScreenState extends State<CompletedDetailScreen>
+class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
     with SingleTickerProviderStateMixin {
   final _outerController = ScrollController();
   late final TabController _tabController;
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
-  int _tabIndex = 0;
 
   // Doc filter state
   static const _docFilterLabels = {
@@ -57,10 +58,8 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
   final Set<DocCategory> _activeDocFilters = {};
 
   List<LhotseDocument> get _filteredDocs {
-    if (_activeDocFilters.isEmpty) return _completedDocs;
-    return _completedDocs
-        .where((d) => _activeDocFilters.contains(d.category))
-        .toList();
+    if (_activeDocFilters.isEmpty) return _docs;
+    return _docs.where((d) => _activeDocFilters.contains(d.category)).toList();
   }
 
   void _toggleDocFilter(DocCategory cat) {
@@ -77,12 +76,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
   void initState() {
     super.initState();
     _outerController.addListener(_onOuterScroll);
-    _tabController = TabController(length: 2, vsync: this)
-      ..addListener(() {
-        if (_tabController.index != _tabIndex) {
-          setState(() => _tabIndex = _tabController.index);
-        }
-      });
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -113,6 +107,9 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
     final project = widget.project;
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final purchaseFormatted = inv.purchaseValue != null
+        ? _eurFormat.format(inv.purchaseValue)
+        : _eurFormat.format(inv.amount);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -121,9 +118,9 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
         body: NestedScrollView(
           controller: _outerController,
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            // =========================================================
-            // 1. HERO
-            // =========================================================
+            // =============================================================
+            // 1. HERO — full-bleed asset image
+            // =============================================================
             SliverAppBar(
               pinned: true,
               expandedHeight: _kHeroHeight,
@@ -143,7 +140,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${_eurFormat.format(inv.totalReturn ?? inv.amount)}€',
+                      '$purchaseFormatted€',
                       style: AppTypography.headingSmall.copyWith(
                         color: AppColors.textPrimary,
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -184,9 +181,9 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
               ),
             ),
 
-            // =========================================================
-            // 2. IDENTITY + AMOUNT
-            // =========================================================
+            // =============================================================
+            // 2. IDENTITY + PURCHASE VALUE + SECONDARY METRICS
+            // =============================================================
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
@@ -212,7 +209,8 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                         ),
                         if (project?.location != null) ...[
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8),
                             child: Text(
                               '•',
                               style: AppTypography.caption.copyWith(
@@ -235,9 +233,9 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    // Hero number — total return
+                    // Hero number — purchase value
                     Text(
-                      '${_eurFormat.format(inv.totalReturn ?? inv.amount)}€',
+                      '$purchaseFormatted€',
                       style: AppTypography.displayLarge.copyWith(
                         color: AppColors.textPrimary,
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -245,52 +243,114 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'RETORNO TOTAL',
+                      'VALOR DE COMPRA',
                       style: AppTypography.caption.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 2.0,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: LhotseMetricBlock(
-                            value: '${_eurFormat.format(inv.amount)}€',
-                            label: 'Invertido',
+                    // 3-col secondary metrics
+                    IntrinsicHeight(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  inv.rentalIncome != null
+                                      ? '${_eurFormat.format(inv.rentalIncome)}€/mes'
+                                      : '—',
+                                  style: AppTypography.headingLarge.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'ALQUILER',
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.accentMuted,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.lg),
-                        Expanded(
-                          child: LhotseMetricBlock(
-                            value: '${inv.actualDuration ?? inv.durationMonths} meses',
-                            label: 'Duración',
+                          Container(
+                            width: 0.5,
+                            color:
+                                AppColors.textPrimary.withValues(alpha: 0.12),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.lg),
-                        Expanded(
-                          child: LhotseMetricBlock(
-                            value: '+${inv.actualRoi?.toStringAsFixed(1) ?? '-'}%',
-                            label: 'ROI',
-                            valueColor: const Color(0xFF2D6A4F),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${inv.returnRate.toStringAsFixed(0)}%',
+                                  style: AppTypography.headingLarge.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'RENTABILIDAD',
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.accentMuted,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                          Container(
+                            width: 0.5,
+                            color:
+                                AppColors.textPrimary.withValues(alpha: 0.12),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  inv.revaluation != null
+                                      ? '${inv.revaluation!.toStringAsFixed(0)}%'
+                                      : '—',
+                                  style: AppTypography.headingLarge.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'REVALORIZACIÓN',
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.accentMuted,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
 
-            // =========================================================
-            // 3. TABS
-            // =========================================================
+            // =============================================================
+            // 3. TABS — pinned
+            // =============================================================
             SliverPersistentHeader(
               pinned: true,
               delegate: LhotseTabBarDelegate(
                   controller: _tabController,
                   tabs: const [
                     Tab(text: 'ACTIVO'),
+                    Tab(text: 'FINANZAS'),
                     Tab(text: 'DOCS'),
                   ],
                 ),
@@ -301,18 +361,22 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
             controller: _tabController,
             children: [
               _TabScrollWrapper(
+                bottomPadding: bottomPadding,
                 child: _ActivoTab(
                   investment: inv,
                   cardWidth: screenWidth * 0.75,
                 ),
-                bottomPadding: bottomPadding,
               ),
               _TabScrollWrapper(
-                child: _DocsTab(
+                bottomPadding: bottomPadding,
+                child: _FinanzasTab(investment: inv),
+              ),
+              _TabScrollWrapper(
+                bottomPadding: bottomPadding,
+                child: _DocumentosTab(
                   documents: _filteredDocs,
                   chips: _buildDocChips(),
                 ),
-                bottomPadding: bottomPadding,
               ),
             ],
           ),
@@ -344,7 +408,8 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: active ? AppColors.primary : Colors.transparent,
+                      color:
+                          active ? AppColors.primary : Colors.transparent,
                       border: Border.all(
                         color: active
                             ? AppColors.primary
@@ -371,7 +436,8 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                 behavior: HitTestBehavior.opaque,
                 child: const Padding(
                   padding: EdgeInsets.all(6),
-                  child: Icon(LucideIcons.x, size: 14, color: AppColors.accentMuted),
+                  child: Icon(LucideIcons.x,
+                      size: 14, color: AppColors.accentMuted),
                 ),
               ),
           ],
@@ -399,14 +465,10 @@ class _TabScrollWrapper extends StatelessWidget {
   }
 }
 
-// ===========================================================================
-// Tab bar delegate
-// ===========================================================================
-
 // (Tab bar delegate extracted to core/widgets/lhotse_tab_bar_delegate.dart)
 
 // ===========================================================================
-// TAB: ACTIVO
+// TAB: ACTIVO — property info + gallery
 // ===========================================================================
 
 class _ActivoTab extends StatelessWidget {
@@ -429,7 +491,8 @@ class _ActivoTab extends StatelessWidget {
         if (inv.renderImages?.isNotEmpty ?? false) ...[
           const SizedBox(height: AppSpacing.xxl),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
               children: [
                 Text(
@@ -460,13 +523,16 @@ class _ActivoTab extends StatelessWidget {
             height: 200,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: (inv.renderImages!.length > _kMaxVisibleGallery
-                      ? _kMaxVisibleGallery
-                      : inv.renderImages!.length),
-              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              itemCount: inv.renderImages!.length > _kMaxVisibleGallery
+                  ? _kMaxVisibleGallery
+                  : inv.renderImages!.length,
+              separatorBuilder: (_, _) =>
+                  const SizedBox(width: AppSpacing.sm),
               itemBuilder: (context, i) => GestureDetector(
-                onTap: () => showFullImage(context, inv.renderImages![i]),
+                onTap: () =>
+                    showFullImage(context, inv.renderImages![i]),
                 child: Container(
                   width: cardWidth,
                   decoration: const BoxDecoration(
@@ -495,11 +561,69 @@ class _ActivoTab extends StatelessWidget {
 }
 
 // ===========================================================================
-// TAB: DOCS
+// TAB: FINANZAS — financing details
 // ===========================================================================
 
-class _DocsTab extends StatelessWidget {
-  const _DocsTab({required this.documents, required this.chips});
+class _FinanzasTab extends StatelessWidget {
+  const _FinanzasTab({required this.investment});
+  final InvestmentData investment;
+
+  @override
+  Widget build(BuildContext context) {
+    final inv = investment;
+    final entries = <AssetInfoEntry>[];
+
+    if (inv.cashPayment != null) {
+      entries.add(AssetInfoEntry(
+        label: 'Contado',
+        value: '${_eurFormat.format(inv.cashPayment)}€',
+      ));
+    }
+    if (inv.mortgage != null) {
+      entries.add(AssetInfoEntry(
+        label: 'Hipoteca',
+        value: '${_eurFormat.format(inv.mortgage)}€',
+      ));
+    }
+    if (inv.mortgageConditions != null) {
+      entries.add(AssetInfoEntry(
+        label: 'Condiciones',
+        value: inv.mortgageConditions!,
+      ));
+    }
+    if (inv.monthlyPayment != null) {
+      entries.add(AssetInfoEntry(
+        label: 'Cuota mensual',
+        value: '${_eurFormat.format(inv.monthlyPayment)}€/mes',
+      ));
+    }
+    if (inv.mortgageEndDate != null) {
+      entries.add(AssetInfoEntry(
+        label: 'Finalización hipoteca',
+        value: _dateFormat.format(inv.mortgageEndDate!),
+      ));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (entries.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xl),
+          const LhotseSectionLabel(label: 'FINANCIACIÓN'),
+          const SizedBox(height: AppSpacing.sm),
+          LhotseKeyValueList(entries: entries),
+        ],
+      ],
+    );
+  }
+}
+
+// ===========================================================================
+// TAB: DOCS — filterable documents
+// ===========================================================================
+
+class _DocumentosTab extends StatelessWidget {
+  const _DocumentosTab({required this.documents, required this.chips});
   final List<LhotseDocument> documents;
   final Widget chips;
 
@@ -522,7 +646,8 @@ class _DocsTab extends StatelessWidget {
                   if (i > 0)
                     Container(
                       height: 0.5,
-                      color: AppColors.textPrimary.withValues(alpha: 0.08),
+                      color:
+                          AppColors.textPrimary.withValues(alpha: 0.08),
                     ),
                   LhotseDocRow(
                     name: doc.name,
@@ -540,18 +665,32 @@ class _DocsTab extends StatelessWidget {
 }
 
 // ===========================================================================
-// Mock docs for completed investments
-// ===========================================================================
-
-// ===========================================================================
 // Mock docs
 // ===========================================================================
 
-final _completedDocs = [
-  LhotseDocument(name: 'Acta de liquidación', date: '15 FEB. 2026', category: DocCategory.legal),
-  LhotseDocument(name: 'Certificado de retención fiscal', date: '15 FEB. 2026', category: DocCategory.fiscal),
-  LhotseDocument(name: 'Escritura de compraventa', date: '10 ENE. 2026', category: DocCategory.legal),
-  LhotseDocument(name: 'Informe final de rentabilidad', date: '12 FEB. 2026', category: DocCategory.financiero),
-  LhotseDocument(name: 'Certificado de finalización de obra', date: '20 DIC. 2025', category: DocCategory.obra),
-  LhotseDocument(name: 'Factura notaría cierre', date: '15 FEB. 2026', category: DocCategory.financiero),
+final _docs = [
+  LhotseDocument(
+      name: 'Escritura de compraventa',
+      date: '15 MAR. 2025',
+      category: DocCategory.legal),
+  LhotseDocument(
+      name: 'Contrato de arrendamiento',
+      date: '01 ABR. 2025',
+      category: DocCategory.legal),
+  LhotseDocument(
+      name: 'Certificado energético',
+      date: '10 FEB. 2025',
+      category: DocCategory.obra),
+  LhotseDocument(
+      name: 'Nota simple registral',
+      date: '12 MAR. 2025',
+      category: DocCategory.legal),
+  LhotseDocument(
+      name: 'Certificado de retención fiscal',
+      date: '02 ENE. 2026',
+      category: DocCategory.fiscal),
+  LhotseDocument(
+      name: 'Recibo IBI 2025',
+      date: '15 SEP. 2025',
+      category: DocCategory.fiscal),
 ];

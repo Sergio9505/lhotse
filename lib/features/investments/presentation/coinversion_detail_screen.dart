@@ -10,6 +10,7 @@ import '../../../core/domain/project_data.dart';
 import '../../../core/domain/project_phase.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
@@ -28,7 +29,7 @@ final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
 const _kHeroHeight = 200.0;
 const _kMaxVisibleGallery = 5;
-const _kTabBarHeight = 49.0;
+
 
 class CoinversionDetailScreen extends StatefulWidget {
   const CoinversionDetailScreen({
@@ -284,7 +285,15 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
               // =========================================================
               SliverPersistentHeader(
                 pinned: true,
-                delegate: _TabBarDelegate(controller: _tabController),
+                delegate: LhotseTabBarDelegate(
+                  controller: _tabController,
+                  tabs: const [
+                    Tab(text: 'AVANCE'),
+                    Tab(text: 'ACTIVO'),
+                    Tab(text: 'FINANZAS'),
+                    Tab(text: 'DOCS'),
+                  ],
+                ),
               ),
             ],
 
@@ -421,75 +430,7 @@ class _TabScrollWrapper extends StatelessWidget {
   }
 }
 
-// ===========================================================================
-// Tab bar delegate — pinned below identity section
-// ===========================================================================
-
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  const _TabBarDelegate({required this.controller});
-  final TabController controller;
-
-  @override
-  double get minExtent => _kTabBarHeight;
-  @override
-  double get maxExtent => _kTabBarHeight;
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: AppColors.background,
-      child: Column(
-        children: [
-          Expanded(
-            child: TabBar(
-              controller: controller,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              labelPadding: EdgeInsets.zero,
-              tabAlignment: TabAlignment.fill,
-              isScrollable: false,
-              labelStyle: AppTypography.labelLarge.copyWith(
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5,
-              ),
-              unselectedLabelStyle:
-                  AppTypography.labelLarge.copyWith(
-                fontWeight: FontWeight.w400,
-                letterSpacing: 1.5,
-              ),
-              labelColor: AppColors.textPrimary,
-              unselectedLabelColor: AppColors.accentMuted,
-              indicator: const UnderlineTabIndicator(
-                borderSide: BorderSide(
-                  width: 1.5,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              indicatorSize: TabBarIndicatorSize.label,
-              dividerColor: Colors.transparent,
-              overlayColor:
-                  WidgetStateProperty.all(Colors.transparent),
-              tabs: const [
-                Tab(text: 'AVANCE'),
-                Tab(text: 'ACTIVO'),
-                Tab(text: 'FINANZAS'),
-                Tab(text: 'DOCS'),
-              ],
-            ),
-          ),
-          Container(
-            height: 0.5,
-            color: AppColors.textPrimary.withValues(alpha: 0.08),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) =>
-      controller != oldDelegate.controller;
-}
+// (Tab bar delegate extracted to core/widgets/lhotse_tab_bar_delegate.dart)
 
 
 // ===========================================================================

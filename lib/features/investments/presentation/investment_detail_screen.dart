@@ -7,6 +7,7 @@ import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/brand_data.dart';
 import 'completed_detail_screen.dart';
+import 'compra_directa_detail_screen.dart';
 import '../../../core/domain/investment_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
@@ -48,17 +49,33 @@ class InvestmentDetailScreen extends StatelessWidget {
         mockBrands.where((b) => b.name == investment.brandName).firstOrNull;
     final model = brand?.businessModel ?? BusinessModel.coinversion;
 
+    final project = findProjectById(investment.projectId);
+
     // Coinversion — completed vs active
     if (model == BusinessModel.coinversion) {
       if (investment.isCompleted) {
         return CompletedDetailScreen(
           investment: investment,
-          project: findProjectById(investment.projectId),
+          project: project,
         );
       }
       return CoinversionDetailScreen(
         investment: investment,
-        project: findProjectById(investment.projectId),
+        project: project,
+      );
+    }
+
+    // CompraDirecta — completed vs active
+    if (model == BusinessModel.compraDirecta) {
+      if (investment.isCompleted) {
+        return CompletedDetailScreen(
+          investment: investment,
+          project: project,
+        );
+      }
+      return CompraDirectaDetailScreen(
+        investment: investment,
+        project: project,
       );
     }
 
@@ -69,24 +86,13 @@ class InvestmentDetailScreen extends StatelessWidget {
         children: [
           LhotseAppHeader(
             title: investment.projectName.toUpperCase(),
-            subtitle: model != BusinessModel.rentaFija
-                ? findProjectById(investment.projectId)
-                    ?.location
-                    .toUpperCase()
-                : null,
+            subtitle: null,
           ),
 
           const SizedBox(height: AppSpacing.md),
 
-          // Model-specific content
-          switch (model) {
-            BusinessModel.compraDirecta =>
-              _CompraDirectaDetail(investment: investment),
-            BusinessModel.coinversion =>
-              const SizedBox.shrink(), // handled above
-            BusinessModel.rentaFija =>
-              _RentaFijaDetail(investment: investment),
-          },
+          // Model-specific content (only rentaFija reaches here)
+          _RentaFijaDetail(investment: investment),
 
           const SizedBox(height: AppSpacing.xl),
 
@@ -167,110 +173,6 @@ class InvestmentDetailScreen extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Compra Directa — Andhy, Myttas
-// ---------------------------------------------------------------------------
-
-class _CompraDirectaDetail extends StatelessWidget {
-  const _CompraDirectaDetail({required this.investment});
-
-  final InvestmentData investment;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Main metrics — 2x2 grid
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: LhotseMetricBlock(
-                      value: investment.purchaseValue != null
-                          ? '${_eurFormat.format(investment.purchaseValue)}€'
-                          : '—',
-                      label: 'Valor de compra',
-                    ),
-                  ),
-                  Expanded(
-                    child: LhotseMetricBlock(
-                      value: investment.rentalIncome != null
-                          ? '${_eurFormat.format(investment.rentalIncome)}€'
-                          : '—',
-                      label: 'Alquiler mensual',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                children: [
-                  Expanded(
-                    child: LhotseMetricBlock(
-                      value: '${investment.returnRate.toStringAsFixed(0)}%',
-                      label: 'Rentabilidad',
-                    ),
-                  ),
-                  Expanded(
-                    child: LhotseMetricBlock(
-                      value: investment.revaluation != null
-                          ? '${investment.revaluation!.toStringAsFixed(0)}%'
-                          : '—',
-                      label: 'Revalorización',
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // Financing section
-        if (investment.cashPayment != null) ...[
-          const SizedBox(height: AppSpacing.xl),
-          const LhotseSectionLabel(label: 'FINANCIACIÓN'),
-          const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Column(
-              children: [
-                _DataRow(
-                    label: 'Contado',
-                    value:
-                        '${_eurFormat.format(investment.cashPayment)}€'),
-                if (investment.mortgage != null) ...[
-                  _DataRow(
-                      label: 'Hipoteca',
-                      value:
-                          '${_eurFormat.format(investment.mortgage)}€'),
-                  if (investment.mortgageConditions != null)
-                    _DataRow(
-                        label: 'Condiciones',
-                        value: investment.mortgageConditions!),
-                  if (investment.monthlyPayment != null)
-                    _DataRow(
-                        label: 'Cuota',
-                        value:
-                            '${_eurFormat.format(investment.monthlyPayment)}€/mes'),
-                  if (investment.mortgageEndDate != null)
-                    _DataRow(
-                        label: 'Finalización',
-                        value: _dateFormat
-                            .format(investment.mortgageEndDate!)),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Renta Fija
 // ---------------------------------------------------------------------------
 
@@ -336,42 +238,6 @@ class _RentaFijaDetail extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Shared components
-// ---------------------------------------------------------------------------
-
-class _DataRow extends StatelessWidget {
-  const _DataRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.accentMuted,
-            ),
-          ),
-          Text(
-            value,
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
           ),
         ],
       ),
