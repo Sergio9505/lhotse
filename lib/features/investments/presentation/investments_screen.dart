@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/widgets/lhotse_notification_bell.dart';
 import '../../../core/theme/app_theme.dart';
@@ -47,34 +48,9 @@ class InvestmentsScreen extends StatelessWidget {
             ),
           ),
 
-          // "RENTABILIDAD" sticky header
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _StickyHeaderDelegate(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: [0.7, 1.0],
-                    colors: [AppColors.background, Color(0x00E5E2DC)],
-                  ),
-                ),
-                padding: const EdgeInsets.only(
-                    top: AppSpacing.md, right: AppSpacing.lg, bottom: AppSpacing.sm),
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: 76,
-                  child: Text(
-                    'RENTABILIDAD',
-                    textAlign: TextAlign.right,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.accentMuted,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          // Spacer before brand rows
+          const SliverToBoxAdapter(
+            child: SizedBox(height: AppSpacing.md),
           ),
 
           // Brand rows
@@ -82,10 +58,16 @@ class InvestmentsScreen extends StatelessWidget {
             delegate: SliverChildBuilderDelegate(
               (context, i) {
                 final summary = summaries[i];
+                final brand = mockBrands
+                    .where((b) => b.name == summary.brandName)
+                    .firstOrNull;
+                final isEstimated =
+                    brand?.businessModel != BusinessModel.rentaFija;
                 return _BrandRow(
                   brandName: summary.brandName,
                   amount: summary.totalAmount,
                   averageReturn: summary.averageReturn,
+                  isEstimated: isEstimated,
                   isLast: i == summaries.length - 1,
                   onTap: () => context.push(
                       '/investments/brand/${Uri.encodeComponent(summary.brandName)}'),
@@ -94,6 +76,27 @@ class InvestmentsScreen extends StatelessWidget {
               childCount: summaries.length,
             ),
           ),
+
+          // Estimated footnote
+          if (summaries.any((s) {
+            final b = mockBrands.where((b) => b.name == s.brandName).firstOrNull;
+            return b?.businessModel != BusinessModel.rentaFija;
+          }))
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.lg,
+                  top: AppSpacing.md,
+                ),
+                child: Text(
+                  '* Rentabilidad estimada',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.accentMuted,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
 
           // Opportunities
           if (availableProjects.isNotEmpty)
@@ -283,6 +286,7 @@ class _BrandRow extends StatefulWidget {
     required this.brandName,
     required this.amount,
     required this.averageReturn,
+    this.isEstimated = false,
     this.isLast = false,
     this.onTap,
   });
@@ -290,6 +294,7 @@ class _BrandRow extends StatefulWidget {
   final String brandName;
   final double amount;
   final double averageReturn;
+  final bool isEstimated;
   final bool isLast;
   final VoidCallback? onTap;
 
@@ -341,7 +346,7 @@ class _BrandRowState extends State<_BrandRow> {
               _BrandLeading(brandName: widget.brandName),
               const SizedBox(width: 14),
 
-              // Left col: name (label) + amount (value)
+              // Left col: name + amount · return%
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,24 +372,22 @@ class _BrandRowState extends State<_BrandRow> {
                           ),
                           TextSpan(
                             text: '€',
-                            style: AppTypography.bodyMedium.copyWith(
+                            style: AppTypography.bodySmall.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '  ·  ${widget.averageReturn.toStringAsFixed(0)}%${widget.isEstimated ? '*' : ''}',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.accentMuted,
+                              letterSpacing: 1.2,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ],
-                ),
-              ),
-
-              // Return %
-              Text(
-                '${widget.averageReturn.toStringAsFixed(0)}%',
-                style: AppTypography.bodyLarge.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
                 ),
               ),
 
