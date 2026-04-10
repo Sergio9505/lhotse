@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'lhotse_image.dart';
 
 /// Reusable news card with image background + beige overlay (same as ProjectCard).
 /// Supports two sizes:
@@ -58,12 +59,7 @@ class LhotseNewsCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // Image
-            Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  Container(color: AppColors.surface),
-            ),
+            LhotseImage(imageUrl),
 
             // Play button (optional, above overlay)
             if (hasPlayButton)

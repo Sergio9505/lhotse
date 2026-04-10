@@ -1,9 +1,9 @@
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/lhotse_image.dart';
 
 class ProjectCard extends StatelessWidget {
   const ProjectCard({
@@ -19,119 +19,94 @@ class ProjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Stack(
-        fit: StackFit.expand,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Image
-          Image.network(
-            project.imageUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => Container(color: AppColors.surface),
-          ),
-
-          // Bottom overlay
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              color: AppColors.surface.withValues(alpha: 0.75),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Left column: name + brand/location
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AutoSizeText(
-                          project.name.toUpperCase(),
-                          maxLines: 1,
-                          minFontSize: 24,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.displayLarge.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                LhotseImage(project.imageUrl),
+                // VIP badge
+                if (project.isVip)
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Row(
-                          children: [
-                            Text(
-                              project.brand.toUpperCase(),
+                      ),
+                      child: Text(
+                        'VIP',
+                        style: AppTypography.captionSmall.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Text below image
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, 12, AppSpacing.lg, AppSpacing.md),
+            child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        project.name.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.headingLarge.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          Text(
+                            project.brand.toUpperCase(),
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textPrimary,
+                              letterSpacing: 1.8,
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              '•',
                               style: AppTypography.caption.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 1.8,
+                                color: AppColors.textPrimary
+                                    .withValues(alpha: 0.4),
                               ),
                             ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(
-                                '•',
-                                style: AppTypography.caption.copyWith(
-                                  color: AppColors.textPrimary
-                                      .withValues(alpha: 0.4),
-                                ),
-                              ),
-                            ),
-                            Text(
+                          ),
+                          Flexible(
+                            child: Text(
                               project.location.toUpperCase(),
                               style: AppTypography.caption.copyWith(
                                 color: AppColors.accentMuted,
                                 letterSpacing: 1.35,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  PhosphorIcon(
-                    PhosphorIconsThin.arrowUpRight,
-                    size: 18,
-                    color: AppColors.textPrimary,
-                  ),
-                ],
-              ),
-            ),
           ),
-
-          // VIP badge
-          if (project.isVip)
-            Positioned(
-              top: 16,
-              right: 16,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x1A000000),
-                      blurRadius: 10,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  'VIP',
-                  style: AppTypography.captionSmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );

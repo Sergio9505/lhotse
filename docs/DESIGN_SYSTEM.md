@@ -69,7 +69,7 @@ Base unit: 4px. Scale: 4, 8, 16, 24, 32, 48. Page horizontal padding: 24px.
 ## Components
 To be extracted from Figma as screens are built:
 - [x] Bottom navigation (5 tabs) — custom `_LhotseNavBar` in `shell_screen.dart`. Zara-inspired hybrid: icon-only (Phosphor thin: house, magnifyingGlass, user) for universal tabs + text-only (FIRMAS, ESTRATEGIA) for non-obvious tabs. Beige background (seamless with content), no border/shadow. Active indicator: 4px black dot below. Notification indicator: 4px red dot (same position). Bottom-aligned with SizedBox(22px). Text at bodyMedium w400 with FittedBox scaleDown
-- [x] Project card — `ProjectCard` in `home/presentation/widgets/project_card.dart`. Dynamic overlay (padding-based height), AutoSizeText title (40px, 1 line), brand+location metadata, ↗ icon
+- [x] Project card — `ProjectCard` in `home/presentation/widgets/project_card.dart`. Zara-style: image pure (no overlay) + text below on beige. Name at headingLarge (24px), brand·location caption below. No ↗ on card (image is the CTA). ↗ reserved for section titles only
 - [x] Brand card — `_BrandCard` in `brands/presentation/brands_screen.dart`. 2-column grid (ratio 1:1), cover image + gradient overlay + centered SVG logo (36px) + name (bodySmall bold) below logo
 - [x] News card — `LhotseNewsCard` in `core/widgets/lhotse_news_card.dart`. Beige overlay (surface 75%), title (1 line, ellipsis) + brand·subtitle metadata. Full (320×213) and compact (260×160) constructors. No "Explorar todo" card — ↗ header handles navigation
 - [x] Project carousel — `ProjectCarousel` in `home/presentation/widgets/project_carousel.dart`. PageView with 5s auto-scroll + progress bar

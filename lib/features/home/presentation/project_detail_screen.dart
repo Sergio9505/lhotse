@@ -5,6 +5,7 @@ import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/widgets/lhotse_image.dart';
 
 class ProjectDetailScreen extends StatelessWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
@@ -108,12 +109,7 @@ class _ProjectDetailBodyState extends State<_ProjectDetailBody> {
                   fit: StackFit.expand,
                   children: [
                     // Hero image
-                    Image.network(
-                      widget.project.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          Container(color: AppColors.surface),
-                    ),
+                    LhotseImage(widget.project.imageUrl),
 
                     // Gradient overlay
                     const DecoratedBox(
@@ -248,12 +244,7 @@ class _ContentPanel extends StatelessWidget {
               child: SizedBox(
                 width: 190,
                 height: 152,
-                child: Image.network(
-                  project.galleryImages.first,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
-                      Container(color: AppColors.surface),
-                ),
+                child: LhotseImage(project.galleryImages.first),
               ),
             ),
 

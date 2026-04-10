@@ -12,6 +12,7 @@ import '../../../core/domain/investment_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
+import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/widgets/lhotse_metric_block.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
@@ -332,12 +333,7 @@ void _showAllNews(BuildContext context) {
             SizedBox(
               width: 56,
               height: 56,
-              child: Image.network(
-                news.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    Container(color: AppColors.surface),
-              ),
+              child: LhotseImage(news.imageUrl),
             ),
             const SizedBox(width: 14),
             Expanded(

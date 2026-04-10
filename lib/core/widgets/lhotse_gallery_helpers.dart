@@ -3,6 +3,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_theme.dart';
 import 'lhotse_bottom_sheet.dart';
+import 'lhotse_image.dart';
 
 /// Opens a bottom sheet with all gallery images in a vertical scroll.
 void showAllGallery(
@@ -24,11 +25,7 @@ void showAllGallery(
       child: SizedBox(
         height: 200,
         width: double.infinity,
-        child: Image.network(
-          images[i],
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Container(color: AppColors.surface),
-        ),
+        child: LhotseImage(images[i]),
       ),
     ),
   );
@@ -66,12 +63,7 @@ void showFullImage(BuildContext context, String imageUrl) {
                             0,
                             bottomPadding + AppSpacing.lg,
                           ),
-                          child: Image.network(
-                            imageUrl,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) =>
-                                Container(color: AppColors.surface),
-                          ),
+                          child: LhotseImage(imageUrl, fit: BoxFit.contain),
                         ),
                       ),
                     ),

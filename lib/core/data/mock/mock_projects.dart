@@ -1,7 +1,7 @@
 import '../../domain/project_data.dart';
 
 const _kProjectImages = [
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
+  'assets/images/salon_dark.webp',
   'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80',
   'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
   'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',

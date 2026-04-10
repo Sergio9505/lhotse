@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 
 class BrandsScreen extends StatelessWidget {
@@ -76,11 +77,7 @@ class _BrandCard extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Cover image
-          Image.network(
-            brand.coverImageUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => Container(color: AppColors.surface),
-          ),
+          LhotseImage(brand.coverImageUrl),
 
           // Gradient overlay (bottom dark → top transparent)
           const DecoratedBox(

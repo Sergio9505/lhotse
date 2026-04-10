@@ -10,6 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
+import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
@@ -161,12 +162,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      project?.imageUrl ?? '',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          Container(color: AppColors.surface),
-                    ),
+                    LhotseImage(project?.imageUrl ?? ''),
                     const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -564,12 +560,7 @@ class _ActivoTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Image.network(
-                    inv.renderImages![i],
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        Container(color: AppColors.surface),
-                  ),
+                  child: LhotseImage(inv.renderImages![i]),
                 ),
               ),
             ),

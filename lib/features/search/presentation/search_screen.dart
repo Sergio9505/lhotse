@@ -6,6 +6,7 @@ import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 
@@ -258,11 +259,7 @@ class _CollectionCard extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Image
-          Image.network(
-            imageUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => Container(color: AppColors.surface),
-          ),
+          LhotseImage(imageUrl),
 
           // Gradient overlay
           const DecoratedBox(
@@ -408,12 +405,7 @@ class _ProjectResultItem extends StatelessWidget {
               child: SizedBox(
                 width: 64,
                 height: 64,
-                child: Image.network(
-                  project.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
-                      Container(color: AppColors.surface),
-                ),
+                child: LhotseImage(project.imageUrl),
               ),
             ),
             const SizedBox(width: AppSpacing.md),

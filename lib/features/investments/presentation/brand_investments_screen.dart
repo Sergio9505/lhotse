@@ -11,6 +11,7 @@ import '../../../core/domain/investment_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
+import '../../../core/widgets/lhotse_image.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
@@ -891,12 +892,7 @@ class _ProjectThumbnail extends StatelessWidget {
       width: 80,
       height: 60,
       child: imageUrl != null
-          ? Image.network(
-              imageUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  Container(color: AppColors.surface),
-            )
+          ? LhotseImage(imageUrl!)
           : Container(color: AppColors.surface),
     );
   }

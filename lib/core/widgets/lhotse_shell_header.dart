@@ -19,7 +19,7 @@ class LhotseShellHeader extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
         topPadding + 16,
-        AppSpacing.lg,
+        AppSpacing.sm,
         16,
       ),
       child: Row(

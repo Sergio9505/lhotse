@@ -9,6 +9,7 @@ import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/project_data.dart';
+import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_notification_bell.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -447,12 +448,7 @@ class _OpportunityCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(
-                project.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    Container(color: AppColors.surface),
-              ),
+              LhotseImage(project.imageUrl),
               // Beige overlay — same pattern as ProjectCard in Home, scaled down
               Positioned(
                 left: 0,
