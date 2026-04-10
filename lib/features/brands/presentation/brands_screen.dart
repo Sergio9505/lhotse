@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 
 class BrandsScreen extends StatelessWidget {
@@ -54,81 +53,32 @@ class _BrandCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 25,
-            offset: Offset(0, 20),
-            spreadRadius: -5,
-          ),
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 10,
-            offset: Offset(0, 8),
-            spreadRadius: -6,
-          ),
-        ],
-        borderRadius: BorderRadius.circular(0),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Cover image
-          LhotseImage(brand.coverImageUrl),
-
-          // Gradient overlay (bottom dark → top transparent)
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                stops: [0.0, 0.5, 1.0],
-                colors: [
-                  Color(0xCC000000), // black 80%
-                  Color(0x33000000), // black 20%
-                  Colors.transparent,
-                ],
+          if (brand.logoAsset != null)
+            SvgPicture.asset(
+              brand.logoAsset!,
+              height: 40,
+              colorFilter: const ColorFilter.mode(
+                AppColors.textPrimary,
+                BlendMode.srcIn,
+              ),
+            )
+          else
+            Text(
+              brand.name[0],
+              style: AppTypography.displayLarge.copyWith(
+                color: AppColors.textPrimary,
               ),
             ),
-          ),
-
-          // Dark tint overlay
-          const ColoredBox(color: Color(0x1A000000)),
-
-          // Logo + name (centered)
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (brand.logoAsset != null)
-                  SvgPicture.asset(
-                    brand.logoAsset!,
-                    height: 36,
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white,
-                      BlendMode.srcIn,
-                    ),
-                  )
-                else
-                  Text(
-                    brand.name[0],
-                    style: AppTypography.displayLarge.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  brand.name.toUpperCase(),
-                  style: AppTypography.bodySmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            brand.name.toUpperCase(),
+            style: AppTypography.caption.copyWith(
+              color: AppColors.accentMuted,
+              letterSpacing: 1.8,
             ),
           ),
         ],
