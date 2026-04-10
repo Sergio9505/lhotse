@@ -26,6 +26,11 @@ class InvestmentData {
     this.paymentFrequency,
     this.isCapitalGuaranteed = false,
     this.isDelayed = false,
+    this.accumulatedInterest,
+    this.nextPaymentDate,
+    this.periodicPaymentAmount,
+    this.paymentsReceived,
+    this.totalPayments,
     this.isCompleted = false,
     this.actualRoi,
     this.netProfit,
@@ -68,9 +73,16 @@ class InvestmentData {
   final double? revaluation; // revalorización %
 
   final String? unitName; // e.g. "Piso 1"
-  final String? paymentFrequency; // e.g. "Trimestral", "Mensual"
+  final String? paymentFrequency; // e.g. "Mensual"
   final bool isCapitalGuaranteed;
   final bool isDelayed;
+
+  // Renta Fija — periodic income tracking
+  final double? accumulatedInterest;
+  final DateTime? nextPaymentDate;
+  final double? periodicPaymentAmount;
+  final int? paymentsReceived;
+  final int? totalPayments;
   final bool isCompleted;
 
   // Completed investment results

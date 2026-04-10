@@ -262,16 +262,15 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                         const SizedBox(width: AppSpacing.lg),
                         Expanded(
                           child: LhotseMetricBlock(
-                            value: '+${inv.actualRoi?.toStringAsFixed(1) ?? '-'}%',
-                            label: 'ROI',
-                            valueColor: const Color(0xFF2D6A4F),
+                            value: '${inv.actualDuration ?? inv.durationMonths} meses',
+                            label: 'Duración',
                           ),
                         ),
                         const SizedBox(width: AppSpacing.lg),
                         Expanded(
                           child: LhotseMetricBlock(
-                            value: '+${_eurFormat.format(inv.netProfit ?? 0)}€',
-                            label: 'Plusvalía',
+                            value: '+${inv.actualRoi?.toStringAsFixed(1) ?? '-'}%',
+                            label: 'ROI',
                             valueColor: const Color(0xFF2D6A4F),
                           ),
                         ),

@@ -7,6 +7,7 @@ import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/brand_data.dart';
+import '../../../core/domain/investment_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
@@ -49,6 +50,16 @@ class BrandInvestmentsScreen extends StatelessWidget {
     final isRentaFija = brand?.businessModel == BusinessModel.rentaFija;
     final collapsedHeight = topPadding + 64.0;
     final expandedHeight = topPadding + 210.0;
+
+    // Sort RF: active by soonest maturity, completed by most recent completion
+    if (isRentaFija) {
+      summary.investments.sort((a, b) =>
+          (a.expectedEndDate ?? DateTime(2099))
+              .compareTo(b.expectedEndDate ?? DateTime(2099)));
+      completed.sort((a, b) =>
+          (b.completionDate ?? DateTime(0))
+              .compareTo(a.completionDate ?? DateTime(0)));
+    }
 
     final sectionLabel = isCompraDirecta
         ? 'MIS ACTIVOS'
@@ -118,38 +129,32 @@ class BrandInvestmentsScreen extends StatelessWidget {
                 final allInvestments = summary.investments;
                 final inv = allInvestments[i];
                 final project = findProjectById(inv.projectId);
-                if (isCompraDirecta || isRentaFija) {
-                  String? subtitle;
-                  if (isRentaFija) {
-                    final startStr = inv.startDate != null
-                        ? '${inv.startDate!.day.toString().padLeft(2, '0')}/${inv.startDate!.month.toString().padLeft(2, '0')}/${inv.startDate!.year}'
-                        : '—';
-                    subtitle = '$startStr  ·  ${inv.durationMonths} meses';
-                  }
-                  final docs = isRentaFija
-                      ? _rfDocsByInvestment[inv.id]
-                      : null;
-                  return _AssetRow(
-                    projectName: isRentaFija ? '' : inv.projectName,
-                    location: isRentaFija ? subtitle : (showLocation ? project?.location : null),
-                    imageUrl: project?.imageUrl,
-                    amount: inv.amount,
-                    showThumbnail: !isRentaFija,
-                    index: isRentaFija ? i + 1 : null,
+                if (isRentaFija) {
+                  final docs = _rfDocsByInvestment[inv.id];
+                  return _RentaFijaRow(
+                    investment: inv,
+                    index: i + 1,
                     isLast: i == allInvestments.length - 1,
-                    onTap: isRentaFija
-                        ? null
-                        : () => context.push('/investments/detail/${inv.id}'),
                     onDocsTap: docs != null && docs.isNotEmpty
                         ? () => _showOperationDocs(context, docs)
                         : null,
+                  );
+                }
+                if (isCompraDirecta) {
+                  return _AssetRow(
+                    projectName: inv.projectName,
+                    location: showLocation ? project?.location : null,
+                    imageUrl: project?.imageUrl,
+                    amount: inv.amount,
+                    isLast: i == allInvestments.length - 1,
+                    onTap: () => context.push('/investments/detail/${inv.id}'),
                   );
                 }
                 return _AssetRow(
                   projectName: inv.projectName,
                   imageUrl: project?.imageUrl,
                   amount: inv.amount,
-                  returnLabel: '${inv.returnRate.toStringAsFixed(0)}% rentabilidad estimada',
+                  returnLabel: '${inv.durationMonths} MESES  ·  ${inv.returnRate.toStringAsFixed(0)}%*',
                   isLast: i == allInvestments.length - 1,
                   onTap: () => context.push('/investments/detail/${inv.id}'),
                 );
@@ -158,8 +163,26 @@ class BrandInvestmentsScreen extends StatelessWidget {
             ),
           ),
 
+          // Footnote — estimated values (coinversión only)
+          if (!isCompraDirecta && !isRentaFija)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.lg,
+                  top: AppSpacing.md,
+                ),
+                child: Text(
+                  '* Rentabilidad y duración estimadas',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.accentMuted,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+
           // Completed section (not shown for compraDirecta)
-          if (completed.isNotEmpty && !isCompraDirecta && !isRentaFija)
+          if (completed.isNotEmpty && !isCompraDirecta)
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,19 +202,39 @@ class BrandInvestmentsScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
                   ...completed.indexed.map((entry) {
                     final inv = entry.$2;
+                    if (isRentaFija) {
+                      final docs = _rfDocsByInvestment[inv.id];
+                      return _RentaFijaRow(
+                        investment: inv,
+                        isCompleted: true,
+                        isLast: entry.$1 == completed.length - 1,
+                        onDocsTap: docs != null && docs.isNotEmpty
+                            ? () => _showOperationDocs(context, docs)
+                            : null,
+                      );
+                    }
                     final project = findProjectById(inv.projectId);
                     final hasResults = inv.actualRoi != null;
-                    final returnLabel = hasResults
-                        ? '+${inv.actualRoi!.toStringAsFixed(1)}% · +${_eurFormat.format(inv.netProfit ?? 0)}€'
-                        : '${inv.returnRate.toStringAsFixed(0)}% rentabilidad';
+                    final duration = inv.actualDuration ?? inv.durationMonths;
+                    final returnLabelSpans = hasResults
+                        ? [
+                            TextSpan(text: '${_eurFormat.format(inv.amount)}€  ·  $duration MESES  ·  '),
+                            TextSpan(
+                              text: '+${inv.actualRoi!.toStringAsFixed(1)}%',
+                              style: AppTypography.caption.copyWith(
+                                color: const Color(0xFF2D6A4F),
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ]
+                        : null;
                     return _AssetRow(
                       projectName: inv.projectName,
                       imageUrl: project?.imageUrl,
                       amount: inv.totalReturn ?? inv.amount,
-                      returnLabel: returnLabel,
-                      returnLabelColor: hasResults
-                          ? const Color(0xFF2D6A4F)
-                          : null,
+                      returnLabel: hasResults ? null : '${inv.returnRate.toStringAsFixed(0)}% rentabilidad',
+                      returnLabelSpans: returnLabelSpans,
                       isLast: entry.$1 == completed.length - 1,
                       onTap: () => context.push('/investments/detail/${inv.id}'),
                     );
@@ -498,26 +541,20 @@ class _AssetRow extends StatefulWidget {
     this.location,
     this.imageUrl,
     required this.amount,
-    this.showThumbnail = true,
-    this.index,
     this.isLast = false,
     this.onTap,
-    this.onDocsTap,
     this.returnLabel,
-    this.returnLabelColor,
+    this.returnLabelSpans,
   });
 
   final String projectName;
   final String? location;
   final String? imageUrl;
   final double amount;
-  final bool showThumbnail;
-  final int? index;
   final bool isLast;
   final VoidCallback? onTap;
-  final VoidCallback? onDocsTap;
   final String? returnLabel;
-  final Color? returnLabelColor;
+  final List<TextSpan>? returnLabelSpans;
 
   @override
   State<_AssetRow> createState() => _AssetRowState();
@@ -563,26 +600,9 @@ class _AssetRowState extends State<_AssetRow> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Leading: thumbnail or index badge
-              if (widget.showThumbnail) ...[
-                _ProjectThumbnail(imageUrl: widget.imageUrl),
-                const SizedBox(width: 14),
-              ] else if (widget.index != null) ...[
-                Container(
-                  width: 36,
-                  height: 36,
-                  color: AppColors.primary,
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${widget.index}',
-                    style: AppTypography.bodyLarge.copyWith(
-                      color: AppColors.textOnDark,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-              ],
+              // Leading: thumbnail
+              _ProjectThumbnail(imageUrl: widget.imageUrl),
+              const SizedBox(width: 14),
 
               // Content stacked
               Expanded(
@@ -632,12 +652,23 @@ class _AssetRowState extends State<_AssetRow> {
                         ],
                       ),
                     ),
-                    if (widget.returnLabel != null) ...[
+                    if (widget.returnLabelSpans != null) ...[
+                      const SizedBox(height: 3),
+                      RichText(
+                        text: TextSpan(
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.accentMuted,
+                            letterSpacing: 1.2,
+                          ),
+                          children: widget.returnLabelSpans,
+                        ),
+                      ),
+                    ] else if (widget.returnLabel != null) ...[
                       const SizedBox(height: 3),
                       Text(
                         widget.returnLabel!.toUpperCase(),
                         style: AppTypography.caption.copyWith(
-                          color: widget.returnLabelColor ?? AppColors.accentMuted,
+                          color: AppColors.accentMuted,
                           letterSpacing: 1.2,
                         ),
                       ),
@@ -645,22 +676,6 @@ class _AssetRowState extends State<_AssetRow> {
                   ],
                 ),
               ),
-
-              if (widget.onDocsTap != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                GestureDetector(
-                  onTap: widget.onDocsTap,
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      LucideIcons.fileText,
-                      size: 16,
-                      color: AppColors.accentMuted,
-                    ),
-                  ),
-                ),
-              ],
 
               if (widget.onTap != null)
                 Padding(
@@ -709,6 +724,179 @@ final _rfDocsByInvestment = <String, List<LhotseDocument>>{
     LhotseDocument(name: 'Certificado fiscal', date: '02 ENE. 2026', category: DocCategory.fiscal),
   ],
 };
+
+// ---------------------------------------------------------------------------
+// Renta Fija row — active (progress) or completed (return)
+// ---------------------------------------------------------------------------
+
+class _RentaFijaRow extends StatelessWidget {
+  const _RentaFijaRow({
+    required this.investment,
+    this.index,
+    this.isCompleted = false,
+    this.isLast = false,
+    this.onDocsTap,
+  });
+
+  final InvestmentData investment;
+  final int? index;
+  final bool isCompleted;
+  final bool isLast;
+  final VoidCallback? onDocsTap;
+
+  static const _kMonths = [
+    'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN',
+    'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final inv = investment;
+    final amount = isCompleted ? (inv.totalReturn ?? inv.amount) : inv.amount;
+    final badgeDate = inv.startDate;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: 20,
+      ),
+      decoration: isLast
+          ? null
+          : BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.textPrimary.withValues(alpha: 0.08),
+                  width: 0.5,
+                ),
+              ),
+            ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Leading: date badge
+          Container(
+            width: 42,
+            height: 42,
+            color: AppColors.primary,
+            alignment: Alignment.center,
+            child: badgeDate != null
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _kMonths[badgeDate.month - 1],
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textOnDark,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          height: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        '${badgeDate.year % 100}',
+                        style: AppTypography.bodyLarge.copyWith(
+                          color: AppColors.textOnDark,
+                          fontWeight: FontWeight.w700,
+                          height: 1.0,
+                        ),
+                      ),
+                    ],
+                  )
+                : Text(
+                    '${index ?? 0}',
+                    style: AppTypography.bodyLarge.copyWith(
+                      color: AppColors.textOnDark,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+          ),
+          const SizedBox(width: 14),
+
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Amount
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: _eurFormat.format(amount),
+                        style: AppTypography.headingSmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      TextSpan(
+                        text: '€',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                if (isCompleted) ...[
+                  const SizedBox(height: 3),
+                  RichText(
+                    text: TextSpan(
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 1.2,
+                      ),
+                      children: [
+                        TextSpan(text: '${_eurFormat.format(inv.amount)}€  ·  ${inv.durationMonths} MESES'),
+                        if (inv.actualRoi != null)
+                          TextSpan(
+                            text: '  ·  +${inv.actualRoi!.toStringAsFixed(1)}%',
+                            style: AppTypography.caption.copyWith(
+                              color: const Color(0xFF2D6A4F),
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    '${inv.durationMonths} MESES',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.accentMuted,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // Doc icon
+          if (onDocsTap != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            GestureDetector(
+              onTap: onDocsTap,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  LucideIcons.fileText,
+                  size: 16,
+                  color: AppColors.accentMuted,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
 
 class _ProjectThumbnail extends StatelessWidget {
   const _ProjectThumbnail({this.imageUrl});
