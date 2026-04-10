@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/theme/app_theme.dart';
