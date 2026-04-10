@@ -1,3 +1,4 @@
+import '../../domain/asset_info.dart';
 import '../../domain/project_data.dart';
 
 const _kProjectImages = [
@@ -30,6 +31,16 @@ final mockProjects = [
         'Un activo gestionado bajo el modelo **Compra-Venta**. La fusión de ubicación privilegiada y diseño de autor garantiza la solidez de la inversión.\n\nUn activo gestionado bajo el modelo **Compra-Venta**. La fusión de ubicación privilegiada y diseño de autor garantiza la solidez de la inversión.',
     galleryImages: _kGalleryImages,
     status: ProjectStatus.enDesarrollo,
+    bedrooms: 3,
+    bathrooms: 4,
+    floorPlanUrl: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800',
+    details: AssetInfo(entries: [
+      AssetInfoEntry(label: 'Superficie', value: '219 m²'),
+      AssetInfoEntry(label: 'Planta', value: '4ª'),
+      AssetInfoEntry(label: 'Año construcción', value: '1921'),
+      AssetInfoEntry(label: 'Altura techos', value: '3 m'),
+      AssetInfoEntry(label: 'Orientación', value: 'Sur-Oeste'),
+    ]),
   ),
   ProjectData(
     id: '2',
@@ -46,6 +57,16 @@ final mockProjects = [
     galleryImages: [_kGalleryImages[0], _kGalleryImages[1]],
     isVip: true,
     status: ProjectStatus.firmas,
+    bedrooms: 5,
+    bathrooms: 6,
+    floorPlanUrl: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800',
+    details: AssetInfo(entries: [
+      AssetInfoEntry(label: 'Superficie', value: '380 m²'),
+      AssetInfoEntry(label: 'Parcela', value: '1.200 m²'),
+      AssetInfoEntry(label: 'Planta', value: 'Villa independiente'),
+      AssetInfoEntry(label: 'Año construcción', value: '2025'),
+      AssetInfoEntry(label: 'Piscina', value: 'Infinity 15 m'),
+    ]),
   ),
   ProjectData(
     id: '3',
@@ -61,6 +82,14 @@ final mockProjects = [
         'Un activo gestionado bajo el modelo **Renta Fija**. Proyecto residencial premium en la zona de mayor plusvalía de Monterrey.\n\nLa proximidad al centro financiero y las vistas a la Sierra Madre lo posicionan como referente en el mercado de lujo regiomontano.',
     galleryImages: [_kGalleryImages[1], _kGalleryImages[2]],
     status: ProjectStatus.enDesarrollo,
+    bedrooms: 4,
+    bathrooms: 3,
+    details: AssetInfo(entries: [
+      AssetInfoEntry(label: 'Superficie', value: '295 m²'),
+      AssetInfoEntry(label: 'Planta', value: '12ª'),
+      AssetInfoEntry(label: 'Año construcción', value: '2024'),
+      AssetInfoEntry(label: 'Garaje', value: '2 plazas'),
+    ]),
   ),
   ProjectData(
     id: '4',
@@ -76,6 +105,13 @@ final mockProjects = [
         'Un activo gestionado bajo el modelo **Compra-Venta**. Integración total con el entorno natural de la Riviera Maya, respetando los cenotes y la vegetación nativa.\n\nDiseño biofílico que maximiza la conexión con la naturaleza sin comprometer el confort ni la exclusividad.',
     galleryImages: [_kGalleryImages[0]],
     status: ProjectStatus.cerrado,
+    bedrooms: 2,
+    bathrooms: 2,
+    details: AssetInfo(entries: [
+      AssetInfoEntry(label: 'Superficie', value: '145 m²'),
+      AssetInfoEntry(label: 'Terraza', value: '60 m²'),
+      AssetInfoEntry(label: 'Año construcción', value: '2024'),
+    ]),
   ),
   ProjectData(
     id: '5',

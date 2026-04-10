@@ -1,3 +1,5 @@
+import 'asset_info.dart';
+
 enum ProjectStatus { enDesarrollo, firmas, cerrado }
 
 class ProjectData {
@@ -14,6 +16,10 @@ class ProjectData {
     this.galleryImages = const [],
     this.isVip = false,
     this.status = ProjectStatus.enDesarrollo,
+    this.bedrooms,
+    this.bathrooms,
+    this.details,
+    this.floorPlanUrl,
   });
 
   final String id;
@@ -28,4 +34,8 @@ class ProjectData {
   final List<String> galleryImages;
   final bool isVip;
   final ProjectStatus status;
+  final int? bedrooms;
+  final int? bathrooms;
+  final AssetInfo? details;
+  final String? floorPlanUrl;
 }

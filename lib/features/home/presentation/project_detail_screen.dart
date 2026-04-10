@@ -1,20 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_projects.dart';
-import '../../../core/domain/project_data.dart';
+import '../../../core/domain/asset_info.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/widgets/lhotse_key_value_list.dart';
+import '../../../core/widgets/lhotse_section_label.dart';
 
-class ProjectDetailScreen extends StatelessWidget {
+const _kHeroHeight = 200.0;
+const _kMaxVisibleGallery = 5;
+
+class ProjectDetailScreen extends StatefulWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
 
   final String projectId;
 
   @override
+  State<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
+}
+
+class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
+  final _scrollController = ScrollController();
+  bool _heroGone = false;
+  bool _showCollapsedTitle = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final offset = _scrollController.offset;
+    final heroThreshold = _kHeroHeight - kToolbarHeight;
+    final heroGone = offset >= heroThreshold;
+    final titleThreshold = _kHeroHeight + 50.0;
+    final showTitle = offset >= titleThreshold;
+
+    if (heroGone != _heroGone || showTitle != _showCollapsedTitle) {
+      setState(() {
+        _heroGone = heroGone;
+        _showCollapsedTitle = showTitle;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final project = findProjectById(projectId);
+    final project = findProjectById(widget.projectId);
 
     if (project == null) {
       return Scaffold(
@@ -30,53 +73,20 @@ class ProjectDetailScreen extends StatelessWidget {
       );
     }
 
-    return _ProjectDetailBody(project: project);
-  }
-}
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-class _ProjectDetailBody extends StatefulWidget {
-  const _ProjectDetailBody({required this.project});
-
-  final ProjectData project;
-
-  @override
-  State<_ProjectDetailBody> createState() => _ProjectDetailBodyState();
-}
-
-class _ProjectDetailBodyState extends State<_ProjectDetailBody> {
-  late final ScrollController _scrollController;
-  bool _isCollapsed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController()..addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    final expandedHeight = MediaQuery.of(context).size.height * 0.55;
-    final collapsedHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
-    final threshold = expandedHeight - collapsedHeight - 40;
-    final collapsed = _scrollController.offset >= threshold;
-
-    if (collapsed != _isCollapsed) {
-      setState(() => _isCollapsed = collapsed);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final expandedHeight = screenHeight * 0.55;
+    // Build characteristics entries from bedrooms/bathrooms + details
+    final characteristicEntries = <AssetInfoEntry>[
+      if (project.bedrooms != null)
+        AssetInfoEntry(label: 'Habitaciones', value: '${project.bedrooms}'),
+      if (project.bathrooms != null)
+        AssetInfoEntry(label: 'Baños', value: '${project.bathrooms}'),
+      if (project.details != null) ...project.details!.entries,
+    ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: _isCollapsed
+      value: _heroGone
           ? SystemUiOverlayStyle.dark
           : SystemUiOverlayStyle.light,
       child: Scaffold(
@@ -84,43 +94,54 @@ class _ProjectDetailBodyState extends State<_ProjectDetailBody> {
         body: CustomScrollView(
           controller: _scrollController,
           slivers: [
+            // =========================================================
+            // 1. HERO
+            // =========================================================
             SliverAppBar(
               pinned: true,
-              stretch: true,
-              expandedHeight: expandedHeight,
+              expandedHeight: _kHeroHeight,
               backgroundColor: AppColors.background,
               surfaceTintColor: Colors.transparent,
-              elevation: _isCollapsed ? 0.5 : 0,
-              leading: _isCollapsed
+              elevation: 0,
+              leading: _heroGone
                   ? const LhotseBackButton.onSurface()
                   : const LhotseBackButton.onImage(),
+              actions: const [SizedBox(width: 44)],
+              centerTitle: true,
               title: AnimatedOpacity(
-                opacity: _isCollapsed ? 1.0 : 0.0,
+                opacity: _showCollapsedTitle ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 200),
-                child: Text(
-                  widget.project.name.toUpperCase(),
-                  style: AppTypography.headingSmall.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      project.name.toUpperCase(),
+                      style: AppTypography.headingSmall.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      project.brand.toUpperCase(),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Hero image
-                    LhotseImage(widget.project.imageUrl),
-
-                    // Gradient overlay
+                    LhotseImage(project.imageUrl),
                     const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.center,
-                          colors: [
-                            Color(0x66000000),
-                            Colors.transparent,
-                          ],
+                          colors: [Color(0x66000000), Colors.transparent],
                         ),
                       ),
                     ),
@@ -129,9 +150,260 @@ class _ProjectDetailBodyState extends State<_ProjectDetailBody> {
               ),
             ),
 
-            // Content panel
+            // Fade below collapsed header
+            if (_heroGone)
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 16,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColors.background,
+                        AppColors.background.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            // =========================================================
+            // 2. IDENTITY
+            // =========================================================
             SliverToBoxAdapter(
-              child: _ContentPanel(project: widget.project),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      project.name.toUpperCase(),
+                      style: AppTypography.headingLarge.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Row(
+                      children: [
+                        Text(
+                          project.brand.toUpperCase(),
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textPrimary,
+                            letterSpacing: 1.8,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            '•',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textPrimary
+                                  .withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ),
+                        Flexible(
+                          child: Text(
+                            project.location.toUpperCase(),
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.accentMuted,
+                              letterSpacing: 1.35,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // =========================================================
+            // 3. DESCRIPTION
+            // =========================================================
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Text(
+                  project.description.replaceAll('**', ''),
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+            ),
+
+            // =========================================================
+            // 4. CARACTERÍSTICAS
+            // =========================================================
+            if (characteristicEntries.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: AppSpacing.xxl),
+                    const LhotseSectionLabel(label: 'CARACTERÍSTICAS'),
+                    const SizedBox(height: AppSpacing.sm),
+                    LhotseKeyValueList(entries: characteristicEntries),
+                  ],
+                ),
+              ),
+
+            // =========================================================
+            // 5. PLANO
+            // =========================================================
+            if (project.floorPlanUrl != null)
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: AppSpacing.xxl),
+                    const LhotseSectionLabel(label: 'PLANO'),
+                    const SizedBox(height: AppSpacing.md),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg),
+                      child: GestureDetector(
+                        onTap: () =>
+                            _showFloorPlan(context, project.floorPlanUrl!),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.lg),
+                          color: AppColors.background,
+                          child: Stack(
+                            children: [
+                              Center(
+                                child: Image.asset(
+                                  'assets/images/mock_floor_plan.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: PhosphorIcon(
+                                  PhosphorIconsThin.arrowsOut,
+                                  color: AppColors.accentMuted,
+                                  size: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // =========================================================
+            // 6. GALERÍA
+            // =========================================================
+            if (project.galleryImages.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: AppSpacing.xxl),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg),
+                      child: Row(
+                        children: [
+                          Text(
+                            'GALERÍA',
+                            style: AppTypography.labelLarge.copyWith(
+                              color: AppColors.accentMuted,
+                              fontWeight: FontWeight.w400,
+                              letterSpacing: 1.8,
+                            ),
+                          ),
+                          if (project.galleryImages.length >
+                              _kMaxVisibleGallery) ...[
+                            const SizedBox(width: AppSpacing.sm),
+                            GestureDetector(
+                              onTap: () => showAllGallery(context, 'GALERÍA',
+                                  project.galleryImages),
+                              child: PhosphorIcon(
+                                PhosphorIconsThin.arrowUpRight,
+                                size: 14,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                      height: 200,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg),
+                        itemCount: project.galleryImages.length >
+                                _kMaxVisibleGallery
+                            ? _kMaxVisibleGallery
+                            : project.galleryImages.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(width: AppSpacing.sm),
+                        itemBuilder: (context, i) => GestureDetector(
+                          onTap: () => showFullImage(
+                              context, project.galleryImages[i]),
+                          child: Container(
+                            width: screenWidth * 0.75,
+                            decoration: const BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0x1A000000),
+                                  blurRadius: 20,
+                                  offset: Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: LhotseImage(project.galleryImages[i]),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // =========================================================
+            // 7. CTA — DESCARGAR FOLLETO
+            // =========================================================
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.xxl,
+                  AppSpacing.lg,
+                  bottomPadding + AppSpacing.xl,
+                ),
+                child: GestureDetector(
+                  onTap: () {
+                    // TODO: download brochure
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    color: AppColors.primary,
+                    child: Center(
+                      child: Text(
+                        'DESCARGAR FOLLETO',
+                        style: AppTypography.labelLarge.copyWith(
+                          color: AppColors.textOnDark,
+                          letterSpacing: 1.8,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -140,167 +412,76 @@ class _ProjectDetailBodyState extends State<_ProjectDetailBody> {
   }
 }
 
-class _ContentPanel extends StatelessWidget {
-  const _ContentPanel({required this.project});
+// ===========================================================================
+// Floor plan fullscreen
+// ===========================================================================
 
-  final ProjectData project;
+void _showFloorPlan(BuildContext context, String url) {
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      opaque: false,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final topPadding = MediaQuery.of(context).padding.top;
+        final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-  @override
-  Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-    return Container(
-      width: double.infinity,
-      constraints: BoxConstraints(
-        minHeight: MediaQuery.of(context).size.height * 0.6,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x4D000000),
-            blurRadius: 60,
-            offset: Offset(0, -20),
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) => Opacity(
+            opacity: animation.value,
+            child: child,
           ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.xl,
-        AppSpacing.lg,
-        0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Project name
-          Text(
-            project.name.toUpperCase(),
-            style: AppTypography.displayLarge.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
-              letterSpacing: -0.48,
-            ),
-          ),
-
-          const SizedBox(height: AppSpacing.sm),
-
-          // Brand + location
-          Row(
-            children: [
-              Text(
-                project.brand.toUpperCase(),
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 1.8,
+          child: Scaffold(
+            extendBodyBehindAppBar: true,
+            extendBody: true,
+            backgroundColor: AppColors.background,
+            body: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: SizedBox.expand(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: InteractiveViewer(
+                        maxScale: 4.0,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            topPadding + kToolbarHeight,
+                            AppSpacing.lg,
+                            bottomPadding + AppSpacing.lg,
+                          ),
+                          child: Image.asset(
+                            'assets/images/mock_floor_plan.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: topPadding + AppSpacing.md,
+                      right: AppSpacing.lg,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          alignment: Alignment.center,
+                          color: AppColors.textPrimary
+                              .withValues(alpha: 0.08),
+                          child: PhosphorIcon(
+                            PhosphorIconsThin.x,
+                            color: AppColors.textPrimary,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  '•',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textPrimary.withValues(alpha: 0.4),
-                  ),
-                ),
-              ),
-              Flexible(
-                child: Text(
-                  project.location.toUpperCase(),
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.accentMuted,
-                    letterSpacing: 1.35,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppSpacing.xl),
-
-          // Tagline
-          Opacity(
-            opacity: 0.9,
-            child: Text(
-              project.tagline,
-              style: AppTypography.headingMedium.copyWith(
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: AppSpacing.lg),
-
-          // Description with bold parsing
-          _buildRichDescription(project.description),
-
-          const SizedBox(height: AppSpacing.xl),
-
-          // Gallery thumbnail
-          if (project.galleryImages.isNotEmpty)
-            ClipRRect(
-              child: SizedBox(
-                width: 190,
-                height: 152,
-                child: LhotseImage(project.galleryImages.first),
-              ),
-            ),
-
-          const SizedBox(height: AppSpacing.xxl),
-
-          // "INFO DEL PROYECTO" section header
-          Center(
-            child: Text(
-              'INFO DEL PROYECTO',
-              style: AppTypography.headingMedium.copyWith(
-                color: Colors.black,
-                letterSpacing: -0.48,
-              ),
-            ),
-          ),
-
-          SizedBox(height: bottomPadding + 80),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRichDescription(String text) {
-    final paragraphs = text.split('\n\n');
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: paragraphs.map((paragraph) {
-        final parts = paragraph.split('**');
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: paragraph == paragraphs.last ? 0 : AppSpacing.md,
-          ),
-          child: RichText(
-            text: TextSpan(
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-              ),
-              children: parts.asMap().entries.map((entry) {
-                final isBold = entry.key.isOdd;
-                return TextSpan(
-                  text: entry.value,
-                  style: isBold
-                      ? TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary,
-                        )
-                      : null,
-                );
-              }).toList(),
             ),
           ),
         );
-      }).toList(),
-    );
-  }
+      },
+    ),
+  );
 }

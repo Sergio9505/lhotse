@@ -27,6 +27,7 @@ final mockInvestments = [
       AssetInfoEntry(label: 'Dirección', value: 'Calle Serrano 42, Madrid'),
       AssetInfoEntry(label: 'Superficie', value: '120 m²'),
       AssetInfoEntry(label: 'Habitaciones', value: '3'),
+      AssetInfoEntry(label: 'Baños', value: '2'),
       AssetInfoEntry(label: 'Año construcción', value: '2024'),
       AssetInfoEntry(label: 'Planta', value: '4ª'),
       AssetInfoEntry(label: 'Referencia catastral', value: '9872054VK4797S0004WX'),
@@ -64,6 +65,7 @@ final mockInvestments = [
       AssetInfoEntry(label: 'Dirección', value: 'Urb. La Moraleja, Alcobendas'),
       AssetInfoEntry(label: 'Superficie', value: '380 m²'),
       AssetInfoEntry(label: 'Habitaciones', value: '5'),
+      AssetInfoEntry(label: 'Baños', value: '4'),
       AssetInfoEntry(label: 'Parcela', value: '1.200 m²'),
       AssetInfoEntry(label: 'Año construcción', value: '2023'),
       AssetInfoEntry(label: 'Referencia catastral', value: '1234567VK4797S0012AB'),
@@ -167,6 +169,8 @@ final mockInvestments = [
     assetInfo: const AssetInfo(entries: [
       AssetInfoEntry(label: 'Dirección', value: 'Ayala 94, Madrid'),
       AssetInfoEntry(label: 'Superficie', value: '308 m²'),
+      AssetInfoEntry(label: 'Habitaciones', value: '4'),
+      AssetInfoEntry(label: 'Baños', value: '3'),
       AssetInfoEntry(label: 'Año de construcción', value: '1900'),
       AssetInfoEntry(label: 'Planta', value: '4º piso'),
       AssetInfoEntry(label: 'Orientación', value: 'Norte'),
@@ -264,6 +268,8 @@ final mockInvestments = [
     assetInfo: const AssetInfo(entries: [
       AssetInfoEntry(label: 'Dirección', value: 'Velázquez 28, Madrid'),
       AssetInfoEntry(label: 'Superficie', value: '245 m²'),
+      AssetInfoEntry(label: 'Habitaciones', value: '3'),
+      AssetInfoEntry(label: 'Baños', value: '2'),
       AssetInfoEntry(label: 'Año de construcción', value: '1920'),
       AssetInfoEntry(label: 'Planta', value: '3º piso'),
       AssetInfoEntry(label: 'Orientación', value: 'Sur'),
@@ -565,6 +571,8 @@ final mockInvestments = [
     assetInfo: const AssetInfo(entries: [
       AssetInfoEntry(label: 'Dirección', value: 'Serrano 42, Madrid'),
       AssetInfoEntry(label: 'Superficie', value: '195 m²'),
+      AssetInfoEntry(label: 'Habitaciones', value: '3'),
+      AssetInfoEntry(label: 'Baños', value: '2'),
       AssetInfoEntry(label: 'Año de construcción', value: '1935'),
       AssetInfoEntry(label: 'Planta', value: '2º piso'),
       AssetInfoEntry(label: 'Orientación', value: 'Este'),

@@ -101,7 +101,7 @@ To be extracted from Figma as screens are built:
 
 ## Screen Patterns
 - [x] List screen — Firmas (brand list), AllProjects (project list with filters)
-- [x] Detail screen — ProjectDetail (SliverAppBar hero + content panel)
+- [x] Detail screen — ProjectDetail (SliverAppBar hero 200px, editorial scroll: identity headingLarge + description + CARACTERÍSTICAS LhotseKeyValueList + PLANO InteractiveViewer + GALERÍA carousel + CTA "DESCARGAR FOLLETO". No tabs, no shadow panel. Collapsed header: name + brand subtitle + fade gradient below)
 - [x] Search screen — SearchScreen (header + search field + idle: trending tags + collections grid / active: project results + documents placeholder)
 - [x] Strategy screen — InvestmentsScreen (collapsing black hero: title fades out, amount scales 50→28px + logo slides in; brand rows: name + "amount€ · %"  inline left + chevron right; return % at bodySmall 12px w600 accentMuted; asterisk on estimated returns with footnote; brand initials from all words (RF, L&B); opportunity section)
 - [x] Opportunities screen — OpportunitiesScreen (text-tab filters: firma/ubicación/buscar + project list)
