@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
@@ -118,8 +118,8 @@ class InvestmentsScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
-                          const Icon(
-                            LucideIcons.arrowUpRight,
+                          const PhosphorIcon(
+                            PhosphorIconsThin.arrowUpRight,
                             size: 18,
                             color: AppColors.textPrimary,
                           ),
@@ -219,7 +219,7 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
                     style: TextStyle(
                       fontFamily: 'Campton',
                       fontSize: amountSize,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       color: AppColors.textOnDark,
                       letterSpacing: -1.2,
                       height: 1.0,
@@ -335,7 +335,7 @@ class _BrandRowState extends State<_BrandRow> {
                       widget.brandName.toUpperCase(),
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.accentMuted,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -361,7 +361,7 @@ class _BrandRowState extends State<_BrandRow> {
                             text: '  ·  ${widget.averageReturn.toStringAsFixed(0)}%${widget.isEstimated ? '*' : ''}',
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.accentMuted,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -373,8 +373,8 @@ class _BrandRowState extends State<_BrandRow> {
 
               if (widget.onTap != null) ...[
                 const SizedBox(width: AppSpacing.sm),
-                Icon(
-                  LucideIcons.chevronRight,
+                PhosphorIcon(
+                  PhosphorIconsThin.caretRight,
                   size: 16,
                   color: AppColors.accentMuted,
                 ),
@@ -421,7 +421,7 @@ class _BrandLeading extends StatelessWidget {
         initials,
         style: AppTypography.bodyLarge.copyWith(
           color: AppColors.textOnDark,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -476,7 +476,7 @@ class _OpportunityCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: AppTypography.headingSmall.copyWith(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(height: 3),
@@ -486,7 +486,7 @@ class _OpportunityCard extends StatelessWidget {
                                   project.brand.toUpperCase(),
                                   style: AppTypography.captionSmall.copyWith(
                                     color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w500,
                                     letterSpacing: 1.5,
                                   ),
                                 ),
@@ -515,8 +515,8 @@ class _OpportunityCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Icon(
-                        LucideIcons.arrowUpRight,
+                      PhosphorIcon(
+                        PhosphorIconsThin.arrowUpRight,
                         size: 14,
                         color: AppColors.textPrimary,
                       ),

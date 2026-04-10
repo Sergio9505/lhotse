@@ -348,7 +348,7 @@ void _showAllNews(BuildContext context) {
                     news.title,
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -398,7 +398,7 @@ class _SeeAllNewsCard extends StatelessWidget {
                   'VER TODAS',
                   style: AppTypography.bodySmall.copyWith(
                     color: Colors.white,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 1.5,
                   ),
                 ),

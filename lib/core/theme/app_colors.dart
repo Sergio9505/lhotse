@@ -18,7 +18,7 @@ abstract final class AppColors {
   static const accentMuted = Color(0xFF5A5854);
 
   // Semantic
-  static const danger = Color(0xFF7F1D1D);
+  static const danger = Color(0xFFE53E3E);
 
   // Borders
   static const border = Color(0x1A000000);

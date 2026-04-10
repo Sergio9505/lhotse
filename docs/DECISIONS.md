@@ -424,3 +424,25 @@ Plusvalía removed — derivable from hero (totalReturn) minus invested. Duratio
 - (+) Duration contextualizes ROI — critical for comparing operations
 - (+) No redundant data (plusvalía derivable from hero - invested)
 - (+) Green = realized returns creates trust (not used for estimates)
+
+---
+
+## ADR-21: Phosphor Thin Icons + Zara Navbar
+
+**Date:** 2026-04-10
+**Status:** Accepted
+
+**Context:** Lucide icons (2px stroke) felt heavy against the premium/editorial aesthetic. The navbar with all labels visible and black background felt utilitarian, not luxury. Evaluated Zara's approach: thin icons, seamless navbar, hybrid icon/text navigation.
+
+**Decision:** Three changes:
+1. **Phosphor thin** (1px stroke) replaces Lucide across all 20 files. Single weight everywhere — action is communicated by context/position, not icon weight. Lucide kept in pubspec as fallback.
+2. **Navbar redesign** (Zara-inspired): beige background (seamless with content), no border/shadow. Hybrid tabs: icon-only for universal actions (home, search, profile) + text-only for non-obvious tabs (FIRMAS, ESTRATEGIA). Active state: 4px black dot below. Notifications: 4px red dot (same position). Height reduced to 48px.
+3. **Typography weight reduction**: all weights reduced to w400-w500 range (was w600-w900). Weight hierarchy: w600 (displayLarge hero only) → w500 (values, active states) → w400 (labels, metadata). Size creates hierarchy, not weight.
+
+**Consequences:**
+- (+) Consistent thin aesthetic across icons and typography — Zara-level refinement
+- (+) Navbar disappears visually, attention goes to content
+- (+) Hybrid icon/text solves the "compass = ???" problem without labeling everything
+- (+) Three-level weight system (w400/w500/w600) creates subtle hierarchy without bold
+- (-) Phosphor thin may be too subtle for older users or accessibility — monitor feedback
+- (-) Custom SVG icons deleted, Lucide import kept but unused in production code

@@ -1,6 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -53,7 +53,7 @@ class ProjectCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.displayLarge.copyWith(
                             color: Colors.white,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xs),
@@ -63,7 +63,7 @@ class ProjectCard extends StatelessWidget {
                               project.brand.toUpperCase(),
                               style: AppTypography.caption.copyWith(
                                 color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                                 letterSpacing: 1.8,
                               ),
                             ),
@@ -92,8 +92,8 @@ class ProjectCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  Icon(
-                    LucideIcons.arrowUpRight,
+                  PhosphorIcon(
+                    PhosphorIconsThin.arrowUpRight,
                     size: 18,
                     color: AppColors.textPrimary,
                   ),
@@ -127,7 +127,7 @@ class ProjectCard extends StatelessWidget {
                   'VIP',
                   style: AppTypography.captionSmall.copyWith(
                     color: Colors.white,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 2,
                   ),
                 ),

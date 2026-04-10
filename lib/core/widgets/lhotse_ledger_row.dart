@@ -89,7 +89,7 @@ class _LhotseLedgerRowState extends State<LhotseLedgerRow> {
                       widget.title,
                       style: AppTypography.bodyLarge.copyWith(
                         color: textColor,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -117,7 +117,7 @@ class _LhotseLedgerRowState extends State<LhotseLedgerRow> {
                           text: _eurFormat.format(widget.amount),
                           style: AppTypography.bodyLarge.copyWith(
                             color: textColor,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/domain/asset_info.dart';
 import '../../../core/domain/investment_data.dart';
@@ -228,7 +228,7 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
                             inv.brandName.toUpperCase(),
                             style: AppTypography.caption.copyWith(
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               letterSpacing: 1.8,
                             ),
                           ),
@@ -379,7 +379,7 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
                         color: active
                             ? AppColors.textOnDark
                             : AppColors.accentMuted,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -393,8 +393,8 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
                 behavior: HitTestBehavior.opaque,
                 child: const Padding(
                   padding: EdgeInsets.all(6),
-                  child: Icon(
-                    LucideIcons.x,
+                  child: PhosphorIcon(
+                    PhosphorIconsThin.x,
                     size: 14,
                     color: AppColors.accentMuted,
                   ),
@@ -538,7 +538,7 @@ class _AvanceTab extends StatelessWidget {
                 'NOTICIAS DEL PROYECTO',
                 style: AppTypography.labelLarge.copyWith(
                   color: AppColors.accentMuted,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 1.8,
                 ),
               ),
@@ -546,8 +546,8 @@ class _AvanceTab extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 GestureDetector(
                   onTap: () => _showAllNews(context),
-                  child: const Icon(
-                    LucideIcons.arrowUpRight,
+                  child: const PhosphorIcon(
+                    PhosphorIconsThin.arrowUpRight,
                     size: 14,
                     color: AppColors.textPrimary,
                   ),
@@ -632,8 +632,8 @@ class _ProyectoTab extends StatelessWidget {
                     Positioned(
                       right: 0,
                       bottom: 0,
-                      child: Icon(
-                        LucideIcons.maximize2,
+                      child: PhosphorIcon(
+                        PhosphorIconsThin.arrowsOut,
                         color: AppColors.accentMuted,
                         size: 16,
                       ),
@@ -694,7 +694,7 @@ class _GallerySectionHeader extends StatelessWidget {
             label,
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.accentMuted,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               letterSpacing: 1.8,
             ),
           ),
@@ -702,8 +702,8 @@ class _GallerySectionHeader extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             GestureDetector(
               onTap: () => showAllGallery(context, title, images),
-              child: const Icon(
-                LucideIcons.arrowUpRight,
+              child: const PhosphorIcon(
+                PhosphorIconsThin.arrowUpRight,
                 size: 14,
                 color: AppColors.textPrimary,
               ),
@@ -768,8 +768,8 @@ void _showFloorPlan(BuildContext context, String url) {
                           alignment: Alignment.center,
                           color: AppColors.textPrimary
                               .withValues(alpha: 0.08),
-                          child: Icon(
-                            LucideIcons.x,
+                          child: PhosphorIcon(
+                            PhosphorIconsThin.x,
                             color: AppColors.textPrimary,
                             size: 20,
                           ),
@@ -1296,7 +1296,7 @@ class _ChipTab extends StatelessWidget {
             color: isActive
                 ? AppColors.textOnDark
                 : AppColors.accentMuted,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
             letterSpacing: 1.2,
           ),
         ),
@@ -1347,7 +1347,7 @@ class _GalleryCard extends StatelessWidget {
                   border:
                       Border.all(color: Colors.white, width: 1.5),
                 ),
-                child: const Icon(LucideIcons.play,
+                child: const PhosphorIcon(PhosphorIconsThin.play,
                     color: Colors.white, size: 18),
               ),
             ),
@@ -1422,7 +1422,7 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                   Text(widget.label,
                       style: AppTypography.labelLarge.copyWith(
                         color: AppColors.accentMuted,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.8,
                       )),
                   const Spacer(),
@@ -1430,7 +1430,7 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                     turns: _expanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
-                    child: Icon(LucideIcons.chevronDown,
+                    child: PhosphorIcon(PhosphorIconsThin.caretDown,
                         size: 16, color: AppColors.accentMuted),
                   ),
                 ],
@@ -1479,7 +1479,7 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                                         .copyWith(
                                       color: AppColors
                                           .textPrimary,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w500,
                                     )),
                               ],
                             ),

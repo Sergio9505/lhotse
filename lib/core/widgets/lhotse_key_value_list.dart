@@ -48,7 +48,7 @@ class LhotseKeyValueList extends StatelessWidget {
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.accentMuted,
                           fontWeight:
-                              isBold ? FontWeight.w700 : FontWeight.w400,
+                              isBold ? FontWeight.w600 : FontWeight.w400,
                         ),
                       ),
                     ),
@@ -57,7 +57,7 @@ class LhotseKeyValueList extends StatelessWidget {
                       style: AppTypography.bodyMedium.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight:
-                            isBold ? FontWeight.w700 : FontWeight.w600,
+                            isBold ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
                   ],

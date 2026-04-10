@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/domain/investment_data.dart';
 import '../../../core/domain/project_data.dart';
@@ -206,7 +206,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                           inv.brandName.toUpperCase(),
                           style: AppTypography.caption.copyWith(
                             color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                             letterSpacing: 1.8,
                           ),
                         ),
@@ -357,7 +357,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                         color: active
                             ? AppColors.textOnDark
                             : AppColors.accentMuted,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -371,7 +371,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                 behavior: HitTestBehavior.opaque,
                 child: const Padding(
                   padding: EdgeInsets.all(6),
-                  child: Icon(LucideIcons.x, size: 14, color: AppColors.accentMuted),
+                  child: PhosphorIcon(PhosphorIconsThin.x, size: 14, color: AppColors.accentMuted),
                 ),
               ),
           ],
@@ -436,7 +436,7 @@ class _ActivoTab extends StatelessWidget {
                   'GALERÍA',
                   style: AppTypography.labelLarge.copyWith(
                     color: AppColors.accentMuted,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 1.8,
                   ),
                 ),
@@ -445,8 +445,8 @@ class _ActivoTab extends StatelessWidget {
                   GestureDetector(
                     onTap: () => showAllGallery(
                         context, 'GALERÍA', inv.renderImages!),
-                    child: const Icon(
-                      LucideIcons.arrowUpRight,
+                    child: const PhosphorIcon(
+                      PhosphorIconsThin.arrowUpRight,
                       size: 14,
                       color: AppColors.textPrimary,
                     ),

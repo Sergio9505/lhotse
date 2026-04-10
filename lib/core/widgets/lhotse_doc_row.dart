@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_theme.dart';
 
@@ -69,7 +69,7 @@ class _LhotseDocRowState extends State<LhotseDocRow> {
                 onTap: widget.onDownload,
                 child: const Padding(
                   padding: EdgeInsets.all(8),
-                  child: Icon(LucideIcons.download,
+                  child: PhosphorIcon(PhosphorIconsThin.downloadSimple,
                       size: 16, color: AppColors.accentMuted),
                 ),
               ),

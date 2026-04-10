@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../data/mock/mock_notifications.dart';
 import '../theme/app_theme.dart';
@@ -31,8 +31,8 @@ class LhotseNotificationBell extends StatelessWidget {
           child: LhotseNotificationBadge(
             show: unreadCount > 0,
             count: unreadCount,
-            child: Icon(
-              LucideIcons.bell,
+            child: PhosphorIcon(
+              PhosphorIconsThin.bell,
               size: 20,
               color: color,
             ),

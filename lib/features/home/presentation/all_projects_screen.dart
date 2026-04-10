@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_projects.dart';
@@ -237,8 +237,8 @@ class _FilterBar extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Center(
-                    child: Icon(
-                      LucideIcons.layers,
+                    child: PhosphorIcon(
+                      PhosphorIconsThin.stack,
                       size: 18,
                       color: activeTool == _ActiveTool.brands ||
                               hasBrandSelection
@@ -268,8 +268,8 @@ class _FilterBar extends StatelessWidget {
           // Search tool
           GestureDetector(
             onTap: onSearchTap,
-            child: Icon(
-              LucideIcons.search,
+            child: PhosphorIcon(
+              PhosphorIconsThin.magnifyingGlass,
               size: 18,
               color: activeTool == _ActiveTool.search
                   ? AppColors.textPrimary
@@ -315,8 +315,8 @@ class _BrandFilterRow extends StatelessWidget {
                 children: [
                   SizedBox(
                     height: 32,
-                    child: Icon(
-                      LucideIcons.x,
+                    child: PhosphorIcon(
+                      PhosphorIconsThin.x,
                       size: 16,
                       color: AppColors.accentMuted,
                     ),
@@ -326,7 +326,7 @@ class _BrandFilterRow extends StatelessWidget {
                     'LIMPIAR',
                     style: AppTypography.captionSmall.copyWith(
                       color: AppColors.accentMuted,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w400,
                       letterSpacing: 1.0,
                     ),
                   ),
@@ -362,7 +362,7 @@ class _BrandFilterRow extends StatelessWidget {
                       brand.name[0],
                       style: AppTypography.headingMedium.copyWith(
                         color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   const SizedBox(height: AppSpacing.xs),
@@ -370,7 +370,7 @@ class _BrandFilterRow extends StatelessWidget {
                     brand.name.toUpperCase(),
                     style: AppTypography.captionSmall.copyWith(
                       color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w400,
                       letterSpacing: 1.0,
                     ),
                   ),

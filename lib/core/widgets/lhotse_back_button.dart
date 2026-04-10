@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_colors.dart';
 
@@ -84,8 +84,8 @@ class _LhotseBackButtonState extends State<LhotseBackButton> {
               ),
             ),
             child: const Center(
-              child: Icon(
-                LucideIcons.arrowLeft,
+              child: PhosphorIcon(
+                PhosphorIconsThin.arrowLeft,
                 size: LhotseBackButton._iconSize,
                 color: Colors.white,
               ),
@@ -100,8 +100,8 @@ class _LhotseBackButtonState extends State<LhotseBackButton> {
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 120),
       opacity: _pressed ? 0.4 : 1.0,
-      child: const Icon(
-        LucideIcons.arrowLeft,
+      child: const PhosphorIcon(
+        PhosphorIconsThin.arrowLeft,
         size: LhotseBackButton._iconSize,
         color: AppColors.textPrimary,
       ),

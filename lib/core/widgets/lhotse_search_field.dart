@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_theme.dart';
 
@@ -33,8 +33,8 @@ class LhotseSearchField extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 1),
       child: Row(
         children: [
-          Icon(
-            LucideIcons.search,
+          PhosphorIcon(
+            PhosphorIconsThin.magnifyingGlass,
             size: 20,
             color: AppColors.accentMuted,
           ),
@@ -69,8 +69,8 @@ class LhotseSearchField extends StatelessWidget {
               onTap: onClose,
               child: const Padding(
                 padding: EdgeInsets.only(left: AppSpacing.sm),
-                child: Icon(
-                  LucideIcons.x,
+                child: PhosphorIcon(
+                  PhosphorIconsThin.x,
                   size: 18,
                   color: AppColors.accentMuted,
                 ),

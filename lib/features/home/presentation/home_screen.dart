@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_news.dart';
 import '../../../core/data/mock/mock_projects.dart';
@@ -100,8 +100,8 @@ class _Header extends StatelessWidget {
             const SizedBox(width: 8),
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Icon(
-                LucideIcons.arrowUpRight,
+              child: PhosphorIcon(
+                PhosphorIconsThin.arrowUpRight,
                 size: 18,
                 color: AppColors.textPrimary,
               ),
@@ -137,8 +137,8 @@ class _SectionHeader extends StatelessWidget {
             const SizedBox(width: 8),
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Icon(
-                LucideIcons.arrowUpRight,
+              child: PhosphorIcon(
+                PhosphorIconsThin.arrowUpRight,
                 size: 18,
                 color: AppColors.textPrimary,
               ),

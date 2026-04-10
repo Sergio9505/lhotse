@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_news.dart';
 import '../../../core/theme/app_theme.dart';
@@ -317,7 +317,7 @@ class _RegionFilterRow extends StatelessWidget {
                           region.toUpperCase(),
                           style: AppTypography.captionSmall.copyWith(
                             color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w400,
                             letterSpacing: 1.0,
                           ),
                         ),
@@ -335,8 +335,8 @@ class _RegionFilterRow extends StatelessWidget {
                   children: [
                     const SizedBox(
                       height: 32,
-                      child: Icon(
-                        LucideIcons.x,
+                      child: PhosphorIcon(
+                        PhosphorIconsThin.x,
                         size: 16,
                         color: AppColors.accentMuted,
                       ),
@@ -346,7 +346,7 @@ class _RegionFilterRow extends StatelessWidget {
                       'LIMPIAR',
                       style: AppTypography.captionSmall.copyWith(
                         color: AppColors.accentMuted,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w400,
                         letterSpacing: 1.0,
                       ),
                     ),

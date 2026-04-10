@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_theme.dart';
 import 'lhotse_bottom_sheet.dart';
@@ -86,8 +86,8 @@ void showFullImage(BuildContext context, String imageUrl) {
                           alignment: Alignment.center,
                           color: AppColors.textPrimary
                               .withValues(alpha: 0.08),
-                          child: const Icon(
-                            LucideIcons.x,
+                          child: const PhosphorIcon(
+                            PhosphorIconsThin.x,
                             color: AppColors.textPrimary,
                             size: 20,
                           ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
@@ -112,7 +112,7 @@ class BrandInvestmentsScreen extends StatelessWidget {
                   sectionLabel,
                   style: AppTypography.labelLarge.copyWith(
                     color: AppColors.accentMuted,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 1.8,
                   ),
                 ),
@@ -192,7 +192,7 @@ class BrandInvestmentsScreen extends StatelessWidget {
                       'FINALIZADAS',
                       style: AppTypography.labelLarge.copyWith(
                         color: AppColors.accentMuted,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.8,
                       ),
                     ),
@@ -221,7 +221,7 @@ class BrandInvestmentsScreen extends StatelessWidget {
                               text: '+${inv.actualRoi!.toStringAsFixed(1)}%',
                               style: AppTypography.caption.copyWith(
                                 color: const Color(0xFF2D6A4F),
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                                 letterSpacing: 1.2,
                               ),
                             ),
@@ -401,7 +401,7 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                       style: TextStyle(
                         fontFamily: 'Campton',
                         fontSize: amountSize,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         color: AppColors.textPrimary,
                         letterSpacing: -1.0,
                         height: 1.0,
@@ -461,7 +461,7 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                             text: '${averageReturn.toStringAsFixed(0)}%',
                             style: AppTypography.bodyLarge.copyWith(
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           TextSpan(
@@ -595,7 +595,7 @@ class _AssetRowState extends State<_AssetRow> {
                         widget.projectName.toUpperCase(),
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           letterSpacing: 0.8,
                         ),
                       ),
@@ -661,8 +661,8 @@ class _AssetRowState extends State<_AssetRow> {
               if (widget.onTap != null)
                 Padding(
                   padding: const EdgeInsets.only(left: AppSpacing.sm),
-                  child: Icon(
-                    LucideIcons.chevronRight,
+                  child: PhosphorIcon(
+                    PhosphorIconsThin.caretRight,
                     size: 16,
                     color: AppColors.accentMuted,
                   ),
@@ -773,7 +773,7 @@ class _RentaFijaRow extends StatelessWidget {
                         _kMonths[badgeDate.month - 1],
                         style: AppTypography.caption.copyWith(
                           color: AppColors.textOnDark,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                           letterSpacing: 0.5,
                           height: 1.0,
                         ),
@@ -783,7 +783,7 @@ class _RentaFijaRow extends StatelessWidget {
                         '${badgeDate.year % 100}',
                         style: AppTypography.bodyLarge.copyWith(
                           color: AppColors.textOnDark,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                           height: 1.0,
                         ),
                       ),
@@ -793,7 +793,7 @@ class _RentaFijaRow extends StatelessWidget {
                     '${index ?? 0}',
                     style: AppTypography.bodyLarge.copyWith(
                       color: AppColors.textOnDark,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
           ),
@@ -841,7 +841,7 @@ class _RentaFijaRow extends StatelessWidget {
                             text: '  ·  +${inv.actualRoi!.toStringAsFixed(1)}%',
                             style: AppTypography.caption.copyWith(
                               color: const Color(0xFF2D6A4F),
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                               letterSpacing: 1.2,
                             ),
                           ),
@@ -870,8 +870,8 @@ class _RentaFijaRow extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: Icon(
-                  LucideIcons.fileText,
+                child: PhosphorIcon(
+                  PhosphorIconsThin.fileText,
                   size: 16,
                   color: AppColors.accentMuted,
                 ),

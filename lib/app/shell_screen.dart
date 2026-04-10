@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../core/data/mock/mock_notifications.dart';
 import '../core/theme/app_theme.dart';
-import '../core/widgets/lhotse_notification_badge.dart';
 
 // Navbar labels — uppercase, consistent with app typography
 const _kLabelInicio = 'INICIO';
@@ -44,11 +43,11 @@ class _LhotseNavBar extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _items = [
-    _NavItemData(icon: LucideIcons.home, label: _kLabelInicio),
-    _NavItemData(icon: LucideIcons.layers, label: _kLabelFirmas),
-    _NavItemData(icon: LucideIcons.search, label: _kLabelBuscar),
-    _NavItemData(icon: LucideIcons.compass, label: _kLabelEstrategia),
-    _NavItemData(icon: LucideIcons.user, label: _kLabelPerfil),
+    _NavItemData(label: _kLabelInicio, icon: PhosphorIconsThin.house),
+    _NavItemData(label: _kLabelFirmas, showLabel: true),
+    _NavItemData(label: _kLabelBuscar, icon: PhosphorIconsThin.magnifyingGlass),
+    _NavItemData(label: _kLabelEstrategia, showLabel: true),
+    _NavItemData(label: _kLabelPerfil, icon: PhosphorIconsThin.user),
   ];
 
   @override
@@ -56,22 +55,10 @@ class _LhotseNavBar extends StatelessWidget {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.navBackground,
-        border: Border(
-          top: BorderSide(color: AppColors.navBorderTop, width: 1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.navShadow,
-            blurRadius: 27,
-            offset: Offset(0, -5),
-          ),
-        ],
-      ),
+      color: AppColors.background,
       padding: EdgeInsets.only(bottom: bottomPadding),
       child: SizedBox(
-        height: 64,
+        height: 48,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: List.generate(_items.length, (i) {
@@ -81,28 +68,56 @@ class _LhotseNavBar extends StatelessWidget {
                 onTap: () => onTap(i),
                 behavior: HitTestBehavior.opaque,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    LhotseNotificationBadge(
-                      show: i == 3 && // ESTRATEGIA tab
-                          mockNotifications.any((n) => !n.isRead),
-                      child: Icon(
-                        _items[i].icon,
-                        size: 22,
-                        color: selected
-                            ? AppColors.textOnDark
-                            : AppColors.textSecondary,
+                    const Spacer(),
+                    SizedBox(
+                      height: 22,
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: _items[i].showLabel
+                            ? FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  _items[i].label,
+                                  maxLines: 1,
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w400,
+                                    letterSpacing: 0,
+                                  ),
+                                ),
+                              )
+                            : PhosphorIcon(
+                                _items[i].icon!,
+                                size: 22,
+                                color: AppColors.textPrimary,
+                              ),
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      _items[i].label,
-                      style: AppTypography.labelSmall.copyWith(
-                        color: selected
-                            ? AppColors.textOnDark
-                            : AppColors.textSecondary,
-                      ),
-                    ),
+                    // Dot: black = active, red = notifications, transparent = default
+                    Builder(builder: (_) {
+                      final hasNotifications = i == 3 &&
+                          mockNotifications.any((n) => !n.isRead);
+                      final Color dotColor;
+                      if (selected) {
+                        dotColor = AppColors.textPrimary;
+                      } else if (hasNotifications) {
+                        dotColor = AppColors.danger;
+                      } else {
+                        dotColor = Colors.transparent;
+                      }
+                      return Container(
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: dotColor,
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 4),
                   ],
                 ),
               ),
@@ -116,10 +131,12 @@ class _LhotseNavBar extends StatelessWidget {
 
 class _NavItemData {
   const _NavItemData({
-    required this.icon,
     required this.label,
+    this.icon,
+    this.showLabel = false,
   });
 
-  final IconData icon;
   final String label;
+  final PhosphorIconData? icon;
+  final bool showLabel;
 }

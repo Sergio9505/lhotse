@@ -14,6 +14,7 @@ These rules apply to ALL UI built in the app. Check before every screen/widget i
 | Editorial + fintech premium | Generous whitespace, typographic hierarchy over labels/headers. Numbers are heroes. Minimal UI chrome |
 | Calibrate by screen type | Criterion: "Is the user discovering or managing?" Discovery (Home, Project Detail, Brands, Search) → editorial-heavy: large hero images, aspirational, visual rhythm. Portfolio (Strategy, Brand Investments, Investment Detail) → fintech-heavy: data-first, numbers as heroes, progressive disclosure. See ADR-17 for full calibration table |
 | No redundant labels | If a value is self-explanatory (€, %) don't add repeated labels per row. Use section context or a single header |
+| Thin aesthetic | All icons: Phosphor thin (1px stroke). Typography weights: w400-w500 range. No bold (w700+). Size creates hierarchy, not weight. Inspired by Zara |
 | Business models | 3 variants: `compraDirecta`, `coinversion`, `rentaFija` (no `ciclo`) |
 
 ## Tokens
@@ -36,18 +37,20 @@ These rules apply to ALL UI built in the app. Check before every screen/widget i
 ### Typography (`app_typography.dart`) — Campton only
 | Style | Size | Weight | Usage |
 |-------|------|--------|-------|
-| displayLarge | 40 | Black (900) | Hero sections |
-| displayMedium | 28 | Bold (700) | Feature headings |
-| headingLarge | 24 | Bold (700) | Screen titles (uppercase) |
-| headingMedium | 20 | SemiBold (600) | Section headers |
-| headingSmall | 18 | SemiBold (600) | Subsection headers |
+| displayLarge | 40 | SemiBold (600) | Hero financial numbers (only element with extra weight) |
+| displayMedium | 28 | Medium (500) | Feature headings, scenario numbers |
+| headingLarge | 24 | Medium (500) | Screen titles (uppercase) |
+| headingMedium | 20 | Medium (500) | Section headers |
+| headingSmall | 18 | Medium (500) | Row amounts, metric values |
 | bodyLarge | 16 | Book (400) | General text |
-| bodyMedium | 14 | Book (400) | Secondary text |
-| bodySmall | 12 | Book (400) | Descriptions, paragraphs |
-| labelLarge | 12 | Bold (700) | Menu items, buttons (uppercase) |
+| bodyMedium | 14 | Book (400) | Secondary text, key-value values |
+| bodySmall | 12 | Book (400) | Descriptions, brand names |
+| labelLarge | 12 | Medium (500) | Tab labels (active), buttons (uppercase) |
 | labelSmall | 10 | Book (400) | Nav labels, tags |
 | caption | 10 | Book (400) | Metadata, dates (uppercase) |
 | captionSmall | 8 | Book (400) | Version info |
+
+**Weight hierarchy:** w600 (hero only) → w500 (values, active states) → w400 (labels, metadata, body). Matches Phosphor thin (1px) icon aesthetic — size creates hierarchy, not weight.
 
 Note: Figma uses Outfit, Cormorant Garamond, Menlo as placeholders — the brand standard is **Campton exclusively**.
 
@@ -65,7 +68,7 @@ Base unit: 4px. Scale: 4, 8, 16, 24, 32, 48. Page horizontal padding: 24px.
 
 ## Components
 To be extracted from Figma as screens are built:
-- [x] Bottom navigation (5 tabs) — custom `_LhotseNavBar` in `shell_screen.dart`. All Lucide icons (home, layers, search, compass, user), labels always visible (white active / gray inactive), no filled variants. Tabs: INICIO, FIRMAS, BUSCAR, ESTRATEGIA, PERFIL
+- [x] Bottom navigation (5 tabs) — custom `_LhotseNavBar` in `shell_screen.dart`. Zara-inspired hybrid: icon-only (Phosphor thin: house, magnifyingGlass, user) for universal tabs + text-only (FIRMAS, ESTRATEGIA) for non-obvious tabs. Beige background (seamless with content), no border/shadow. Active indicator: 4px black dot below. Notification indicator: 4px red dot (same position). Bottom-aligned with SizedBox(22px). Text at bodyMedium w400 with FittedBox scaleDown
 - [x] Project card — `ProjectCard` in `home/presentation/widgets/project_card.dart`. Dynamic overlay (padding-based height), AutoSizeText title (40px, 1 line), brand+location metadata, ↗ icon
 - [x] Brand card — `_BrandCard` in `brands/presentation/brands_screen.dart`. 2-column grid (ratio 1:1), cover image + gradient overlay + centered SVG logo (36px) + name (bodySmall bold) below logo
 - [x] News card — `LhotseNewsCard` in `core/widgets/lhotse_news_card.dart`. Beige overlay (surface 75%), title (1 line, ellipsis) + brand·subtitle metadata. Full (320×213) and compact (260×160) constructors. No "Explorar todo" card — ↗ header handles navigation

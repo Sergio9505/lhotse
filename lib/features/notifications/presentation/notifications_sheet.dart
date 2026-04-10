@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_notifications.dart';
 import '../../../core/domain/app_notification.dart';
@@ -137,8 +137,8 @@ class _NotificationsSheetContent extends StatelessWidget {
                     child: Center(
                       child: LhotseNotificationBadge(
                         show: hasUnread,
-                        child: Icon(
-                          LucideIcons.checkCheck,
+                        child: PhosphorIcon(
+                          PhosphorIconsThin.checks,
                           size: 20,
                           color: hasUnread
                               ? AppColors.textPrimary
@@ -276,7 +276,7 @@ class _NotificationRowState extends State<_NotificationRow> {
                     ? AppColors.danger.withValues(alpha: 0.1)
                     : AppColors.textPrimary.withValues(alpha: 0.06),
                 child: Center(
-                  child: Icon(
+                  child: PhosphorIcon(
                     _typeIcon(n.type),
                     size: 16,
                     color: isDelay ? AppColors.danger : AppColors.textPrimary,
@@ -329,11 +329,11 @@ class _NotificationRowState extends State<_NotificationRow> {
     );
   }
 
-  IconData _typeIcon(NotificationType type) => switch (type) {
-        NotificationType.document => LucideIcons.fileText,
-        NotificationType.news => LucideIcons.newspaper,
-        NotificationType.phase => LucideIcons.flag,
-        NotificationType.financial => LucideIcons.trendingUp,
-        NotificationType.delay => LucideIcons.alertTriangle,
+  PhosphorIconData _typeIcon(NotificationType type) => switch (type) {
+        NotificationType.document => PhosphorIconsThin.fileText,
+        NotificationType.news => PhosphorIconsThin.newspaper,
+        NotificationType.phase => PhosphorIconsThin.flag,
+        NotificationType.financial => PhosphorIconsThin.trendUp,
+        NotificationType.delay => PhosphorIconsThin.warning,
       };
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_projects.dart';
@@ -142,7 +142,7 @@ class _TrendingSection extends StatelessWidget {
             'TENDENCIAS',
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               letterSpacing: 1.8,
             ),
           ),
@@ -215,7 +215,7 @@ class _CollectionsSection extends StatelessWidget {
             'COLECCIONES',
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               letterSpacing: 1.8,
             ),
           ),
@@ -290,7 +290,7 @@ class _CollectionCard extends StatelessWidget {
               name.toUpperCase(),
               style: AppTypography.bodyLarge.copyWith(
                 color: Colors.white,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -329,7 +329,7 @@ class _SearchResults extends StatelessWidget {
             'PROYECTOS',
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               letterSpacing: 1.8,
             ),
           ),
@@ -348,7 +348,7 @@ class _SearchResults extends StatelessWidget {
             'DOCUMENTOS',
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               letterSpacing: 1.8,
             ),
           ),
@@ -364,8 +364,8 @@ class _SearchResults extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(
-                  LucideIcons.fileText,
+                PhosphorIcon(
+                  PhosphorIconsThin.fileText,
                   size: 20,
                   color: AppColors.accentMuted,
                 ),
@@ -441,7 +441,7 @@ class _ProjectResultItem extends StatelessWidget {
                         project.brand.toUpperCase(),
                         style: AppTypography.caption.copyWith(
                           color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                           letterSpacing: 1.5,
                         ),
                       ),
@@ -471,8 +471,8 @@ class _ProjectResultItem extends StatelessWidget {
             ),
 
             // Arrow
-            const Icon(
-              LucideIcons.arrowUpRight,
+            const PhosphorIcon(
+              PhosphorIconsThin.arrowUpRight,
               size: 18,
               color: AppColors.accentMuted,
             ),

@@ -15,7 +15,7 @@ class LhotseSectionLabel extends StatelessWidget {
         label,
         style: AppTypography.labelLarge.copyWith(
           color: AppColors.accentMuted,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w400,
           letterSpacing: 1.8,
         ),
       ),

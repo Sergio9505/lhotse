@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
@@ -241,8 +241,8 @@ class _BrandFilterRow extends StatelessWidget {
                 children: [
                   const SizedBox(
                     height: 32,
-                    child: Icon(
-                      LucideIcons.x,
+                    child: PhosphorIcon(
+                      PhosphorIconsThin.x,
                       size: 16,
                       color: AppColors.accentMuted,
                     ),
@@ -252,7 +252,7 @@ class _BrandFilterRow extends StatelessWidget {
                     'LIMPIAR',
                     style: AppTypography.captionSmall.copyWith(
                       color: AppColors.accentMuted,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w400,
                       letterSpacing: 1.0,
                     ),
                   ),
@@ -288,7 +288,7 @@ class _BrandFilterRow extends StatelessWidget {
                       brand.name[0],
                       style: AppTypography.headingMedium.copyWith(
                         color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   const SizedBox(height: AppSpacing.xs),
@@ -296,7 +296,7 @@ class _BrandFilterRow extends StatelessWidget {
                     brand.name.toUpperCase(),
                     style: AppTypography.captionSmall.copyWith(
                       color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w400,
                       letterSpacing: 1.0,
                     ),
                   ),
@@ -344,8 +344,8 @@ class _LocationFilterRow extends StatelessWidget {
             return GestureDetector(
               onTap: onClear,
               child: Center(
-                child: Icon(
-                  LucideIcons.x,
+                child: PhosphorIcon(
+                  PhosphorIconsThin.x,
                   size: 16,
                   color: AppColors.accentMuted,
                 ),

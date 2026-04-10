@@ -42,7 +42,7 @@ class LhotseNotificationBadge extends StatelessWidget {
                       style: const TextStyle(
                         fontFamily: 'Campton',
                         fontSize: 8,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         color: Colors.white,
                         height: 1.2,
                       ),

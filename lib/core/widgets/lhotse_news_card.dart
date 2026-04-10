@@ -111,7 +111,7 @@ class LhotseNewsCard extends StatelessWidget {
                       title.toUpperCase(),
                       style: titleStyle.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -127,7 +127,7 @@ class LhotseNewsCard extends StatelessWidget {
                                     : AppTypography.caption)
                                 .copyWith(
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               letterSpacing: 1.5,
                             ),
                           ),

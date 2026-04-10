@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/domain/asset_info.dart';
 import '../../../core/domain/investment_data.dart';
@@ -203,7 +203,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                           inv.brandName.toUpperCase(),
                           style: AppTypography.caption.copyWith(
                             color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                             letterSpacing: 1.8,
                           ),
                         ),
@@ -408,7 +408,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                         color: active
                             ? AppColors.textOnDark
                             : AppColors.accentMuted,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -422,7 +422,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                 behavior: HitTestBehavior.opaque,
                 child: const Padding(
                   padding: EdgeInsets.all(6),
-                  child: Icon(LucideIcons.x,
+                  child: PhosphorIcon(PhosphorIconsThin.x,
                       size: 14, color: AppColors.accentMuted),
                 ),
               ),
@@ -497,8 +497,8 @@ class _ActivoTab extends StatelessWidget {
                     Positioned(
                       right: 0,
                       bottom: 0,
-                      child: Icon(
-                        LucideIcons.maximize2,
+                      child: PhosphorIcon(
+                        PhosphorIconsThin.arrowsOut,
                         color: AppColors.accentMuted,
                         size: 16,
                       ),
@@ -520,7 +520,7 @@ class _ActivoTab extends StatelessWidget {
                   'GALERÍA',
                   style: AppTypography.labelLarge.copyWith(
                     color: AppColors.accentMuted,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 1.8,
                   ),
                 ),
@@ -529,8 +529,8 @@ class _ActivoTab extends StatelessWidget {
                   GestureDetector(
                     onTap: () => showAllGallery(
                         context, 'GALERÍA', inv.renderImages!),
-                    child: const Icon(
-                      LucideIcons.arrowUpRight,
+                    child: const PhosphorIcon(
+                      PhosphorIconsThin.arrowUpRight,
                       size: 14,
                       color: AppColors.textPrimary,
                     ),
@@ -738,8 +738,8 @@ void _showFloorPlan(BuildContext context, String url) {
                           alignment: Alignment.center,
                           color: AppColors.textPrimary
                               .withValues(alpha: 0.08),
-                          child: Icon(
-                            LucideIcons.x,
+                          child: PhosphorIcon(
+                            PhosphorIconsThin.x,
                             color: AppColors.textPrimary,
                             size: 20,
                           ),

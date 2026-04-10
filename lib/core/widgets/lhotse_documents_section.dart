@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_theme.dart';
 import 'lhotse_bottom_sheet.dart';
@@ -22,13 +22,13 @@ class LhotseDocument {
 }
 
 IconData docCategoryIcon(DocCategory cat) => switch (cat) {
-      DocCategory.legal => LucideIcons.scale,
-      DocCategory.financiero => LucideIcons.banknote,
-      DocCategory.obra => LucideIcons.hardHat,
-      DocCategory.fiscal => LucideIcons.receipt,
-      DocCategory.contrato => LucideIcons.fileText,
-      DocCategory.certificado => LucideIcons.fileBadge,
-      DocCategory.informe => LucideIcons.fileBarChart,
+      DocCategory.legal => PhosphorIconsThin.scales,
+      DocCategory.financiero => PhosphorIconsThin.money,
+      DocCategory.obra => PhosphorIconsThin.hardHat,
+      DocCategory.fiscal => PhosphorIconsThin.receipt,
+      DocCategory.contrato => PhosphorIconsThin.fileText,
+      DocCategory.certificado => PhosphorIconsThin.certificate,
+      DocCategory.informe => PhosphorIconsThin.chartBar,
     };
 
 /// Inline documents section: shows first [maxVisible] docs + "Ver todos" link
@@ -84,7 +84,7 @@ class LhotseDocumentsSection extends StatelessWidget {
                 'Ver todos (${documents.length})',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.accentMuted,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ),
@@ -166,7 +166,7 @@ void showDocsBottomSheet({
                               color: active
                                   ? AppColors.textOnDark
                                   : AppColors.accentMuted,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w400,
                               letterSpacing: 1.0,
                             ),
                           ),
@@ -180,7 +180,7 @@ void showDocsBottomSheet({
                       behavior: HitTestBehavior.opaque,
                       child: const Padding(
                         padding: EdgeInsets.all(6),
-                        child: Icon(LucideIcons.x,
+                        child: PhosphorIcon(PhosphorIconsThin.x,
                             size: 14, color: AppColors.accentMuted),
                       ),
                     ),

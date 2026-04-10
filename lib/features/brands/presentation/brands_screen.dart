@@ -120,7 +120,7 @@ class _BrandCard extends StatelessWidget {
                     brand.name[0],
                     style: AppTypography.displayLarge.copyWith(
                       color: Colors.white,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 const SizedBox(height: AppSpacing.sm),
@@ -128,7 +128,7 @@ class _BrandCard extends StatelessWidget {
                   brand.name.toUpperCase(),
                   style: AppTypography.bodySmall.copyWith(
                     color: Colors.white,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],

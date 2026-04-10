@@ -8,14 +8,14 @@ abstract final class AppTypography {
   static const displayLarge = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 40,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w600,
     height: 1.1,
   );
 
   static const displayMedium = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 28,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w500,
     height: 1.15,
   );
 
@@ -23,7 +23,7 @@ abstract final class AppTypography {
   static const headingLarge = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 24,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w500,
     height: 1.2,
     letterSpacing: -0.48,
   );
@@ -31,14 +31,14 @@ abstract final class AppTypography {
   static const headingMedium = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 20,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
     height: 1.25,
   );
 
   static const headingSmall = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 18,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
     height: 1.3,
   );
 
@@ -68,7 +68,7 @@ abstract final class AppTypography {
   static const labelLarge = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 12,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w500,
     height: 1.4,
     letterSpacing: 0.5,
   );

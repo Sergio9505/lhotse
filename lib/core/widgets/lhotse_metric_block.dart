@@ -23,7 +23,7 @@ class LhotseMetricBlock extends StatelessWidget {
           value,
           style: AppTypography.headingSmall.copyWith(
             color: valueColor ?? AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),

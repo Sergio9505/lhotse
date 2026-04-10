@@ -182,7 +182,7 @@ class _ContentPanel extends StatelessWidget {
             project.name.toUpperCase(),
             style: AppTypography.displayLarge.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               letterSpacing: -0.48,
             ),
           ),
@@ -196,7 +196,7 @@ class _ContentPanel extends StatelessWidget {
                 project.brand.toUpperCase(),
                 style: AppTypography.caption.copyWith(
                   color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 1.8,
                 ),
               ),
@@ -300,7 +300,7 @@ class _ContentPanel extends StatelessWidget {
                   text: entry.value,
                   style: isBold
                       ? TextStyle(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                           color: AppColors.textSecondary,
                         )
                       : null,
