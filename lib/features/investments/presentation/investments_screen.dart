@@ -325,7 +325,7 @@ class _BrandRowState extends State<_BrandRow> {
             children: [
               // Logo
               _BrandLeading(brandName: widget.brandName),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpacing.md),
 
               // Left col: name + amount · return%
               Expanded(
@@ -355,7 +355,7 @@ class _BrandRowState extends State<_BrandRow> {
                             text: '€',
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.textPrimary,
-                              ),
+                            ),
                           ),
                           TextSpan(
                             text: '  ·  ${widget.averageReturn.toStringAsFixed(0)}%${widget.isEstimated ? '*' : ''}',
@@ -398,10 +398,11 @@ class _BrandLeading extends StatelessWidget {
 
     if (brand?.logoAsset != null) {
       return SizedBox(
-        width: 36,
-        height: 36,
+        width: 48,
+        height: 32,
         child: SvgPicture.asset(
           brand!.logoAsset!,
+          fit: BoxFit.contain,
           colorFilter: const ColorFilter.mode(
             AppColors.textPrimary,
             BlendMode.srcIn,
@@ -412,16 +413,28 @@ class _BrandLeading extends StatelessWidget {
 
     final initials = brandName.split(' ').map((w) => w[0]).join();
 
-    return Container(
-      width: 36,
-      height: 36,
-      color: AppColors.primary,
-      alignment: Alignment.center,
-      child: Text(
-        initials,
-        style: AppTypography.bodyLarge.copyWith(
-          color: AppColors.textOnDark,
-          fontWeight: FontWeight.w500,
+    return SizedBox(
+      width: 48,
+      height: 32,
+      child: Center(
+        child: Container(
+          width: 32,
+          height: 32,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: AppColors.textPrimary,
+              width: 0.5,
+            ),
+          ),
+          child: Text(
+            initials,
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
+            ),
+          ),
         ),
       ),
     );

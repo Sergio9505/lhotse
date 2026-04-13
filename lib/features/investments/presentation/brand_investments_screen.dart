@@ -98,14 +98,7 @@ class BrandInvestmentsScreen extends StatelessWidget {
             pinned: true,
             delegate: _StickyLabelDelegate(
               child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: [0.7, 1.0],
-                    colors: [AppColors.background, Color(0x00E5E2DC)],
-                  ),
-                ),
+                color: AppColors.background,
                 padding: const EdgeInsets.only(
                     top: AppSpacing.md, left: AppSpacing.lg, bottom: AppSpacing.sm),
                 alignment: Alignment.centerLeft,
@@ -866,7 +859,7 @@ class _RentaFijaRow extends StatelessWidget {
               onTap: onDocsTap,
               behavior: HitTestBehavior.opaque,
               child: Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 child: PhosphorIcon(
                   PhosphorIconsThin.fileText,
                   size: 24,
