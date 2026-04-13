@@ -245,7 +245,7 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
           // Bell — fixed top-right, independent of collapse
           Positioned(
             top: topPadding + 16,
-            right: AppSpacing.lg,
+            right: AppSpacing.md,
             child: const LhotseNotificationBell(
               color: AppColors.textOnDark,
             ),

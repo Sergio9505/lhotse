@@ -19,15 +19,22 @@ class LhotseShellHeader extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
         topPadding + 16,
-        AppSpacing.sm,
+        AppSpacing.md,
         16,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(child: child),
-          const LhotseNotificationBell(),
-        ],
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: child,
+              ),
+            ),
+            const LhotseNotificationBell(),
+          ],
+        ),
       ),
     );
   }

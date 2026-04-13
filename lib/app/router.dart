@@ -16,6 +16,23 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/search/presentation/search_screen.dart';
 import 'shell_screen.dart';
 
+CustomTransitionPage<void> _fadePage({
+  required LocalKey key,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: key,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 200),
+    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+        FadeTransition(
+      opacity: CurveTween(curve: Curves.easeInOut).animate(animation),
+      child: child,
+    ),
+  );
+}
+
 abstract final class AppRoutes {
   static const home = '/';
   static const projects = '/projects';
@@ -51,8 +68,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
             GoRoute(
               path: AppRoutes.news,
-              pageBuilder: (context, state) => const MaterialPage(
-                child: AllNewsScreen(),
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: const AllNewsScreen(),
               ),
             ),
             GoRoute(
@@ -65,7 +83,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.projectDetail,
               pageBuilder: (context, state) {
                 final id = state.pathParameters['id']!;
-                return MaterialPage(
+                return _fadePage(
                   key: state.pageKey,
                   child: ProjectDetailScreen(projectId: id),
                 );
@@ -83,7 +101,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.brandDetail,
               pageBuilder: (context, state) {
                 final id = state.pathParameters['id']!;
-                return MaterialPage(
+                return _fadePage(
                   key: state.pageKey,
                   child: BrandDetailScreen(brandId: id),
                 );
@@ -109,7 +127,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.brandInvestments,
               pageBuilder: (context, state) {
                 final brandName = state.pathParameters['brandName']!;
-                return MaterialPage(
+                return _fadePage(
                   key: state.pageKey,
                   child: BrandInvestmentsScreen(
                       brandName: Uri.decodeComponent(brandName)),
@@ -118,15 +136,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
             GoRoute(
               path: AppRoutes.opportunities,
-              pageBuilder: (context, state) => const MaterialPage(
-                child: OpportunitiesScreen(),
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: const OpportunitiesScreen(),
               ),
             ),
             GoRoute(
               path: AppRoutes.investmentDetail,
               pageBuilder: (context, state) {
                 final id = state.pathParameters['id']!;
-                return MaterialPage(
+                return _fadePage(
                   key: state.pageKey,
                   child: InvestmentDetailScreen(investmentId: id),
                 );
