@@ -19,7 +19,7 @@ abstract final class AppRadius {
   static const xl = 24.0;
   static const full = 999.0;
 
-  static final cardRadius = BorderRadius.circular(md);
-  static final buttonRadius = BorderRadius.circular(sm);
-  static final chipRadius = BorderRadius.circular(full);
+  static final cardRadius = BorderRadius.zero;
+  static final buttonRadius = BorderRadius.zero;
+  static final chipRadius = BorderRadius.zero;
 }

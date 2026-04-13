@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_image.dart';
@@ -20,6 +22,7 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
   String _query = '';
+  final List<String> _recentSearches = [];
 
   static const _trendingTags = [
     'Madrid Centro',
@@ -50,6 +53,16 @@ class _SearchScreenState extends State<SearchScreen> {
   void _onTagTap(String tag) {
     _searchController.text = tag;
     setState(() => _query = tag);
+    _addToRecent(tag);
+  }
+
+  void _addToRecent(String term) {
+    if (term.trim().isEmpty) return;
+    setState(() {
+      _recentSearches.remove(term);
+      _recentSearches.insert(0, term);
+      if (_recentSearches.length > 3) _recentSearches.removeLast();
+    });
   }
 
   void _clearSearch() {
@@ -94,6 +107,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ? _SearchResults(
                     results: _searchResults,
                     query: _query,
+                    onResultTap: () => _addToRecent(_query),
                   )
                 : const _IdleContent(),
           ),
@@ -104,7 +118,7 @@ class _SearchScreenState extends State<SearchScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Idle state: Tendencias + Colecciones
+// Idle state: Recientes + Tendencias + Destacados
 // ---------------------------------------------------------------------------
 
 class _IdleContent extends StatelessWidget {
@@ -112,19 +126,65 @@ class _IdleContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.findAncestorStateOfType<_SearchScreenState>()!;
+
     return ListView(
-      padding: EdgeInsets.zero,
-      children: const [
-        _TrendingSection(),
-        SizedBox(height: AppSpacing.xl),
-        _CollectionsSection(),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+      children: [
+        if (state._recentSearches.isNotEmpty) ...[
+          const _RecentSearchesSection(),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+        const _TrendingSection(),
+        const SizedBox(height: AppSpacing.xl),
+        const _FeaturedSection(),
       ],
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Tendencias — horizontal chip row
+// Recientes — in-memory recent searches
+// ---------------------------------------------------------------------------
+
+class _RecentSearchesSection extends StatelessWidget {
+  const _RecentSearchesSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.findAncestorStateOfType<_SearchScreenState>()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'RECIENTES',
+            style: AppTypography.labelLarge.copyWith(
+              color: AppColors.textPrimary,
+              letterSpacing: 1.8,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: state._recentSearches
+                .map((term) => _TrendingChip(
+                      label: term,
+                      onTap: () => state._onTagTap(term),
+                    ))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tendencias — trending tags
 // ---------------------------------------------------------------------------
 
 class _TrendingSection extends StatelessWidget {
@@ -176,14 +236,13 @@ class _TrendingChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: 10,
+          vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.4),
           border: Border.all(
             color: AppColors.textPrimary.withValues(alpha: 0.1),
+            width: 0.5,
           ),
-          borderRadius: BorderRadius.circular(AppRadius.full),
         ),
         child: Text(
           label,
@@ -198,96 +257,95 @@ class _TrendingChip extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Colecciones — 2-column brand grid
+// Destacados — curated VIP projects
 // ---------------------------------------------------------------------------
 
-class _CollectionsSection extends StatelessWidget {
-  const _CollectionsSection();
+class _FeaturedSection extends StatelessWidget {
+  const _FeaturedSection();
 
   @override
   Widget build(BuildContext context) {
+    final featured = mockProjects.where((p) => p.isVip).take(3).toList();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'COLECCIONES',
+            'DESTACADOS',
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.textPrimary,
               letterSpacing: 1.8,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: AppSpacing.md,
-              crossAxisSpacing: AppSpacing.md,
-              childAspectRatio: 192 / 240,
-            ),
-            itemCount: mockBrands.length,
-            itemBuilder: (context, i) {
-              final brand = mockBrands[i];
-              return _CollectionCard(
-                name: brand.name,
-                imageUrl: brand.coverImageUrl,
-              );
-            },
-          ),
+          for (int i = 0; i < featured.length; i++) ...[
+            _FeaturedCard(project: featured[i]),
+            if (i < featured.length - 1) const SizedBox(height: AppSpacing.md),
+          ],
         ],
       ),
     );
   }
 }
 
-class _CollectionCard extends StatelessWidget {
-  const _CollectionCard({
-    required this.name,
-    required this.imageUrl,
-  });
+class _FeaturedCard extends StatelessWidget {
+  const _FeaturedCard({required this.project});
 
-  final String name;
-  final String imageUrl;
+  final ProjectData project;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      child: Stack(
-        fit: StackFit.expand,
+    return GestureDetector(
+      onTap: () => context.push('/projects/${project.id}'),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image
-          LhotseImage(imageUrl),
-
-          // Gradient overlay
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                stops: [0.0, 0.5, 1.0],
-                colors: [
-                  Color(0x99000000),
-                  Color(0x00000000),
-                  Color(0x00000000),
-                ],
-              ),
+          SizedBox(
+            height: 200,
+            width: double.infinity,
+            child: LhotseImage(project.imageUrl),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            project.name.toUpperCase(),
+            style: AppTypography.headingSmall.copyWith(
+              color: AppColors.textPrimary,
             ),
           ),
-
-          // Brand name
-          Positioned(
-            left: 13,
-            bottom: 12,
-            child: Text(
-              name.toUpperCase(),
-              style: AppTypography.bodyLarge.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              Text(
+                project.brand.toUpperCase(),
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.5,
+                ),
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  '·',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textPrimary.withValues(alpha: 0.4),
+                  ),
+                ),
+              ),
+              Flexible(
+                child: Text(
+                  project.location.toUpperCase(),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.accentMuted,
+                    letterSpacing: 1.2,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -296,46 +354,74 @@ class _CollectionCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Search results
+// Search results — brands + projects
 // ---------------------------------------------------------------------------
 
 class _SearchResults extends StatelessWidget {
   const _SearchResults({
     required this.results,
     required this.query,
+    this.onResultTap,
   });
 
   final List<ProjectData> results;
   final String query;
+  final VoidCallback? onResultTap;
 
   @override
   Widget build(BuildContext context) {
-    if (results.isEmpty) {
+    final brandResults = mockBrands
+        .where((b) => b.name.toLowerCase().contains(query.toLowerCase()))
+        .toList();
+
+    if (results.isEmpty && brandResults.isEmpty) {
       return _EmptyResults(query: query);
     }
 
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        // Projects header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Text(
-            'PROYECTOS',
-            style: AppTypography.labelLarge.copyWith(
-              color: AppColors.textPrimary,
-              letterSpacing: 1.8,
+        // FIRMAS section
+        if (brandResults.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              'FIRMAS',
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.textPrimary,
+                letterSpacing: 1.8,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.md),
+          ...brandResults.map((brand) => _BrandResultItem(
+                brand: brand,
+                onTap: onResultTap,
+              )),
+          const SizedBox(height: AppSpacing.xl),
+        ],
 
-        // Project results
-        ...results.map((project) => _ProjectResultItem(project: project)),
+        // PROYECTOS section
+        if (results.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              'PROYECTOS',
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.textPrimary,
+                letterSpacing: 1.8,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ...results.map((project) => _ProjectResultItem(
+                project: project,
+                onTap: onResultTap,
+              )),
+          const SizedBox(height: AppSpacing.xl),
+        ],
 
-        const SizedBox(height: AppSpacing.xl),
-
-        // Documents section placeholder
+        // Documents placeholder
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Text(
@@ -351,10 +437,7 @@ class _SearchResults extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(0),
-            ),
+            color: Colors.white.withValues(alpha: 0.3),
             child: Row(
               children: [
                 PhosphorIcon(
@@ -375,22 +458,93 @@ class _SearchResults extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(height: AppSpacing.xl),
       ],
     );
   }
 }
 
-class _ProjectResultItem extends StatelessWidget {
-  const _ProjectResultItem({required this.project});
+class _BrandResultItem extends StatelessWidget {
+  const _BrandResultItem({required this.brand, this.onTap});
 
-  final ProjectData project;
+  final BrandData brand;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/projects/${project.id}'),
+      onTap: () {
+        onTap?.call();
+        context.push('/brands/${brand.id}');
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            // Logo
+            SizedBox(
+              width: 48,
+              height: 32,
+              child: brand.logoAsset != null
+                  ? SvgPicture.asset(
+                      brand.logoAsset!,
+                      fit: BoxFit.contain,
+                      colorFilter: const ColorFilter.mode(
+                        AppColors.textPrimary,
+                        BlendMode.srcIn,
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        brand.name.split(' ').map((w) => w[0]).join(),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            // Tagline
+            Expanded(
+              child: Text(
+                brand.tagline ?? brand.name.toUpperCase(),
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.accentMuted,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const PhosphorIcon(
+              PhosphorIconsThin.arrowUpRight,
+              size: 18,
+              color: AppColors.accentMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectResultItem extends StatelessWidget {
+  const _ProjectResultItem({required this.project, this.onTap});
+
+  final ProjectData project;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        onTap?.call();
+        context.push('/projects/${project.id}');
+      },
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -400,13 +554,10 @@ class _ProjectResultItem extends StatelessWidget {
         child: Row(
           children: [
             // Thumbnail
-            ClipRRect(
-              borderRadius: BorderRadius.circular(0),
-              child: SizedBox(
-                width: 64,
-                height: 64,
-                child: LhotseImage(project.imageUrl),
-              ),
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: LhotseImage(project.imageUrl),
             ),
             const SizedBox(width: AppSpacing.md),
 
