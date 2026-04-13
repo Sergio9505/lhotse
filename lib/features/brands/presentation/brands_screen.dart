@@ -59,12 +59,16 @@ class _BrandCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Center(
         child: brand.logoAsset != null
-            ? SvgPicture.asset(
-                brand.logoAsset!,
+            ? SizedBox(
+                width: 100,
                 height: 40,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.textPrimary,
-                  BlendMode.srcIn,
+                child: SvgPicture.asset(
+                  brand.logoAsset!,
+                  fit: BoxFit.contain,
+                  colorFilter: const ColorFilter.mode(
+                    AppColors.textPrimary,
+                    BlendMode.srcIn,
+                  ),
                 ),
               )
             : Text(

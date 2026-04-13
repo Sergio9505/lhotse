@@ -7,17 +7,41 @@ import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
-import '../../../core/widgets/lhotse_notification_bell.dart';
 
-class BrandDetailScreen extends StatelessWidget {
+class BrandDetailScreen extends StatefulWidget {
   const BrandDetailScreen({super.key, required this.brandId});
 
   final String brandId;
 
   @override
+  State<BrandDetailScreen> createState() => _BrandDetailScreenState();
+}
+
+class _BrandDetailScreenState extends State<BrandDetailScreen> {
+  final _scrollController = ScrollController();
+  bool _showLogoInHeader = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Logo sits ~100px below the top of the scroll area; show header logo once it scrolls past
+    final show = _scrollController.offset > 100;
+    if (show != _showLogoInHeader) setState(() => _showLogoInHeader = show);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final brand = mockBrands.firstWhere((b) => b.id == brandId);
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final brand = mockBrands.firstWhere((b) => b.id == widget.brandId);
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
@@ -25,115 +49,142 @@ class BrandDetailScreen extends StatelessWidget {
       body: Column(
         children: [
           // ─── Header ───────────────────────────────────────────────
-          _BrandDetailHeader(topPadding: topPadding),
-
-          // ─── Content ──────────────────────────────────────────────
-          Expanded(
-            child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Logo
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        0,
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.sm,
+              topPadding + AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+            ),
+            child: Row(
+              children: [
+                LhotseBackButton.onSurface(),
+                Expanded(
+                  child: Center(
+                    child: AnimatedOpacity(
+                      opacity: _showLogoInHeader ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: IgnorePointer(
+                        ignoring: !_showLogoInHeader,
+                        child: _BrandLogoHeader(brand: brand),
                       ),
-                      child: _BrandLogo(brand: brand),
                     ),
+                  ),
+                ),
+                const SizedBox(width: 44), // balance back button
+              ],
+            ),
+          ),
 
-                    // Tagline
-                    if (brand.tagline != null) ...[
-                      const SizedBox(height: AppSpacing.lg),
+          // ─── Content + floating CTA ───────────────────────────────
+          Expanded(
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Logo — quiet identity mark
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg),
-                        child: Text(
-                          brand.tagline!,
-                          style: AppTypography.headingMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            height: 1.3,
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                          0,
+                        ),
+                        child: _BrandLogo(brand: brand),
+                      ),
+
+                      // Tagline — editorial hero statement
+                      if (brand.tagline != null) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg),
+                          child: Text(
+                            brand.tagline!,
+                            style: AppTypography.headingLarge.copyWith(
+                              color: AppColors.textPrimary,
+                              height: 1.3,
+                            ),
                           ),
                         ),
+                      ],
+
+                      // Description
+                      if (brand.description != null) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg),
+                          child: _BrandDescription(brand: brand),
+                        ),
+                      ],
+
+                      // Cover image — full-bleed
+                      const SizedBox(height: AppSpacing.xxl),
+                      AspectRatio(
+                        aspectRatio: 4 / 3,
+                        child: LhotseImage(brand.coverImageUrl),
                       ),
+
+                      // Space so last content clears the floating CTA
+                      // CTA height (~52) + bottom gap (lg=24) + breathing room
+                      const SizedBox(height: 96),
                     ],
-
-                    // Description
-                    if (brand.description != null) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg),
-                        child: _BrandDescription(brand: brand),
-                      ),
-                    ],
-
-                    // Reference image
-                    const SizedBox(height: AppSpacing.xxl),
-                    AspectRatio(
-                      aspectRatio: 4 / 3,
-                      child: LhotseImage(brand.coverImageUrl),
-                    ),
-
-                    // CTA
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.xxl,
-                        AppSpacing.lg,
-                        bottomPadding + AppSpacing.xl,
-                      ),
-                      child: _WebCta(websiteUrl: brand.websiteUrl),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+
+                // Floating CTA — no background, just the black button
+                Positioned(
+                  left: AppSpacing.lg,
+                  right: AppSpacing.lg,
+                  bottom: AppSpacing.lg,
+                  child: _WebCta(websiteUrl: brand.websiteUrl),
+                ),
+              ],
             ),
+          ),
         ],
       ),
     );
   }
 }
 
-// ─── Header ─────────────────────────────────────────────────────────────────
+// ─── Logo (header, compact) ──────────────────────────────────────────────────
 
-class _BrandDetailHeader extends StatelessWidget {
-  const _BrandDetailHeader({required this.topPadding});
+class _BrandLogoHeader extends StatelessWidget {
+  const _BrandLogoHeader({required this.brand});
 
-  final double topPadding;
+  final BrandData brand;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.sm,
-        topPadding + AppSpacing.md,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
-      child: Row(
-        children: [
-          LhotseBackButton.onSurface(),
-          Expanded(
-            child: Center(
-              child: Text(
-                'FIRMAS',
-                style: AppTypography.headingLarge.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
+    if (brand.logoAsset != null) {
+      return SizedBox(
+        width: 80,
+        height: 20,
+        child: SvgPicture.asset(
+          brand.logoAsset!,
+          fit: BoxFit.contain,
+          colorFilter: const ColorFilter.mode(
+            AppColors.textPrimary,
+            BlendMode.srcIn,
           ),
-          const LhotseNotificationBell(),
-        ],
+        ),
+      );
+    }
+    return Text(
+      brand.name.toUpperCase(),
+      style: AppTypography.headingSmall.copyWith(
+        color: AppColors.textPrimary,
       ),
     );
   }
 }
 
-// ─── Logo ────────────────────────────────────────────────────────────────────
+// ─── Logo (content) ──────────────────────────────────────────────────────────
 
 class _BrandLogo extends StatelessWidget {
   const _BrandLogo({required this.brand});
@@ -143,18 +194,25 @@ class _BrandLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (brand.logoAsset != null) {
-      return SvgPicture.asset(
-        brand.logoAsset!,
-        height: 56,
-        colorFilter: const ColorFilter.mode(
-          AppColors.textPrimary,
-          BlendMode.srcIn,
+      return SizedBox(
+        width: 160,
+        height: 40,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: SvgPicture.asset(
+            brand.logoAsset!,
+            fit: BoxFit.contain,
+            colorFilter: const ColorFilter.mode(
+              AppColors.textPrimary,
+              BlendMode.srcIn,
+            ),
+          ),
         ),
       );
     }
     return Text(
       brand.name.toUpperCase(),
-      style: AppTypography.headingLarge.copyWith(
+      style: AppTypography.headingSmall.copyWith(
         color: AppColors.textPrimary,
       ),
     );

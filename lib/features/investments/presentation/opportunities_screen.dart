@@ -273,12 +273,16 @@ class _BrandFilterRow extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (brand.logoAsset != null)
-                    SvgPicture.asset(
-                      brand.logoAsset!,
+                    SizedBox(
+                      width: 64,
                       height: 32,
-                      colorFilter: const ColorFilter.mode(
-                        AppColors.textPrimary,
-                        BlendMode.srcIn,
+                      child: SvgPicture.asset(
+                        brand.logoAsset!,
+                        fit: BoxFit.contain,
+                        colorFilter: const ColorFilter.mode(
+                          AppColors.textPrimary,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     )
                   else
