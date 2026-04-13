@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/brands/presentation/brand_detail_screen.dart';
 import '../features/brands/presentation/brands_screen.dart';
 import '../features/home/presentation/all_news_screen.dart';
 import '../features/home/presentation/all_projects_screen.dart';
@@ -21,6 +22,7 @@ abstract final class AppRoutes {
   static const news = '/news';
   static const projectDetail = '/projects/:id';
   static const brands = '/brands';
+  static const brandDetail = '/brands/:id';
   static const search = '/search';
   static const investments = '/investments';
   static const brandInvestments = '/investments/brand/:brandName';
@@ -76,6 +78,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               pageBuilder: (context, state) => const NoTransitionPage(
                 child: BrandsScreen(),
               ),
+            ),
+            GoRoute(
+              path: AppRoutes.brandDetail,
+              pageBuilder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return MaterialPage(
+                  key: state.pageKey,
+                  child: BrandDetailScreen(brandId: id),
+                );
+              },
             ),
           ]),
           StatefulShellBranch(routes: [

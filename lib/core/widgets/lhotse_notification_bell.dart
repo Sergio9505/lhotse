@@ -33,7 +33,7 @@ class LhotseNotificationBell extends StatelessWidget {
             count: unreadCount,
             child: PhosphorIcon(
               PhosphorIconsThin.bell,
-              size: 20,
+              size: 24,
               color: color,
             ),
           ),

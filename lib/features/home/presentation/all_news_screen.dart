@@ -165,8 +165,7 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               itemCount: news.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppSpacing.md),
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
               itemBuilder: (context, i) {
                 final item = news[i];
                 return LhotseNewsCard(

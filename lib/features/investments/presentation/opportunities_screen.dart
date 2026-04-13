@@ -192,8 +192,7 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
                   height: 550,
                   child: ProjectCard(
                     project: projects[i],
-                    onTap: () =>
-                        context.push('/projects/${projects[i].id}'),
+                    onTap: () => context.push('/projects/${projects[i].id}'),
                   ),
                 );
               },

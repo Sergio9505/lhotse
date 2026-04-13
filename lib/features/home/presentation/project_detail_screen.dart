@@ -150,24 +150,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               ),
             ),
 
-            // Fade below collapsed header
-            if (_heroGone)
-              SliverToBoxAdapter(
-                child: Container(
-                  height: 16,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.background,
-                        AppColors.background.withValues(alpha: 0.0),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
             // =========================================================
             // 2. IDENTITY
             // =========================================================

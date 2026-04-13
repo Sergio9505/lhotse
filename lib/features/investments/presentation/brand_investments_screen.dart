@@ -869,7 +869,7 @@ class _RentaFijaRow extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
                 child: PhosphorIcon(
                   PhosphorIconsThin.fileText,
-                  size: 16,
+                  size: 24,
                   color: AppColors.accentMuted,
                 ),
               ),

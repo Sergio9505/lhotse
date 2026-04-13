@@ -138,8 +138,8 @@ class _AllProjectsScreenState extends State<AllProjectsScreen> {
                   height: 550,
                   child: ProjectCard(
                     project: _filteredProjects[i],
-                    onTap: () => context
-                        .push('/projects/${_filteredProjects[i].id}'),
+                    onTap: () =>
+                        context.push('/projects/${_filteredProjects[i].id}'),
                   ),
                 );
               },

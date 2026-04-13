@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/domain/brand_data.dart';
@@ -37,8 +38,7 @@ class BrandsScreen extends StatelessWidget {
                 childAspectRatio: 1.0,
               ),
               itemCount: mockBrands.length,
-              itemBuilder: (context, i) =>
-                  _BrandCard(brand: mockBrands[i]),
+              itemBuilder: (context, i) => _BrandCard(brand: mockBrands[i]),
             ),
           ),
         ],
@@ -54,22 +54,26 @@ class _BrandCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: brand.logoAsset != null
-          ? SvgPicture.asset(
-              brand.logoAsset!,
-              height: 40,
-              colorFilter: const ColorFilter.mode(
-                AppColors.textPrimary,
-                BlendMode.srcIn,
+    return GestureDetector(
+      onTap: () => context.push('/brands/${brand.id}'),
+      behavior: HitTestBehavior.opaque,
+      child: Center(
+        child: brand.logoAsset != null
+            ? SvgPicture.asset(
+                brand.logoAsset!,
+                height: 40,
+                colorFilter: const ColorFilter.mode(
+                  AppColors.textPrimary,
+                  BlendMode.srcIn,
+                ),
+              )
+            : Text(
+                brand.name.toUpperCase(),
+                style: AppTypography.headingSmall.copyWith(
+                  color: AppColors.textPrimary,
+                ),
               ),
-            )
-          : Text(
-              brand.name.toUpperCase(),
-              style: AppTypography.headingSmall.copyWith(
-                color: AppColors.textPrimary,
-              ),
-            ),
+      ),
     );
   }
 }
