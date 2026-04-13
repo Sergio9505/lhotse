@@ -30,11 +30,11 @@ class BrandsScreen extends StatelessWidget {
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.xl),
+                  AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                crossAxisSpacing: AppSpacing.xl,
-                mainAxisSpacing: AppSpacing.xl,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
                 childAspectRatio: 1.0,
               ),
               itemCount: mockBrands.length,
@@ -57,26 +57,34 @@ class _BrandCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/brands/${brand.id}'),
       behavior: HitTestBehavior.opaque,
-      child: Center(
-        child: brand.logoAsset != null
-            ? SizedBox(
-                width: 100,
-                height: 40,
-                child: SvgPicture.asset(
-                  brand.logoAsset!,
-                  fit: BoxFit.contain,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.textPrimary,
-                    BlendMode.srcIn,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: AppColors.textPrimary.withValues(alpha: 0.1),
+            width: 0.5,
+          ),
+        ),
+        child: Center(
+          child: brand.logoAsset != null
+              ? SizedBox(
+                  width: 100,
+                  height: 40,
+                  child: SvgPicture.asset(
+                    brand.logoAsset!,
+                    fit: BoxFit.contain,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.textPrimary,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                )
+              : Text(
+                  brand.name.toUpperCase(),
+                  style: AppTypography.headingSmall.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
-              )
-            : Text(
-                brand.name.toUpperCase(),
-                style: AppTypography.headingSmall.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
+        ),
       ),
     );
   }
