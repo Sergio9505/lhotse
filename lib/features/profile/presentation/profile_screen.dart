@@ -1,13 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   static const _avatarUrl =
       'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=240&q=80';
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  PackageInfo? _packageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) setState(() => _packageInfo = info);
+    });
+  }
+
+  String get _versionLabel {
+    final info = _packageInfo;
+    if (info == null) return '';
+    return 'v${info.version} · Build ${info.buildNumber}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,13 +103,14 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
 
             // Version
-            Text(
-              'v1.2.0 · Build 8821',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.accentMuted,
-                fontSize: 9,
+            if (_versionLabel.isNotEmpty)
+              Text(
+                _versionLabel,
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.accentMuted,
+                  fontSize: 9,
+                ),
               ),
-            ),
 
             SizedBox(height: bottomPadding + AppSpacing.xl),
           ],
