@@ -105,6 +105,8 @@ class InvestmentData {
   final String? floorPlanUrl;
   final AssetInfo? assetInfo;
   final List<AssetInfoEntry>? economicAnalysis;
+
+  bool get hasFinancing => mortgage != null;
 }
 
 class BrandInvestmentSummary {

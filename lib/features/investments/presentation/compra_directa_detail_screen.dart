@@ -77,7 +77,10 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
   void initState() {
     super.initState();
     _outerController.addListener(_onOuterScroll);
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: widget.investment.hasFinancing ? 3 : 2,
+      vsync: this,
+    );
   }
 
   @override
@@ -330,10 +333,10 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
               pinned: true,
               delegate: LhotseTabBarDelegate(
                   controller: _tabController,
-                  tabs: const [
-                    Tab(text: 'ACTIVO'),
-                    Tab(text: 'FINANCIACIÓN'),
-                    Tab(text: 'DOCS'),
+                  tabs: [
+                    const Tab(text: 'ACTIVO'),
+                    if (inv.hasFinancing) const Tab(text: 'FINANCIACIÓN'),
+                    const Tab(text: 'DOCS'),
                   ],
                 ),
             ),
@@ -349,10 +352,11 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                   cardWidth: screenWidth * 0.75,
                 ),
               ),
-              _TabScrollWrapper(
-                bottomPadding: bottomPadding,
-                child: _FinanzasTab(investment: inv),
-              ),
+              if (inv.hasFinancing)
+                _TabScrollWrapper(
+                  bottomPadding: bottomPadding,
+                  child: _FinanzasTab(investment: inv),
+                ),
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,
                 child: _DocumentosTab(
