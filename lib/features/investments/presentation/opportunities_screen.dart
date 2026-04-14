@@ -8,7 +8,9 @@ import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/domain/user_role.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
+import '../../../core/widgets/lhotse_filter_tab.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
 import '../../home/presentation/widgets/project_card.dart';
 
@@ -130,7 +132,7 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: _FilterTab(
+                  child: LhotseFilterTab(
                     label: 'FIRMA',
                     isActive: _activeTool == _ActiveTool.brands,
                     hasSelection: _selectedBrands.isNotEmpty,
@@ -138,7 +140,7 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
                   ),
                 ),
                 Expanded(
-                  child: _FilterTab(
+                  child: LhotseFilterTab(
                     label: 'UBICACIÓN',
                     isActive: _activeTool == _ActiveTool.locations,
                     hasSelection: _selectedLocations.isNotEmpty,
@@ -146,7 +148,7 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
                   ),
                 ),
                 Expanded(
-                  child: _FilterTab(
+                  child: LhotseFilterTab(
                     label: 'BUSCAR',
                     isActive: _activeTool == _ActiveTool.search,
                     onTap: () => _toggleTool(_ActiveTool.search),
@@ -169,10 +171,13 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
               ),
             )
           else if (_activeTool == _ActiveTool.brands)
-            _BrandFilterRow(
-              selectedBrands: _selectedBrands,
-              onBrandTap: _toggleBrand,
-              onClear: () => setState(() => _selectedBrands.clear()),
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: _BrandFilterRow(
+                selectedBrands: _selectedBrands,
+                onBrandTap: _toggleBrand,
+                onClear: () => setState(() => _selectedBrands.clear()),
+              ),
             )
           else if (_activeTool == _ActiveTool.locations)
             _LocationFilterRow(
@@ -192,6 +197,8 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
                   height: 550,
                   child: ProjectCard(
                     project: projects[i],
+                    isLocked: projects[i].isVip &&
+                        kMockCurrentRole != UserRole.investorVip,
                     onTap: () => context.push('/projects/${projects[i].id}'),
                   ),
                 );
@@ -225,7 +232,7 @@ class _BrandFilterRow extends StatelessWidget {
     final itemCount = mockBrands.length + (hasSelection ? 1 : 0);
 
     return SizedBox(
-      height: 72,
+      height: 52,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -235,26 +242,15 @@ class _BrandFilterRow extends StatelessWidget {
           if (hasSelection && i == mockBrands.length) {
             return GestureDetector(
               onTap: onClear,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 32,
-                    child: PhosphorIcon(
-                      PhosphorIconsThin.x,
-                      size: 16,
-                      color: AppColors.accentMuted,
-                    ),
+              child: const SizedBox(
+                height: 32,
+                child: Center(
+                  child: PhosphorIcon(
+                    PhosphorIconsThin.x,
+                    size: 16,
+                    color: AppColors.accentMuted,
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'LIMPIAR',
-                    style: AppTypography.captionSmall.copyWith(
-                      color: AppColors.accentMuted,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
+                ),
               ),
             );
           }
@@ -269,39 +265,33 @@ class _BrandFilterRow extends StatelessWidget {
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 200),
               opacity: opacity,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (brand.logoAsset != null)
-                    SizedBox(
-                      width: 64,
-                      height: 32,
-                      child: SvgPicture.asset(
-                        brand.logoAsset!,
-                        fit: BoxFit.contain,
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.textPrimary,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    )
-                  else
-                    Text(
-                      brand.name[0],
-                      style: AppTypography.headingMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    brand.name.toUpperCase(),
-                    style: AppTypography.captionSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      letterSpacing: 1.0,
-                    ),
+              child: Center(
+                child: SizedBox(
+                  width: 80,
+                  height: 44,
+                  child: Center(
+                    child: brand.logoAsset != null
+                        ? SizedBox(
+                            width: 56,
+                            height: 24,
+                            child: SvgPicture.asset(
+                              brand.logoAsset!,
+                              fit: BoxFit.contain,
+                              colorFilter: const ColorFilter.mode(
+                                AppColors.textPrimary,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            brand.name[0],
+                            style: AppTypography.headingMedium.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
                   ),
-                ],
+                ),
               ),
             ),
           );
@@ -370,7 +360,7 @@ class _LocationFilterRow extends StatelessWidget {
                   style: AppTypography.caption.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight:
-                        isSelected ? FontWeight.w700 : FontWeight.w400,
+                        isSelected ? FontWeight.w500 : FontWeight.w400,
                     letterSpacing: 1.5,
                   ),
                 ),
@@ -383,70 +373,3 @@ class _LocationFilterRow extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Filter tab — text button with animated underline
-// ---------------------------------------------------------------------------
-
-class _FilterTab extends StatelessWidget {
-  const _FilterTab({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-    this.hasSelection = false,
-  });
-
-  final String label;
-  final bool isActive;
-  final bool hasSelection;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final highlighted = isActive || hasSelection;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: AppTypography.labelLarge.copyWith(
-                  color: highlighted
-                      ? AppColors.textPrimary
-                      : AppColors.accentMuted,
-                  fontWeight: highlighted ? FontWeight.w700 : FontWeight.w400,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              if (hasSelection) ...[
-                const SizedBox(width: 5),
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: const BoxDecoration(
-                    color: AppColors.textPrimary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 4),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            height: 1.5,
-            width: isActive ? 24.0 : 0.0,
-            color: AppColors.textPrimary,
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -24,7 +24,7 @@ class LhotseBrandFilterRow extends StatelessWidget {
     final itemCount = mockBrands.length + (hasSelection ? 1 : 0);
 
     return SizedBox(
-      height: 72,
+      height: 52,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -34,26 +34,15 @@ class LhotseBrandFilterRow extends StatelessWidget {
           if (hasSelection && i == mockBrands.length) {
             return GestureDetector(
               onTap: onClear,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    height: 32,
-                    child: PhosphorIcon(
-                      PhosphorIconsThin.x,
-                      size: 16,
-                      color: AppColors.accentMuted,
-                    ),
+              child: const SizedBox(
+                height: 32,
+                child: Center(
+                  child: PhosphorIcon(
+                    PhosphorIconsThin.x,
+                    size: 16,
+                    color: AppColors.accentMuted,
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'LIMPIAR',
-                    style: AppTypography.captionSmall.copyWith(
-                      color: AppColors.accentMuted,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
+                ),
               ),
             );
           }
@@ -68,39 +57,33 @@ class LhotseBrandFilterRow extends StatelessWidget {
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 200),
               opacity: opacity,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (brand.logoAsset != null)
-                    SizedBox(
-                      width: 64,
-                      height: 32,
-                      child: SvgPicture.asset(
-                        brand.logoAsset!,
-                        fit: BoxFit.contain,
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.textPrimary,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    )
-                  else
-                    Text(
-                      brand.name[0],
-                      style: AppTypography.headingMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    brand.name.toUpperCase(),
-                    style: AppTypography.captionSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      letterSpacing: 1.0,
-                    ),
+              child: Center(
+                child: SizedBox(
+                  width: 80,
+                  height: 44,
+                  child: Center(
+                    child: brand.logoAsset != null
+                        ? SizedBox(
+                            width: 56,
+                            height: 24,
+                            child: SvgPicture.asset(
+                              brand.logoAsset!,
+                              fit: BoxFit.contain,
+                              colorFilter: const ColorFilter.mode(
+                                AppColors.textPrimary,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            brand.name[0],
+                            style: AppTypography.headingMedium.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
                   ),
-                ],
+                ),
               ),
             ),
           );
