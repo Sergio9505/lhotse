@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_news.dart';
@@ -288,6 +289,7 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
                         brand: item.brand,
                         subtitle: item.subtitle,
                         hasPlayButton: item.hasPlayButton,
+                        onTap: () => context.push('/news/${item.id}'),
                       );
                     },
                   ),

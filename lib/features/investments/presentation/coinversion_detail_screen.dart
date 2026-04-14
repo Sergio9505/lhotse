@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -17,6 +18,7 @@ import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
+import '../../../core/data/mock/mock_news.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 
@@ -537,7 +539,7 @@ class _AvanceTab extends StatelessWidget {
                   letterSpacing: 1.8,
                 ),
               ),
-              if (_mockNews.length > _kMaxVisibleNews) ...[
+              if (mockNews.length > _kMaxVisibleNews) ...[
                 const SizedBox(width: AppSpacing.sm),
                 GestureDetector(
                   onTap: () => _showAllNews(context),
@@ -558,16 +560,17 @@ class _AvanceTab extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg),
-            itemCount: _mockNews.length > _kMaxVisibleNews
+            itemCount: mockNews.length > _kMaxVisibleNews
                 ? _kMaxVisibleNews
-                : _mockNews.length,
+                : mockNews.length,
             separatorBuilder: (_, _) =>
                 const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, i) {
               return LhotseNewsCard.compact(
-                title: _mockNews[i].title,
-                imageUrl: _mockNews[i].imageUrl,
-                subtitle: _mockNews[i].date,
+                title: mockNews[i].title,
+                imageUrl: mockNews[i].imageUrl,
+                subtitle: mockNews[i].date,
+                onTap: () => context.push('/news/${mockNews[i].id}'),
               );
             },
           ),
@@ -1499,8 +1502,7 @@ void _showAllNews(BuildContext context) {
   showLhotseBottomSheet(
     context: context,
     title: 'NOTICIAS',
-    itemCount: _mockNews.length,
-
+    itemCount: mockNews.length,
     listPadding: EdgeInsets.fromLTRB(
       AppSpacing.lg,
       0,
@@ -1509,38 +1511,23 @@ void _showAllNews(BuildContext context) {
     ),
     separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.lg),
     itemBuilder: (context, i) {
-      final news = _mockNews[i];
-      return LhotseNewsCard(
-        title: news.title,
-        imageUrl: news.imageUrl,
-        subtitle: news.date,
-        width: double.infinity,
-        height: 208,
+      final news = mockNews[i];
+      return GestureDetector(
+        onTap: () {
+          Navigator.of(context).pop();
+          context.push('/news/${news.id}');
+        },
+        child: LhotseNewsCard(
+          title: news.title,
+          imageUrl: news.imageUrl,
+          subtitle: news.date,
+          width: double.infinity,
+          height: 208,
+        ),
       );
     },
   );
 }
-
-// ===========================================================================
-// Mock data
-// ===========================================================================
-
-const _kNewsImages = [
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80',
-  'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&q=80',
-  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80',
-];
-
-final _mockNews = [
-  (title: 'Inicio de la fase 3', date: '12 MAR. 2026', imageUrl: _kNewsImages[0]),
-  (title: 'Informe trimestral Q1', date: '28 FEB. 2026', imageUrl: _kNewsImages[1]),
-  (title: 'Licencia urbanística aprobada', date: '15 ENE. 2026', imageUrl: _kNewsImages[2]),
-  (title: 'Avance de obra: estructura completada', date: '20 DIC. 2025', imageUrl: _kNewsImages[0]),
-  (title: 'Firma del contrato con constructora', date: '15 NOV. 2025', imageUrl: _kNewsImages[1]),
-  (title: 'Presentación del proyecto a inversores', date: '02 OCT. 2025', imageUrl: _kNewsImages[2]),
-  (title: 'Adquisición del terreno', date: '10 SEP. 2025', imageUrl: _kNewsImages[0]),
-  (title: 'Estudio de viabilidad aprobado', date: '01 AGO. 2025', imageUrl: _kNewsImages[1]),
-];
 
 const _kMaxVisibleNews = 3;
 

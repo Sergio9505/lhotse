@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
+import '../../../core/data/mock/mock_news.dart';
 import '../../../core/data/mock/mock_projects.dart';
 import '../../../core/domain/brand_data.dart';
 import 'completed_detail_screen.dart';
@@ -120,22 +121,23 @@ class InvestmentDetailScreen extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: _mockNews.length > _kMaxVisibleNews
+              itemCount: mockNews.length > _kMaxVisibleNews
                   ? _kMaxVisibleNews + 1
-                  : _mockNews.length,
+                  : mockNews.length,
               separatorBuilder: (_, _) =>
                   const SizedBox(width: AppSpacing.sm),
               itemBuilder: (context, i) {
-                if (i == _kMaxVisibleNews && _mockNews.length > _kMaxVisibleNews) {
+                if (i == _kMaxVisibleNews && mockNews.length > _kMaxVisibleNews) {
                   return _SeeAllNewsCard(
-                    count: _mockNews.length,
+                    count: mockNews.length,
                     onTap: () => _showAllNews(context),
                   );
                 }
                 return LhotseNewsCard.compact(
-                  title: _mockNews[i].title,
-                  imageUrl: _mockNews[i].imageUrl,
-                  subtitle: _mockNews[i].date,
+                  title: mockNews[i].title,
+                  imageUrl: mockNews[i].imageUrl,
+                  subtitle: mockNews[i].date,
+                  onTap: () => context.push('/news/${mockNews[i].id}'),
                 );
               },
             ),
@@ -263,55 +265,6 @@ final _investmentDocs = [
   LhotseDocument(name: 'Informe de tasación', date: '10 OCT. 2025', category: DocCategory.financiero),
 ];
 
-const _kNewsImages = [
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80',
-  'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&q=80',
-  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80',
-];
-
-final _mockNews = [
-  (
-    title: 'Inicio de la fase 3',
-    date: '12 MAR. 2026',
-    imageUrl: _kNewsImages[0],
-  ),
-  (
-    title: 'Informe trimestral Q1',
-    date: '28 FEB. 2026',
-    imageUrl: _kNewsImages[1],
-  ),
-  (
-    title: 'Licencia urbanística aprobada',
-    date: '15 ENE. 2026',
-    imageUrl: _kNewsImages[2],
-  ),
-  (
-    title: 'Avance de obra: estructura completada',
-    date: '20 DIC. 2025',
-    imageUrl: _kNewsImages[0],
-  ),
-  (
-    title: 'Firma del contrato con constructora',
-    date: '15 NOV. 2025',
-    imageUrl: _kNewsImages[1],
-  ),
-  (
-    title: 'Presentación del proyecto a inversores',
-    date: '02 OCT. 2025',
-    imageUrl: _kNewsImages[2],
-  ),
-  (
-    title: 'Adquisición del terreno',
-    date: '10 SEP. 2025',
-    imageUrl: _kNewsImages[0],
-  ),
-  (
-    title: 'Estudio de viabilidad aprobado',
-    date: '01 AGO. 2025',
-    imageUrl: _kNewsImages[1],
-  ),
-];
-
 const _kMaxVisibleNews = 3;
 
 // ---------------------------------------------------------------------------
@@ -322,45 +275,50 @@ void _showAllNews(BuildContext context) {
   showLhotseBottomSheet(
     context: context,
     title: 'NOTICIAS',
-    itemCount: _mockNews.length,
-
+    itemCount: mockNews.length,
     itemBuilder: (context, i) {
-      final news = _mockNews[i];
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 56,
-              height: 56,
-              child: LhotseImage(news.imageUrl),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    news.title,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    news.date,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.accentMuted,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
+      final news = mockNews[i];
+      return GestureDetector(
+        onTap: () {
+          Navigator.of(context).pop();
+          context.push('/news/${news.id}');
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: LhotseImage(news.imageUrl),
               ),
-            ),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      news.title,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      news.date,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       );
     },

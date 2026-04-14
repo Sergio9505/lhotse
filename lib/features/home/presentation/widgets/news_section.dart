@@ -1,27 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/data/mock/mock_news.dart';
 import '../../../../core/widgets/lhotse_news_card.dart';
-
-class NewsData {
-  const NewsData({
-    required this.title,
-    required this.brand,
-    required this.subtitle,
-    required this.imageUrl,
-    this.hasPlayButton = false,
-  });
-
-  final String title;
-  final String brand;
-  final String subtitle;
-  final String imageUrl;
-  final bool hasPlayButton;
-}
 
 class NewsSection extends StatelessWidget {
   const NewsSection({super.key, required this.news});
 
-  final List<NewsData> news;
+  final List<NewsItemData> news;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +28,7 @@ class NewsSection extends StatelessWidget {
             hasPlayButton: data.hasPlayButton,
             height: 200,
             width: 300,
+            onTap: () => context.push('/news/${data.id}'),
           );
         },
       ),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../features/brands/presentation/brand_detail_screen.dart';
 import '../features/brands/presentation/brands_screen.dart';
 import '../features/home/presentation/all_news_screen.dart';
+import '../features/home/presentation/news_detail_screen.dart';
 import '../features/home/presentation/all_projects_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/home/presentation/project_detail_screen.dart';
@@ -43,6 +44,7 @@ abstract final class AppRoutes {
   static const home = '/';
   static const projects = '/projects';
   static const news = '/news';
+  static const newsDetail = '/news/:id';
   static const projectDetail = '/projects/:id';
   static const brands = '/brands';
   static const brandDetail = '/brands/:id';
@@ -85,6 +87,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                 key: state.pageKey,
                 child: const AllNewsScreen(),
               ),
+            ),
+            GoRoute(
+              path: AppRoutes.newsDetail,
+              pageBuilder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return _fadePage(
+                  key: state.pageKey,
+                  child: NewsDetailScreen(newsId: id),
+                );
+              },
             ),
             GoRoute(
               path: AppRoutes.projects,

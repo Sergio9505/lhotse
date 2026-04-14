@@ -9,16 +9,7 @@ import '../../../core/widgets/lhotse_shell_header.dart';
 import 'widgets/news_section.dart';
 import 'widgets/project_carousel.dart';
 
-final _homeNews = mockNews
-    .take(5)
-    .map((n) => NewsData(
-          title: n.title,
-          brand: n.brand,
-          subtitle: n.subtitle,
-          imageUrl: n.imageUrl,
-          hasPlayButton: n.hasPlayButton,
-        ))
-    .toList();
+final _homeNews = mockNews.take(5).toList();
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
