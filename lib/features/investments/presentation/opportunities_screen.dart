@@ -155,9 +155,9 @@ class _FilterBar extends StatelessWidget {
   final VoidCallback onLocationsTap;
 
   static const _modelFilters = [
-    (model: BusinessModel.compraDirecta, label: 'COMPRA'),
-    (model: BusinessModel.coinversion, label: 'COINVERSIÓN'),
-    (model: BusinessModel.rentaFija, label: 'RENTA FIJA'),
+    (model: BusinessModel.directPurchase, label: 'COMPRA'),
+    (model: BusinessModel.coinvestment, label: 'COINVERSIÓN'),
+    (model: BusinessModel.fixedIncome, label: 'RENTA FIJA'),
   ];
 
   @override

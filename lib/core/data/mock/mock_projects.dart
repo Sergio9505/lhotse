@@ -30,7 +30,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Compra-Venta**. La fusión de ubicación privilegiada y diseño de autor garantiza la solidez de la inversión.\n\nUn activo gestionado bajo el modelo **Compra-Venta**. La fusión de ubicación privilegiada y diseño de autor garantiza la solidez de la inversión.',
     galleryImages: _kGalleryImages,
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
     bedrooms: 3,
     bathrooms: 4,
     floorPlanUrl: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800',
@@ -56,7 +56,7 @@ final mockProjects = [
         'Un activo gestionado bajo el modelo **Alquiler Vacacional**. Ubicación frente al mar con rentabilidad demostrada en el corredor turístico de la Costa del Sol.\n\nEl proyecto combina arquitectura contemporánea con materiales locales, creando un producto de inversión con identidad propia.',
     galleryImages: [_kGalleryImages[0], _kGalleryImages[1]],
     isVip: true,
-    status: ProjectStatus.firmas,
+    status: ProjectStatus.signatures,
     bedrooms: 5,
     bathrooms: 6,
     floorPlanUrl: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=800',
@@ -81,7 +81,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Renta Fija**. Proyecto residencial premium en la zona de mayor plusvalía de Monterrey.\n\nLa proximidad al centro financiero y las vistas a la Sierra Madre lo posicionan como referente en el mercado de lujo regiomontano.',
     galleryImages: [_kGalleryImages[1], _kGalleryImages[2]],
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
     bedrooms: 4,
     bathrooms: 3,
     details: AssetInfo(entries: [
@@ -104,7 +104,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Compra-Venta**. Integración total con el entorno natural de la Riviera Maya, respetando los cenotes y la vegetación nativa.\n\nDiseño biofílico que maximiza la conexión con la naturaleza sin comprometer el confort ni la exclusividad.',
     galleryImages: [_kGalleryImages[0]],
-    status: ProjectStatus.cerrado,
+    status: ProjectStatus.closed,
     bedrooms: 2,
     bathrooms: 2,
     details: AssetInfo(entries: [
@@ -126,7 +126,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Compra-Venta**. Desarrollo de uso mixto en el epicentro tecnológico de Guadalajara.\n\nCombina espacios residenciales, comerciales y de coworking en un concepto integrado orientado a la nueva economía digital.',
     galleryImages: [_kGalleryImages[2], _kGalleryImages[0]],
-    status: ProjectStatus.firmas,
+    status: ProjectStatus.signatures,
   ),
   ProjectData(
     id: '6',
@@ -142,7 +142,7 @@ final mockProjects = [
         'Un activo gestionado bajo el modelo **Alquiler Vacacional**. Ubicación estratégica en el corredor turístico de Los Cabos con alta demanda internacional.\n\nArquitectura costera que respeta el paisaje desértico y maximiza las vistas al Pacífico, generando un activo de alto rendimiento.',
     galleryImages: [_kGalleryImages[1], _kGalleryImages[2]],
     isVip: true,
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
   // Extra projects for brands with only 1
   ProjectData(
@@ -157,7 +157,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Compra-Venta**. Ubicación prime en el distrito de Salamanca con demanda sostenida.\n\nDiseño interior de firma con acabados de alta gama y domótica integrada.',
     galleryImages: [_kGalleryImages[0]],
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
   ProjectData(
     id: '8',
@@ -172,7 +172,7 @@ final mockProjects = [
         'Un activo gestionado bajo el modelo **Alquiler Vacacional**. Posición estratégica en Palm Jumeirah con vistas panorámicas al skyline de Dubai.\n\nArquitectura de autor que combina líneas orgánicas con funcionalidad residencial de ultra-lujo.',
     galleryImages: [_kGalleryImages[1], _kGalleryImages[2]],
     isVip: true,
-    status: ProjectStatus.firmas,
+    status: ProjectStatus.signatures,
   ),
   ProjectData(
     id: '9',
@@ -186,7 +186,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Compra-Venta**. Rehabilitación integral de un edificio histórico en el Eixample con certificación LEED Platinum.\n\nCada unidad preserva elementos arquitectónicos originales junto con instalaciones de última generación.',
     galleryImages: [_kGalleryImages[0], _kGalleryImages[1]],
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
   ProjectData(
     id: '10',
@@ -200,7 +200,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Alquiler Vacacional**. Enclave exclusivo en Deià con acceso privado al mar y vistas a la Sierra de Tramuntana.\n\nMateriales locales (piedra de marès, madera de olivo) integran cada villa en el paisaje mallorquín.',
     galleryImages: [_kGalleryImages[2]],
-    status: ProjectStatus.firmas,
+    status: ProjectStatus.signatures,
   ),
   // New brands projects
   ProjectData(
@@ -215,7 +215,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Compra-Venta**. Desarrollo residencial de alta gama en el corazón de Madrid con rentabilidad demostrada.\n\nConcepto arquitectónico innovador que maximiza la eficiencia energética y la experiencia del residente.',
     galleryImages: [_kGalleryImages[0], _kGalleryImages[1]],
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
   ProjectData(
     id: '12',
@@ -230,7 +230,7 @@ final mockProjects = [
         'Un activo gestionado bajo el modelo **Compra-Venta**. Villas exclusivas en Sierra Blanca con vistas al Mediterráneo y total privacidad.\n\nCada villa es una pieza única diseñada para el inversor que busca un activo tangible de alta revalorización.',
     galleryImages: [_kGalleryImages[1]],
     isVip: true,
-    status: ProjectStatus.firmas,
+    status: ProjectStatus.signatures,
   ),
   ProjectData(
     id: '13',
@@ -244,7 +244,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Ciclo**. Desarrollo residencial en Brickell con horizonte de inversión de 36 meses y rentabilidad objetivo del 18%.\n\nMercado con alta demanda de alquiler y revalorización sostenida en el corredor financiero de Miami.',
     galleryImages: [_kGalleryImages[2], _kGalleryImages[0]],
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
   ProjectData(
     id: '14',
@@ -258,7 +258,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Ciclo**. Segundo proyecto Ciclo en Miami, enfocado en el distrito de artes con potencial de revalorización acelerada.\n\nUbicación estratégica junto al Pérez Art Museum y el Adrienne Arsht Center.',
     galleryImages: [_kGalleryImages[1]],
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
   ProjectData(
     id: '15',
@@ -272,7 +272,7 @@ final mockProjects = [
     description:
         'Producto de **Renta Fija** respaldado por activos inmobiliarios prime en Madrid. Rentabilidad fija del 5% anual con capital garantizado.\n\nIdeal para el inversor que busca estabilidad y predictibilidad en su cartera patrimonial.',
     galleryImages: [],
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
   ProjectData(
     id: '16',
@@ -286,7 +286,7 @@ final mockProjects = [
     description:
         'Producto de **Renta Fija** respaldado por cartera diversificada de activos en Barcelona. Rentabilidad fija del 4,5% anual.\n\nEstructura de inversión conservadora con horizonte de 24 meses y liquidez trimestral.',
     galleryImages: [],
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
   // Available opportunities (no investments yet)
   ProjectData(
@@ -301,7 +301,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Alquiler Vacacional**. Ubicación premium en la costa oeste de Ibiza con vistas al atardecer.\n\nArquitectura brutalista japonesa fusionada con la tradición ibicenca, creando un activo único en el mercado.',
     galleryImages: [_kGalleryImages[0], _kGalleryImages[2]],
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
   ProjectData(
     id: '18',
@@ -316,7 +316,7 @@ final mockProjects = [
         'Un activo gestionado bajo el modelo **Compra-Venta**. Rehabilitación de palacete en la Avenida da Liberdade, la arteria más exclusiva de Lisboa.\n\nAcceso al programa Golden Visa y rentabilidad estimada del 20% en un mercado en plena expansión.',
     galleryImages: [_kGalleryImages[1]],
     isVip: true,
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
   ProjectData(
     id: '19',
@@ -330,7 +330,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Compra-Venta**. Torres residenciales de alta gama en primera línea de playa con marina privada.\n\nMálaga se consolida como destino de inversión premium con conectividad internacional y calidad de vida mediterránea.',
     galleryImages: [_kGalleryImages[0], _kGalleryImages[1]],
-    status: ProjectStatus.firmas,
+    status: ProjectStatus.signatures,
   ),
   ProjectData(
     id: '20',
@@ -344,7 +344,7 @@ final mockProjects = [
     description:
         'Un activo gestionado bajo el modelo **Ciclo**. Desarrollo residencial premium en Polanco con horizonte de inversión de 30 meses.\n\nMercado con demanda sostenida de vivienda de lujo y revalorización acelerada en la zona financiera.',
     galleryImages: [_kGalleryImages[2]],
-    status: ProjectStatus.enDesarrollo,
+    status: ProjectStatus.inDevelopment,
   ),
 ];
 

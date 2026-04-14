@@ -238,7 +238,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       child: Text(
-                        news.type == NewsType.proyectos ? 'PROYECTO' : 'PRENSA',
+                        news.type == NewsType.project ? 'PROYECTO' : 'PRENSA',
                         style: AppTypography.captionSmall.copyWith(
                           color: AppColors.textOnDark,
                           letterSpacing: 1.0,

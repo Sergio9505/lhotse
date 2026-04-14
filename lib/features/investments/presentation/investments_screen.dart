@@ -63,7 +63,7 @@ class InvestmentsScreen extends StatelessWidget {
                     .where((b) => b.name == summary.brandName)
                     .firstOrNull;
                 final isEstimated =
-                    brand?.businessModel != BusinessModel.rentaFija;
+                    brand?.businessModel != BusinessModel.fixedIncome;
                 return _BrandRow(
                   brandName: summary.brandName,
                   amount: summary.totalAmount,
@@ -81,7 +81,7 @@ class InvestmentsScreen extends StatelessWidget {
           // Estimated footnote
           if (summaries.any((s) {
             final b = mockBrands.where((b) => b.name == s.brandName).firstOrNull;
-            return b?.businessModel != BusinessModel.rentaFija;
+            return b?.businessModel != BusinessModel.fixedIncome;
           }))
             SliverToBoxAdapter(
               child: Padding(

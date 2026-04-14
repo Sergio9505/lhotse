@@ -49,12 +49,12 @@ class InvestmentDetailScreen extends StatelessWidget {
 
     final brand =
         mockBrands.where((b) => b.name == investment.brandName).firstOrNull;
-    final model = brand?.businessModel ?? BusinessModel.coinversion;
+    final model = brand?.businessModel ?? BusinessModel.coinvestment;
 
     final project = findProjectById(investment.projectId);
 
     // Coinversion — completed vs active
-    if (model == BusinessModel.coinversion) {
+    if (model == BusinessModel.coinvestment) {
       if (investment.isCompleted) {
         return CompletedDetailScreen(
           investment: investment,
@@ -68,7 +68,7 @@ class InvestmentDetailScreen extends StatelessWidget {
     }
 
     // CompraDirecta — completed vs active
-    if (model == BusinessModel.compraDirecta) {
+    if (model == BusinessModel.directPurchase) {
       if (investment.isCompleted) {
         return CompletedDetailScreen(
           investment: investment,

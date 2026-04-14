@@ -177,8 +177,8 @@ class _FilterBar extends StatelessWidget {
   final VoidCallback onSearchTap;
 
   static const _statusFilters = [
-    (status: ProjectStatus.enDesarrollo, label: 'EN DESARROLLO'),
-    (status: ProjectStatus.cerrado, label: 'CERRADOS'),
+    (status: ProjectStatus.inDevelopment, label: 'EN DESARROLLO'),
+    (status: ProjectStatus.closed, label: 'CERRADOS'),
   ];
 
   @override

@@ -124,14 +124,14 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
                 // Content type tabs
                 LhotseFilterTab(
                   label: 'PROYECTOS',
-                  isActive: _activeType == NewsType.proyectos,
-                  onTap: () => _toggleType(NewsType.proyectos),
+                  isActive: _activeType == NewsType.project,
+                  onTap: () => _toggleType(NewsType.project),
                 ),
                 const SizedBox(width: AppSpacing.lg),
                 LhotseFilterTab(
                   label: 'PRENSA',
-                  isActive: _activeType == NewsType.prensa,
-                  onTap: () => _toggleType(NewsType.prensa),
+                  isActive: _activeType == NewsType.press,
+                  onTap: () => _toggleType(NewsType.press),
                 ),
 
                 const Spacer(),

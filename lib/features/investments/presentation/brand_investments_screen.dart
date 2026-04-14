@@ -30,7 +30,7 @@ class BrandInvestmentsScreen extends StatelessWidget {
         .toList();
     final brand =
         mockBrands.where((b) => b.name == brandName).firstOrNull;
-    final showLocation = brand?.businessModel != BusinessModel.rentaFija;
+    final showLocation = brand?.businessModel != BusinessModel.fixedIncome;
     if (summary == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -47,8 +47,8 @@ class BrandInvestmentsScreen extends StatelessWidget {
 
     final topPadding = MediaQuery.of(context).padding.top;
     final totalFormatted = _eurFormat.format(summary.totalAmount);
-    final isCompraDirecta = brand?.businessModel == BusinessModel.compraDirecta;
-    final isRentaFija = brand?.businessModel == BusinessModel.rentaFija;
+    final isCompraDirecta = brand?.businessModel == BusinessModel.directPurchase;
+    final isRentaFija = brand?.businessModel == BusinessModel.fixedIncome;
     final collapsedHeight = topPadding + 64.0;
     final expandedHeight = topPadding + 210.0;
 

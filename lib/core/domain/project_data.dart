@@ -1,6 +1,6 @@
 import 'asset_info.dart';
 
-enum ProjectStatus { enDesarrollo, firmas, cerrado }
+enum ProjectStatus { inDevelopment, signatures, closed }
 
 class ProjectData {
   const ProjectData({
@@ -15,7 +15,7 @@ class ProjectData {
     required this.description,
     this.galleryImages = const [],
     this.isVip = false,
-    this.status = ProjectStatus.enDesarrollo,
+    this.status = ProjectStatus.inDevelopment,
     this.bedrooms,
     this.bathrooms,
     this.details,
