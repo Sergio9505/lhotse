@@ -395,7 +395,7 @@ class _MenuItemState extends State<_MenuItem> {
             children: [
               PhosphorIcon(
                 widget.icon,
-                size: 16,
+                size: 20,
                 color: AppColors.textPrimary,
               ),
               const SizedBox(width: AppSpacing.md),
