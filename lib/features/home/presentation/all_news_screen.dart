@@ -5,10 +5,11 @@ import '../../../core/data/mock/mock_news.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
 import '../../../core/widgets/lhotse_brand_filter_row.dart';
+import '../../../core/widgets/lhotse_filter_tab.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
 
-enum _ActiveFilter { none, firma, region, buscar }
+enum _ActiveTool { none, firma, region, buscar }
 
 class AllNewsScreen extends StatefulWidget {
   const AllNewsScreen({super.key});
@@ -18,7 +19,8 @@ class AllNewsScreen extends StatefulWidget {
 }
 
 class _AllNewsScreenState extends State<AllNewsScreen> {
-  _ActiveFilter _activeFilter = _ActiveFilter.none;
+  NewsType? _activeType;
+  _ActiveTool _activeTool = _ActiveTool.none;
   final Set<String> _selectedBrands = {};
   final Set<String> _selectedRegions = {};
   String _searchQuery = '';
@@ -32,6 +34,10 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
 
   List<NewsItemData> get _filteredNews {
     var news = mockNews;
+
+    if (_activeType != null) {
+      news = news.where((n) => n.type == _activeType).toList();
+    }
 
     if (_selectedBrands.isNotEmpty) {
       news = news.where((n) => _selectedBrands.contains(n.brand)).toList();
@@ -54,13 +60,19 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
     return news;
   }
 
-  void _toggleFilter(_ActiveFilter filter) {
+  void _toggleType(NewsType type) {
     setState(() {
-      if (_activeFilter == filter) {
-        _activeFilter = _ActiveFilter.none;
+      _activeType = _activeType == type ? null : type;
+    });
+  }
+
+  void _toggleTool(_ActiveTool tool) {
+    setState(() {
+      if (_activeTool == tool) {
+        _activeTool = _ActiveTool.none;
       } else {
-        _activeFilter = filter;
-        if (filter == _ActiveFilter.buscar) {
+        _activeTool = tool;
+        if (tool == _ActiveTool.buscar) {
           _selectedBrands.clear();
           _selectedRegions.clear();
         } else {
@@ -101,41 +113,125 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
         children: [
           const LhotseAppHeader(title: 'NOTICIAS'),
 
-          // Filter tabs
+          // Filter bar — type tabs left, tool icons right
           Padding(
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: _FilterTab(
-                    label: 'FIRMA',
-                    isActive: _activeFilter == _ActiveFilter.firma,
-                    hasSelection: _selectedBrands.isNotEmpty,
-                    onTap: () => _toggleFilter(_ActiveFilter.firma),
+                // Content type tabs
+                LhotseFilterTab(
+                  label: 'PROYECTOS',
+                  isActive: _activeType == NewsType.proyectos,
+                  onTap: () => _toggleType(NewsType.proyectos),
+                ),
+                const SizedBox(width: AppSpacing.lg),
+                LhotseFilterTab(
+                  label: 'PRENSA',
+                  isActive: _activeType == NewsType.prensa,
+                  onTap: () => _toggleType(NewsType.prensa),
+                ),
+
+                const Spacer(),
+
+                // Tool icons
+                Container(width: 1, height: 16, color: AppColors.border),
+                const SizedBox(width: AppSpacing.md),
+
+                // Firma
+                GestureDetector(
+                  onTap: () => _toggleTool(_ActiveTool.firma),
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Center(
+                          child: PhosphorIcon(
+                            PhosphorIconsThin.stack,
+                            size: 18,
+                            color: _activeTool == _ActiveTool.firma ||
+                                    _selectedBrands.isNotEmpty
+                                ? AppColors.textPrimary
+                                : AppColors.accentMuted,
+                          ),
+                        ),
+                        if (_selectedBrands.isNotEmpty)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: AppColors.textPrimary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-                Expanded(
-                  child: _FilterTab(
-                    label: 'REGIÓN',
-                    isActive: _activeFilter == _ActiveFilter.region,
-                    hasSelection: _selectedRegions.isNotEmpty,
-                    onTap: () => _toggleFilter(_ActiveFilter.region),
+                const SizedBox(width: AppSpacing.md),
+
+                // Región
+                GestureDetector(
+                  onTap: () => _toggleTool(_ActiveTool.region),
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Center(
+                          child: PhosphorIcon(
+                            PhosphorIconsThin.mapPin,
+                            size: 18,
+                            color: _activeTool == _ActiveTool.region ||
+                                    _selectedRegions.isNotEmpty
+                                ? AppColors.textPrimary
+                                : AppColors.accentMuted,
+                          ),
+                        ),
+                        if (_selectedRegions.isNotEmpty)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: AppColors.textPrimary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-                Expanded(
-                  child: _FilterTab(
-                    label: 'BUSCAR',
-                    isActive: _activeFilter == _ActiveFilter.buscar,
-                    onTap: () => _toggleFilter(_ActiveFilter.buscar),
+                const SizedBox(width: AppSpacing.md),
+
+                // Buscar
+                GestureDetector(
+                  onTap: () => _toggleTool(_ActiveTool.buscar),
+                  child: PhosphorIcon(
+                    PhosphorIconsThin.magnifyingGlass,
+                    size: 18,
+                    color: _activeTool == _ActiveTool.buscar
+                        ? AppColors.textPrimary
+                        : AppColors.accentMuted,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Filter panels
-          if (_activeFilter == _ActiveFilter.buscar)
+          // Tool panels
+          if (_activeTool == _ActiveTool.buscar)
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
@@ -143,108 +239,58 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
                 controller: _searchController,
                 autofocus: true,
                 onChanged: (v) => setState(() => _searchQuery = v),
-                onClose: () => _toggleFilter(_ActiveFilter.buscar),
+                onClose: () => _toggleTool(_ActiveTool.buscar),
               ),
             )
-          else if (_activeFilter == _ActiveFilter.firma)
-            LhotseBrandFilterRow(
-              selectedBrands: _selectedBrands,
-              onBrandTap: _toggleBrand,
-              onClear: () => setState(() => _selectedBrands.clear()),
+          else if (_activeTool == _ActiveTool.firma)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: LhotseBrandFilterRow(
+                selectedBrands: _selectedBrands,
+                onBrandTap: _toggleBrand,
+                onClear: () => setState(() => _selectedBrands.clear()),
+              ),
             )
-          else if (_activeFilter == _ActiveFilter.region)
-            _RegionFilterRow(
-              regions: newsRegions,
-              selectedRegions: _selectedRegions,
-              onTap: _toggleRegion,
-              onClear: () => setState(() => _selectedRegions.clear()),
+          else if (_activeTool == _ActiveTool.region)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: _RegionFilterRow(
+                regions: newsRegions,
+                selectedRegions: _selectedRegions,
+                onTap: _toggleRegion,
+                onClear: () => setState(() => _selectedRegions.clear()),
+              ),
             ),
 
           // News list
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: news.length,
-              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
-              itemBuilder: (context, i) {
-                final item = news[i];
-                return LhotseNewsCard(
-                  title: item.title,
-                  imageUrl: item.imageUrl,
-                  brand: item.brand,
-                  subtitle: item.subtitle,
-                  hasPlayButton: item.hasPlayButton,
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Filter tab — same pattern as Opportunities
-// ---------------------------------------------------------------------------
-
-class _FilterTab extends StatelessWidget {
-  const _FilterTab({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-    this.hasSelection = false,
-  });
-
-  final String label;
-  final bool isActive;
-  final bool hasSelection;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final highlighted = isActive || hasSelection;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: AppTypography.labelLarge.copyWith(
-                  color: highlighted
-                      ? AppColors.textPrimary
-                      : AppColors.accentMuted,
-                  fontWeight: highlighted ? FontWeight.w500 : FontWeight.w400,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              if (hasSelection) ...[
-                const SizedBox(width: 5),
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: const BoxDecoration(
-                    color: AppColors.textPrimary,
-                    shape: BoxShape.circle,
+            child: news.isEmpty
+                ? Center(
+                    child: Text(
+                      'SIN RESULTADOS',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    itemCount: news.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppSpacing.md),
+                    itemBuilder: (context, i) {
+                      final item = news[i];
+                      return LhotseNewsCard(
+                        title: item.title,
+                        imageUrl: item.imageUrl,
+                        brand: item.brand,
+                        subtitle: item.subtitle,
+                        hasPlayButton: item.hasPlayButton,
+                      );
+                    },
                   ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 4),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            height: 1.5,
-            width: isActive ? 24.0 : 0.0,
-            color: AppColors.textPrimary,
           ),
         ],
       ),
@@ -253,7 +299,7 @@ class _FilterTab extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Region filter row — icon + text, same height as brand filter
+// Region filter row — flag emoji + country name, equal-width cells
 // ---------------------------------------------------------------------------
 
 class _RegionFilterRow extends StatelessWidget {

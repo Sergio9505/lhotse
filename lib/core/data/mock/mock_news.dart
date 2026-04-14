@@ -1,3 +1,5 @@
+enum NewsType { proyectos, prensa }
+
 class NewsItemData {
   const NewsItemData({
     required this.id,
@@ -7,6 +9,7 @@ class NewsItemData {
     required this.subtitle,
     required this.imageUrl,
     required this.date,
+    required this.type,
     this.hasPlayButton = false,
   });
 
@@ -17,6 +20,7 @@ class NewsItemData {
   final String subtitle;
   final String imageUrl;
   final String date;
+  final NewsType type;
   final bool hasPlayButton;
 }
 
@@ -37,6 +41,7 @@ final mockNews = [
     subtitle: 'Video Brief — 3:45',
     imageUrl: _kNewsImages[0],
     date: '28 MAR. 2026',
+    type: NewsType.prensa,
     hasPlayButton: true,
   ),
   NewsItemData(
@@ -47,6 +52,7 @@ final mockNews = [
     subtitle: 'Marbella, ES',
     imageUrl: _kNewsImages[2],
     date: '25 MAR. 2026',
+    type: NewsType.proyectos,
   ),
   NewsItemData(
     id: 'n3',
@@ -56,6 +62,7 @@ final mockNews = [
     subtitle: 'Ibiza, ES',
     imageUrl: _kNewsImages[4],
     date: '20 MAR. 2026',
+    type: NewsType.proyectos,
   ),
   NewsItemData(
     id: 'n4',
@@ -65,6 +72,7 @@ final mockNews = [
     subtitle: 'Miami, US',
     imageUrl: _kNewsImages[1],
     date: '15 MAR. 2026',
+    type: NewsType.proyectos,
   ),
   NewsItemData(
     id: 'n5',
@@ -74,6 +82,7 @@ final mockNews = [
     subtitle: 'Madrid, ES',
     imageUrl: _kNewsImages[3],
     date: '10 MAR. 2026',
+    type: NewsType.proyectos,
     hasPlayButton: true,
   ),
   NewsItemData(
@@ -84,6 +93,7 @@ final mockNews = [
     subtitle: 'Monterrey, MX',
     imageUrl: _kNewsImages[0],
     date: '05 MAR. 2026',
+    type: NewsType.proyectos,
   ),
   NewsItemData(
     id: 'n7',
@@ -93,6 +103,7 @@ final mockNews = [
     subtitle: 'Marbella, ES',
     imageUrl: _kNewsImages[2],
     date: '28 FEB. 2026',
+    type: NewsType.proyectos,
   ),
   NewsItemData(
     id: 'n8',
@@ -102,6 +113,7 @@ final mockNews = [
     subtitle: 'Dubai, AE',
     imageUrl: _kNewsImages[1],
     date: '20 FEB. 2026',
+    type: NewsType.proyectos,
   ),
   NewsItemData(
     id: 'n9',
@@ -111,6 +123,7 @@ final mockNews = [
     subtitle: 'Barcelona, ES',
     imageUrl: _kNewsImages[4],
     date: '15 FEB. 2026',
+    type: NewsType.prensa,
   ),
   NewsItemData(
     id: 'n10',
@@ -120,6 +133,7 @@ final mockNews = [
     subtitle: 'Lisboa, PT',
     imageUrl: _kNewsImages[3],
     date: '10 FEB. 2026',
+    type: NewsType.prensa,
   ),
 ];
 
