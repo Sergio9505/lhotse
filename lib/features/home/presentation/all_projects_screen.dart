@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/data/supabase_provider.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
@@ -13,16 +15,16 @@ import '../../../core/widgets/lhotse_filter_tab.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
 import 'widgets/project_card.dart';
 
-class AllProjectsScreen extends StatefulWidget {
+class AllProjectsScreen extends ConsumerStatefulWidget {
   const AllProjectsScreen({super.key});
 
   @override
-  State<AllProjectsScreen> createState() => _AllProjectsScreenState();
+  ConsumerState<AllProjectsScreen> createState() => _AllProjectsScreenState();
 }
 
 enum _ActiveTool { none, brands, search }
 
-class _AllProjectsScreenState extends State<AllProjectsScreen> {
+class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
   ProjectStatus? _selectedStatus;
   _ActiveTool _activeTool = _ActiveTool.none;
   final Set<String> _selectedBrands = {};
@@ -144,7 +146,8 @@ class _AllProjectsScreenState extends State<AllProjectsScreen> {
                   child: ProjectCard(
                     project: _filteredProjects[i],
                     isLocked: _filteredProjects[i].isVip &&
-                        kMockCurrentRole != UserRole.investorVip,
+                        ref.read(currentUserRoleProvider) !=
+                            UserRole.investorVip,
                     onTap: () =>
                         context.push('/projects/${_filteredProjects[i].id}'),
                   ),

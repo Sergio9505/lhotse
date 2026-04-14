@@ -10,9 +10,14 @@ import 'project_card.dart';
 export 'package:lhotse/core/domain/project_data.dart';
 
 class ProjectCarousel extends StatefulWidget {
-  const ProjectCarousel({super.key, required this.projects});
+  const ProjectCarousel({
+    super.key,
+    required this.projects,
+    required this.currentRole,
+  });
 
   final List<ProjectData> projects;
+  final UserRole currentRole;
 
   @override
   State<ProjectCarousel> createState() => _ProjectCarouselState();
@@ -59,7 +64,7 @@ class _ProjectCarouselState extends State<ProjectCarousel> {
           itemBuilder: (context, i) => ProjectCard(
                 project: widget.projects[i],
                 isLocked: widget.projects[i].isVip &&
-                    kMockCurrentRole != UserRole.investorVip,
+                    widget.currentRole != UserRole.investorVip,
                 onTap: () =>
                     context.push('/projects/${widget.projects[i].id}'),
               ),

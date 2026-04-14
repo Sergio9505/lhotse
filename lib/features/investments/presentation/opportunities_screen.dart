@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/data/supabase_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/domain/user_role.dart';
@@ -15,14 +17,15 @@ import '../../home/presentation/widgets/project_card.dart';
 
 enum _ActiveTool { none, locations }
 
-class OpportunitiesScreen extends StatefulWidget {
+class OpportunitiesScreen extends ConsumerStatefulWidget {
   const OpportunitiesScreen({super.key});
 
   @override
-  State<OpportunitiesScreen> createState() => _OpportunitiesScreenState();
+  ConsumerState<OpportunitiesScreen> createState() =>
+      _OpportunitiesScreenState();
 }
 
-class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
+class _OpportunitiesScreenState extends ConsumerState<OpportunitiesScreen> {
   BusinessModel? _selectedModel;
   _ActiveTool _activeTool = _ActiveTool.none;
   final Set<String> _selectedLocations = {};
@@ -122,7 +125,8 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
                   child: ProjectCard(
                     project: projects[i],
                     isLocked: projects[i].isVip &&
-                        kMockCurrentRole != UserRole.investorVip,
+                        ref.read(currentUserRoleProvider) !=
+                            UserRole.investorVip,
                     onTap: () => context.push('/projects/${projects[i].id}'),
                   ),
                 );

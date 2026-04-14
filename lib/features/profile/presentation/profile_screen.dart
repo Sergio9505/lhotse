@@ -1,25 +1,27 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/domain/user_role.dart';
+import '../../../core/data/supabase_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
+import '../../auth/data/auth_repository.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   static const _avatarUrl =
       'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=240&q=80';
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   PackageInfo? _packageInfo;
 
   @override
@@ -138,17 +140,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 // Identity section — avatar + role badge + name + metadata
 // ---------------------------------------------------------------------------
 
-class _IdentitySection extends StatefulWidget {
+class _IdentitySection extends ConsumerStatefulWidget {
   const _IdentitySection();
 
   @override
-  State<_IdentitySection> createState() => _IdentitySectionState();
+  ConsumerState<_IdentitySection> createState() => _IdentitySectionState();
 }
 
-class _IdentitySectionState extends State<_IdentitySection> {
-  // TODO: replace with real user role from auth provider
-  static const _role = UserRole.investor;
-
+class _IdentitySectionState extends ConsumerState<_IdentitySection> {
   XFile? _localImage;
   final _picker = ImagePicker();
 
@@ -192,6 +191,13 @@ class _IdentitySectionState extends State<_IdentitySection> {
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(currentUserProfileProvider).valueOrNull;
+    final role = ref.watch(currentUserRoleProvider);
+    final displayName = profile?.fullName ?? 'Inversor';
+    final memberSince = profile?.memberSince;
+    final city = profile?.city;
+    final country = profile?.country;
+
     return Column(
       children: [
         // Avatar + badge stacked
@@ -243,9 +249,9 @@ class _IdentitySectionState extends State<_IdentitySection> {
                     horizontal: AppSpacing.md,
                     vertical: 5,
                   ),
-                  color: _role.badgeColor,
+                  color: role.badgeColor,
                   child: Text(
-                    _role.label,
+                    role.label,
                     style: AppTypography.caption.copyWith(
                       color: AppColors.textOnDark,
                       fontWeight: FontWeight.w500,
@@ -267,7 +273,7 @@ class _IdentitySectionState extends State<_IdentitySection> {
             children: [
               const SizedBox(height: AppSpacing.xs),
               Text(
-                'Alejandro García',
+                displayName,
                 style: AppTypography.displayMedium.copyWith(
                   color: AppColors.textPrimary,
                 ),
@@ -279,32 +285,37 @@ class _IdentitySectionState extends State<_IdentitySection> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'MIEMBRO DESDE 2021',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.accentMuted,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                    child: Container(
-                      width: 3,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: AppColors.accentMuted.withValues(alpha: 0.5),
-                        shape: BoxShape.circle,
+                  if (memberSince != null)
+                    Text(
+                      'MIEMBRO DESDE ${memberSince.year}',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 0.8,
                       ),
                     ),
-                  ),
-                  Text(
-                    'MADRID, ES',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.accentMuted,
-                      letterSpacing: 0.8,
+                  if (memberSince != null &&
+                      (city != null || country != null)) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm),
+                      child: Container(
+                        width: 3,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: AppColors.accentMuted.withValues(alpha: 0.5),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
+                  if (city != null || country != null)
+                    Text(
+                      [?city, ?country].join(', ').toUpperCase(),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
                 ],
               ),
             ],
@@ -488,13 +499,14 @@ class _PrivateBanner extends StatelessWidget {
 // Logout button
 // ---------------------------------------------------------------------------
 
-class _LogoutButton extends StatelessWidget {
+class _LogoutButton extends ConsumerWidget {
   const _LogoutButton();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onTap: () => ref.read(authRepositoryProvider).signOut(),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Row(

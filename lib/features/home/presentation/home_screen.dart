@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_news.dart';
 import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/data/supabase_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 import 'widgets/news_section.dart';
@@ -11,11 +13,12 @@ import 'widgets/project_carousel.dart';
 
 final _homeNews = mockNews.take(5).toList();
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentRole = ref.watch(currentUserRoleProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -36,7 +39,10 @@ class HomeScreen extends StatelessWidget {
               final available = screen - headerH - navbarH;
               return SizedBox(
                 height: available,
-                child: ProjectCarousel(projects: mockProjects.take(5).toList()),
+                child: ProjectCarousel(
+                  projects: mockProjects.take(5).toList(),
+                  currentRole: currentRole,
+                ),
               );
             }),
           ),

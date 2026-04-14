@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/data/supabase_provider.dart';
+import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/welcome_screen.dart';
 import '../features/brands/presentation/brand_detail_screen.dart';
 import '../features/brands/presentation/brands_screen.dart';
 import '../features/home/presentation/all_news_screen.dart';
@@ -41,6 +44,10 @@ CustomTransitionPage<void> _fadePage({
 }
 
 abstract final class AppRoutes {
+  // Auth
+  static const welcome = '/welcome';
+  static const login = '/login';
+  // Main app
   static const home = '/';
   static const projects = '/projects';
   static const news = '/news';
@@ -63,13 +70,53 @@ abstract final class AppRoutes {
   static const profilePrivacy = '/profile/privacy';
 }
 
+const _kAuthRoutes = {
+  AppRoutes.welcome,
+  AppRoutes.login,
+};
+
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
+  // Bridge: Riverpod StreamProvider → GoRouter refreshListenable
+  final authNotifier = ValueNotifier<AsyncValue<String?>>(const AsyncLoading());
+  ref.listen(currentUserIdProvider, (_, next) {
+    authNotifier.value = next;
+  });
+
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.home,
+    refreshListenable: authNotifier,
+    redirect: (context, state) {
+      final authValue = authNotifier.value;
+
+      // Still loading session — don't redirect yet
+      if (authValue is AsyncLoading) return null;
+
+      final isLoggedIn = authValue.valueOrNull != null;
+      final isAuthRoute = _kAuthRoutes.contains(state.matchedLocation);
+
+      if (!isLoggedIn && !isAuthRoute) return AppRoutes.welcome;
+      if (isLoggedIn && isAuthRoute) return AppRoutes.home;
+      return null;
+    },
     routes: [
+      // ── Auth routes (outside shell — no bottom nav) ──
+      GoRoute(
+        path: AppRoutes.welcome,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: WelcomeScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.login,
+        pageBuilder: (context, state) => _fadePage(
+          key: state.pageKey,
+          child: const LoginScreen(),
+        ),
+      ),
+      // ── Main app shell ──
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             ShellScreen(navigationShell: navigationShell),

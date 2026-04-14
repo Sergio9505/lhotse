@@ -87,7 +87,7 @@ To be extracted from Figma as screens are built:
 - [x] Construction status — `_ConstructionStatus` in `investment_detail_screen.dart`. Phase (18px) + "En plazo"/"Retrasado" badge (navy 6% / danger 10% bg)
 - [x] Document row — `_DocumentRow` in `investment_detail_screen.dart`. Type icon (scale/banknote/hardHat/receipt) + name + date + preview/download actions
 - [x] Filter tab — `_FilterTab` in `opportunities_screen.dart`. Text + animated underline + dot indicator. Multi-select support
-- [ ] Button variants (primary, secondary, text)
+- [x] Button variants — `_AuthButton` in `welcome_screen.dart` (filled: black bg + white text; outline: transparent + white 1px border + white text). `_SubmitButton` in `login_screen.dart`/`register_screen.dart` (primary: black bg, full-width 52px, loading state with CircularProgressIndicator). All: `borderRadius: 0` (sharp edges), Campton w500 12px uppercase, letterSpacing 1.2, opacity feedback 120ms
 - [x] Trending chip — `_TrendingChip` in `search/presentation/search_screen.dart`. Pill shape (borderRadiusFull), white 40% bg, subtle border, Campton 12px medium
 - [x] Collection card — `_CollectionCard` in `search/presentation/search_screen.dart`. Image + bottom gradient + brand name, same visual language as brand cards
 - [x] Search result item — `_ProjectResultItem` in `search/presentation/search_screen.dart`. 64px thumbnail + name/brand/location metadata + arrow icon
@@ -113,7 +113,8 @@ To be extracted from Figma as screens are built:
 - [x] Profile screen — ProfileScreen (header + identity section tappable→edit, role badge, menu sections, Lhotse Private banner, logout)
 - [x] Profile sub-screens — EditProfileScreen (form fields), KycScreen (document status), NotificationsScreen (toggle sections), SecurityScreen (password/biometric/2FA), SupportScreen (contact methods), LegalTextScreen (shared for terms+privacy)
 - [ ] Dashboard screen (home, investments overview)
-- [ ] Form screen (login)
+- [x] Auth screens — WelcomeScreen (video loop fullscreen via `video_player`; Ken Burns image fallback while loading — `AnimationController` 12s scale 1.0→1.08, repeat; velvet gradient multi-stop 65% height; logo 44px; tagline 13px w400 white 75% letterSpacing 2.0; single CTA outline 0.5px), LoginScreen (beige bg, header + email/password form). No registro — solo admins crean cuentas via Supabase dashboard.
+- [x] Auth field — `LhotseAuthField` in `auth/presentation/widgets/lhotse_auth_field.dart`. Underline-only border (0.5px inactive → 1px focused), Campton 18px w400, caption label above (accentMuted uppercase letterSpacing 1.8), optional eye toggle (PhosphorIconsThin 20px), error text below (danger color)
 
 ## Financial Data Display
 - Positive values: success color, `+` prefix optional

@@ -13,6 +13,10 @@ dependencies:
   # State management
   flutter_riverpod: ^2.6.1
 
+  # Backend
+  supabase_flutter: ^2.8.0
+  video_player: ^2.9.1
+
   # Navigation
   go_router: ^14.8.1
 
