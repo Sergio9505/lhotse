@@ -510,28 +510,94 @@ Plusvalía removed — derivable from hero (totalReturn) minus invested. Duratio
 
 ---
 
-## ADR-25: Supabase Schema — Single Table Inheritance for Investments
+## ADR-25: Supabase Schema — Class Table Inheritance for Investments
 
 **Date:** 2026-04-14
 **Status:** Accepted
 
-**Context:** `InvestmentData` has ~45 fields spanning 3 business models (compra directa, coinversión, renta fija) plus completion fields. Options: (A) single wide table with nullable columns (STI), (B) base table + 3 model-specific join tables, (C) JSONB for model-specific fields.
+**Context:** `investments` spans 3 business models (direct purchase, coinvestment, fixed income) with model-specific fields that differ in name, semantics, and nullability. Options evaluated: (A) single wide table with ~45 nullable columns (STI), (B) CTI — thin base + 4 model-specific detail tables, (C) JSONB for model-specific fields.
 
-**Decision:** Single wide table (STI). JSONB for display-only embedded data (gallery arrays, asset_info key-value pairs). Separate tables for queryable structured data (profit_scenarios, investment_phases, documents).
+**Decision:** CTI. Base `investments` table has 8 columns (id, user_id, project_id, amount, is_completed, is_delayed, created_at, updated_at). Model-specific data lives in detail tables: `direct_purchase_details`, `coinvestment_details`, `fixed_income_details`, `investment_completions`.
 
 **Rationale:**
-- Flutter uses a single `InvestmentData` class — 1:1 mapping means simpler serialization
-- <5000 rows expected — nullable column overhead is negligible
-- Every query needs base fields (amount, return_rate) — split tables would always JOIN
-- ~15 NULL columns per row is harmless on PostgreSQL at this scale
-- JSONB for display data avoids unnecessary tables; separate tables for queryable data preserve type safety
+- STI rejected: ~15 NULLable columns per row is not "world-class" and creates semantic ambiguity — `duration_months` means something different (contractual vs estimated vs N/A) for each model
+- JSONB rejected for financial fields: kills type safety, indexability, and aggregation
+- CTI: every column on every detail table is semantically precise and non-nullable
+- Views use COALESCE to flatten CTI into model-agnostic accessors (`return_rate`, `duration_months`, `start_date`) for generic screens
+- `investment_details` view: one query covers all screens by LEFT JOINing all detail tables
 
-Full schema in `.claude/plans/soft-noodling-origami.md`: 11 tables, 8 enums, 4 views, 5 RPC functions, 6 storage buckets.
+**Additional tables outside base:** `mortgages` (1:0..1 — direct purchase with financing), `rental_contracts` (1:N — direct purchase rental history), `investment_transactions` (append-only financial ledger for evolution chart).
+
+Full schema in `.claude/plans/fuzzy-forging-crescent.md`: 19 tables, 4 views, 3 RPCs, 6 storage buckets.
 
 **Consequences:**
-- (+) One Supabase query per investment detail — no joins needed
-- (+) Aggregation queries (brand summaries, portfolio total) are simple GROUP BYs
-- (+) Flutter `fromJson` maps directly to table columns
-- (+) View `v_investment_with_brand` provides denormalized brand_name for compatibility
-- (-) ~15 NULL columns per row — acceptable at current scale
-- (-) If business models diverge significantly in the future, may need to revisit
+- (+) Zero NULLable columns on detail tables — schema enforces model invariants
+- (+) COALESCE in views provides generic access without losing precision
+- (+) `investment_transactions` ledger enables evolution chart per model
+- (+) `mortgages` and `rental_contracts` are extensible without touching base
+- (-) INSERT requires writing to 2 tables — mitigated by service_role writes from admin
+- (-) `investment_details` view has 8 LEFT JOINs — acceptable at <5000 row scale
+
+---
+
+## ADR-26: Supabase Schema — TEXT + CHECK Instead of PostgreSQL ENUMs
+
+**Date:** 2026-04-14
+**Status:** Accepted
+
+**Context:** Needed to define enum-like columns for `business_model`, `project_status`, `user_role`, `doc_category`, `news_type`, `notification_type`, `kyc_doc_type`, `kyc_status`, `mortgage_type`, `transaction_type`. PostgreSQL offers native `CREATE TYPE AS ENUM`.
+
+**Decision:** `TEXT NOT NULL CHECK (col IN (...))` on every column instead of PostgreSQL ENUMs.
+
+**Rationale:**
+- PostgreSQL ENUMs cannot remove or rename values — only add. A typo or business rename requires `pg_catalog` surgery.
+- TEXT + CHECK can be modified with a simple `ALTER TABLE ... DROP CONSTRAINT / ADD CONSTRAINT` in a new migration.
+- No serialization difference for PostgREST/Dart — both come through as strings.
+- Convention documented in `docs/CONVENTIONS.md`.
+
+**Consequences:**
+- (+) Any value can be renamed/removed via migration without `ALTER TYPE`
+- (+) Constraint naming is explicit (`chk_business_model`)
+- (+) Dart enums map cleanly via `@JsonValue('snake_case')`
+- (-) No database-level type reuse across tables — each column repeats its CHECK
+
+---
+
+## ADR-27: Supabase Schema — Dual FK on Documents
+
+**Date:** 2026-04-14
+**Status:** Accepted
+
+**Context:** Documents in the app are of two kinds: (1) project-level docs shared with all investors in a project, (2) investment-level private docs for a single investor. Options: (A) two separate tables, (B) one table with a `scope` enum column, (C) one table with dual nullable FKs.
+
+**Decision:** Single `documents` table with `project_id UUID REFERENCES projects` (nullable) and `investment_id UUID REFERENCES investments` (nullable), plus `CHECK (investment_id IS NOT NULL OR project_id IS NOT NULL)`.
+
+**Rationale:**
+- Shared structure (name, date, category, file_url) makes one table natural
+- RLS differentiates: project docs → any investor in that project can read; investment docs → owner only
+- The CHECK constraint prevents orphan rows at DB level
+- Simpler Flutter repository: one `getDocuments(investmentId, projectId)` call
+
+**Consequences:**
+- (+) One table, one query, one repository method
+- (+) RLS policy covers both scopes cleanly with OR logic
+- (+) CHECK constraint prevents degenerate rows
+- (-) NULL columns by design — accepted for this specific use case (unlike investments where NULLs encoded model semantics)
+
+---
+
+## ADR-28: Supabase Schema — Separate `assets` Table for Physical Units
+
+**Date:** 2026-04-14
+**Status:** Accepted
+
+**Context:** Physical real estate units (bedrooms, surface, floor plan, gallery) were originally embedded as fields on `projects` or as an `AssetInfo` JSONB blob. Problem: (1) a project can have multiple purchasable units, (2) asset data is needed by both `direct_purchase_details` and `coinvestment_details` (the unit is assigned post-construction), (3) individual units need their own gallery and valuation.
+
+**Decision:** Separate `assets` table. `direct_purchase_details.asset_id` is `NOT NULL` (always has a unit). `coinvestment_details.asset_id` is nullable (assigned when construction delivers the unit). Projects keep marketing fields (gallery_images, render_images, description).
+
+**Consequences:**
+- (+) Projects remain marketing entities; assets are the physical/financial entities
+- (+) Direct purchase: unit is always known → FK enforced at DB level
+- (+) Coinvestment: unit assigned post-delivery → nullable FK is semantically correct
+- (+) `current_value` and `revaluation_pct` live on `assets`, not on investments — correct ownership
+- (-) Extra JOIN in queries, absorbed by `investment_details` view
