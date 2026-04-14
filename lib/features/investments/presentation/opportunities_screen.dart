@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/mock/mock_brands.dart';
 import '../../../core/data/mock/mock_investments.dart';
 import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/project_data.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/domain/user_role.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
 import '../../../core/widgets/lhotse_filter_tab.dart';
-import '../../../core/widgets/lhotse_search_field.dart';
 import '../../home/presentation/widgets/project_card.dart';
 
-enum _ActiveTool { none, brands, locations, search }
+enum _ActiveTool { none, locations }
 
 class OpportunitiesScreen extends StatefulWidget {
   const OpportunitiesScreen({super.key});
@@ -24,35 +23,26 @@ class OpportunitiesScreen extends StatefulWidget {
 }
 
 class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
+  BusinessModel? _selectedModel;
   _ActiveTool _activeTool = _ActiveTool.none;
-  final Set<String> _selectedBrands = {};
   final Set<String> _selectedLocations = {};
-  String _searchQuery = '';
-  final _searchController = TextEditingController();
 
   List<ProjectData> get _availableProjects {
     final investedIds = mockInvestments.map((i) => i.projectId).toSet();
     var projects =
         mockProjects.where((p) => !investedIds.contains(p.id)).toList();
 
-    if (_selectedBrands.isNotEmpty) {
-      projects =
-          projects.where((p) => _selectedBrands.contains(p.brand)).toList();
+    if (_selectedModel != null) {
+      projects = projects.where((p) {
+        final brand =
+            mockBrands.where((b) => b.name == p.brand).firstOrNull;
+        return brand?.businessModel == _selectedModel;
+      }).toList();
     }
 
     if (_selectedLocations.isNotEmpty) {
       projects = projects
           .where((p) => _selectedLocations.contains(p.location))
-          .toList();
-    }
-
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      projects = projects
-          .where((p) =>
-              p.name.toLowerCase().contains(q) ||
-              p.brand.toLowerCase().contains(q) ||
-              p.location.toLowerCase().contains(q))
           .toList();
     }
 
@@ -69,38 +59,17 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
       ..sort();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _toggleTool(_ActiveTool tool) {
+  void _toggleModel(BusinessModel model) {
     setState(() {
-      if (_activeTool == tool) {
-        _activeTool = _ActiveTool.none;
-      } else {
-        _activeTool = tool;
-        // Only search is exclusive — clears everything and takes over UI
-        if (tool == _ActiveTool.search) {
-          _selectedBrands.clear();
-          _selectedLocations.clear();
-        } else {
-          // Switching between brands/locations keeps both selections
-          _searchQuery = '';
-          _searchController.clear();
-        }
-      }
+      _selectedModel = _selectedModel == model ? null : model;
     });
   }
 
-  void _toggleBrand(String name) {
+  void _toggleLocations() {
     setState(() {
-      if (_selectedBrands.contains(name)) {
-        _selectedBrands.remove(name);
-      } else {
-        _selectedBrands.add(name);
-      }
+      _activeTool = _activeTool == _ActiveTool.locations
+          ? _ActiveTool.none
+          : _ActiveTool.locations;
     });
   }
 
@@ -124,62 +93,17 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
         children: [
           const LhotseAppHeader(title: 'OPORTUNIDADES'),
 
-          // Filter bar — text tabs
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: LhotseFilterTab(
-                    label: 'FIRMA',
-                    isActive: _activeTool == _ActiveTool.brands,
-                    hasSelection: _selectedBrands.isNotEmpty,
-                    onTap: () => _toggleTool(_ActiveTool.brands),
-                  ),
-                ),
-                Expanded(
-                  child: LhotseFilterTab(
-                    label: 'UBICACIÓN',
-                    isActive: _activeTool == _ActiveTool.locations,
-                    hasSelection: _selectedLocations.isNotEmpty,
-                    onTap: () => _toggleTool(_ActiveTool.locations),
-                  ),
-                ),
-                Expanded(
-                  child: LhotseFilterTab(
-                    label: 'BUSCAR',
-                    isActive: _activeTool == _ActiveTool.search,
-                    onTap: () => _toggleTool(_ActiveTool.search),
-                  ),
-                ),
-              ],
-            ),
+          // Filter bar
+          _FilterBar(
+            selectedModel: _selectedModel,
+            activeTool: _activeTool,
+            hasLocationSelection: _selectedLocations.isNotEmpty,
+            onModelTap: _toggleModel,
+            onLocationsTap: _toggleLocations,
           ),
 
-          // Tool panels
-          if (_activeTool == _ActiveTool.search)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-              child: LhotseSearchField(
-                controller: _searchController,
-                autofocus: true,
-                onChanged: (v) => setState(() => _searchQuery = v),
-                onClose: () => _toggleTool(_ActiveTool.search),
-              ),
-            )
-          else if (_activeTool == _ActiveTool.brands)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: _BrandFilterRow(
-                selectedBrands: _selectedBrands,
-                onBrandTap: _toggleBrand,
-                onClear: () => setState(() => _selectedBrands.clear()),
-              ),
-            )
-          else if (_activeTool == _ActiveTool.locations)
+          // Location panel
+          if (_activeTool == _ActiveTool.locations)
             _LocationFilterRow(
               locations: _uniqueLocations,
               selectedLocations: _selectedLocations,
@@ -212,97 +136,104 @@ class _OpportunitiesScreenState extends State<OpportunitiesScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Brand filter row — reused pattern from AllProjectsScreen
+// Filter bar — model tabs + location icon
 // ---------------------------------------------------------------------------
 
-class _BrandFilterRow extends StatelessWidget {
-  const _BrandFilterRow({
-    required this.selectedBrands,
-    required this.onBrandTap,
-    required this.onClear,
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({
+    required this.selectedModel,
+    required this.activeTool,
+    required this.hasLocationSelection,
+    required this.onModelTap,
+    required this.onLocationsTap,
   });
 
-  final Set<String> selectedBrands;
-  final ValueChanged<String> onBrandTap;
-  final VoidCallback onClear;
+  final BusinessModel? selectedModel;
+  final _ActiveTool activeTool;
+  final bool hasLocationSelection;
+  final ValueChanged<BusinessModel> onModelTap;
+  final VoidCallback onLocationsTap;
+
+  static const _modelFilters = [
+    (model: BusinessModel.compraDirecta, label: 'COMPRA'),
+    (model: BusinessModel.coinversion, label: 'COINVERSIÓN'),
+    (model: BusinessModel.rentaFija, label: 'RENTA FIJA'),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final hasSelection = selectedBrands.isNotEmpty;
-    final itemCount = mockBrands.length + (hasSelection ? 1 : 0);
-
-    return SizedBox(
-      height: 52,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        itemCount: itemCount,
-        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.lg),
-        itemBuilder: (context, i) {
-          if (hasSelection && i == mockBrands.length) {
-            return GestureDetector(
-              onTap: onClear,
-              child: const SizedBox(
-                height: 32,
-                child: Center(
-                  child: PhosphorIcon(
-                    PhosphorIconsThin.x,
-                    size: 16,
-                    color: AppColors.accentMuted,
-                  ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Model tabs
+          Row(
+            children: List.generate(_modelFilters.length, (i) {
+              final filter = _modelFilters[i];
+              return Padding(
+                padding: EdgeInsets.only(
+                    right: i < _modelFilters.length - 1 ? AppSpacing.lg : 0),
+                child: LhotseFilterTab(
+                  label: filter.label,
+                  isActive: selectedModel == filter.model,
+                  onTap: () => onModelTap(filter.model),
                 ),
-              ),
-            );
-          }
+              );
+            }),
+          ),
 
-          final brand = mockBrands[i];
-          final isSelected = selectedBrands.contains(brand.name);
-          final double opacity =
-              hasSelection ? (isSelected ? 1.0 : 0.35) : 0.6;
+          const Spacer(),
 
-          return GestureDetector(
-            onTap: () => onBrandTap(brand.name),
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: opacity,
-              child: Center(
-                child: SizedBox(
-                  width: 80,
-                  height: 44,
-                  child: Center(
-                    child: brand.logoAsset != null
-                        ? SizedBox(
-                            width: 56,
-                            height: 24,
-                            child: SvgPicture.asset(
-                              brand.logoAsset!,
-                              fit: BoxFit.contain,
-                              colorFilter: const ColorFilter.mode(
-                                AppColors.textPrimary,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                          )
-                        : Text(
-                            brand.name[0],
-                            style: AppTypography.headingMedium.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
+          // Separator
+          Container(width: 1, height: 16, color: AppColors.border),
+          const SizedBox(width: AppSpacing.md),
+
+          // Locations tool
+          GestureDetector(
+            onTap: onLocationsTap,
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Center(
+                    child: PhosphorIcon(
+                      PhosphorIconsThin.mapPin,
+                      size: 18,
+                      color: activeTool == _ActiveTool.locations ||
+                              hasLocationSelection
+                          ? AppColors.textPrimary
+                          : AppColors.accentMuted,
+                    ),
                   ),
-                ),
+                  if (hasLocationSelection)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: AppColors.textPrimary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Location filter row — horizontal scroll of location names
+// Location filter row
 // ---------------------------------------------------------------------------
 
 class _LocationFilterRow extends StatelessWidget {
@@ -372,4 +303,3 @@ class _LocationFilterRow extends StatelessWidget {
     );
   }
 }
-
