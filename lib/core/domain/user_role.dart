@@ -19,3 +19,6 @@ enum UserRole {
         UserRole.investorVip => AppColors.gold,
       };
 }
+
+// Temporary mock — replace with auth provider when Supabase is connected
+const kMockCurrentRole = UserRole.investor;

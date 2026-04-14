@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/domain/project_data.dart';
+import '../../../../core/domain/user_role.dart';
 import 'project_card.dart';
 
 export 'package:lhotse/core/domain/project_data.dart';
@@ -57,6 +58,8 @@ class _ProjectCarouselState extends State<ProjectCarousel> {
           onPageChanged: (i) => setState(() => _currentPage = i),
           itemBuilder: (context, i) => ProjectCard(
                 project: widget.projects[i],
+                isLocked: widget.projects[i].isVip &&
+                    kMockCurrentRole != UserRole.investorVip,
                 onTap: () =>
                     context.push('/projects/${widget.projects[i].id}'),
               ),
