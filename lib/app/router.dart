@@ -12,7 +12,13 @@ import '../features/investments/presentation/brand_investments_screen.dart';
 import '../features/investments/presentation/investment_detail_screen.dart';
 import '../features/investments/presentation/investments_screen.dart';
 import '../features/investments/presentation/opportunities_screen.dart';
+import '../features/profile/presentation/edit_profile_screen.dart';
+import '../features/profile/presentation/kyc_screen.dart';
+import '../features/profile/presentation/legal_text_screen.dart';
+import '../features/profile/presentation/notifications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/profile/presentation/security_screen.dart';
+import '../features/profile/presentation/support_screen.dart';
 import '../features/search/presentation/search_screen.dart';
 import 'shell_screen.dart';
 
@@ -46,6 +52,13 @@ abstract final class AppRoutes {
   static const investmentDetail = '/investments/detail/:id';
   static const opportunities = '/investments/opportunities';
   static const profile = '/profile';
+  static const profileEdit = '/profile/edit';
+  static const profileKyc = '/profile/kyc';
+  static const profileNotifications = '/profile/notifications';
+  static const profileSecurity = '/profile/security';
+  static const profileSupport = '/profile/support';
+  static const profileTerms = '/profile/terms';
+  static const profilePrivacy = '/profile/privacy';
 }
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -157,6 +170,61 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.profile,
               pageBuilder: (context, state) => const NoTransitionPage(
                 child: ProfileScreen(),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.profileEdit,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: const EditProfileScreen(),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.profileKyc,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: const KycScreen(),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.profileNotifications,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: const NotificationsScreen(),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.profileSecurity,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: const SecurityScreen(),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.profileSupport,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: const SupportScreen(),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.profileTerms,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: const LegalTextScreen(
+                  title: 'TÉRMINOS Y CONDICIONES',
+                  body: LegalContent.terms,
+                ),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.profilePrivacy,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: const LegalTextScreen(
+                  title: 'POLÍTICA DE PRIVACIDAD',
+                  body: LegalContent.privacy,
+                ),
               ),
             ),
           ]),

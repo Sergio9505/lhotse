@@ -19,6 +19,7 @@ abstract final class AppColors {
 
   // Semantic
   static const danger = Color(0xFFE53E3E);
+  static const gold = Color(0xFFDAAC03); // VIP role badge only
 
   // Borders
   static const border = Color(0x1A000000);

@@ -1,8 +1,13 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lhotse_shell_header.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -28,12 +33,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String get _versionLabel {
     final info = _packageInfo;
     if (info == null) return '';
-    return 'v${info.version} · Build ${info.buildNumber}';
+    return 'v${info.version}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
@@ -42,49 +46,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           children: [
             // Header
-            _ProfileHeader(topPadding: topPadding),
+            LhotseShellHeader(
+              child: Text(
+                'PERFIL',
+                style: AppTypography.headingLarge.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
 
             const SizedBox(height: AppSpacing.lg),
 
-            // Avatar + identity
+            // Avatar (tap → image picker) + name/metadata (tap → edit contact data)
             const _IdentitySection(),
 
             const SizedBox(height: AppSpacing.xl),
 
             // Gestión de cuenta
             const _SectionLabel(title: 'GESTIÓN DE CUENTA'),
-            const SizedBox(height: AppSpacing.xs),
-            const _MenuItem(
+            const SizedBox(height: AppSpacing.md),
+            _MenuItem(
               icon: PhosphorIconsThin.identificationCard,
               label: 'Documentación Legal (KYC)',
+              onTap: () => context.push('/profile/kyc'),
             ),
-            const _MenuItem(
-              icon: PhosphorIconsThin.bellRinging,
-              label: 'Preferencias & Alertas',
+            _MenuItem(
+              icon: PhosphorIconsThin.bell,
+              label: 'Notificaciones',
+              onTap: () => context.push('/profile/notifications'),
             ),
-            const _MenuItem(
+            _MenuItem(
               icon: PhosphorIconsThin.shieldCheck,
-              label: 'Seguridad & Privacidad',
+              label: 'Seguridad',
+              onTap: () => context.push('/profile/security'),
             ),
-            const _MenuItem(
+            _MenuItem(
               icon: PhosphorIconsThin.chatCircle,
               label: 'Contacto y Soporte',
-              isLast: true,
+              onTap: () => context.push('/profile/support'),
             ),
 
             const SizedBox(height: AppSpacing.xl),
 
             // Legal
             const _SectionLabel(title: 'LEGAL'),
-            const SizedBox(height: AppSpacing.xs),
-            const _MenuItem(
+            const SizedBox(height: AppSpacing.md),
+            _MenuItem(
               icon: PhosphorIconsThin.fileText,
               label: 'Términos y Condiciones',
+              onTap: () => context.push('/profile/terms'),
             ),
-            const _MenuItem(
+            _MenuItem(
               icon: PhosphorIconsThin.lockKey,
               label: 'Política de Privacidad',
-              isLast: true,
+              onTap: () => context.push('/profile/privacy'),
             ),
 
             const SizedBox(height: AppSpacing.xl),
@@ -108,7 +123,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _versionLabel,
                 style: AppTypography.caption.copyWith(
                   color: AppColors.accentMuted,
-                  fontSize: 9,
                 ),
               ),
 
@@ -121,65 +135,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Header
+// Identity section — avatar + role badge + name + metadata
 // ---------------------------------------------------------------------------
 
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.topPadding});
-
-  final double topPadding;
+class _IdentitySection extends StatefulWidget {
+  const _IdentitySection();
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        topPadding + 16,
-        AppSpacing.md,
-        16,
-      ),
-      child: SizedBox(
-        height: 44,
-        child: Row(
-          children: [
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'PERFIL',
-                  style: AppTypography.headingLarge.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              child: const SizedBox(
-                width: 44,
-                height: 44,
-                child: Center(
-                  child: PhosphorIcon(
-                    PhosphorIconsThin.pencilSimple,
-                    size: 24,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-          ],
+  State<_IdentitySection> createState() => _IdentitySectionState();
+}
+
+class _IdentitySectionState extends State<_IdentitySection> {
+  // TODO: replace with real user role from auth provider
+  static const _role = UserRole.investor;
+
+  XFile? _localImage;
+  final _picker = ImagePicker();
+
+  void _showImageSourceSheet() {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _pickImage(ImageSource.camera);
+            },
+            child: const Text('Cámara'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _pickImage(ImageSource.gallery);
+            },
+            child: const Text('Biblioteca de fotos'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Cancelar'),
         ),
       ),
     );
   }
-}
 
-// ---------------------------------------------------------------------------
-// Identity section — avatar + role badge + name + metadata
-// ---------------------------------------------------------------------------
-
-class _IdentitySection extends StatelessWidget {
-  const _IdentitySection();
+  Future<void> _pickImage(ImageSource source) async {
+    final file = await _picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 480,
+    );
+    if (file != null && mounted) setState(() => _localImage = file);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -190,31 +199,39 @@ class _IdentitySection extends StatelessWidget {
           width: 140,
           child: Column(
             children: [
-              // Circular avatar with thin border
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.textPrimary.withValues(alpha: 0.1),
-                    width: 0.5,
-                  ),
-                ),
-                child: ClipOval(
-                  child: Image.network(
-                    ProfileScreen._avatarUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stack) => Container(
-                      color: AppColors.surface,
-                      child: const Center(
-                        child: PhosphorIcon(
-                          PhosphorIconsThin.user,
-                          size: 48,
-                          color: AppColors.accentMuted,
-                        ),
-                      ),
+              // Circular avatar — tappable for image picker
+              GestureDetector(
+                onTap: _showImageSourceSheet,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.textPrimary.withValues(alpha: 0.1),
+                      width: 0.5,
                     ),
+                  ),
+                  child: ClipOval(
+                    child: _localImage != null
+                        ? Image.network(
+                            _localImage!.path,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.network(
+                            ProfileScreen._avatarUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stack) => Container(
+                              color: AppColors.surface,
+                              child: const Center(
+                                child: PhosphorIcon(
+                                  PhosphorIconsThin.user,
+                                  size: 48,
+                                  color: AppColors.accentMuted,
+                                ),
+                              ),
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -226,12 +243,12 @@ class _IdentitySection extends StatelessWidget {
                     horizontal: AppSpacing.md,
                     vertical: 5,
                   ),
-                  color: AppColors.primary,
+                  color: _role.badgeColor,
                   child: Text(
-                    'VISITANTE',
+                    _role.label,
                     style: AppTypography.caption.copyWith(
                       color: AppColors.textOnDark,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: 1.2,
                       fontSize: 9,
                     ),
@@ -242,48 +259,53 @@ class _IdentitySection extends StatelessWidget {
           ),
         ),
 
-        // Name
-        const SizedBox(height: 4),
-        Text(
-          'Alejandro García',
-          style: AppTypography.headingLarge.copyWith(
-            color: AppColors.textPrimary,
-          ),
-          textAlign: TextAlign.center,
-        ),
-
-        const SizedBox(height: 6),
-
-        // Metadata
-        Opacity(
-          opacity: 0.6,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+        // Name + metadata — tappable for edit contact data
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => context.push('/profile/edit'),
+          child: Column(
             children: [
+              const SizedBox(height: AppSpacing.xs),
               Text(
-                'MIEMBRO DESDE 2021',
-                style: AppTypography.caption.copyWith(
+                'Alejandro García',
+                style: AppTypography.displayMedium.copyWith(
                   color: AppColors.textPrimary,
-                  letterSpacing: 0.8,
                 ),
+                textAlign: TextAlign.center,
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                child: Container(
-                  width: 3,
-                  height: 3,
-                  decoration: const BoxDecoration(
-                    color: AppColors.textPrimary,
-                    shape: BoxShape.circle,
+
+              const SizedBox(height: AppSpacing.sm),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'MIEMBRO DESDE 2021',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.accentMuted,
+                      letterSpacing: 0.8,
+                    ),
                   ),
-                ),
-              ),
-              Text(
-                'MADRID, ES',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textPrimary,
-                  letterSpacing: 0.8,
-                ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    child: Container(
+                      width: 3,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: AppColors.accentMuted.withValues(alpha: 0.5),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'MADRID, ES',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.accentMuted,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -312,8 +334,8 @@ class _SectionLabel extends StatelessWidget {
             title,
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.accentMuted,
-              letterSpacing: 1.5,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w400,
+              letterSpacing: 1.8,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -337,12 +359,12 @@ class _MenuItem extends StatefulWidget {
   const _MenuItem({
     required this.icon,
     required this.label,
-    this.isLast = false,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
-  final bool isLast;
+  final VoidCallback? onTap;
 
   @override
   State<_MenuItem> createState() => _MenuItemState();
@@ -355,7 +377,10 @@ class _MenuItemState extends State<_MenuItem> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap?.call();
+      },
       onTapCancel: () => setState(() => _pressed = false),
       behavior: HitTestBehavior.opaque,
       child: AnimatedOpacity(
@@ -364,18 +389,8 @@ class _MenuItemState extends State<_MenuItem> {
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
+            vertical: 18,
           ),
-          decoration: widget.isLast
-              ? null
-              : BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: AppColors.textPrimary.withValues(alpha: 0.05),
-                      width: 0.5,
-                    ),
-                  ),
-                ),
           child: Row(
             children: [
               PhosphorIcon(
@@ -387,9 +402,8 @@ class _MenuItemState extends State<_MenuItem> {
               Expanded(
                 child: Text(
                   widget.label.toUpperCase(),
-                  style: AppTypography.bodySmall.copyWith(
+                  style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -417,93 +431,52 @@ class _PrivateBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.primary,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Row(
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        border: Border(
+          top: BorderSide(color: AppColors.gold, width: 0.5),
+        ),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Crown + "INVITACIÓN" badge row
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const PhosphorIcon(
-                      PhosphorIconsThin.crown,
-                      size: 20,
-                      color: AppColors.textOnDark,
-                    ),
-                    const Spacer(),
-                    // "INVITACIÓN" badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.textOnDark,
-                          width: 0.5,
-                        ),
-                      ),
-                      child: Text(
-                        'INVITACIÓN',
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.textOnDark,
-                          fontSize: 9,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: AppSpacing.sm),
-
-                Text(
-                  'Lhotse Private',
-                  style: AppTypography.headingSmall.copyWith(
-                    color: AppColors.textOnDark,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-
-                const SizedBox(height: AppSpacing.sm),
-
-                Text(
-                  'Acceso exclusivo a rondas Pre-Seed y eventos de networking de alto nivel.',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textOnDark.withValues(alpha: 0.7),
-                  ),
-                  maxLines: 2,
-                ),
-
-                const SizedBox(height: AppSpacing.md),
-
-                // CTA
-                Row(
-                  children: [
-                    Text(
-                      'SOLICITAR ACCESO',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.textOnDark,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    const PhosphorIcon(
-                      PhosphorIconsThin.arrowRight,
-                      size: 12,
-                      color: AppColors.textOnDark,
-                    ),
-                  ],
-                ),
-              ],
+          Text(
+            'Lhotse Private',
+            style: AppTypography.headingLarge.copyWith(
+              color: AppColors.textOnDark,
             ),
+          ),
+
+          const SizedBox(height: AppSpacing.sm),
+
+          Text(
+            'Acceso exclusivo a rondas Pre-Seed y eventos de networking de alto nivel.',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textOnDark.withValues(alpha: 0.75),
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+
+          // CTA
+          Row(
+            children: [
+              Text(
+                'SOLICITAR INVITACIÓN',
+                style: AppTypography.labelLarge.copyWith(
+                  color: AppColors.textOnDark,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              const PhosphorIcon(
+                PhosphorIconsThin.arrowRight,
+                size: 14,
+                color: AppColors.textOnDark,
+              ),
+            ],
           ),
         ],
       ),
@@ -537,7 +510,7 @@ class _LogoutButton extends StatelessWidget {
               'CERRAR SESIÓN',
               style: AppTypography.bodySmall.copyWith(
                 color: AppColors.accentMuted,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0.8,
               ),
             ),

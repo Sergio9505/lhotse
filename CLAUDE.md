@@ -79,7 +79,7 @@ Home screen with project carousel (5 max, Zara-style: image pure + text below on
 - [x] Brand investments screen (per-brand detail, investment cards)
 - [x] Investment detail screen (model-aware: compraDirecta/coinversión/ciclo/rentaFija, documents + news)
 - [x] All news screen (firma/región/buscar filters, full-size news cards)
-- [ ] Profile screen
+- [x] Profile screen (identity tap→edit, role badge, menu items with navigation, Lhotse Private banner, sub-screens: edit, KYC, notifications, security, support, legal)
 - [ ] Auth flow (register, login)
 - [ ] Repository interfaces (abstract + mock impl)
 - [ ] Connect Supabase (replace mock repositories)

@@ -30,6 +30,7 @@ These rules apply to ALL UI built in the app. Check before every screen/widget i
 | textOnDark | `#FFFFFF` | Text on primary/dark surfaces |
 | accentMuted | `#5A5854` | Supporting text, muted elements |
 | danger | `#7F1D1D` | Negative returns, errors |
+| gold | `#DAAC03` | VIP role badge only — justified exception to monochromatic palette |
 | border | `rgba(0,0,0,0.1)` | Dividers, card borders |
 | borderLight | `rgba(0,0,0,0.05)` | Subtle separators |
 | navBackground | `#000000` | Bottom navigation bar |
@@ -95,6 +96,7 @@ To be extracted from Figma as screens are built:
 - [x] Notification bell — `LhotseNotificationBell` in `core/widgets/lhotse_notification_bell.dart`. Bell icon + badge (count or dot). Accepts `color` param. Used in LhotseShellHeader (dark) and Strategy hero (white)
 - [x] Notification badge — `LhotseNotificationBadge` in `core/widgets/lhotse_notification_badge.dart`. Red dot (6px circle) or pill counter. Exception to sharp-edges rule
 - [x] Notifications sheet — `showNotificationsSheet()` in `features/notifications/presentation/notifications_sheet.dart`. Bottom sheet with date-grouped notifications (HOY/ESTA SEMANA/ANTERIORES), type icons, read/unread state
+- [x] Role badge — `UserRole.badgeColor` / `UserRole.label` in `profile_screen.dart`. Sharp edges, 9px Campton w500, white text, letterSpacing 1.2. Colors: viewer=accentMuted (#5A5854), investor=primary (#000000), investorVip=gold (#DAAC03)
 - [ ] Empty state
 - [ ] Skeleton/shimmer loading
 - [ ] Modal VIP
@@ -108,8 +110,10 @@ To be extracted from Figma as screens are built:
 - [x] Brand investments screen — BrandInvestmentsScreen (collapsing beige hero: editorial title + amount, collapses to centered amount+subtitle; sticky section label; compraDirecta: _AssetRow with 80×60 thumbnail + name/location/amount stacked + chevron, "MIS ACTIVOS" label; coinversión: _AssetRow with thumb + name/amount + "duration·%*" caption + chevron, footnote, completed: returnLabelSpans "invested·duration·+ROI%" with green ROI; rentaFija: _RentaFijaRow with 42×42 date badge (MES/AÑO), amount headingSmall + "duration·%" caption, completed: "invested·duration·+ROI%" green, sorted by soonest maturity, ACTIVAS/FINALIZADAS sections, doc icon per row)
 - [x] Investment detail screen — InvestmentDetailScreen (model-aware). compraDirecta: 2x2 metrics+financing section. rentaFija: 3x2 metrics. coinversión: extracted to CoinversionDetailScreen (30% Zara / 70% Revolut calibration) — 32% compact hero (headingLarge 24px title + location·phase inline on image, construction badge top-right, AnimatedSwitcher logo), hero participation at displayLarge (40px/900) + 3-column secondary row at headingLarge (24px) with vertical dividers, Bloomberg scenario panel (bordered tab pills, hero ROI+TIR at displayMedium 28px, detail pair at headingSmall 18px, AnimatedSwitcher 300ms), compact timeline (6/10px square nodes, 1.5px lines, phase.title + pulse), immersive gallery (75% width × 200px cards, shadows, square play, page indicators), premium expandable tiles with collapsedPreview (AnimatedSize+FadeTransition, row dividers, bold total visible when collapsed). Archive zone (xl spacing): Documents (maxVisible 3) + News carousel
 - [x] All news screen — AllNewsScreen (firma logos/región flags/buscar text-tab filters + full-size news cards)
+- [x] Profile screen — ProfileScreen (header + identity section tappable→edit, role badge, menu sections, Lhotse Private banner, logout)
+- [x] Profile sub-screens — EditProfileScreen (form fields), KycScreen (document status), NotificationsScreen (toggle sections), SecurityScreen (password/biometric/2FA), SupportScreen (contact methods), LegalTextScreen (shared for terms+privacy)
 - [ ] Dashboard screen (home, investments overview)
-- [ ] Form screen (profile edit, login)
+- [ ] Form screen (login)
 
 ## Financial Data Display
 - Positive values: success color, `+` prefix optional
