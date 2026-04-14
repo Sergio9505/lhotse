@@ -26,6 +26,96 @@
 - Factory constructor + `fromJson`
 - Run `dart run build_runner build --delete-conflicting-outputs` after changes
 
+## Database (Supabase / PostgreSQL)
+
+### Column types
+- IDs: `UUID PRIMARY KEY DEFAULT gen_random_uuid()`
+- Timestamps: `TIMESTAMPTZ NOT NULL DEFAULT NOW()` — always include `created_at`, `updated_at` on mutable tables
+- Enum-like values: **`TEXT NOT NULL CHECK (col IN (...))`** — never `CREATE TYPE AS ENUM` (enums can't remove/rename values)
+- Money: `NUMERIC(14,2)` — never `FLOAT`/`DOUBLE`
+- Percentages: `NUMERIC(5,2)` or `NUMERIC(6,2)`
+- Display-only arrays (galleries, key-value entries): `JSONB DEFAULT '[]'`
+- Queryable child data (scenarios, phases, documents): **separate table** with FK
+
+### Naming
+- Tables: `snake_case`, **plural** (`brands`, `investments`, `documents`)
+- Columns: `snake_case` (`brand_id`, `created_at`, `is_completed`)
+- Views: `snake_case`, **plural, no prefix** — treat like tables (`portfolio_summaries`, `investment_details`). The Supabase dashboard already differentiates tables from views visually.
+- Constraints: `chk_{column}` for CHECK, `idx_{table}_{column}` for indexes, `trg_{table}_{event}` for triggers
+- Foreign keys: `{referenced_table_singular}_id` (`brand_id`, `user_id`, `project_id`)
+
+### Views — mandatory rules
+1. **Always** `ALTER VIEW {name} SET (security_invoker = true)` — ensures RLS applies to the calling user, not the view owner
+2. **Always** `NOTIFY pgrst, 'reload schema'` after creating/altering views — flushes PostgREST cache
+3. No `v_` or `_` prefix — views are first-class API endpoints
+
+### RLS
+- Enable on every table: `ALTER TABLE {name} ENABLE ROW LEVEL SECURITY`
+- Public read tables (brands, projects, news): allow `SELECT` for `anon` and `authenticated`
+- User-scoped tables (investments, notifications): `WHERE user_id = auth.uid()`
+- Child tables (documents, phases, scenarios): ownership check via parent: `EXISTS (SELECT 1 FROM investments WHERE id = X.investment_id AND user_id = auth.uid())`
+- Admin write operations (brands, projects, news): managed via Supabase dashboard or service_role key, not RLS
+
+### Enum values — always English
+- DB values use English snake_case: `direct_purchase`, `in_development`, `fixed_income`
+- Flutter enum values use English camelCase: `directPurchase`, `inDevelopment`, `fixedIncome`
+- Spanish display names go in Flutter extensions: `BusinessModel.directPurchase.displayName` → `"Compra Directa"`
+- `@JsonValue('direct_purchase')` on Flutter enums for automatic serialization
+
+### Triggers
+- `updated_at`: use shared `update_updated_at()` function on all mutable tables
+- `handle_new_user()`: fires on `auth.users` INSERT — creates profile + preferences + KYC rows
+
+### Migrations
+- Name: `NN_snake_case_description` (e.g. `01_user_tables`, `07_rls_policies`)
+- **Never modify** an applied migration — always create a new one
+- One concern per migration (tables, then views, then RLS — not all mixed)
+- Use `IF NOT EXISTS` / `IF EXISTS` where idempotency matters
+- Always end with `NOTIFY pgrst, 'reload schema'` if the migration touches views, functions, or schema structure
+
+### Timestamps
+- **Always `TIMESTAMPTZ`** — never bare `TIMESTAMP` (loses timezone info)
+- Store in UTC (PostgreSQL default)
+- Format to local time in Flutter, never in SQL
+- `created_at`: immutable, set on INSERT — never update
+- `updated_at`: managed by `update_updated_at()` trigger
+
+### Delete behavior
+- **`ON DELETE CASCADE`**: parent → children that have no meaning without parent (investments → documents, investments → phases)
+- **`ON DELETE SET NULL`**: optional references (notifications.investment_id — notification survives if investment is deleted)
+- **`ON DELETE RESTRICT`** (or no action): prevent deleting referenced data (brands → projects — don't delete a brand that has projects)
+- No soft deletes for now — hard delete is simpler. Add `deleted_at` only when audit trail is legally required.
+
+### Pagination
+- Use **range-based** pagination via Supabase `.range(from, to)` — maps to PostgreSQL `LIMIT/OFFSET`
+- Default page size: 20 items
+- For infinite scroll lists (news, notifications): use cursor-based with `created_at` + `id` as cursor for stable ordering
+- Home screen carousels: `LIMIT 5`, no pagination
+
+### JSONB rules
+- **Use JSONB** when: data is display-only, never filtered/joined/aggregated individually (galleries, asset info entries, economic analysis)
+- **Use a separate table** when: data needs individual filtering, sorting, or FK relationships (documents, phases, scenarios)
+- JSONB arrays: always default to `'[]'`, never `NULL`
+- JSONB objects: default to `NULL` when the whole block is optional
+
+### Storage buckets
+- Naming: `kebab-case` (Supabase convention)
+- Public buckets (brand-assets, project-images): anyone can read, only service_role writes
+- Private buckets (documents, kyc-documents, avatars): RLS-scoped read/write
+- File paths: `{owner_id}/{filename}` — owner is brand_id, project_id, user_id, or investment_id
+- Max file size: configure per bucket in Supabase dashboard
+- Accepted MIME types: configure per bucket (images: `image/*`, documents: `application/pdf`)
+
+### Supabase Client (Flutter SDK)
+- Single client instance via provider: `Supabase.instance.client`
+- Queries return `List<Map<String, dynamic>>` — always map to domain models in the repository, never pass raw maps to UI
+- Error handling: catch `PostgrestException` in repositories, convert to domain errors
+- `.order()` defaults to **descending** — always pass `ascending: true` explicitly for ASC
+- Use `.select('*, brands(*)')` for JOINs via FK relationships — PostgREST resolves them automatically
+- Prefer views over complex `.select()` with nested JOINs for readability
+
+---
+
 ## Data Layer — Mock-First Pattern
 
 ### Repository Interface

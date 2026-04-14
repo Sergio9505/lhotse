@@ -446,3 +446,92 @@ Plusvalía removed — derivable from hero (totalReturn) minus invested. Duratio
 - (+) Three-level weight system (w400/w500/w600) creates subtle hierarchy without bold
 - (-) Phosphor thin may be too subtle for older users or accessibility — monitor feedback
 - (-) Custom SVG icons deleted, Lucide import kept but unused in production code
+
+---
+
+## ADR-22: VIP Lock — Black PRIVATE Chip on Image
+
+**Date:** 2026-04-14
+**Status:** Accepted
+
+**Context:** VIP projects need a visible lock indicator. Initial approach: gold lock icon in the text area below the image. Problem: insufficient contrast on beige background, and text-area clutter. Evaluated Revolut's approach to premium/restricted content.
+
+**Decision:** Black "PRIVATE" chip directly on the project image (top-right, `Positioned`). Black background (`AppColors.primary`), white caption text, w500, letterSpacing 1.5. Tapping opens a beige bottom sheet (not black — black clashed with beige navbar) with lock icon, separator, and monochromatic CTA.
+
+**Consequences:**
+- (+) Guaranteed contrast on any photo (opaque black chip)
+- (+) Visible without scrolling — positioned on the image itself
+- (+) Revolut-inspired pattern recognizable to premium app users
+- (+) Beige bottom sheet consistent with app's surface color
+- (-) Takes image real estate, but minimal (small chip)
+
+---
+
+## ADR-23: Opportunities Filter Hierarchy — Business Model Primary
+
+**Date:** 2026-04-14
+**Status:** Accepted
+
+**Context:** Opportunities screen had three equal-weight text tabs (FIRMA/UBICACIÓN/BUSCAR) — same flat hierarchy antipattern as the original AllNews. No primary axis for content classification. For investors evaluating opportunities, the business model (compra directa vs coinversión vs renta fija) is the most important filter — it determines risk profile, return structure, and investment mechanics.
+
+**Decision:** Primary axis: 3 `LhotseFilterTab` text tabs for `BusinessModel` (COMPRA / COINVERSIÓN / RENTA FIJA). Secondary: single location icon tool (mapPin with dot indicator). Brands and search filters removed — brands are implicit in the model selection, and the global search screen serves text queries. Filter cross-references `project.brand → mockBrands.businessModel` since `BusinessModel` lives on `BrandData`, not `ProjectData`.
+
+**Consequences:**
+- (+) Primary axis matches investor mental model — "what type of investment am I looking for?"
+- (+) Consistent with AllProjects filter bar pattern (text tabs + icon tools)
+- (+) Eliminates bottom overflow from too many filter controls
+- (+) Cross-reference via brand is correct — business model is a brand attribute
+- (-) No text search on opportunities — acceptable since Search screen exists
+
+---
+
+## ADR-24: News Detail — Editorial Scroll + Video Placeholder
+
+**Date:** 2026-04-14
+**Status:** Accepted
+
+**Context:** News items had no detail screen — tapping a card did nothing. Needed a premium editorial reading experience consistent with ProjectDetailScreen while accommodating video content (some news items have `hasPlayButton`).
+
+**Decision:** `NewsDetailScreen` with `CustomScrollView` + pinned `SliverAppBar` (200px hero). Same scroll mechanics as `ProjectDetailScreen`:
+- Hero: `LhotseImage` + top gradient + optional play button (56px frosted circle)
+- Collapsed header: `AnimatedOpacity` with title (headingSmall) + brand (caption)
+- Identity: title (headingLarge) + brand · date row
+- Type badge: black container PROYECTO/PRENSA + subtitle
+- Body: bodyMedium, textSecondary, height 1.6
+- Related: "MÁS DE [BRAND]" horizontal scroll (max 3 `LhotseNewsCard.compact`)
+- Video: tapping play button opens `_VideoPlayerScreen` — fullscreen black overlay, centered play icon (72px), title, "PRÓXIMAMENTE" label, X close. Placeholder until real video URLs are connected.
+
+**Consequences:**
+- (+) Consistent editorial scroll pattern with project detail
+- (+) Video placeholder preserves design language — ready for real URLs
+- (+) Related news section aids content discovery within the brand
+- (+) Collapsed header behavior matches rest of app (sequential fade)
+- (-) No CTA at bottom (removed "VER TODAS LAS NOTICIAS") — simplicity over redundancy
+
+---
+
+## ADR-25: Supabase Schema — Single Table Inheritance for Investments
+
+**Date:** 2026-04-14
+**Status:** Accepted
+
+**Context:** `InvestmentData` has ~45 fields spanning 3 business models (compra directa, coinversión, renta fija) plus completion fields. Options: (A) single wide table with nullable columns (STI), (B) base table + 3 model-specific join tables, (C) JSONB for model-specific fields.
+
+**Decision:** Single wide table (STI). JSONB for display-only embedded data (gallery arrays, asset_info key-value pairs). Separate tables for queryable structured data (profit_scenarios, investment_phases, documents).
+
+**Rationale:**
+- Flutter uses a single `InvestmentData` class — 1:1 mapping means simpler serialization
+- <5000 rows expected — nullable column overhead is negligible
+- Every query needs base fields (amount, return_rate) — split tables would always JOIN
+- ~15 NULL columns per row is harmless on PostgreSQL at this scale
+- JSONB for display data avoids unnecessary tables; separate tables for queryable data preserve type safety
+
+Full schema in `.claude/plans/soft-noodling-origami.md`: 11 tables, 8 enums, 4 views, 5 RPC functions, 6 storage buckets.
+
+**Consequences:**
+- (+) One Supabase query per investment detail — no joins needed
+- (+) Aggregation queries (brand summaries, portfolio total) are simple GROUP BYs
+- (+) Flutter `fromJson` maps directly to table columns
+- (+) View `v_investment_with_brand` provides denormalized brand_name for compatibility
+- (-) ~15 NULL columns per row — acceptable at current scale
+- (-) If business models diverge significantly in the future, may need to revisit
