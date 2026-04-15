@@ -17,7 +17,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentRole = ref.watch(currentUserRoleProvider);
-    final projectsAsync = ref.watch(projectsProvider);
+    final featuredAsync = ref.watch(featuredProjectsProvider(currentRole));
     final newsAsync = ref.watch(newsProvider);
 
     return Scaffold(
@@ -37,19 +37,19 @@ class HomeScreen extends ConsumerWidget {
               final available = screen - headerH - navbarH;
               return SizedBox(
                 height: available,
-                child: projectsAsync.when(
+                child: featuredAsync.when(
                   data: (projects) => projects.isEmpty
                       ? const Center(
                           child: CircularProgressIndicator(strokeWidth: 1.5),
                         )
                       : ProjectCarousel(
-                          projects: projects.take(5).toList(),
+                          projects: projects,
                           currentRole: currentRole,
                         ),
                   loading: () => const Center(
                     child: CircularProgressIndicator(strokeWidth: 1.5),
                   ),
-                  error: (e, _) => Center(child: Text('$e')),
+                  error: (e, _) => const SizedBox.shrink(),
                 ),
               );
             }),

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/project_data.dart';
+import '../domain/user_role.dart';
 import 'supabase_provider.dart';
 
 final projectsProvider = FutureProvider<List<ProjectData>>((ref) async {
@@ -22,6 +23,31 @@ final projectByIdProvider =
       .eq('id', id)
       .maybeSingle();
   return data != null ? ProjectData.fromSupabaseRow(data) : null;
+});
+
+/// Featured projects carousel — curated per role, ordered by sort_order.
+/// Each role has its own independent list (viewer / investor / investor_vip).
+final featuredProjectsProvider =
+    FutureProvider.family<List<ProjectData>, UserRole>((ref, role) async {
+  final roleStr = switch (role) {
+    UserRole.viewer => 'viewer',
+    UserRole.investor => 'investor',
+    UserRole.investorVip => 'investor_vip',
+  };
+
+  final data = await ref
+      .watch(supabaseClientProvider)
+      .from('featured_projects')
+      .select('sort_order, projects(*, brands(name, logo_asset))')
+      .eq('role', roleStr)
+      .order('sort_order', ascending: true)
+      .limit(5);
+
+  return (data as List<dynamic>).map((e) {
+    final row =
+        (e as Map<String, dynamic>)['projects'] as Map<String, dynamic>;
+    return ProjectData.fromSupabaseRow(row);
+  }).toList();
 });
 
 /// Opportunities: projects the current user is NOT invested in.
