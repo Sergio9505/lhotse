@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -34,7 +35,9 @@ class InvestmentsScreen extends ConsumerWidget {
     final collapsedHeight = topPadding + 72.0;
     final expandedHeight = topPadding + 200.0;
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light, // white status bar icons on black header
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
@@ -149,6 +152,7 @@ class InvestmentsScreen extends ConsumerWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -194,7 +198,7 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
             child: Opacity(
               opacity: ((expandRatio - 0.5) / 0.5).clamp(0.0, 1.0),
               child: Text(
-                'MI ESTRATEGIA PATRIMONIAL',
+                'MI ESTRATEGIA\nPATRIMONIAL',
                 style: AppTypography.headingLarge.copyWith(
                   color: AppColors.textOnDark,
                 ),

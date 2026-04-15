@@ -381,10 +381,13 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
             child: IgnorePointer(
               child: Opacity(
                 opacity: expandedOpacity,
-                child: Text(
-                  heroTitle,
-                  style: AppTypography.headingLarge.copyWith(
-                    color: AppColors.textPrimary,
+                child: SizedBox(
+                  width: 200,
+                  child: Text(
+                    heroTitle,
+                    style: AppTypography.headingLarge.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ),
