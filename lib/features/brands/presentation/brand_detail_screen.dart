@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/data/mock/mock_brands.dart';
+import '../../../core/data/brands_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
 
-class BrandDetailScreen extends StatefulWidget {
+class BrandDetailScreen extends ConsumerStatefulWidget {
   const BrandDetailScreen({super.key, required this.brandId});
 
   final String brandId;
 
   @override
-  State<BrandDetailScreen> createState() => _BrandDetailScreenState();
+  ConsumerState<BrandDetailScreen> createState() => _BrandDetailScreenState();
 }
 
-class _BrandDetailScreenState extends State<BrandDetailScreen> {
+class _BrandDetailScreenState extends ConsumerState<BrandDetailScreen> {
   final _scrollController = ScrollController();
   bool _showLogoInHeader = false;
 
@@ -41,8 +42,15 @@ class _BrandDetailScreenState extends State<BrandDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brand = mockBrands.firstWhere((b) => b.id == widget.brandId);
+    final brand = ref.watch(brandByIdProvider(widget.brandId)).valueOrNull;
     final topPadding = MediaQuery.of(context).padding.top;
+
+    if (brand == null) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -156,30 +164,24 @@ class _BrandDetailScreenState extends State<BrandDetailScreen> {
 
 class _BrandLogoHeader extends StatelessWidget {
   const _BrandLogoHeader({required this.brand});
-
   final BrandData brand;
+  static const _filter = ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn);
 
   @override
   Widget build(BuildContext context) {
-    if (brand.logoAsset != null) {
+    final logo = brand.logoAsset;
+    if (logo != null) {
       return SizedBox(
         width: 80,
         height: 20,
-        child: SvgPicture.asset(
-          brand.logoAsset!,
-          fit: BoxFit.contain,
-          colorFilter: const ColorFilter.mode(
-            AppColors.textPrimary,
-            BlendMode.srcIn,
-          ),
-        ),
+        child: logo.startsWith('http')
+            ? SvgPicture.network(logo, fit: BoxFit.contain, colorFilter: _filter)
+            : SvgPicture.asset(logo, fit: BoxFit.contain, colorFilter: _filter),
       );
     }
     return Text(
       brand.name.toUpperCase(),
-      style: AppTypography.headingSmall.copyWith(
-        color: AppColors.textPrimary,
-      ),
+      style: AppTypography.headingSmall.copyWith(color: AppColors.textPrimary),
     );
   }
 }
@@ -188,33 +190,27 @@ class _BrandLogoHeader extends StatelessWidget {
 
 class _BrandLogo extends StatelessWidget {
   const _BrandLogo({required this.brand});
-
   final BrandData brand;
+  static const _filter = ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn);
 
   @override
   Widget build(BuildContext context) {
-    if (brand.logoAsset != null) {
+    final logo = brand.logoAsset;
+    if (logo != null) {
       return SizedBox(
         width: 160,
         height: 40,
         child: Align(
           alignment: Alignment.centerLeft,
-          child: SvgPicture.asset(
-            brand.logoAsset!,
-            fit: BoxFit.contain,
-            colorFilter: const ColorFilter.mode(
-              AppColors.textPrimary,
-              BlendMode.srcIn,
-            ),
-          ),
+          child: logo.startsWith('http')
+              ? SvgPicture.network(logo, fit: BoxFit.contain, colorFilter: _filter)
+              : SvgPicture.asset(logo, fit: BoxFit.contain, colorFilter: _filter),
         ),
       );
     }
     return Text(
       brand.name.toUpperCase(),
-      style: AppTypography.headingSmall.copyWith(
-        color: AppColors.textPrimary,
-      ),
+      style: AppTypography.headingSmall.copyWith(color: AppColors.textPrimary),
     );
   }
 }

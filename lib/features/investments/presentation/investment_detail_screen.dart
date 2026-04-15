@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/data/mock/mock_brands.dart';
-import '../../../core/data/mock/mock_investments.dart';
-import '../../../core/data/mock/mock_news.dart';
-import '../../../core/data/mock/mock_projects.dart';
-import '../../../core/domain/brand_data.dart';
-import 'completed_detail_screen.dart';
-import 'compra_directa_detail_screen.dart';
-import '../../../core/domain/investment_data.dart';
+import '../../../core/data/news_provider.dart';
+import '../../../core/domain/news_item_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
@@ -18,22 +13,34 @@ import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/widgets/lhotse_metric_block.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
-import 'coinversion_detail_screen.dart';
+import '../data/investments_provider.dart';
+import '../domain/fixed_income_contract_data.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 final _dateFormat = DateFormat('MM/yyyy');
+const _kMaxVisibleNews = 3;
 
-class InvestmentDetailScreen extends StatelessWidget {
+/// Detail screen for fixed income (renta fija) contracts.
+/// Named InvestmentDetailScreen for GoRouter compatibility.
+class InvestmentDetailScreen extends ConsumerWidget {
   const InvestmentDetailScreen({super.key, required this.investmentId});
 
   final String investmentId;
 
   @override
-  Widget build(BuildContext context) {
-    final investment =
-        mockInvestments.where((i) => i.id == investmentId).firstOrNull;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final allContracts = ref.watch(fixedIncomeContractsProvider).valueOrNull;
+    final contract = allContracts?.where((c) => c.id == investmentId).firstOrNull;
+    final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
 
-    if (investment == null) {
+    if (allContracts == null) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+      );
+    }
+
+    if (contract == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
@@ -47,39 +54,10 @@ class InvestmentDetailScreen extends StatelessWidget {
       );
     }
 
-    final brand =
-        mockBrands.where((b) => b.name == investment.brandName).firstOrNull;
-    final model = brand?.businessModel ?? BusinessModel.coinvestment;
-
-    final project = findProjectById(investment.projectId);
-
-    // Coinversion — completed vs active
-    if (model == BusinessModel.coinvestment) {
-      if (investment.isCompleted) {
-        return CompletedDetailScreen(
-          investment: investment,
-          project: project,
-        );
-      }
-      return CoinversionDetailScreen(
-        investment: investment,
-        project: project,
-      );
-    }
-
-    // CompraDirecta — completed vs active
-    if (model == BusinessModel.directPurchase) {
-      if (investment.isCompleted) {
-        return CompletedDetailScreen(
-          investment: investment,
-          project: project,
-        );
-      }
-      return CompraDirectaDetailScreen(
-        investment: investment,
-        project: project,
-      );
-    }
+    final relatedNews = allNews
+        .where((n) => n.brand == contract.brandName)
+        .take(4)
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -87,18 +65,16 @@ class InvestmentDetailScreen extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: [
           LhotseAppHeader(
-            title: investment.projectName.toUpperCase(),
+            title: contract.offeringName.toUpperCase(),
             subtitle: null,
           ),
 
           const SizedBox(height: AppSpacing.md),
 
-          // Model-specific content (only rentaFija reaches here)
-          _RentaFijaDetail(investment: investment),
+          _RentaFijaDetail(contract: contract),
 
           const SizedBox(height: AppSpacing.xl),
 
-          // Documents
           const LhotseSectionLabel(label: 'DOCUMENTOS'),
           const SizedBox(height: AppSpacing.sm),
           LhotseDocumentsSection(
@@ -111,61 +87,39 @@ class InvestmentDetailScreen extends StatelessWidget {
             },
           ),
 
-          const SizedBox(height: AppSpacing.xl),
-
-          // News — horizontal scroll
-          const LhotseSectionLabel(label: 'NOTICIAS DEL PROYECTO'),
-          const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            height: 160,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: mockNews.length > _kMaxVisibleNews
-                  ? _kMaxVisibleNews + 1
-                  : mockNews.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (context, i) {
-                if (i == _kMaxVisibleNews && mockNews.length > _kMaxVisibleNews) {
-                  return _SeeAllNewsCard(
-                    count: mockNews.length,
-                    onTap: () => _showAllNews(context),
+          if (relatedNews.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xl),
+            const LhotseSectionLabel(label: 'NOTICIAS DEL PROYECTO'),
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              height: 160,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                itemCount: relatedNews.length > _kMaxVisibleNews
+                    ? _kMaxVisibleNews + 1
+                    : relatedNews.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(width: AppSpacing.sm),
+                itemBuilder: (context, i) {
+                  if (i == _kMaxVisibleNews &&
+                      relatedNews.length > _kMaxVisibleNews) {
+                    return _SeeAllNewsCard(
+                      count: relatedNews.length,
+                      onTap: () => _showAllNews(context, relatedNews),
+                    );
+                  }
+                  final news = relatedNews[i];
+                  return LhotseNewsCard.compact(
+                    title: news.title,
+                    imageUrl: news.imageUrl,
+                    subtitle: DateFormat('d MMM yyyy').format(news.date),
+                    onTap: () => context.push('/news/${news.id}'),
                   );
-                }
-                return LhotseNewsCard.compact(
-                  title: mockNews[i].title,
-                  imageUrl: mockNews[i].imageUrl,
-                  subtitle: mockNews[i].date,
-                  onTap: () => context.push('/news/${mockNews[i].id}'),
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: AppSpacing.xl),
-
-          // View project button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: GestureDetector(
-              onTap: () =>
-                  context.push('/projects/${investment.projectId}'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                color: AppColors.primary,
-                child: Center(
-                  child: Text(
-                    'VER PROYECTO',
-                    style: AppTypography.labelLarge.copyWith(
-                      color: AppColors.textOnDark,
-                      letterSpacing: 1.8,
-                    ),
-                  ),
-                ),
+                },
               ),
             ),
-          ),
+          ],
 
           SizedBox(
               height: MediaQuery.of(context).padding.bottom + AppSpacing.xl),
@@ -175,17 +129,19 @@ class InvestmentDetailScreen extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Renta Fija
-// ---------------------------------------------------------------------------
+// ── Renta Fija metrics ────────────────────────────────────────────────────────
 
 class _RentaFijaDetail extends StatelessWidget {
-  const _RentaFijaDetail({required this.investment});
+  const _RentaFijaDetail({required this.contract});
 
-  final InvestmentData investment;
+  final FixedIncomeContractData contract;
 
   @override
   Widget build(BuildContext context) {
+    final c = contract;
+    final estimatedReturn =
+        c.amount * c.guaranteedRate / 100 * (c.termMonths ?? 12) / 12;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
@@ -194,13 +150,13 @@ class _RentaFijaDetail extends StatelessWidget {
             children: [
               Expanded(
                 child: LhotseMetricBlock(
-                  value: '${_eurFormat.format(investment.amount)}€',
+                  value: '${_eurFormat.format(c.amount)}€',
                   label: 'Capital invertido',
                 ),
               ),
               Expanded(
                 child: LhotseMetricBlock(
-                  value: '${investment.returnRate.toStringAsFixed(1)}%',
+                  value: '${c.guaranteedRate.toStringAsFixed(1)}%',
                   label: 'Rentabilidad fija',
                 ),
               ),
@@ -211,13 +167,13 @@ class _RentaFijaDetail extends StatelessWidget {
             children: [
               Expanded(
                 child: LhotseMetricBlock(
-                  value: '${_eurFormat.format(investment.amount * investment.returnRate / 100 * investment.durationMonths / 12)}€',
+                  value: '${_eurFormat.format(estimatedReturn)}€',
                   label: 'Rendimiento estimado',
                 ),
               ),
               Expanded(
                 child: LhotseMetricBlock(
-                  value: '${investment.durationMonths} meses',
+                  value: '${c.termMonths ?? '–'} meses',
                   label: 'Duración',
                 ),
               ),
@@ -228,15 +184,15 @@ class _RentaFijaDetail extends StatelessWidget {
             children: [
               Expanded(
                 child: LhotseMetricBlock(
-                  value: investment.expectedEndDate != null
-                      ? _dateFormat.format(investment.expectedEndDate!)
+                  value: c.maturityDate != null
+                      ? _dateFormat.format(c.maturityDate!)
                       : '—',
                   label: 'Vencimiento',
                 ),
               ),
               Expanded(
                 child: LhotseMetricBlock(
-                  value: investment.paymentFrequency ?? '—',
+                  value: c.paymentFrequency,
                   label: 'Frecuencia de pago',
                 ),
               ),
@@ -248,40 +204,36 @@ class _RentaFijaDetail extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Mock data (shared across all investment detail models)
-// ---------------------------------------------------------------------------
+// ── Placeholder docs ──────────────────────────────────────────────────────────
 
 final _investmentDocs = [
-  LhotseDocument(name: 'Escritura de compraventa', date: '15 MAR. 2026', category: DocCategory.legal),
-  LhotseDocument(name: 'Contrato de arras', date: '28 FEB. 2026', category: DocCategory.legal),
-  LhotseDocument(name: 'Nota simple registral', date: '10 FEB. 2026', category: DocCategory.legal),
-  LhotseDocument(name: 'Certificado fiscal', date: '02 FEB. 2026', category: DocCategory.fiscal),
-  LhotseDocument(name: 'Factura notaría', date: '15 ENE. 2026', category: DocCategory.financiero),
-  LhotseDocument(name: 'Licencia urbanística', date: '20 DIC. 2025', category: DocCategory.obra),
-  LhotseDocument(name: 'Recibo hipoteca Q4', date: '01 DIC. 2025', category: DocCategory.financiero),
-  LhotseDocument(name: 'Planos definitivos', date: '15 NOV. 2025', category: DocCategory.obra),
-  LhotseDocument(name: 'Poder notarial', date: '01 NOV. 2025', category: DocCategory.legal),
-  LhotseDocument(name: 'Informe de tasación', date: '10 OCT. 2025', category: DocCategory.financiero),
+  LhotseDocument(
+      name: 'Contrato de inversión',
+      date: '15 MAR. 2026',
+      category: DocCategory.legal),
+  LhotseDocument(
+      name: 'Certificado de depósito',
+      date: '15 MAR. 2026',
+      category: DocCategory.fiscal),
+  LhotseDocument(
+      name: 'Condiciones generales',
+      date: '01 MAR. 2026',
+      category: DocCategory.legal),
 ];
 
-const _kMaxVisibleNews = 3;
+// ── All news bottom sheet ─────────────────────────────────────────────────────
 
-// ---------------------------------------------------------------------------
-// Bottom sheet for all news
-// ---------------------------------------------------------------------------
-
-void _showAllNews(BuildContext context) {
+void _showAllNews(BuildContext context, List<NewsItemData> news) {
   showLhotseBottomSheet(
     context: context,
     title: 'NOTICIAS',
-    itemCount: mockNews.length,
+    itemCount: news.length,
     itemBuilder: (context, i) {
-      final news = mockNews[i];
+      final item = news[i];
       return GestureDetector(
         onTap: () {
           Navigator.of(context).pop();
-          context.push('/news/${news.id}');
+          context.push('/news/${item.id}');
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -290,7 +242,7 @@ void _showAllNews(BuildContext context) {
               SizedBox(
                 width: 56,
                 height: 56,
-                child: LhotseImage(news.imageUrl),
+                child: LhotseImage(item.imageUrl),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -298,7 +250,7 @@ void _showAllNews(BuildContext context) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      news.title,
+                      item.title,
                       style: AppTypography.bodyMedium.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w500,
@@ -308,7 +260,7 @@ void _showAllNews(BuildContext context) {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      news.date,
+                      DateFormat('d MMM yyyy').format(item.date),
                       style: AppTypography.caption.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 1.0,
@@ -325,9 +277,7 @@ void _showAllNews(BuildContext context) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// "See all" card for news carousel
-// ---------------------------------------------------------------------------
+// ── See-all card ──────────────────────────────────────────────────────────────
 
 class _SeeAllNewsCard extends StatelessWidget {
   const _SeeAllNewsCard({required this.count, required this.onTap});

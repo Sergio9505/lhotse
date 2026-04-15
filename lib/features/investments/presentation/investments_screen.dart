@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/mock/mock_brands.dart';
-import '../../../core/data/mock/mock_investments.dart';
-import '../../../core/data/mock/mock_projects.dart';
-import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/project_data.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_notification_bell.dart';
-import '../../../core/theme/app_theme.dart';
+import '../data/investments_provider.dart';
+import '../../../core/data/projects_provider.dart';
+import '../domain/investment_summary.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
-class InvestmentsScreen extends StatelessWidget {
+class InvestmentsScreen extends ConsumerWidget {
   const InvestmentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final topPadding = MediaQuery.of(context).padding.top;
-    final summaries = activeBrandSummaries
-      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
-    final total = summaries.fold(0.0, (sum, s) => sum + s.totalAmount);
+    final summariesAsync = ref.watch(brandSummariesProvider);
+    final portfolioAsync = ref.watch(portfolioSummaryProvider);
+    final opportunitiesAsync =
+        ref.watch(opportunitiesProvider(const {}));
 
-    final investedProjectIds =
-        mockInvestments.map((i) => i.projectId).toSet();
-    final availableProjects =
-        mockProjects.where((p) => !investedProjectIds.contains(p.id)).toList();
+    final summaries = summariesAsync.valueOrNull ?? const [];
+    final total = portfolioAsync.valueOrNull?.totalInvested ?? 0.0;
+    final opportunities = opportunitiesAsync.valueOrNull ?? const [];
 
     final totalFormatted = _eurFormat.format(total);
     final collapsedHeight = topPadding + 72.0;
@@ -38,7 +38,6 @@ class InvestmentsScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // Hero — collapses from full to compact
           SliverPersistentHeader(
             pinned: true,
             delegate: _HeroDelegate(
@@ -49,46 +48,42 @@ class InvestmentsScreen extends StatelessWidget {
             ),
           ),
 
-          // Spacer before brand rows
-          const SliverToBoxAdapter(
-            child: SizedBox(height: AppSpacing.md),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
 
           // Brand rows
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, i) {
-                final summary = summaries[i];
-                final brand = mockBrands
-                    .where((b) => b.name == summary.brandName)
-                    .firstOrNull;
-                final isEstimated =
-                    brand?.businessModel != BusinessModel.fixedIncome;
-                return _BrandRow(
-                  brandName: summary.brandName,
-                  amount: summary.totalAmount,
-                  averageReturn: summary.averageReturn,
-                  isEstimated: isEstimated,
-                  isLast: i == summaries.length - 1,
-                  onTap: () => context.push(
-                      '/investments/brand/${Uri.encodeComponent(summary.brandName)}'),
-                );
-              },
-              childCount: summaries.length,
+          if (summaries.isEmpty && summariesAsync.isLoading)
+            const SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.xl),
+                  child: CircularProgressIndicator(strokeWidth: 1.5),
+                ),
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  final summary = summaries[i];
+                  final isEstimated = summary.businessModel != 'fixed_income';
+                  return _BrandRow(
+                    summary: summary,
+                    isEstimated: isEstimated,
+                    isLast: i == summaries.length - 1,
+                    onTap: () =>
+                        context.push('/investments/brand/${summary.brandId}'),
+                  );
+                },
+                childCount: summaries.length,
+              ),
             ),
-          ),
 
           // Estimated footnote
-          if (summaries.any((s) {
-            final b = mockBrands.where((b) => b.name == s.brandName).firstOrNull;
-            return b?.businessModel != BusinessModel.fixedIncome;
-          }))
+          if (summaries.any((s) => s.businessModel != 'fixed_income'))
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(
-                  left: AppSpacing.lg,
-                  top: AppSpacing.md,
-                ),
+                    left: AppSpacing.lg, top: AppSpacing.md),
                 child: Text(
                   '* Rentabilidad estimada',
                   style: AppTypography.caption.copyWith(
@@ -100,16 +95,18 @@ class InvestmentsScreen extends StatelessWidget {
             ),
 
           // Opportunities
-          if (availableProjects.isNotEmpty)
+          if (opportunities.isNotEmpty)
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: AppSpacing.xxl),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg),
                     child: GestureDetector(
-                      onTap: () => context.push('/investments/opportunities'),
+                      onTap: () =>
+                          context.push('/investments/opportunities'),
                       child: Row(
                         children: [
                           Text(
@@ -133,14 +130,13 @@ class InvestmentsScreen extends StatelessWidget {
                     height: 160,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                      itemCount: availableProjects.length.clamp(0, 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg),
+                      itemCount: opportunities.length.clamp(0, 4),
                       separatorBuilder: (_, _) =>
                           const SizedBox(width: AppSpacing.sm),
-                      itemBuilder: (context, i) {
-                        final project = availableProjects[i];
-                        return _OpportunityCard(project: project);
-                      },
+                      itemBuilder: (context, i) =>
+                          _OpportunityCard(project: opportunities[i]),
                     ),
                   ),
                 ],
@@ -156,6 +152,8 @@ class InvestmentsScreen extends StatelessWidget {
     );
   }
 }
+
+// ── Hero delegate ─────────────────────────────────────────────────────────────
 
 class _HeroDelegate extends SliverPersistentHeaderDelegate {
   const _HeroDelegate({
@@ -181,8 +179,6 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     final expandRatio =
         (1 - shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
-
-    // Amount font size: 50 expanded → 28 collapsed
     final amountSize = 28 + (22 * expandRatio);
     final euroSize = 20 + (14 * expandRatio);
 
@@ -191,11 +187,10 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Title — fades out first half, slides up
           Positioned(
             top: topPadding + AppSpacing.md - (shrinkOffset * 0.3),
             left: AppSpacing.lg,
-            right: AppSpacing.lg + 44, // leave room for bell
+            right: AppSpacing.lg + 44,
             child: Opacity(
               opacity: ((expandRatio - 0.5) / 0.5).clamp(0.0, 1.0),
               child: Text(
@@ -206,12 +201,10 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
               ),
             ),
           ),
-
-          // Amount — anchored to bottom, always visible
           Positioned(
             bottom: AppSpacing.md,
             left: AppSpacing.lg,
-            right: AppSpacing.lg + 44, // leave room for bell
+            right: AppSpacing.lg + 44,
             child: RichText(
               text: TextSpan(
                 children: [
@@ -241,8 +234,6 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
               ),
             ),
           ),
-
-          // Bell — fixed top-right, independent of collapse
           Positioned(
             top: topPadding + 16,
             right: AppSpacing.md,
@@ -262,19 +253,17 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
       totalFormatted != oldDelegate.totalFormatted;
 }
 
+// ── Brand row ─────────────────────────────────────────────────────────────────
+
 class _BrandRow extends StatefulWidget {
   const _BrandRow({
-    required this.brandName,
-    required this.amount,
-    required this.averageReturn,
+    required this.summary,
     this.isEstimated = false,
     this.isLast = false,
     this.onTap,
   });
 
-  final String brandName;
-  final double amount;
-  final double averageReturn;
+  final BrandInvestmentSummaryData summary;
   final bool isEstimated;
   final bool isLast;
   final VoidCallback? onTap;
@@ -286,8 +275,15 @@ class _BrandRow extends StatefulWidget {
 class _BrandRowState extends State<_BrandRow> {
   bool _pressed = false;
 
+  static const _svgFilter =
+      ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn);
+
   @override
   Widget build(BuildContext context) {
+    final summary = widget.summary;
+    final logo = summary.brandLogoAsset;
+    final avgReturn = summary.avgReturnPct ?? 0.0;
+
     return GestureDetector(
       onTapDown: widget.onTap != null
           ? (_) => setState(() => _pressed = true)
@@ -324,16 +320,46 @@ class _BrandRowState extends State<_BrandRow> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Logo
-              _BrandLeading(brandName: widget.brandName),
+              SizedBox(
+                width: 48,
+                height: 32,
+                child: logo != null
+                    ? (logo.startsWith('http')
+                        ? SvgPicture.network(logo,
+                            fit: BoxFit.contain, colorFilter: _svgFilter)
+                        : SvgPicture.asset(logo,
+                            fit: BoxFit.contain, colorFilter: _svgFilter))
+                    : Center(
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: AppColors.textPrimary,
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Text(
+                            summary.brandName.split(' ').map((w) => w[0]).join(),
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
               const SizedBox(width: AppSpacing.md),
 
-              // Left col: name + amount · return%
+              // Name + amount · return
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.brandName.toUpperCase(),
+                      summary.brandName.toUpperCase(),
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.accentMuted,
                         fontWeight: FontWeight.w500,
@@ -345,10 +371,12 @@ class _BrandRowState extends State<_BrandRow> {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: _eurFormat.format(widget.amount),
+                            text: _eurFormat.format(summary.totalAmount),
                             style: AppTypography.headingSmall.copyWith(
                               color: AppColors.textPrimary,
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
                             ),
                           ),
                           TextSpan(
@@ -358,7 +386,8 @@ class _BrandRowState extends State<_BrandRow> {
                             ),
                           ),
                           TextSpan(
-                            text: '  ·  ${widget.averageReturn.toStringAsFixed(0)}%${widget.isEstimated ? '*' : ''}',
+                            text:
+                                '  ·  ${avgReturn.toStringAsFixed(0)}%${widget.isEstimated ? '*' : ''}',
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.accentMuted,
                               fontWeight: FontWeight.w500,
@@ -387,63 +416,7 @@ class _BrandRowState extends State<_BrandRow> {
   }
 }
 
-class _BrandLeading extends StatelessWidget {
-  const _BrandLeading({required this.brandName});
-
-  final String brandName;
-
-  @override
-  Widget build(BuildContext context) {
-    final brand = mockBrands.where((b) => b.name == brandName).firstOrNull;
-
-    if (brand?.logoAsset != null) {
-      return SizedBox(
-        width: 48,
-        height: 32,
-        child: SvgPicture.asset(
-          brand!.logoAsset!,
-          fit: BoxFit.contain,
-          colorFilter: const ColorFilter.mode(
-            AppColors.textPrimary,
-            BlendMode.srcIn,
-          ),
-        ),
-      );
-    }
-
-    final initials = brandName.split(' ').map((w) => w[0]).join();
-
-    return SizedBox(
-      width: 48,
-      height: 32,
-      child: Center(
-        child: Container(
-          width: 32,
-          height: 32,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: AppColors.textPrimary,
-              width: 0.5,
-            ),
-          ),
-          child: Text(
-            initials,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Opportunity card — compact image card with financial overlay
-// ---------------------------------------------------------------------------
+// ── Opportunity card ──────────────────────────────────────────────────────────
 
 class _OpportunityCard extends StatelessWidget {
   const _OpportunityCard({required this.project});
@@ -456,86 +429,83 @@ class _OpportunityCard extends StatelessWidget {
       onTap: () => context.push('/projects/${project.id}'),
       child: SizedBox(
         width: 180,
-        child: ClipRRect(
-          borderRadius: BorderRadius.zero,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              LhotseImage(project.imageUrl),
-              // Beige overlay — same pattern as ProjectCard in Home, scaled down
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  color: AppColors.surface.withValues(alpha: 0.75),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              project.name.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.headingSmall.copyWith(
-                                color: Colors.white,
-                                ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            LhotseImage(project.imageUrl),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                color: AppColors.surface.withValues(alpha: 0.75),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            project.name.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.headingSmall.copyWith(
+                              color: Colors.white,
                             ),
-                            const SizedBox(height: 3),
-                            Row(
-                              children: [
-                                Text(
-                                  project.brand.toUpperCase(),
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Text(
+                                project.brand.toUpperCase(),
+                                style: AppTypography.captionSmall.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: Text(
+                                  '•',
                                   style: AppTypography.captionSmall.copyWith(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 1.5,
+                                    color: AppColors.textPrimary
+                                        .withValues(alpha: 0.4),
                                   ),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                                  child: Text(
-                                    '•',
-                                    style: AppTypography.captionSmall.copyWith(
-                                      color: AppColors.textPrimary.withValues(alpha: 0.4),
-                                    ),
+                              ),
+                              Flexible(
+                                child: Text(
+                                  project.location.toUpperCase(),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.captionSmall.copyWith(
+                                    color: AppColors.accentMuted,
+                                    letterSpacing: 1.2,
                                   ),
                                 ),
-                                Flexible(
-                                  child: Text(
-                                    project.location.toUpperCase(),
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.captionSmall.copyWith(
-                                      color: AppColors.accentMuted,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      PhosphorIcon(
-                        PhosphorIconsThin.arrowUpRight,
-                        size: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    PhosphorIcon(
+                      PhosphorIconsThin.arrowUpRight,
+                      size: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
-

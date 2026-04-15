@@ -1,80 +1,99 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/mock/mock_brands.dart';
-import '../../../core/data/mock/mock_investments.dart';
-import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/data/brands_provider.dart';
 import '../../../core/domain/brand_data.dart';
-import '../../../core/domain/investment_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
-import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../data/investments_provider.dart';
+import '../domain/completed_contract_data.dart';
+import '../domain/fixed_income_contract_data.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
-class BrandInvestmentsScreen extends StatelessWidget {
-  const BrandInvestmentsScreen({super.key, required this.brandName});
+class BrandInvestmentsScreen extends ConsumerWidget {
+  const BrandInvestmentsScreen({super.key, required this.brandId});
 
-  final String brandName;
+  final String brandId;
 
   @override
-  Widget build(BuildContext context) {
-    final summary = activeBrandSummaries
-        .where((s) => s.brandName == brandName)
-        .firstOrNull;
-    final completed = completedInvestments
-        .where((i) => i.brandName == brandName)
-        .toList();
-    final brand =
-        mockBrands.where((b) => b.name == brandName).firstOrNull;
-    final showLocation = brand?.businessModel != BusinessModel.fixedIncome;
-    if (summary == null) {
-      return Scaffold(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final brandAsync = ref.watch(brandByIdProvider(brandId));
+    final purchaseAsync = ref.watch(brandPurchaseContractsProvider(brandId));
+    final coinvestAsync = ref.watch(brandCoinvestmentContractsProvider(brandId));
+    final rfAsync = ref.watch(brandFixedIncomeContractsProvider(brandId));
+
+    final brand = brandAsync.valueOrNull;
+    final allPurchase = purchaseAsync.valueOrNull ?? const [];
+    final allCoinvest = coinvestAsync.valueOrNull ?? const [];
+    final allRf = rfAsync.valueOrNull ?? const [];
+
+    if (brand == null && brandAsync.isLoading) {
+      return const Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(
-          child: Text(
-            'No se encontraron inversiones',
-            style: AppTypography.bodyLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
+        body: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
       );
     }
 
-    final topPadding = MediaQuery.of(context).padding.top;
-    final totalFormatted = _eurFormat.format(summary.totalAmount);
-    final isCompraDirecta = brand?.businessModel == BusinessModel.directPurchase;
-    final isRentaFija = brand?.businessModel == BusinessModel.fixedIncome;
-    final collapsedHeight = topPadding + 64.0;
-    final expandedHeight = topPadding + 210.0;
+    final businessModel = brand?.businessModel;
+    final isCompraDirecta = businessModel == BusinessModel.directPurchase;
+    final isRentaFija = businessModel == BusinessModel.fixedIncome;
 
-    // Sort RF: active by soonest maturity, completed by most recent completion
-    if (isRentaFija) {
-      summary.investments.sort((a, b) =>
-          (a.expectedEndDate ?? DateTime(2099))
-              .compareTo(b.expectedEndDate ?? DateTime(2099)));
-      completed.sort((a, b) =>
-          (b.completionDate ?? DateTime(0))
-              .compareTo(a.completionDate ?? DateTime(0)));
-    }
+    final activePurchase = allPurchase.where((c) => !c.isCompleted).toList();
+    final completedPurchase = allPurchase.where((c) => c.isCompleted).toList();
+    final activeCoinvest = allCoinvest.where((c) => !c.isCompleted).toList();
+    final completedCoinvest = allCoinvest.where((c) => c.isCompleted).toList();
+    final activeRf = allRf.where((c) => c.isActive).toList();
+    final completedRf = allRf.where((c) => c.isCompleted).toList();
 
-    final sectionLabel = isCompraDirecta
-        ? 'MIS ACTIVOS'
-        : 'ACTIVAS';
+    final activeCount = isCompraDirecta
+        ? activePurchase.length
+        : isRentaFija
+            ? activeRf.length
+            : activeCoinvest.length;
+    final completedCount = isCompraDirecta
+        ? completedPurchase.length
+        : isRentaFija
+            ? completedRf.length
+            : completedCoinvest.length;
 
+    final totalAmount = isCompraDirecta
+        ? allPurchase.fold(0.0, (s, c) => s + c.purchaseValue)
+        : isRentaFija
+            ? allRf.fold(0.0, (s, c) => s + c.amount)
+            : allCoinvest.fold(0.0, (s, c) => s + c.amount);
+
+    final avgReturn = isRentaFija
+        ? (allRf.isEmpty ? 0.0 : allRf.map((c) => c.guaranteedRate).reduce((a, b) => a + b) / allRf.length)
+        : isCompraDirecta
+            ? (activePurchase.isEmpty ? 0.0 : activePurchase.map((c) => c.rentalYieldPct ?? 0).reduce((a, b) => a + b) / activePurchase.length)
+            : (allCoinvest.isEmpty ? 0.0 : allCoinvest.map((c) => c.estimatedReturnPct ?? 0).reduce((a, b) => a + b) / allCoinvest.length);
+
+    final brandName = brand?.name ?? '';
     final heroTitle = isRentaFija
         ? 'MIS INVERSIONES\nA RENTA FIJA'
         : 'MIS INVERSIONES\nEN ${brandName.toUpperCase()}';
+    final sectionLabel = isCompraDirecta ? 'MIS ACTIVOS' : 'ACTIVAS';
+    final topPadding = MediaQuery.of(context).padding.top;
+    final totalFormatted = _eurFormat.format(totalAmount);
+    final collapsedHeight = topPadding + 64.0;
+    final expandedHeight = topPadding + 210.0;
+
+    // Sort RF by soonest maturity
+    if (isRentaFija) {
+      activeRf.sort((a, b) =>
+          (a.maturityDate ?? DateTime(2099))
+              .compareTo(b.maturityDate ?? DateTime(2099)));
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // Hero — collapses
           SliverPersistentHeader(
             pinned: true,
             delegate: _BrandHeroDelegate(
@@ -83,9 +102,9 @@ class BrandInvestmentsScreen extends StatelessWidget {
               topPadding: topPadding,
               brandName: brandName,
               totalFormatted: totalFormatted,
-              averageReturn: summary.averageReturn,
-              activeCount: summary.investments.length,
-              completedCount: completed.length,
+              averageReturn: avgReturn,
+              activeCount: activeCount,
+              completedCount: completedCount,
               isCompraDirecta: isCompraDirecta,
               isRentaFija: isRentaFija,
               heroTitle: heroTitle,
@@ -93,14 +112,15 @@ class BrandInvestmentsScreen extends StatelessWidget {
             ),
           ),
 
-          // Section label — sticky
           SliverPersistentHeader(
             pinned: true,
             delegate: _StickyLabelDelegate(
               child: Container(
                 color: AppColors.background,
                 padding: const EdgeInsets.only(
-                    top: AppSpacing.md, left: AppSpacing.lg, bottom: AppSpacing.sm),
+                    top: AppSpacing.md,
+                    left: AppSpacing.lg,
+                    bottom: AppSpacing.sm),
                 alignment: Alignment.centerLeft,
                 child: Text(
                   sectionLabel,
@@ -113,55 +133,67 @@ class BrandInvestmentsScreen extends StatelessWidget {
             ),
           ),
 
-          // Investment rows
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, i) {
-                final allInvestments = summary.investments;
-                final inv = allInvestments[i];
-                final project = findProjectById(inv.projectId);
-                if (isRentaFija) {
-                  final docs = _rfDocsByInvestment[inv.id];
-                  return _RentaFijaRow(
-                    investment: inv,
-                    index: i + 1,
-                    isLast: i == allInvestments.length - 1,
-                    onDocsTap: docs != null && docs.isNotEmpty
-                        ? () => _showOperationDocs(context, docs)
-                        : null,
-                  );
-                }
-                if (isCompraDirecta) {
+          // Active investment rows
+          if (isRentaFija)
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) => _RentaFijaRow(
+                  contract: activeRf[i],
+                  index: i + 1,
+                  isLast: i == activeRf.length - 1,
+                ),
+                childCount: activeRf.length,
+              ),
+            )
+          else if (isCompraDirecta)
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  final c = activePurchase[i];
                   return _AssetRow(
-                    projectName: inv.projectName,
-                    location: showLocation ? project?.location : null,
-                    imageUrl: project?.imageUrl,
-                    amount: inv.amount,
-                    isLast: i == allInvestments.length - 1,
-                    onTap: () => context.push('/investments/detail/${inv.id}'),
+                    projectName: c.assetUnitName ?? c.projectName ?? '',
+                    location: c.projectLocation,
+                    imageUrl: c.projectImageUrl,
+                    amount: c.purchaseValue,
+                    isLast: i == activePurchase.length - 1,
+                    onTap: () => context.push(
+                      '/investments/detail/purchase/${c.id}',
+                      extra: c,
+                    ),
                   );
-                }
-                return _AssetRow(
-                  projectName: inv.projectName,
-                  imageUrl: project?.imageUrl,
-                  amount: inv.amount,
-                  returnLabel: '${inv.durationMonths} MESES  ·  ${inv.returnRate.toStringAsFixed(0)}%*',
-                  isLast: i == allInvestments.length - 1,
-                  onTap: () => context.push('/investments/detail/${inv.id}'),
-                );
-              },
-              childCount: summary.investments.length,
+                },
+                childCount: activePurchase.length,
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  final c = activeCoinvest[i];
+                  final months = c.estimatedDurationMonths ?? 0;
+                  final pct = c.estimatedReturnPct?.toStringAsFixed(0) ?? '–';
+                  return _AssetRow(
+                    projectName: c.projectName,
+                    imageUrl: c.projectImageUrl,
+                    amount: c.amount,
+                    returnLabel: '$months MESES  ·  $pct%*',
+                    isLast: i == activeCoinvest.length - 1,
+                    onTap: () => context.push(
+                      '/investments/detail/coinvestment/${c.id}',
+                      extra: c,
+                    ),
+                  );
+                },
+                childCount: activeCoinvest.length,
+              ),
             ),
-          ),
 
-          // Footnote — estimated values (coinversión only)
+          // Footnote
           if (!isCompraDirecta && !isRentaFija)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(
-                  left: AppSpacing.lg,
-                  top: AppSpacing.md,
-                ),
+                    left: AppSpacing.lg, top: AppSpacing.md),
                 child: Text(
                   '* Rentabilidad y duración estimadas',
                   style: AppTypography.caption.copyWith(
@@ -172,65 +204,75 @@ class BrandInvestmentsScreen extends StatelessWidget {
               ),
             ),
 
-          // Completed section (not shown for compraDirecta)
-          if (completed.isNotEmpty && !isCompraDirecta)
+          // Completed section
+          if (!isCompraDirecta)
             SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: AppSpacing.xl),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: Text(
-                      'FINALIZADAS',
-                      style: AppTypography.labelLarge.copyWith(
-                        color: AppColors.accentMuted,
-                        letterSpacing: 1.8,
+              child: Builder(builder: (context) {
+                final completed =
+                    isRentaFija ? completedRf : completedCoinvest;
+                if (completed.isEmpty) return const SizedBox.shrink();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: AppSpacing.xl),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg),
+                      child: Text(
+                        'FINALIZADAS',
+                        style: AppTypography.labelLarge.copyWith(
+                          color: AppColors.accentMuted,
+                          letterSpacing: 1.8,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  ...completed.indexed.map((entry) {
-                    final inv = entry.$2;
-                    if (isRentaFija) {
-                      final docs = _rfDocsByInvestment[inv.id];
-                      return _RentaFijaRow(
-                        investment: inv,
-                        isCompleted: true,
-                        isLast: entry.$1 == completed.length - 1,
-                        onDocsTap: docs != null && docs.isNotEmpty
-                            ? () => _showOperationDocs(context, docs)
-                            : null,
-                      );
-                    }
-                    final project = findProjectById(inv.projectId);
-                    final hasResults = inv.actualRoi != null;
-                    final duration = inv.actualDuration ?? inv.durationMonths;
-                    final returnLabelSpans = hasResults
-                        ? [
-                            TextSpan(text: '${_eurFormat.format(inv.amount)}€  ·  $duration MESES  ·  '),
-                            TextSpan(
-                              text: '+${inv.actualRoi!.toStringAsFixed(1)}%',
-                              style: AppTypography.caption.copyWith(
-                                color: const Color(0xFF2D6A4F),
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ]
-                        : null;
-                    return _AssetRow(
-                      projectName: inv.projectName,
-                      imageUrl: project?.imageUrl,
-                      amount: inv.totalReturn ?? inv.amount,
-                      returnLabel: hasResults ? null : '${inv.returnRate.toStringAsFixed(0)}% rentabilidad',
-                      returnLabelSpans: returnLabelSpans,
-                      isLast: entry.$1 == completed.length - 1,
-                      onTap: () => context.push('/investments/detail/${inv.id}'),
-                    );
-                  }),
-                ],
-              ),
+                    const SizedBox(height: AppSpacing.sm),
+                    if (isRentaFija)
+                      ...completedRf.indexed.map((e) => _RentaFijaRow(
+                            contract: e.$2,
+                            isCompleted: true,
+                            isLast: e.$1 == completedRf.length - 1,
+                          ))
+                    else
+                      ...completedCoinvest.indexed.map((e) {
+                        final c = e.$2;
+                        final hasResults = c.actualRoi != null;
+                        final duration = c.actualDuration ??
+                            c.estimatedDurationMonths ??
+                            0;
+                        final returnLabelSpans = hasResults
+                            ? [
+                                TextSpan(
+                                    text:
+                                        '${_eurFormat.format(c.amount)}€  ·  $duration MESES  ·  '),
+                                TextSpan(
+                                  text:
+                                      '+${c.actualRoi!.toStringAsFixed(1)}%',
+                                  style: AppTypography.caption.copyWith(
+                                    color: const Color(0xFF2D6A4F),
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ]
+                            : null;
+                        return _AssetRow(
+                          projectName: c.projectName,
+                          imageUrl: c.projectImageUrl,
+                          amount: c.totalReturn ?? c.amount,
+                          returnLabel: hasResults ? null : '–',
+                          returnLabelSpans: returnLabelSpans,
+                          isLast: e.$1 == completedCoinvest.length - 1,
+                          onTap: () => context.push(
+                            '/investments/detail/completed/coinvestment/${c.id}',
+                            extra: CompletedContractData.fromCoinvestment(c),
+                          ),
+                        );
+                      }),
+                  ],
+                );
+              }),
             ),
 
           SliverFillRemaining(
@@ -245,29 +287,7 @@ class BrandInvestmentsScreen extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Bottom sheet — operation documents
-// ---------------------------------------------------------------------------
-
-void _showOperationDocs(
-  BuildContext context,
-  List<LhotseDocument> docs,
-) {
-  showDocsBottomSheet(
-    context: context,
-    documents: docs,
-    filterLabels: const {
-      DocCategory.contrato: 'Contrato',
-      DocCategory.certificado: 'Certificado',
-      DocCategory.informe: 'Informe',
-      DocCategory.fiscal: 'Fiscal',
-    },
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Project thumbnail — leading widget for investment rows
-// ---------------------------------------------------------------------------
+// ── Hero delegate ─────────────────────────────────────────────────────────────
 
 class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
   const _BrandHeroDelegate({
@@ -300,7 +320,6 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   double get maxExtent => expandedHeight;
-
   @override
   double get minExtent => collapsedHeight;
 
@@ -319,25 +338,19 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
     final expandRatio =
         (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0);
 
-    // Sequential fade — no overlap
     final expandedOpacity = ((expandRatio - 0.5) / 0.5).clamp(0.0, 1.0);
     final collapsedOpacity = ((0.5 - expandRatio) / 0.5).clamp(0.0, 1.0);
-
-    // Amount size interpolation (42→24 / 28→16)
     final amountSize = 24.0 + (18.0 * expandRatio);
     final euroSize = 16.0 + (12.0 * expandRatio);
 
-    // Amount vertical position: expanded (below title) → collapsed (top bar)
-    const expandedAmountY = 150.0; // md(16) + backBtn(44) + md(16) + title(~58) + md(16)
-    const collapsedAmountY = 16.0; // md(16), aligned with back button
-    final amountTop =
-        topPadding + collapsedAmountY + ((expandedAmountY - collapsedAmountY) * expandRatio);
-
-    // Amount horizontal: full-width → centered between back button and logo
-    final amountLeft =
-        AppSpacing.lg + ((44 + AppSpacing.sm - AppSpacing.lg) * (1 - expandRatio));
-    final amountRight =
-        AppSpacing.lg + (44.0 * (1 - expandRatio));
+    const expandedAmountY = 150.0;
+    const collapsedAmountY = 16.0;
+    final amountTop = topPadding +
+        collapsedAmountY +
+        ((expandedAmountY - collapsedAmountY) * expandRatio);
+    final amountLeft = AppSpacing.lg +
+        ((44 + AppSpacing.sm - AppSpacing.lg) * (1 - expandRatio));
+    final amountRight = AppSpacing.lg + (44.0 * (1 - expandRatio));
 
     return Container(
       color: AppColors.background,
@@ -345,7 +358,6 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
         fit: StackFit.expand,
         clipBehavior: Clip.hardEdge,
         children: [
-          // Back button + logo — always visible
           Positioned(
             top: topPadding + AppSpacing.md,
             left: AppSpacing.sm,
@@ -358,10 +370,11 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
               ],
             ),
           ),
-
-          // Title — fades out first half, slides up
           Positioned(
-            top: topPadding + AppSpacing.md + 44 + AppSpacing.md -
+            top: topPadding +
+                AppSpacing.md +
+                44 +
+                AppSpacing.md -
                 (shrinkOffset * 0.3),
             left: AppSpacing.lg,
             right: AppSpacing.lg,
@@ -377,8 +390,6 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
               ),
             ),
           ),
-
-          // Amount — always visible, interpolates position + size
           Positioned(
             top: amountTop,
             left: amountLeft,
@@ -415,8 +426,6 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
               ),
             ),
           ),
-
-          // Brand subtitle — fades in second half (below amount)
           Positioned(
             top: amountTop + amountSize + 2,
             left: amountLeft,
@@ -433,8 +442,6 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
               ),
             ),
           ),
-
-          // Metadata — fades with title (coinversión only)
           if (!isCompraDirecta && !isRentaFija)
             Positioned(
               top: topPadding + expandedAmountY + 42 + AppSpacing.md,
@@ -468,9 +475,8 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       '$activeCount activas${completedCount > 0 ? '  ·  $completedCount finalizadas' : ''}',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.accentMuted,
-                      ),
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.accentMuted),
                     ),
                   ],
                 ),
@@ -484,29 +490,27 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _BrandHeroDelegate oldDelegate) =>
       expandedHeight != oldDelegate.expandedHeight ||
-      collapsedHeight != oldDelegate.collapsedHeight ||
       totalFormatted != oldDelegate.totalFormatted;
 }
 
 class _StickyLabelDelegate extends SliverPersistentHeaderDelegate {
   const _StickyLabelDelegate({required this.child});
-
   final Widget child;
 
   @override
   double get minExtent => 74;
-
   @override
   double get maxExtent => 74;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
-  }
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      child;
 
   @override
   bool shouldRebuild(covariant _StickyLabelDelegate oldDelegate) => false;
 }
+
+// ── Asset row ─────────────────────────────────────────────────────────────────
 
 class _AssetRow extends StatefulWidget {
   const _AssetRow({
@@ -557,9 +561,7 @@ class _AssetRowState extends State<_AssetRow> {
         opacity: _pressed ? 0.5 : 1.0,
         child: Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
+              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
           decoration: widget.isLast
               ? null
               : BoxDecoration(
@@ -573,16 +575,19 @@ class _AssetRowState extends State<_AssetRow> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Leading: thumbnail
-              _ProjectThumbnail(imageUrl: widget.imageUrl),
+              SizedBox(
+                width: 80,
+                height: 60,
+                child: widget.imageUrl != null
+                    ? LhotseImage(widget.imageUrl!)
+                    : Container(color: AppColors.surface),
+              ),
               const SizedBox(width: 14),
-
-              // Content stacked
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.projectName.isNotEmpty) ...[
+                    if (widget.projectName.isNotEmpty)
                       Text(
                         widget.projectName.toUpperCase(),
                         style: AppTypography.bodySmall.copyWith(
@@ -591,7 +596,6 @@ class _AssetRowState extends State<_AssetRow> {
                           letterSpacing: 0.8,
                         ),
                       ),
-                    ],
                     if (widget.location != null) ...[
                       if (widget.projectName.isNotEmpty)
                         const SizedBox(height: 2),
@@ -603,8 +607,7 @@ class _AssetRowState extends State<_AssetRow> {
                         ),
                       ),
                     ],
-                    if (widget.projectName.isNotEmpty || widget.location != null)
-                      const SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     RichText(
                       text: TextSpan(
                         children: [
@@ -612,14 +615,16 @@ class _AssetRowState extends State<_AssetRow> {
                             text: _eurFormat.format(widget.amount),
                             style: AppTypography.headingSmall.copyWith(
                               color: AppColors.textPrimary,
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
                             ),
                           ),
                           TextSpan(
                             text: '€',
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.textPrimary,
-                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -648,7 +653,6 @@ class _AssetRowState extends State<_AssetRow> {
                   ],
                 ),
               ),
-
               if (widget.onTap != null)
                 Padding(
                   padding: const EdgeInsets.only(left: AppSpacing.sm),
@@ -666,60 +670,20 @@ class _AssetRowState extends State<_AssetRow> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Renta Fija documents
-// ---------------------------------------------------------------------------
-
-final _rfDocsByInvestment = <String, List<LhotseDocument>>{
-  'inv-7': [
-    LhotseDocument(name: 'Contrato de inversión', date: '15 MAR. 2026', category: DocCategory.contrato),
-    LhotseDocument(name: 'Certificado de depósito', date: '15 MAR. 2026', category: DocCategory.certificado),
-    LhotseDocument(name: 'Condiciones generales', date: '01 MAR. 2026', category: DocCategory.contrato),
-  ],
-  'inv-8': [
-    LhotseDocument(name: 'Contrato de inversión', date: '15 JUN. 2026', category: DocCategory.contrato),
-    LhotseDocument(name: 'Certificado de depósito', date: '15 JUN. 2026', category: DocCategory.certificado),
-  ],
-  'inv-8b': [
-    LhotseDocument(name: 'Contrato de inversión', date: '01 ENE. 2026', category: DocCategory.contrato),
-    LhotseDocument(name: 'Certificado fiscal', date: '02 ENE. 2026', category: DocCategory.fiscal),
-    LhotseDocument(name: 'Informe trimestral Q1', date: '01 ABR. 2026', category: DocCategory.informe),
-  ],
-  'inv-8c': [
-    LhotseDocument(name: 'Contrato de inversión', date: '01 SEP. 2025', category: DocCategory.contrato),
-    LhotseDocument(name: 'Certificado fiscal', date: '02 ENE. 2026', category: DocCategory.fiscal),
-  ],
-  'inv-8d': [
-    LhotseDocument(name: 'Contrato de inversión', date: '01 MAR. 2025', category: DocCategory.contrato),
-    LhotseDocument(name: 'Certificado de depósito', date: '01 MAR. 2025', category: DocCategory.certificado),
-    LhotseDocument(name: 'Informe trimestral Q1', date: '01 ABR. 2026', category: DocCategory.informe),
-    LhotseDocument(name: 'Certificado fiscal', date: '02 ENE. 2026', category: DocCategory.fiscal),
-  ],
-  'inv-c7': [
-    LhotseDocument(name: 'Contrato de inversión', date: '15 SEP. 2023', category: DocCategory.contrato),
-    LhotseDocument(name: 'Certificado de liquidación', date: '15 SEP. 2025', category: DocCategory.certificado),
-    LhotseDocument(name: 'Certificado fiscal', date: '01 OCT. 2025', category: DocCategory.fiscal),
-  ],
-};
-
-// ---------------------------------------------------------------------------
-// Renta Fija row — active (progress) or completed (return)
-// ---------------------------------------------------------------------------
+// ── Renta Fija row ────────────────────────────────────────────────────────────
 
 class _RentaFijaRow extends StatelessWidget {
   const _RentaFijaRow({
-    required this.investment,
+    required this.contract,
     this.index,
     this.isCompleted = false,
     this.isLast = false,
-    this.onDocsTap,
   });
 
-  final InvestmentData investment;
+  final FixedIncomeContractData contract;
   final int? index;
   final bool isCompleted;
   final bool isLast;
-  final VoidCallback? onDocsTap;
 
   static const _kMonths = [
     'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN',
@@ -728,15 +692,13 @@ class _RentaFijaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inv = investment;
-    final amount = isCompleted ? (inv.totalReturn ?? inv.amount) : inv.amount;
-    final badgeDate = inv.startDate;
+    final c = contract;
+    final amount = isCompleted ? (c.amount) : c.amount;
+    final badgeDate = c.startDate;
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: 20,
-      ),
+          horizontal: AppSpacing.lg, vertical: 20),
       decoration: isLast
           ? null
           : BoxDecoration(
@@ -750,7 +712,6 @@ class _RentaFijaRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Leading: date badge
           Container(
             width: 42,
             height: 42,
@@ -789,13 +750,10 @@ class _RentaFijaRow extends StatelessWidget {
                   ),
           ),
           const SizedBox(width: 14),
-
-          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Amount
                 RichText(
                   text: TextSpan(
                     children: [
@@ -810,14 +768,13 @@ class _RentaFijaRow extends StatelessWidget {
                         text: '€',
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.textPrimary,
-                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-
-                if (isCompleted) ...[
-                  const SizedBox(height: 3),
+                const SizedBox(height: 3),
+                if (isCompleted)
                   RichText(
                     text: TextSpan(
                       style: AppTypography.caption.copyWith(
@@ -825,69 +782,25 @@ class _RentaFijaRow extends StatelessWidget {
                         letterSpacing: 1.2,
                       ),
                       children: [
-                        TextSpan(text: '${_eurFormat.format(inv.amount)}€  ·  ${inv.durationMonths} MESES'),
-                        if (inv.actualRoi != null)
-                          TextSpan(
-                            text: '  ·  +${inv.actualRoi!.toStringAsFixed(1)}%',
-                            style: AppTypography.caption.copyWith(
-                              color: const Color(0xFF2D6A4F),
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
+                        TextSpan(
+                            text:
+                                '${_eurFormat.format(c.amount)}€  ·  ${c.termMonths ?? '–'} MESES'),
                       ],
                     ),
-                  ),
-                ] else ...[
-                  const SizedBox(height: 3),
+                  )
+                else
                   Text(
-                    '${inv.durationMonths} MESES  ·  ${inv.returnRate.toStringAsFixed(0)}%',
+                    '${c.termMonths ?? '–'} MESES  ·  ${c.guaranteedRate.toStringAsFixed(0)}%',
                     style: AppTypography.caption.copyWith(
                       color: AppColors.accentMuted,
                       letterSpacing: 1.2,
                     ),
                   ),
-                ],
               ],
             ),
           ),
-
-          // Doc icon
-          if (onDocsTap != null) ...[
-            const SizedBox(width: AppSpacing.sm),
-            GestureDetector(
-              onTap: onDocsTap,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: PhosphorIcon(
-                  PhosphorIconsThin.fileText,
-                  size: 24,
-                  color: AppColors.accentMuted,
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
   }
 }
-
-class _ProjectThumbnail extends StatelessWidget {
-  const _ProjectThumbnail({this.imageUrl});
-
-  final String? imageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 80,
-      height: 60,
-      child: imageUrl != null
-          ? LhotseImage(imageUrl!)
-          : Container(color: AppColors.surface),
-    );
-  }
-}
-

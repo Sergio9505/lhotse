@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/data/mock/mock_news.dart';
+import '../../../../core/domain/news_item_data.dart';
 import '../../../../core/widgets/lhotse_news_card.dart';
 
 class NewsSection extends StatelessWidget {

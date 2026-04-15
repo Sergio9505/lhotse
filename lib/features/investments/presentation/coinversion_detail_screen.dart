@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/news_provider.dart';
 import '../../../core/domain/asset_info.dart';
-import '../../../core/domain/investment_data.dart';
+import '../../../core/domain/news_item_data.dart';
 import '../../../core/domain/profit_scenario.dart';
-import '../../../core/domain/project_data.dart';
 import '../../../core/domain/project_phase.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
@@ -16,11 +17,11 @@ import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
-import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
-import '../../../core/data/mock/mock_news.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
+import '../data/investments_provider.dart';
+import '../domain/coinvestment_contract_data.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
@@ -34,22 +35,21 @@ const _kHeroHeight = 200.0;
 const _kMaxVisibleGallery = 5;
 
 
-class CoinversionDetailScreen extends StatefulWidget {
+class CoinversionDetailScreen extends ConsumerStatefulWidget {
   const CoinversionDetailScreen({
     super.key,
-    required this.investment,
-    this.project,
+    required this.contract,
   });
 
-  final InvestmentData investment;
-  final ProjectData? project;
+  final CoinvestmentContractData contract;
 
   @override
-  State<CoinversionDetailScreen> createState() =>
+  ConsumerState<CoinversionDetailScreen> createState() =>
       _CoinversionDetailScreenState();
 }
 
-class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
+class _CoinversionDetailScreenState
+    extends ConsumerState<CoinversionDetailScreen>
     with SingleTickerProviderStateMixin {
   final _outerController = ScrollController();
   late final TabController _tabController;
@@ -124,10 +124,26 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final inv = widget.investment;
-    final project = widget.project;
+    final c = widget.contract;
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    // Load sub-data from Supabase
+    final scenarios = ref
+        .watch(projectScenariosProvider(c.projectId))
+        .valueOrNull ?? const [];
+    final phases = ref
+        .watch(projectPhasesProvider(c.projectId))
+        .valueOrNull ?? const [];
+    final relatedNews = (ref.watch(newsProvider).valueOrNull ?? const [])
+        .where((n) => n.brand == c.brandName)
+        .take(4)
+        .toList();
+
+    final projectLocation = c.projectLocation;
+    final projectImageUrl = c.projectImageUrl;
+    // inv alias for fields used in collapsed title (same type now)
+    final inv = c;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -181,7 +197,7 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      LhotseImage(project?.imageUrl ?? ''),
+                      LhotseImage(projectImageUrl ?? ''),
                       const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -230,7 +246,7 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
                               letterSpacing: 1.8,
                             ),
                           ),
-                          if (project?.location != null) ...[
+                          if (projectLocation != null) ...[
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8),
@@ -244,7 +260,7 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
                             ),
                             Flexible(
                               child: Text(
-                                project!.location.toUpperCase(),
+                                projectLocation.toUpperCase(),
                                 style: AppTypography.caption.copyWith(
                                   color: AppColors.accentMuted,
                                   letterSpacing: 1.35,
@@ -303,21 +319,27 @@ class _CoinversionDetailScreenState extends State<CoinversionDetailScreen>
               children: [
                 _TabScrollWrapper(
                   child: _AvanceTab(
-                    investment: inv,
+                    phases: phases,
+                    currentPhaseIndex: c.currentPhaseIndex ?? 0,
+                    progressImages: c.progressImages,
+                    videoThumbnailUrl: c.videoThumbnailUrl,
+                    news: relatedNews,
                     cardWidth: screenWidth * 0.75,
                   ),
                   bottomPadding: bottomPadding,
                 ),
                 _TabScrollWrapper(
                   child: _ProyectoTab(
-                    investment: inv,
+                    floorPlanUrl: c.assetFloorPlanUrl,
+                    renderImages: c.renderImages,
                     cardWidth: screenWidth * 0.75,
                   ),
                   bottomPadding: bottomPadding,
                 ),
                 _TabScrollWrapper(
                   child: _FinancieroTab(
-                    investment: inv,
+                    economicAnalysis: c.economicAnalysis,
+                    scenarios: scenarios,
                     selectedScenario: _selectedScenario,
                     onScenarioSelected: (i) =>
                         setState(() => _selectedScenario = i),
@@ -437,40 +459,34 @@ class _TabScrollWrapper extends StatelessWidget {
 
 class _FinancieroTab extends StatelessWidget {
   const _FinancieroTab({
-    required this.investment,
+    required this.economicAnalysis,
+    required this.scenarios,
     required this.selectedScenario,
     required this.onScenarioSelected,
   });
 
-  final InvestmentData investment;
+  final List<AssetInfoEntry>? economicAnalysis;
+  final List<ProfitScenario> scenarios;
   final int selectedScenario;
   final ValueChanged<int> onScenarioSelected;
 
   @override
   Widget build(BuildContext context) {
-    final inv = investment;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- Análisis económico (open, before scenarios) ---
-        if (inv.economicAnalysis != null &&
-            inv.economicAnalysis!.isNotEmpty) ...[
+        if (economicAnalysis != null && economicAnalysis!.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
           const LhotseSectionLabel(label: 'ANÁLISIS ECONÓMICO'),
           const SizedBox(height: AppSpacing.sm),
-          LhotseKeyValueList(
-            entries: inv.economicAnalysis!,
-            highlightLast: true,
-          ),
+          LhotseKeyValueList(entries: economicAnalysis!, highlightLast: true),
         ],
-        // --- Escenarios ---
-        if (inv.profitScenarios != null &&
-            inv.profitScenarios!.isNotEmpty) ...[
+        if (scenarios.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           const LhotseSectionLabel(label: 'ESCENARIOS'),
           const SizedBox(height: AppSpacing.md),
           _ScenarioPanel(
-            scenarios: inv.profitScenarios!,
+            scenarios: scenarios,
             selectedIndex: selectedScenario,
             onSelected: onScenarioSelected,
           ),
@@ -486,71 +502,61 @@ class _FinancieroTab extends StatelessWidget {
 
 class _AvanceTab extends StatelessWidget {
   const _AvanceTab({
-    required this.investment,
+    required this.phases,
+    required this.currentPhaseIndex,
+    required this.progressImages,
+    required this.videoThumbnailUrl,
+    required this.news,
     required this.cardWidth,
   });
 
-  final InvestmentData investment;
+  final List<ProjectPhase> phases;
+  final int currentPhaseIndex;
+  final List<String> progressImages;
+  final String? videoThumbnailUrl;
+  final List<NewsItemData> news;
   final double cardWidth;
 
   @override
   Widget build(BuildContext context) {
-    final inv = investment;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (inv.phases != null && inv.phases!.isNotEmpty) ...[
+        if (phases.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
           const LhotseSectionLabel(label: 'TIEMPOS DEL PROYECTO'),
           const SizedBox(height: AppSpacing.lg),
-          _InvestmentTimeline(
-            phases: inv.phases!,
-            currentIndex: inv.currentPhaseIndex ?? 0,
-          ),
+          _InvestmentTimeline(phases: phases, currentIndex: currentPhaseIndex),
         ],
-        if (inv.progressImages?.isNotEmpty ?? false) ...[
+        if (progressImages.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           _GallerySectionHeader(
             label: 'AVANCE DE OBRA',
-            images: inv.progressImages!,
+            images: progressImages,
             title: 'AVANCE DE OBRA',
           ),
           const SizedBox(height: AppSpacing.md),
           _InvestmentGallery(
-            renderImages: inv.progressImages!.length > _kMaxVisibleGallery
-                ? inv.progressImages!.sublist(0, _kMaxVisibleGallery)
-                : inv.progressImages!,
+            renderImages: progressImages.length > _kMaxVisibleGallery
+                ? progressImages.sublist(0, _kMaxVisibleGallery)
+                : progressImages,
             progressImages: const [],
-            videoThumbnailUrl: inv.videoThumbnailUrl,
+            videoThumbnailUrl: videoThumbnailUrl,
             selectedTab: 0,
             onTabChanged: (_) {},
             cardWidth: cardWidth,
           ),
         ],
+        if (news.isNotEmpty) ...[
         const SizedBox(height: AppSpacing.xxl),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Row(
-            children: [
-              Text(
-                'NOTICIAS DEL PROYECTO',
-                style: AppTypography.labelLarge.copyWith(
-                  color: AppColors.accentMuted,
-                  letterSpacing: 1.8,
-                ),
-              ),
-              if (mockNews.length > _kMaxVisibleNews) ...[
-                const SizedBox(width: AppSpacing.sm),
-                GestureDetector(
-                  onTap: () => _showAllNews(context),
-                  child: const PhosphorIcon(
-                    PhosphorIconsThin.arrowUpRight,
-                    size: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ],
+          child: Text(
+            'NOTICIAS DEL PROYECTO',
+            style: AppTypography.labelLarge.copyWith(
+              color: AppColors.accentMuted,
+              letterSpacing: 1.8,
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -558,23 +564,20 @@ class _AvanceTab extends StatelessWidget {
           height: 160,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg),
-            itemCount: mockNews.length > _kMaxVisibleNews
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            itemCount: news.length > _kMaxVisibleNews
                 ? _kMaxVisibleNews
-                : mockNews.length,
-            separatorBuilder: (_, _) =>
-                const SizedBox(width: AppSpacing.sm),
-            itemBuilder: (context, i) {
-              return LhotseNewsCard.compact(
-                title: mockNews[i].title,
-                imageUrl: mockNews[i].imageUrl,
-                subtitle: mockNews[i].date,
-                onTap: () => context.push('/news/${mockNews[i].id}'),
-              );
-            },
+                : news.length,
+            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+            itemBuilder: (context, i) => LhotseNewsCard.compact(
+              title: news[i].title,
+              imageUrl: news[i].imageUrl,
+              subtitle: DateFormat('d MMM').format(news[i].date),
+              onTap: () => context.push('/news/${news[i].id}'),
+            ),
           ),
         ),
+        ],
       ],
     );
   }
@@ -586,26 +589,21 @@ class _AvanceTab extends StatelessWidget {
 
 class _ProyectoTab extends StatelessWidget {
   const _ProyectoTab({
-    required this.investment,
+    required this.floorPlanUrl,
+    required this.renderImages,
     required this.cardWidth,
   });
 
-  final InvestmentData investment;
+  final String? floorPlanUrl;
+  final List<String> renderImages;
   final double cardWidth;
 
   @override
   Widget build(BuildContext context) {
-    final inv = investment;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (inv.assetInfo != null) ...[
-          const SizedBox(height: AppSpacing.xl),
-          const LhotseSectionLabel(label: 'INFORMACIÓN'),
-          const SizedBox(height: AppSpacing.sm),
-          LhotseKeyValueList(entries: inv.assetInfo!.entries),
-        ],
-        if (inv.floorPlanUrl != null) ...[
+        if (floorPlanUrl != null) ...[
           const SizedBox(height: AppSpacing.xxl),
           const LhotseSectionLabel(label: 'PLANO DEL INMUEBLE'),
           const SizedBox(height: AppSpacing.md),
@@ -613,7 +611,7 @@ class _ProyectoTab extends StatelessWidget {
             padding:
                 const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: GestureDetector(
-              onTap: () => _showFloorPlan(context, inv.floorPlanUrl!),
+              onTap: () => _showFloorPlan(context, floorPlanUrl!),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -642,18 +640,18 @@ class _ProyectoTab extends StatelessWidget {
             ),
           ),
         ],
-        if (inv.renderImages?.isNotEmpty ?? false) ...[
+        if (renderImages.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           _GallerySectionHeader(
             label: 'RENDERS',
-            images: inv.renderImages!,
+            images: renderImages,
             title: 'RENDERS',
           ),
           const SizedBox(height: AppSpacing.md),
           _InvestmentGallery(
-            renderImages: inv.renderImages!.length > _kMaxVisibleGallery
-                ? inv.renderImages!.sublist(0, _kMaxVisibleGallery)
-                : inv.renderImages!,
+            renderImages: renderImages.length > _kMaxVisibleGallery
+                ? renderImages.sublist(0, _kMaxVisibleGallery)
+                : renderImages,
             progressImages: const [],
             videoThumbnailUrl: null,
             selectedTab: 0,
@@ -1493,41 +1491,7 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
   }
 }
 
-// ===========================================================================
-// See all news
-// ===========================================================================
-
-
-void _showAllNews(BuildContext context) {
-  showLhotseBottomSheet(
-    context: context,
-    title: 'NOTICIAS',
-    itemCount: mockNews.length,
-    listPadding: EdgeInsets.fromLTRB(
-      AppSpacing.lg,
-      0,
-      AppSpacing.lg,
-      MediaQuery.of(context).padding.bottom + AppSpacing.md,
-    ),
-    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.lg),
-    itemBuilder: (context, i) {
-      final news = mockNews[i];
-      return GestureDetector(
-        onTap: () {
-          Navigator.of(context).pop();
-          context.push('/news/${news.id}');
-        },
-        child: LhotseNewsCard(
-          title: news.title,
-          imageUrl: news.imageUrl,
-          subtitle: news.date,
-          width: double.infinity,
-          height: 208,
-        ),
-      );
-    },
-  );
-}
+// _showAllNews removed — news is now passed as a parameter from the parent widget
 
 const _kMaxVisibleNews = 3;
 

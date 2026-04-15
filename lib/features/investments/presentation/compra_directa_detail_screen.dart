@@ -4,8 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/domain/asset_info.dart';
-import '../../../core/domain/investment_data.dart';
-import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
@@ -15,27 +13,21 @@ import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
+import '../domain/purchase_contract_data.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 final _dateFormat = DateFormat('MM/yyyy');
 
 const _kHeroHeight = 200.0;
-
 const _kMaxVisibleGallery = 5;
-
-// ===========================================================================
-// CompraDirecta Detail — NestedScrollView + 3 tabs
-// ===========================================================================
 
 class CompraDirectaDetailScreen extends StatefulWidget {
   const CompraDirectaDetailScreen({
     super.key,
-    required this.investment,
-    this.project,
+    required this.contract,
   });
 
-  final InvestmentData investment;
-  final ProjectData? project;
+  final PurchaseContractData contract;
 
   @override
   State<CompraDirectaDetailScreen> createState() =>
@@ -49,7 +41,6 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
 
-  // Doc filter state
   static const _docFilterLabels = {
     DocCategory.legal: 'Escrituras',
     DocCategory.financiero: 'Facturas',
@@ -78,7 +69,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
     super.initState();
     _outerController.addListener(_onOuterScroll);
     _tabController = TabController(
-      length: widget.investment.hasFinancing ? 3 : 2,
+      length: widget.contract.hasFinancing ? 3 : 2,
       vsync: this,
     );
   }
@@ -92,11 +83,8 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
 
   void _onOuterScroll() {
     final offset = _outerController.offset;
-    final heroThreshold = _kHeroHeight - kToolbarHeight;
-    final heroGone = offset >= heroThreshold;
-    final titleThreshold = _kHeroHeight + 50.0;
-    final showTitle = offset >= titleThreshold;
-
+    final heroGone = offset >= _kHeroHeight - kToolbarHeight;
+    final showTitle = offset >= _kHeroHeight + 50.0;
     if (heroGone != _heroGone || showTitle != _showCollapsedTitle) {
       setState(() {
         _heroGone = heroGone;
@@ -107,13 +95,11 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final inv = widget.investment;
-    final project = widget.project;
+    final c = widget.contract;
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final purchaseFormatted = inv.purchaseValue != null
-        ? _eurFormat.format(inv.purchaseValue)
-        : _eurFormat.format(inv.amount);
+    final projectName = c.projectName ?? c.assetUnitName ?? '';
+    final purchaseFormatted = _eurFormat.format(c.purchaseValue);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -122,9 +108,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
         body: NestedScrollView(
           controller: _outerController,
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            // =============================================================
-            // 1. HERO — full-bleed asset image
-            // =============================================================
+            // Hero
             SliverAppBar(
               pinned: true,
               expandedHeight: _kHeroHeight,
@@ -152,7 +136,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      inv.projectName.toUpperCase(),
+                      projectName.toUpperCase(),
                       style: AppTypography.caption.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 1.2,
@@ -165,7 +149,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    LhotseImage(project?.imageUrl ?? ''),
+                    LhotseImage(c.projectImageUrl ?? ''),
                     const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -180,9 +164,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
               ),
             ),
 
-            // =============================================================
-            // 2. IDENTITY + PURCHASE VALUE + SECONDARY METRICS
-            // =============================================================
+            // Identity + purchase value + secondary metrics
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
@@ -190,7 +172,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      inv.projectName.toUpperCase(),
+                      projectName.toUpperCase(),
                       style: AppTypography.headingLarge.copyWith(
                         color: AppColors.textPrimary,
                       ),
@@ -199,14 +181,14 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                     Row(
                       children: [
                         Text(
-                          inv.brandName.toUpperCase(),
+                          c.brandName.toUpperCase(),
                           style: AppTypography.caption.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 1.8,
                           ),
                         ),
-                        if (project?.location != null) ...[
+                        if (c.projectLocation != null) ...[
                           Padding(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 8),
@@ -220,7 +202,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                           ),
                           Flexible(
                             child: Text(
-                              project!.location.toUpperCase(),
+                              c.projectLocation!.toUpperCase(),
                               style: AppTypography.caption.copyWith(
                                 color: AppColors.accentMuted,
                                 letterSpacing: 1.35,
@@ -232,7 +214,6 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    // Hero number — purchase value
                     Text(
                       '$purchaseFormatted€',
                       style: AppTypography.displayLarge.copyWith(
@@ -257,8 +238,8 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                inv.rentalIncome != null
-                                    ? '${_eurFormat.format(inv.rentalIncome)}€'
+                                c.monthlyRent != null
+                                    ? '${_eurFormat.format(c.monthlyRent)}€'
                                     : '—',
                                 style: AppTypography.headingLarge.copyWith(
                                   color: AppColors.textPrimary,
@@ -280,7 +261,9 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${inv.returnRate.toStringAsFixed(0)}%',
+                                c.rentalYieldPct != null
+                                    ? '${c.rentalYieldPct!.toStringAsFixed(1)}%'
+                                    : '—',
                                 style: AppTypography.headingLarge.copyWith(
                                   color: AppColors.textPrimary,
                                 ),
@@ -301,8 +284,8 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                inv.revaluation != null
-                                    ? '${inv.revaluation!.toStringAsFixed(0)}%'
+                                c.assetRevaluationPct != null
+                                    ? '${c.assetRevaluationPct!.toStringAsFixed(0)}%'
                                     : '—',
                                 style: AppTypography.headingLarge.copyWith(
                                   color: AppColors.textPrimary,
@@ -326,19 +309,17 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
               ),
             ),
 
-            // =============================================================
-            // 3. TABS — pinned
-            // =============================================================
+            // Tabs
             SliverPersistentHeader(
               pinned: true,
               delegate: LhotseTabBarDelegate(
-                  controller: _tabController,
-                  tabs: [
-                    const Tab(text: 'ACTIVO'),
-                    if (inv.hasFinancing) const Tab(text: 'FINANCIACIÓN'),
-                    const Tab(text: 'DOCS'),
-                  ],
-                ),
+                controller: _tabController,
+                tabs: [
+                  const Tab(text: 'ACTIVO'),
+                  if (c.hasFinancing) const Tab(text: 'FINANCIACIÓN'),
+                  const Tab(text: 'DOCS'),
+                ],
+              ),
             ),
           ],
 
@@ -348,14 +329,22 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,
                 child: _ActivoTab(
-                  investment: inv,
+                  assetInfo: c.assetInfo,
+                  floorPlanUrl: c.assetFloorPlanUrl,
+                  galleryImages: c.assetGalleryImages,
                   cardWidth: screenWidth * 0.75,
                 ),
               ),
-              if (inv.hasFinancing)
+              if (c.hasFinancing)
                 _TabScrollWrapper(
                   bottomPadding: bottomPadding,
-                  child: _FinanzasTab(investment: inv),
+                  child: _FinanzasTab(
+                    cashPayment: c.cashPayment,
+                    mortgage: c.mortgagePrincipal,
+                    mortgageConditions: c.mortgageConditions,
+                    monthlyPayment: c.mortgageMonthlyPayment,
+                    mortgageEndDate: c.mortgageEndDate,
+                  ),
                 ),
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,
@@ -390,12 +379,9 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeInOut,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: 6,
-                    ),
+                        horizontal: AppSpacing.sm, vertical: 6),
                     decoration: BoxDecoration(
-                      color:
-                          active ? AppColors.primary : Colors.transparent,
+                      color: active ? AppColors.primary : Colors.transparent,
                       border: Border.all(
                         color: active
                             ? AppColors.primary
@@ -433,12 +419,11 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
   }
 }
 
-// ===========================================================================
-// Tab scroll wrapper
-// ===========================================================================
+// ── Tab scroll wrapper ────────────────────────────────────────────────────────
 
 class _TabScrollWrapper extends StatelessWidget {
-  const _TabScrollWrapper({required this.child, required this.bottomPadding});
+  const _TabScrollWrapper(
+      {required this.child, required this.bottomPadding});
   final Widget child;
   final double bottomPadding;
 
@@ -451,37 +436,40 @@ class _TabScrollWrapper extends StatelessWidget {
   }
 }
 
-// (Tab bar delegate extracted to core/widgets/lhotse_tab_bar_delegate.dart)
-
-// ===========================================================================
-// TAB: ACTIVO — property info + gallery
-// ===========================================================================
+// ── ACTIVO tab ────────────────────────────────────────────────────────────────
 
 class _ActivoTab extends StatelessWidget {
-  const _ActivoTab({required this.investment, required this.cardWidth});
-  final InvestmentData investment;
+  const _ActivoTab({
+    required this.assetInfo,
+    required this.floorPlanUrl,
+    required this.galleryImages,
+    required this.cardWidth,
+  });
+
+  final AssetInfo? assetInfo;
+  final String? floorPlanUrl;
+  final List<String> galleryImages;
   final double cardWidth;
 
   @override
   Widget build(BuildContext context) {
-    final inv = investment;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (inv.assetInfo != null) ...[
+        if (assetInfo != null) ...[
           const SizedBox(height: AppSpacing.xl),
           const LhotseSectionLabel(label: 'INFORMACIÓN'),
           const SizedBox(height: AppSpacing.sm),
-          LhotseKeyValueList(entries: inv.assetInfo!.entries),
+          LhotseKeyValueList(entries: assetInfo!.entries),
         ],
-        if (inv.floorPlanUrl != null) ...[
+        if (floorPlanUrl != null) ...[
           const SizedBox(height: AppSpacing.xxl),
           const LhotseSectionLabel(label: 'PLANO'),
           const SizedBox(height: AppSpacing.md),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: GestureDetector(
-              onTap: () => _showFloorPlan(context, inv.floorPlanUrl!),
+              onTap: () => _showFloorPlan(context, floorPlanUrl!),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -509,11 +497,10 @@ class _ActivoTab extends StatelessWidget {
             ),
           ),
         ],
-        if (inv.renderImages?.isNotEmpty ?? false) ...[
+        if (galleryImages.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
               children: [
                 Text(
@@ -523,11 +510,11 @@ class _ActivoTab extends StatelessWidget {
                     letterSpacing: 1.8,
                   ),
                 ),
-                if (inv.renderImages!.length > _kMaxVisibleGallery) ...[
+                if (galleryImages.length > _kMaxVisibleGallery) ...[
                   const SizedBox(width: AppSpacing.sm),
                   GestureDetector(
-                    onTap: () => showAllGallery(
-                        context, 'GALERÍA', inv.renderImages!),
+                    onTap: () =>
+                        showAllGallery(context, 'GALERÍA', galleryImages),
                     child: const PhosphorIcon(
                       PhosphorIconsThin.arrowUpRight,
                       size: 14,
@@ -545,14 +532,13 @@ class _ActivoTab extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding:
                   const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: inv.renderImages!.length > _kMaxVisibleGallery
+              itemCount: galleryImages.length > _kMaxVisibleGallery
                   ? _kMaxVisibleGallery
-                  : inv.renderImages!.length,
+                  : galleryImages.length,
               separatorBuilder: (_, _) =>
                   const SizedBox(width: AppSpacing.sm),
               itemBuilder: (context, i) => GestureDetector(
-                onTap: () =>
-                    showFullImage(context, inv.renderImages![i]),
+                onTap: () => showFullImage(context, galleryImages[i]),
                 child: Container(
                   width: cardWidth,
                   decoration: const BoxDecoration(
@@ -564,7 +550,7 @@ class _ActivoTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: LhotseImage(inv.renderImages![i]),
+                  child: LhotseImage(galleryImages[i]),
                 ),
               ),
             ),
@@ -575,50 +561,50 @@ class _ActivoTab extends StatelessWidget {
   }
 }
 
-// ===========================================================================
-// TAB: FINANZAS — financing details
-// ===========================================================================
+// ── FINANCIACIÓN tab ──────────────────────────────────────────────────────────
 
 class _FinanzasTab extends StatelessWidget {
-  const _FinanzasTab({required this.investment});
-  final InvestmentData investment;
+  const _FinanzasTab({
+    required this.cashPayment,
+    required this.mortgage,
+    required this.mortgageConditions,
+    required this.monthlyPayment,
+    required this.mortgageEndDate,
+  });
+
+  final double? cashPayment;
+  final double? mortgage;
+  final String? mortgageConditions;
+  final double? monthlyPayment;
+  final DateTime? mortgageEndDate;
 
   @override
   Widget build(BuildContext context) {
-    final inv = investment;
     final entries = <AssetInfoEntry>[];
-
-    if (inv.cashPayment != null) {
+    if (cashPayment != null) {
       entries.add(AssetInfoEntry(
-        label: 'Contado',
-        value: '${_eurFormat.format(inv.cashPayment)}€',
-      ));
+          label: 'Contado',
+          value: '${_eurFormat.format(cashPayment)}€'));
     }
-    if (inv.mortgage != null) {
+    if (mortgage != null) {
       entries.add(AssetInfoEntry(
-        label: 'Hipoteca',
-        value: '${_eurFormat.format(inv.mortgage)}€',
-      ));
+          label: 'Hipoteca',
+          value: '${_eurFormat.format(mortgage)}€'));
     }
-    if (inv.mortgageConditions != null) {
+    if (mortgageConditions != null) {
       entries.add(AssetInfoEntry(
-        label: 'Condiciones',
-        value: inv.mortgageConditions!,
-      ));
+          label: 'Condiciones', value: mortgageConditions!));
     }
-    if (inv.monthlyPayment != null) {
+    if (monthlyPayment != null) {
       entries.add(AssetInfoEntry(
-        label: 'Cuota',
-        value: '${_eurFormat.format(inv.monthlyPayment)}€/mes',
-      ));
+          label: 'Cuota',
+          value: '${_eurFormat.format(monthlyPayment)}€/mes'));
     }
-    if (inv.mortgageEndDate != null) {
+    if (mortgageEndDate != null) {
       entries.add(AssetInfoEntry(
-        label: 'Finalización hipoteca',
-        value: _dateFormat.format(inv.mortgageEndDate!),
-      ));
+          label: 'Finalización hipoteca',
+          value: _dateFormat.format(mortgageEndDate!)));
     }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -631,12 +617,11 @@ class _FinanzasTab extends StatelessWidget {
   }
 }
 
-// ===========================================================================
-// TAB: DOCS — filterable documents
-// ===========================================================================
+// ── DOCS tab ──────────────────────────────────────────────────────────────────
 
 class _DocumentosTab extends StatelessWidget {
-  const _DocumentosTab({required this.documents, required this.chips});
+  const _DocumentosTab(
+      {required this.documents, required this.chips});
   final List<LhotseDocument> documents;
   final Widget chips;
 
@@ -659,8 +644,7 @@ class _DocumentosTab extends StatelessWidget {
                   if (i > 0)
                     Container(
                       height: 0.5,
-                      color:
-                          AppColors.textPrimary.withValues(alpha: 0.08),
+                      color: AppColors.textPrimary.withValues(alpha: 0.08),
                     ),
                   LhotseDocRow(
                     name: doc.name,
@@ -677,9 +661,7 @@ class _DocumentosTab extends StatelessWidget {
   }
 }
 
-// ===========================================================================
-// Floor plan fullscreen
-// ===========================================================================
+// ── Floor plan fullscreen ─────────────────────────────────────────────────────
 
 void _showFloorPlan(BuildContext context, String url) {
   Navigator.of(context).push(
@@ -688,13 +670,10 @@ void _showFloorPlan(BuildContext context, String url) {
       pageBuilder: (context, animation, secondaryAnimation) {
         final topPadding = MediaQuery.of(context).padding.top;
         final bottomPadding = MediaQuery.of(context).padding.bottom;
-
         return AnimatedBuilder(
           animation: animation,
-          builder: (context, child) => Opacity(
-            opacity: animation.value,
-            child: child,
-          ),
+          builder: (context, child) =>
+              Opacity(opacity: animation.value, child: child),
           child: Scaffold(
             extendBodyBehindAppBar: true,
             extendBody: true,
@@ -751,9 +730,7 @@ void _showFloorPlan(BuildContext context, String url) {
   );
 }
 
-// ===========================================================================
-// Mock docs
-// ===========================================================================
+// ── Placeholder docs ──────────────────────────────────────────────────────────
 
 final _docs = [
   LhotseDocument(

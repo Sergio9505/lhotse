@@ -6,6 +6,13 @@ extension BusinessModelLabel on BusinessModel {
         BusinessModel.coinvestment => 'Coinversión',
         BusinessModel.fixedIncome => 'Renta Fija',
       };
+
+  static BusinessModel fromString(String value) => switch (value) {
+        'direct_purchase' => BusinessModel.directPurchase,
+        'coinvestment' => BusinessModel.coinvestment,
+        'fixed_income' => BusinessModel.fixedIncome,
+        _ => BusinessModel.coinvestment,
+      };
 }
 
 class BrandData {
@@ -25,14 +32,20 @@ class BrandData {
   final String? logoAsset;
   final String coverImageUrl;
   final BusinessModel businessModel;
-
-  /// Short editorial one-liner shown prominently in brand detail.
   final String? tagline;
-
-  /// Body description. The business model name ([businessModel.displayName])
-  /// is highlighted in bold inside the detail screen via RichText.
   final String? description;
-
-  /// Brand website URL opened by the CTA button.
   final String? websiteUrl;
+
+  factory BrandData.fromJson(Map<String, dynamic> json) => BrandData(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        logoAsset: json['logo_asset'] as String?,
+        coverImageUrl: json['cover_image_url'] as String? ?? '',
+        businessModel: BusinessModelLabel.fromString(
+          json['business_model'] as String? ?? '',
+        ),
+        tagline: json['tagline'] as String?,
+        description: json['description'] as String?,
+        websiteUrl: json['website_url'] as String?,
+      );
 }

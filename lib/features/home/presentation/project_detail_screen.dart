@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/data/projects_provider.dart';
 import '../../../core/domain/asset_info.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
@@ -14,16 +15,17 @@ import '../../../core/widgets/lhotse_section_label.dart';
 const _kHeroHeight = 200.0;
 const _kMaxVisibleGallery = 5;
 
-class ProjectDetailScreen extends StatefulWidget {
+class ProjectDetailScreen extends ConsumerStatefulWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
 
   final String projectId;
 
   @override
-  State<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
+  ConsumerState<ProjectDetailScreen> createState() =>
+      _ProjectDetailScreenState();
 }
 
-class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
+class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
   final _scrollController = ScrollController();
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
@@ -57,18 +59,21 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final project = findProjectById(widget.projectId);
+    final projectAsync = ref.watch(projectByIdProvider(widget.projectId));
+    final project = projectAsync.valueOrNull;
 
     if (project == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
-          child: Text(
-            'Proyecto no encontrado',
-            style: AppTypography.bodyLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
+          child: projectAsync.isLoading
+              ? const CircularProgressIndicator(strokeWidth: 1.5)
+              : Text(
+                  'Proyecto no encontrado',
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
         ),
       );
     }

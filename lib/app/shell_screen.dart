@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../core/data/mock/mock_notifications.dart';
 import '../core/theme/app_theme.dart';
+import '../features/notifications/data/notifications_provider.dart';
 
 // Navbar labels — uppercase, consistent with app typography
 const _kLabelInicio = 'INICIO';
@@ -12,18 +13,19 @@ const _kLabelBuscar = 'BUSCAR';
 const _kLabelEstrategia = 'ESTRATEGIA';
 const _kLabelPerfil = 'PERFIL';
 
-class ShellScreen extends StatelessWidget {
+class ShellScreen extends ConsumerWidget {
   const ShellScreen({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: navigationShell,
       bottomNavigationBar: _LhotseNavBar(
         currentIndex: navigationShell.currentIndex,
+        unreadCount: ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0,
         onTap: (i) => navigationShell.goBranch(
           i,
           initialLocation: i == navigationShell.currentIndex,
@@ -36,10 +38,12 @@ class ShellScreen extends StatelessWidget {
 class _LhotseNavBar extends StatelessWidget {
   const _LhotseNavBar({
     required this.currentIndex,
+    required this.unreadCount,
     required this.onTap,
   });
 
   final int currentIndex;
+  final int unreadCount;
   final ValueChanged<int> onTap;
 
   static const _items = [
@@ -85,8 +89,7 @@ class _LhotseNavBar extends StatelessWidget {
                     const SizedBox(height: 4),
                     // Dot: black = active, red = notifications, transparent = default
                     Builder(builder: (_) {
-                      final hasNotifications = i == 3 &&
-                          mockNotifications.any((n) => !n.isRead);
+                      final hasNotifications = i == 3 && unreadCount > 0;
                       final Color dotColor;
                       if (selected) {
                         dotColor = AppColors.textPrimary;

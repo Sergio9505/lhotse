@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/mock/mock_notifications.dart';
 import '../../../core/domain/app_notification.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_notification_badge.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
-
-// ---------------------------------------------------------------------------
-// Relative time helper
-// ---------------------------------------------------------------------------
+import '../data/notifications_provider.dart';
 
 String _relativeTime(DateTime date, DateTime now) {
   final diff = now.difference(date);
@@ -21,11 +18,6 @@ String _relativeTime(DateTime date, DateTime now) {
   return DateFormat('d MMM').format(date).toUpperCase();
 }
 
-// ---------------------------------------------------------------------------
-// Entry point
-// ---------------------------------------------------------------------------
-
-/// Shows the notification center as a bottom sheet.
 void showNotificationsSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
@@ -38,23 +30,21 @@ void showNotificationsSheet(BuildContext context) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Sheet content
-// ---------------------------------------------------------------------------
-
-class _NotificationsSheetContent extends StatelessWidget {
+class _NotificationsSheetContent extends ConsumerWidget {
   const _NotificationsSheetContent();
 
   @override
-  Widget build(BuildContext context) {
-    final now = DateTime(2026, 4, 8, 18, 0); // Mock "today" (evening)
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifications =
+        ref.watch(notificationsProvider).valueOrNull ?? const [];
+    final now = DateTime.now();
     final weekAgo = now.subtract(const Duration(days: 7));
 
     final today = <AppNotification>[];
     final thisWeek = <AppNotification>[];
     final earlier = <AppNotification>[];
 
-    for (final n in mockNotifications) {
+    for (final n in notifications) {
       if (n.date.year == now.year &&
           n.date.month == now.month &&
           n.date.day == now.day) {
@@ -73,16 +63,14 @@ class _NotificationsSheetContent extends StatelessWidget {
     ];
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final hasUnread = mockNotifications.any((n) => !n.isRead);
-
-    // Dynamic sizing: fit content, cap at 80%
     final screenHeight = MediaQuery.of(context).size.height;
-    const headerHeight = 80.0; // drag handle + title row + padding
+    final hasUnread = notifications.any((n) => !n.isRead);
+
+    const headerHeight = 80.0;
     const dividerHeight = 0.5;
-    const sectionHeaderHeight = 36.0; // padding + label
-    const rowHeight = 64.0; // padding + icon + text
-    final totalRows =
-        sections.fold<int>(0, (sum, s) => sum + s.$2.length);
+    const sectionHeaderHeight = 36.0;
+    const rowHeight = 64.0;
+    final totalRows = sections.fold<int>(0, (sum, s) => sum + s.$2.length);
     final contentHeight = headerHeight +
         dividerHeight +
         (sections.length * sectionHeaderHeight) +
@@ -98,7 +86,6 @@ class _NotificationsSheetContent extends StatelessWidget {
       maxChildSize: fitSize,
       builder: (context, scrollController) => Column(
         children: [
-          // Drag handle
           Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 4),
             child: Container(
@@ -110,8 +97,6 @@ class _NotificationsSheetContent extends StatelessWidget {
               ),
             ),
           ),
-
-          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
@@ -126,9 +111,7 @@ class _NotificationsSheetContent extends StatelessWidget {
                 const Spacer(),
                 GestureDetector(
                   onTap: hasUnread
-                      ? () {
-                          // TODO: mark all as read
-                        }
+                      ? () => markNotificationsRead(ref)
                       : null,
                   behavior: HitTestBehavior.opaque,
                   child: SizedBox(
@@ -151,57 +134,59 @@ class _NotificationsSheetContent extends StatelessWidget {
               ],
             ),
           ),
-
-          // Divider
           Container(
             height: 0.5,
             color: AppColors.textPrimary.withValues(alpha: 0.08),
           ),
-
-          // Content
           Expanded(
-            child: ListView.builder(
-              controller: scrollController,
-              padding: EdgeInsets.fromLTRB(
-                  0, 0, 0, bottomPadding + AppSpacing.md),
-              itemCount: sections.length,
-              itemBuilder: (context, sectionIndex) {
-                final (label, items) = sections[sectionIndex];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(
-                        top: sectionIndex == 0
-                            ? AppSpacing.md
-                            : AppSpacing.lg,
-                        bottom: AppSpacing.sm,
+            child: notifications.isEmpty
+                ? Center(
+                    child: Text(
+                      'SIN NOTIFICACIONES',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 1.5,
                       ),
-                      child: LhotseSectionLabel(label: label),
                     ),
-                    ...items.asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final n = entry.value;
-                      return _NotificationRow(
-                        notification: n,
-                        now: now,
-                        isLast: idx == items.length - 1,
+                  )
+                : ListView.builder(
+                    controller: scrollController,
+                    padding: EdgeInsets.fromLTRB(
+                        0, 0, 0, bottomPadding + AppSpacing.md),
+                    itemCount: sections.length,
+                    itemBuilder: (context, sectionIndex) {
+                      final (label, items) = sections[sectionIndex];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: sectionIndex == 0
+                                  ? AppSpacing.md
+                                  : AppSpacing.lg,
+                              bottom: AppSpacing.sm,
+                            ),
+                            child: LhotseSectionLabel(label: label),
+                          ),
+                          ...items.asMap().entries.map((entry) {
+                            final idx = entry.key;
+                            final n = entry.value;
+                            return _NotificationRow(
+                              notification: n,
+                              now: now,
+                              isLast: idx == items.length - 1,
+                            );
+                          }),
+                        ],
                       );
-                    }),
-                  ],
-                );
-              },
-            ),
+                    },
+                  ),
           ),
         ],
       ),
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Notification row
-// ---------------------------------------------------------------------------
 
 class _NotificationRow extends StatefulWidget {
   const _NotificationRow({
@@ -228,26 +213,26 @@ class _NotificationRowState extends State<_NotificationRow> {
     final isDelay = n.type == NotificationType.delay;
     final timeStr = _relativeTime(n.date, widget.now);
 
-    // Title color: delay → danger, unread → textPrimary, read → accentMuted
     final titleColor = isDelay
         ? AppColors.danger
         : isUnread
             ? AppColors.textPrimary
             : AppColors.accentMuted;
-
     final titleWeight = isUnread ? FontWeight.w600 : FontWeight.w400;
-
     final metaColor =
         isUnread ? AppColors.accentMuted : AppColors.textSecondary;
+
+    final meta = [
+      if (n.brandName != null) n.brandName!,
+      if (n.projectName != null) n.projectName!,
+      timeStr,
+    ].join(' · ');
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
-      onTap: () {
-        Navigator.of(context).pop();
-        // TODO: navigate to investment detail with correct tab
-      },
+      onTap: () => Navigator.of(context).pop(),
       behavior: HitTestBehavior.opaque,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 120),
@@ -268,7 +253,6 @@ class _NotificationRowState extends State<_NotificationRow> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Type icon
               Container(
                 width: 36,
                 height: 36,
@@ -284,7 +268,6 @@ class _NotificationRowState extends State<_NotificationRow> {
                 ),
               ),
               const SizedBox(width: 14),
-              // Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +283,7 @@ class _NotificationRowState extends State<_NotificationRow> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${n.brandName} · ${n.projectName} · $timeStr',
+                      meta,
                       style: AppTypography.caption.copyWith(
                         color: metaColor,
                         letterSpacing: 1.0,
@@ -309,7 +292,6 @@ class _NotificationRowState extends State<_NotificationRow> {
                   ],
                 ),
               ),
-              // Unread indicator
               if (isUnread)
                 Padding(
                   padding: const EdgeInsets.only(left: 8, top: 6),

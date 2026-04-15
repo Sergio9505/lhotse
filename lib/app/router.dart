@@ -12,7 +12,13 @@ import '../features/home/presentation/news_detail_screen.dart';
 import '../features/home/presentation/all_projects_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/home/presentation/project_detail_screen.dart';
+import '../features/investments/domain/completed_contract_data.dart';
+import '../features/investments/domain/coinvestment_contract_data.dart';
+import '../features/investments/domain/purchase_contract_data.dart';
 import '../features/investments/presentation/brand_investments_screen.dart';
+import '../features/investments/presentation/coinversion_detail_screen.dart';
+import '../features/investments/presentation/compra_directa_detail_screen.dart';
+import '../features/investments/presentation/completed_detail_screen.dart';
 import '../features/investments/presentation/investment_detail_screen.dart';
 import '../features/investments/presentation/investments_screen.dart';
 import '../features/investments/presentation/opportunities_screen.dart';
@@ -57,8 +63,12 @@ abstract final class AppRoutes {
   static const brandDetail = '/brands/:id';
   static const search = '/search';
   static const investments = '/investments';
-  static const brandInvestments = '/investments/brand/:brandName';
+  static const brandInvestments = '/investments/brand/:brandId';
   static const investmentDetail = '/investments/detail/:id';
+  static const purchaseDetail = '/investments/detail/purchase/:id';
+  static const coinvestmentDetail = '/investments/detail/coinvestment/:id';
+  static const completedPurchaseDetail = '/investments/detail/completed/purchase/:id';
+  static const completedCoinvestmentDetail = '/investments/detail/completed/coinvestment/:id';
   static const opportunities = '/investments/opportunities';
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
@@ -198,11 +208,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(
               path: AppRoutes.brandInvestments,
               pageBuilder: (context, state) {
-                final brandName = state.pathParameters['brandName']!;
+                final brandId = state.pathParameters['brandId']!;
                 return _fadePage(
                   key: state.pageKey,
-                  child: BrandInvestmentsScreen(
-                      brandName: Uri.decodeComponent(brandName)),
+                  child: BrandInvestmentsScreen(brandId: brandId),
                 );
               },
             ),
@@ -222,6 +231,42 @@ final routerProvider = Provider<GoRouter>((ref) {
                   child: InvestmentDetailScreen(investmentId: id),
                 );
               },
+            ),
+            GoRoute(
+              path: AppRoutes.purchaseDetail,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: CompraDirectaDetailScreen(
+                  contract: state.extra as PurchaseContractData,
+                ),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.coinvestmentDetail,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: CoinversionDetailScreen(
+                  contract: state.extra as CoinvestmentContractData,
+                ),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.completedPurchaseDetail,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: CompletedDetailScreen(
+                  data: state.extra as CompletedContractData,
+                ),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.completedCoinvestmentDetail,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: CompletedDetailScreen(
+                  data: state.extra as CompletedContractData,
+                ),
+              ),
             ),
           ]),
           StatefulShellBranch(routes: [

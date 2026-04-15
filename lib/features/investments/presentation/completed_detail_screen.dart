@@ -3,38 +3,27 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/domain/investment_data.dart';
-import '../../../core/domain/project_data.dart';
+import '../../../core/domain/asset_info.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
-import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
+import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_metric_block.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
+import '../domain/completed_contract_data.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
-
 const _kHeroHeight = 200.0;
-
 const _kMaxVisibleGallery = 5;
 
-// ===========================================================================
-// Completed Investment Detail — 3 tabs: RESULTADO / ACTIVO / DOCS
-// ===========================================================================
-
 class CompletedDetailScreen extends StatefulWidget {
-  const CompletedDetailScreen({
-    super.key,
-    required this.investment,
-    this.project,
-  });
+  const CompletedDetailScreen({super.key, required this.data});
 
-  final InvestmentData investment;
-  final ProjectData? project;
+  final CompletedContractData data;
 
   @override
   State<CompletedDetailScreen> createState() => _CompletedDetailScreenState();
@@ -48,7 +37,6 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
   bool _showCollapsedTitle = false;
   int _tabIndex = 0;
 
-  // Doc filter state
   static const _docFilterLabels = {
     DocCategory.legal: 'Escrituras',
     DocCategory.financiero: 'Facturas',
@@ -95,11 +83,8 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
 
   void _onOuterScroll() {
     final offset = _outerController.offset;
-    final heroThreshold = _kHeroHeight - kToolbarHeight;
-    final heroGone = offset >= heroThreshold;
-    final titleThreshold = _kHeroHeight + 50.0;
-    final showTitle = offset >= titleThreshold;
-
+    final heroGone = offset >= _kHeroHeight - kToolbarHeight;
+    final showTitle = offset >= _kHeroHeight + 50.0;
     if (heroGone != _heroGone || showTitle != _showCollapsedTitle) {
       setState(() {
         _heroGone = heroGone;
@@ -110,10 +95,10 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final inv = widget.investment;
-    final project = widget.project;
+    final d = widget.data;
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final returnAmount = d.totalReturn ?? d.amount;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -122,9 +107,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
         body: NestedScrollView(
           controller: _outerController,
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            // =========================================================
-            // 1. HERO
-            // =========================================================
+            // Hero
             SliverAppBar(
               pinned: true,
               expandedHeight: _kHeroHeight,
@@ -144,7 +127,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${_eurFormat.format(inv.totalReturn ?? inv.amount)}€',
+                      '${_eurFormat.format(returnAmount)}€',
                       style: AppTypography.headingSmall.copyWith(
                         color: AppColors.textPrimary,
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -152,7 +135,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      inv.projectName.toUpperCase(),
+                      d.projectName.toUpperCase(),
                       style: AppTypography.caption.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 1.2,
@@ -165,7 +148,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    LhotseImage(project?.imageUrl ?? ''),
+                    LhotseImage(d.imageUrl ?? ''),
                     const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -180,9 +163,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
               ),
             ),
 
-            // =========================================================
-            // 2. IDENTITY + AMOUNT
-            // =========================================================
+            // Identity + metrics
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
@@ -190,50 +171,23 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      inv.projectName.toUpperCase(),
+                      d.projectName.toUpperCase(),
                       style: AppTypography.headingLarge.copyWith(
                         color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      children: [
-                        Text(
-                          inv.brandName.toUpperCase(),
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 1.8,
-                          ),
-                        ),
-                        if (project?.location != null) ...[
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(
-                              '•',
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.textPrimary
-                                    .withValues(alpha: 0.4),
-                              ),
-                            ),
-                          ),
-                          Flexible(
-                            child: Text(
-                              project!.location.toUpperCase(),
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.accentMuted,
-                                letterSpacing: 1.35,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ],
+                    Text(
+                      d.brandName.toUpperCase(),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 1.8,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    // Hero number — total return
                     Text(
-                      '${_eurFormat.format(inv.totalReturn ?? inv.amount)}€',
+                      '${_eurFormat.format(returnAmount)}€',
                       style: AppTypography.displayLarge.copyWith(
                         color: AppColors.textPrimary,
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -252,21 +206,22 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                       children: [
                         Expanded(
                           child: LhotseMetricBlock(
-                            value: '${_eurFormat.format(inv.amount)}€',
+                            value: '${_eurFormat.format(d.amount)}€',
                             label: 'Invertido',
                           ),
                         ),
                         const SizedBox(width: AppSpacing.lg),
                         Expanded(
                           child: LhotseMetricBlock(
-                            value: '${inv.actualDuration ?? inv.durationMonths} meses',
+                            value: '${d.actualDuration ?? '–'} meses',
                             label: 'Duración',
                           ),
                         ),
                         const SizedBox(width: AppSpacing.lg),
                         Expanded(
                           child: LhotseMetricBlock(
-                            value: '+${inv.actualRoi?.toStringAsFixed(1) ?? '-'}%',
+                            value:
+                                '+${d.actualRoi?.toStringAsFixed(1) ?? '-'}%',
                             label: 'ROI',
                             valueColor: const Color(0xFF2D6A4F),
                           ),
@@ -278,18 +233,16 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
               ),
             ),
 
-            // =========================================================
-            // 3. TABS
-            // =========================================================
+            // Tabs
             SliverPersistentHeader(
               pinned: true,
               delegate: LhotseTabBarDelegate(
-                  controller: _tabController,
-                  tabs: const [
-                    Tab(text: 'ACTIVO'),
-                    Tab(text: 'DOCS'),
-                  ],
-                ),
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'ACTIVO'),
+                  Tab(text: 'DOCS'),
+                ],
+              ),
             ),
           ],
 
@@ -297,18 +250,19 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
             controller: _tabController,
             children: [
               _TabScrollWrapper(
+                bottomPadding: bottomPadding,
                 child: _ActivoTab(
-                  investment: inv,
+                  assetInfo: d.assetInfo,
+                  galleryImages: d.galleryImages,
                   cardWidth: screenWidth * 0.75,
                 ),
-                bottomPadding: bottomPadding,
               ),
               _TabScrollWrapper(
+                bottomPadding: bottomPadding,
                 child: _DocsTab(
                   documents: _filteredDocs,
                   chips: _buildDocChips(),
                 ),
-                bottomPadding: bottomPadding,
               ),
             ],
           ),
@@ -336,9 +290,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeInOut,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: 6,
-                    ),
+                        horizontal: AppSpacing.sm, vertical: 6),
                     decoration: BoxDecoration(
                       color: active ? AppColors.primary : Colors.transparent,
                       border: Border.all(
@@ -367,7 +319,8 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
                 behavior: HitTestBehavior.opaque,
                 child: const Padding(
                   padding: EdgeInsets.all(6),
-                  child: PhosphorIcon(PhosphorIconsThin.x, size: 14, color: AppColors.accentMuted),
+                  child: PhosphorIcon(PhosphorIconsThin.x,
+                      size: 14, color: AppColors.accentMuted),
                 ),
               ),
           ],
@@ -377,12 +330,11 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
   }
 }
 
-// ===========================================================================
-// Tab scroll wrapper
-// ===========================================================================
+// ── Tab scroll wrapper ────────────────────────────────────────────────────────
 
 class _TabScrollWrapper extends StatelessWidget {
-  const _TabScrollWrapper({required this.child, required this.bottomPadding});
+  const _TabScrollWrapper(
+      {required this.child, required this.bottomPadding});
   final Widget child;
   final double bottomPadding;
 
@@ -395,34 +347,31 @@ class _TabScrollWrapper extends StatelessWidget {
   }
 }
 
-// ===========================================================================
-// Tab bar delegate
-// ===========================================================================
-
-// (Tab bar delegate extracted to core/widgets/lhotse_tab_bar_delegate.dart)
-
-// ===========================================================================
-// TAB: ACTIVO
-// ===========================================================================
+// ── ACTIVO tab ────────────────────────────────────────────────────────────────
 
 class _ActivoTab extends StatelessWidget {
-  const _ActivoTab({required this.investment, required this.cardWidth});
-  final InvestmentData investment;
+  const _ActivoTab({
+    required this.assetInfo,
+    required this.galleryImages,
+    required this.cardWidth,
+  });
+
+  final AssetInfo? assetInfo;
+  final List<String> galleryImages;
   final double cardWidth;
 
   @override
   Widget build(BuildContext context) {
-    final inv = investment;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (inv.assetInfo != null) ...[
+        if (assetInfo != null) ...[
           const SizedBox(height: AppSpacing.xl),
           const LhotseSectionLabel(label: 'INFORMACIÓN'),
           const SizedBox(height: AppSpacing.sm),
-          LhotseKeyValueList(entries: inv.assetInfo!.entries),
+          LhotseKeyValueList(entries: assetInfo!.entries),
         ],
-        if (inv.renderImages?.isNotEmpty ?? false) ...[
+        if (galleryImages.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -435,11 +384,11 @@ class _ActivoTab extends StatelessWidget {
                     letterSpacing: 1.8,
                   ),
                 ),
-                if (inv.renderImages!.length > _kMaxVisibleGallery) ...[
+                if (galleryImages.length > _kMaxVisibleGallery) ...[
                   const SizedBox(width: AppSpacing.sm),
                   GestureDetector(
-                    onTap: () => showAllGallery(
-                        context, 'GALERÍA', inv.renderImages!),
+                    onTap: () =>
+                        showAllGallery(context, 'GALERÍA', galleryImages),
                     child: const PhosphorIcon(
                       PhosphorIconsThin.arrowUpRight,
                       size: 14,
@@ -455,13 +404,15 @@ class _ActivoTab extends StatelessWidget {
             height: 200,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: (inv.renderImages!.length > _kMaxVisibleGallery
-                      ? _kMaxVisibleGallery
-                      : inv.renderImages!.length),
-              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              itemCount: galleryImages.length > _kMaxVisibleGallery
+                  ? _kMaxVisibleGallery
+                  : galleryImages.length,
+              separatorBuilder: (_, _) =>
+                  const SizedBox(width: AppSpacing.sm),
               itemBuilder: (context, i) => GestureDetector(
-                onTap: () => showFullImage(context, inv.renderImages![i]),
+                onTap: () => showFullImage(context, galleryImages[i]),
                 child: Container(
                   width: cardWidth,
                   decoration: const BoxDecoration(
@@ -473,7 +424,7 @@ class _ActivoTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: LhotseImage(inv.renderImages![i]),
+                  child: LhotseImage(galleryImages[i]),
                 ),
               ),
             ),
@@ -484,9 +435,7 @@ class _ActivoTab extends StatelessWidget {
   }
 }
 
-// ===========================================================================
-// TAB: DOCS
-// ===========================================================================
+// ── DOCS tab ──────────────────────────────────────────────────────────────────
 
 class _DocsTab extends StatelessWidget {
   const _DocsTab({required this.documents, required this.chips});
@@ -512,7 +461,8 @@ class _DocsTab extends StatelessWidget {
                   if (i > 0)
                     Container(
                       height: 0.5,
-                      color: AppColors.textPrimary.withValues(alpha: 0.08),
+                      color:
+                          AppColors.textPrimary.withValues(alpha: 0.08),
                     ),
                   LhotseDocRow(
                     name: doc.name,
@@ -529,19 +479,31 @@ class _DocsTab extends StatelessWidget {
   }
 }
 
-// ===========================================================================
-// Mock docs for completed investments
-// ===========================================================================
-
-// ===========================================================================
-// Mock docs
-// ===========================================================================
+// ── Placeholder docs ──────────────────────────────────────────────────────────
 
 final _completedDocs = [
-  LhotseDocument(name: 'Acta de liquidación', date: '15 FEB. 2026', category: DocCategory.legal),
-  LhotseDocument(name: 'Certificado de retención fiscal', date: '15 FEB. 2026', category: DocCategory.fiscal),
-  LhotseDocument(name: 'Escritura de compraventa', date: '10 ENE. 2026', category: DocCategory.legal),
-  LhotseDocument(name: 'Informe final de rentabilidad', date: '12 FEB. 2026', category: DocCategory.financiero),
-  LhotseDocument(name: 'Certificado de finalización de obra', date: '20 DIC. 2025', category: DocCategory.obra),
-  LhotseDocument(name: 'Factura notaría cierre', date: '15 FEB. 2026', category: DocCategory.financiero),
+  LhotseDocument(
+      name: 'Acta de liquidación',
+      date: '15 FEB. 2026',
+      category: DocCategory.legal),
+  LhotseDocument(
+      name: 'Certificado de retención fiscal',
+      date: '15 FEB. 2026',
+      category: DocCategory.fiscal),
+  LhotseDocument(
+      name: 'Escritura de compraventa',
+      date: '10 ENE. 2026',
+      category: DocCategory.legal),
+  LhotseDocument(
+      name: 'Informe final de rentabilidad',
+      date: '12 FEB. 2026',
+      category: DocCategory.financiero),
+  LhotseDocument(
+      name: 'Certificado de finalización de obra',
+      date: '20 DIC. 2025',
+      category: DocCategory.obra),
+  LhotseDocument(
+      name: 'Factura notaría cierre',
+      date: '15 FEB. 2026',
+      category: DocCategory.financiero),
 ];

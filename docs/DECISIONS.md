@@ -563,26 +563,27 @@ Full schema in `.claude/plans/fuzzy-forging-crescent.md`: 19 tables, 4 views, 3 
 
 ---
 
-## ADR-27: Supabase Schema — Dual FK on Documents
+## ADR-27: Supabase Schema — Documents with model_type + model_id
 
-**Date:** 2026-04-14
-**Status:** Accepted
+**Date:** 2026-04-14 (updated 2026-04-15)
+**Status:** Accepted (supersedes original dual-FK approach)
 
-**Context:** Documents in the app are of two kinds: (1) project-level docs shared with all investors in a project, (2) investment-level private docs for a single investor. Options: (A) two separate tables, (B) one table with a `scope` enum column, (C) one table with dual nullable FKs.
+**Context:** Documents belong to different entity types: brands, projects, investments, offerings, contracts. The original design used nullable FKs (`project_id`, `investment_id`) with a CHECK. Adding `contract_id` for fixed income would mean a third nullable FK, more OR branches in RLS, and a pattern that degrades with each new entity type.
 
-**Decision:** Single `documents` table with `project_id UUID REFERENCES projects` (nullable) and `investment_id UUID REFERENCES investments` (nullable), plus `CHECK (investment_id IS NOT NULL OR project_id IS NOT NULL)`.
+**Decision:** Replace nullable FKs with `model_type TEXT NOT NULL` + `model_id UUID NOT NULL`. The `model_type` CHECK covers: `brand`, `project`, `investment`, `offering`, `contract`. RLS uses a single CASE statement per type. Index on `(model_type, model_id)`.
 
 **Rationale:**
-- Shared structure (name, date, category, file_url) makes one table natural
-- RLS differentiates: project docs → any investor in that project can read; investment docs → owner only
-- The CHECK constraint prevents orphan rows at DB level
-- Simpler Flutter repository: one `getDocuments(investmentId, projectId)` call
+- Standard pattern at scale (Stripe, GitHub) for polymorphic ownership
+- Zero nullable columns — every row has a type and an owner
+- Adding a new entity type = add a CHECK value + a CASE branch in RLS. No ALTER COLUMN.
+- Documents are admin-managed (service_role writes) so the lack of FK integrity is acceptable
+- `category` column (legal, financial, certificate, etc.) is orthogonal — filters by document type, not by owner
 
 **Consequences:**
-- (+) One table, one query, one repository method
-- (+) RLS policy covers both scopes cleanly with OR logic
-- (+) CHECK constraint prevents degenerate rows
-- (-) NULL columns by design — accepted for this specific use case (unlike investments where NULLs encoded model semantics)
+- (+) Table shape never changes when new entity types are added
+- (+) RLS is a readable CASE instead of nested ORs
+- (+) Composite index `(model_type, model_id)` covers all lookup patterns
+- (-) No FK enforcement on `model_id` — accepted because writes are admin-only via service_role
 
 ---
 
@@ -601,3 +602,95 @@ Full schema in `.claude/plans/fuzzy-forging-crescent.md`: 19 tables, 4 views, 3 
 - (+) Coinvestment: unit assigned post-delivery → nullable FK is semantically correct
 - (+) `current_value` and `revaluation_pct` live on `assets`, not on investments — correct ownership
 - (-) Extra JOIN in queries, absorbed by `investment_details` view
+
+---
+
+## ADR-29: Asset-First FK Direction (projects.asset_id → assets)
+
+**Date:** 2026-04-15
+**Status:** Accepted
+
+**Context:** The original schema had `assets.project_id → projects`, meaning an asset "belonged to" a project. This modelled the creation flow backwards: in reality, the physical asset (property) exists first, and then an investment project is created around it.
+
+**Decision:** Reverse the FK to `projects.asset_id → assets` (nullable). Assets are now first-class independent entities. A project optionally references the asset it's about.
+
+**Rationale:**
+- Domain truth: you acquire or register a property first, then create investment vehicles around it
+- `projects.asset_id` nullable — coinvestment projects may not have a physical unit assigned yet; it gets linked later via `coinvestment_details.asset_id` when construction delivers
+- Individual unit→investment links remain at the investment level (`direct_purchase_details.asset_id`, `coinvestment_details.asset_id`), unaffected
+- Data migrated cleanly: all 6 direct_purchase projects had exactly 1 asset (1:1) — `projects.asset_id` populated from the old `assets.project_id`
+
+**Consequences:**
+- (+) Assets can exist before any project references them
+- (+) Cleaner insert order: CREATE asset → CREATE project (with asset_id)
+- (+) Multiple projects could reference the same asset (different investment rounds)
+- (-) `projects.asset_id` is nullable — coinvestment projects have NULL until assignment
+
+---
+
+## ADR-31: CompraDirecta + Alquiler as Separate Domains (4-domain model)
+
+**Date:** 2026-04-15
+**Status:** Accepted
+
+**Context:** CompraDirecta investments were modelled in the shared `investments` CTI base table, with detail in `direct_purchase_details`. This forced two semantically distinct business models (compraDirecta = buying an asset; coinversión = participating in a development project) to share a base table with almost no common columns (only `user_id`, `amount`, `is_completed`). Following ADR-30 (RentaFija extraction), the same rationale applies here.
+
+Additionally, rental management (alquiler) is a separate business activity — a management brand like Llave manages the rental of an asset, independent of the purchase transaction. Keeping `rental_contracts` linked to `investments` tied rental to the wrong entity (the investment record, not the physical asset).
+
+**Decision:** Four independent domains, each with direct brand association:
+
+1. **`purchase_contracts`** — user owns an asset through a selling brand (Myttas, Andhy). Direct `brand_id` FK. Completion fields inline.
+2. **`rental_contracts` + `rental_payments`** — independent rental domain tied to `asset_id` + `brand_id` (management brand, e.g. Llave). Not linked to `purchase_contracts` — the join is logical via `asset_id`.
+3. **`coinvestment_contracts`** — renamed from `investments`. Absorbed `coinvestment_details` and `investment_completions` inline. Brand via `project_id → projects.brand_id`.
+4. **`fixed_income_contracts`** — unchanged (ADR-30).
+
+**Rationale:**
+- CompraDirecta: the investor owns a **physical asset**, not a project. The contractual relationship is with the brand that sold it. Brand = direct FK on `purchase_contracts`.
+- Coinversión: the investor participates in a **development project**. Brand is reached via project. Project stays as the primary FK.
+- Rental: the management brand may differ from the selling brand (Myttas sells, Llave manages). Tying rental to the asset (not the purchase record) is the correct entity. Logical join via `asset_id` allows ROI/TIR calculation in views: `(rental_payments.amount) / purchase_contracts.purchase_value`.
+- Domain-specific transaction ledgers: `purchase_transactions`, `coinvestment_transactions` (replaces shared `investment_transactions`).
+
+**Tables dropped:** `investments` (renamed), `direct_purchase_details`, `coinvestment_details`, `investment_completions`, `investment_transactions`.
+**Tables created:** `purchase_contracts`, `rental_payments`, `purchase_transactions`, `coinvestment_transactions`.
+**Tables restructured:** `rental_contracts` (FK changed from `investment_id` to `asset_id + brand_id`), `notifications` (`investment_id` → `model_id + model_type`), `mortgages` (`investment_id` → `purchase_contract_id`).
+**Documents `model_type` CHECK updated:** added `purchase`, `rental`, `coinvestment`; removed `investment`.
+**Views:** dropped `investment_details`; created `purchase_contract_details`, `rental_contract_details`, `coinvestment_contract_details`; recreated `portfolio_summaries`, `brand_investment_summaries` as 3-way UNION ALL.
+
+**Consequences:**
+- (+) Each domain has semantically precise tables — no nullable pollution, no CTI indirection
+- (+) Brand association is direct and unambiguous per domain
+- (+) Rental ROI/TIR computable in views without storing derived data
+- (+) Documents, notifications, and RLS policies all cleaner (no OR chains)
+- (-) Strategy screen aggregation requires 3-way UNION — handled in views, no Flutter change needed
+- (-) Flutter models will need per-domain types when repository layer is built (InvestmentData → PurchaseContractData + CoinvestmentContractData + RentalData)
+
+---
+
+## ADR-30: RentaFija as Separate Domain (fixed_income_offerings/contracts/payments)
+
+**Date:** 2026-04-15
+**Status:** Accepted
+
+**Context:** RentaFija was modelled as a `projects` row with 6 nullable columns (`payment_frequency`, `is_capital_guaranteed`, `total_payments`, `periodic_payment_amount`, `target_return_rate`, `target_duration_months`) and a row in `fixed_income_details` per investment. This was wrong: RentaFija is a financial contract (rate, duration, monthly payments), not a real estate project (location, architect, images, renders).
+
+**Decision:** Three dedicated tables:
+- `fixed_income_offerings` — product catalog (brand offers X% for Y months). Admin-managed.
+- `fixed_income_contracts` — user accepts an offering; snapshots contracted rate+term at signing time. Has `status` (active/completed/cancelled), payment tracking, and completion fields.
+- `fixed_income_payments` — append-only ledger of payments received per contract.
+
+RentaFija no longer flows through `investments` or `projects`. The 2 seed "projects" (RF Capital I/II) were migrated to offerings. The 6 rentaFija columns were dropped from `projects`. `fixed_income_details` was dropped (no investment records existed yet).
+
+Views updated: `portfolio_summaries` and `brand_investment_summaries` now UNION investments (compraDirecta+coinversion) with `fixed_income_contracts`. `investment_details` simplified to compraDirecta+coinversion only. New `fixed_income_contract_details` view added.
+
+**Rationale:**
+- RentaFija shares 0 domain concepts with real estate projects — different entity, different lifecycle
+- `fixed_income_contracts` snapshots the contracted rate+term at signing — protects against future offering changes
+- Clean separation enables independent RLS, independent querying, and independent UI flows
+- The brand link (for strategy screen aggregation) is preserved via offering → brand
+
+**Consequences:**
+- (+) No nullable pollution in `projects` from a completely different business model
+- (+) Each domain has its own clean tables with zero nullable columns (except optional fields)
+- (+) `fixed_income_contracts` is the single source of truth for a user's RF position
+- (-) Strategy screen aggregation requires UNION across investments + contracts — handled in views
+- (-) Flutter models will need separate types for RF vs real estate investments

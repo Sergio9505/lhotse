@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../data/mock/mock_notifications.dart';
+import '../../features/notifications/data/notifications_provider.dart';
+import '../../features/notifications/presentation/notifications_sheet.dart';
 import '../theme/app_theme.dart';
 import '../widgets/lhotse_notification_badge.dart';
-import '../../features/notifications/presentation/notifications_sheet.dart';
 
 /// Notification bell icon with badge. Single source of truth.
-/// Use in LhotseShellHeader (Row) or standalone in a Positioned (Strategy).
-class LhotseNotificationBell extends StatelessWidget {
+class LhotseNotificationBell extends ConsumerWidget {
   const LhotseNotificationBell({
     super.key,
     this.color = AppColors.textPrimary,
@@ -17,9 +17,9 @@ class LhotseNotificationBell extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final unreadCount =
-        mockNotifications.where((n) => !n.isRead).length;
+        ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0;
 
     return GestureDetector(
       onTap: () => showNotificationsSheet(context),

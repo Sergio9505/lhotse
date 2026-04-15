@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/mock/mock_news.dart';
+import '../../../core/data/brands_provider.dart';
+import '../../../core/data/news_provider.dart';
+import '../../../core/domain/news_item_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
 import '../../../core/widgets/lhotse_brand_filter_row.dart';
@@ -12,14 +15,14 @@ import '../../../core/widgets/lhotse_search_field.dart';
 
 enum _ActiveTool { none, firma, region, buscar }
 
-class AllNewsScreen extends StatefulWidget {
+class AllNewsScreen extends ConsumerStatefulWidget {
   const AllNewsScreen({super.key});
 
   @override
-  State<AllNewsScreen> createState() => _AllNewsScreenState();
+  ConsumerState<AllNewsScreen> createState() => _AllNewsScreenState();
 }
 
-class _AllNewsScreenState extends State<AllNewsScreen> {
+class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
   NewsType? _activeType;
   _ActiveTool _activeTool = _ActiveTool.none;
   final Set<String> _selectedBrands = {};
@@ -33,32 +36,31 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
     super.dispose();
   }
 
-  List<NewsItemData> get _filteredNews {
-    var news = mockNews;
-
+  List<NewsItemData> _applyFilters(List<NewsItemData> news) {
+    var result = news;
     if (_activeType != null) {
-      news = news.where((n) => n.type == _activeType).toList();
+      result = result.where((n) => n.type == _activeType).toList();
     }
-
     if (_selectedBrands.isNotEmpty) {
-      news = news.where((n) => _selectedBrands.contains(n.brand)).toList();
-    }
-
-    if (_selectedRegions.isNotEmpty) {
-      news = news.where((n) => _selectedRegions.contains(n.region)).toList();
-    }
-
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      news = news
-          .where((n) =>
-              n.title.toLowerCase().contains(q) ||
-              n.brand.toLowerCase().contains(q) ||
-              n.subtitle.toLowerCase().contains(q))
+      result = result
+          .where((n) => _selectedBrands.contains(n.brand ?? ''))
           .toList();
     }
-
-    return news;
+    if (_selectedRegions.isNotEmpty) {
+      result = result
+          .where((n) => _selectedRegions.contains(n.region ?? ''))
+          .toList();
+    }
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      result = result
+          .where((n) =>
+              n.title.toLowerCase().contains(q) ||
+              (n.brand ?? '').toLowerCase().contains(q) ||
+              (n.subtitle ?? '').toLowerCase().contains(q))
+          .toList();
+    }
+    return result;
   }
 
   void _toggleType(NewsType type) {
@@ -106,7 +108,24 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final news = _filteredNews;
+    final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
+    final allBrands = ref.watch(brandsProvider).valueOrNull ?? const [];
+    final news = _applyFilters(allNews);
+
+    // Derive unique regions and brands from loaded news
+    final regions = allNews
+        .map((n) => n.region)
+        .whereType<String>()
+        .toSet()
+        .toList()
+      ..sort();
+
+    // Brands that appear in news (matched against brand catalog for logos)
+    final newsBrandNames =
+        allNews.map((n) => n.brand).whereType<String>().toSet();
+    final newsFilterBrands = allBrands
+        .where((b) => newsBrandNames.contains(b.name))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -114,14 +133,13 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
         children: [
           const LhotseAppHeader(title: 'NOTICIAS'),
 
-          // Filter bar — type tabs left, tool icons right
+          // Filter bar
           Padding(
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Content type tabs
                 LhotseFilterTab(
                   label: 'PROYECTOS',
                   isActive: _activeType == NewsType.project,
@@ -133,90 +151,25 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
                   isActive: _activeType == NewsType.press,
                   onTap: () => _toggleType(NewsType.press),
                 ),
-
                 const Spacer(),
-
-                // Tool icons
                 Container(width: 1, height: 16, color: AppColors.border),
                 const SizedBox(width: AppSpacing.md),
-
-                // Firma
-                GestureDetector(
+                _ToolIcon(
+                  icon: PhosphorIconsThin.stack,
+                  isActive: _activeTool == _ActiveTool.firma ||
+                      _selectedBrands.isNotEmpty,
+                  hasDot: _selectedBrands.isNotEmpty,
                   onTap: () => _toggleTool(_ActiveTool.firma),
-                  child: SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Center(
-                          child: PhosphorIcon(
-                            PhosphorIconsThin.stack,
-                            size: 18,
-                            color: _activeTool == _ActiveTool.firma ||
-                                    _selectedBrands.isNotEmpty
-                                ? AppColors.textPrimary
-                                : AppColors.accentMuted,
-                          ),
-                        ),
-                        if (_selectedBrands.isNotEmpty)
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: Container(
-                              width: 6,
-                              height: 6,
-                              decoration: const BoxDecoration(
-                                color: AppColors.textPrimary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
-
-                // Región
-                GestureDetector(
+                _ToolIcon(
+                  icon: PhosphorIconsThin.mapPin,
+                  isActive: _activeTool == _ActiveTool.region ||
+                      _selectedRegions.isNotEmpty,
+                  hasDot: _selectedRegions.isNotEmpty,
                   onTap: () => _toggleTool(_ActiveTool.region),
-                  child: SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Center(
-                          child: PhosphorIcon(
-                            PhosphorIconsThin.mapPin,
-                            size: 18,
-                            color: _activeTool == _ActiveTool.region ||
-                                    _selectedRegions.isNotEmpty
-                                ? AppColors.textPrimary
-                                : AppColors.accentMuted,
-                          ),
-                        ),
-                        if (_selectedRegions.isNotEmpty)
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: Container(
-                              width: 6,
-                              height: 6,
-                              decoration: const BoxDecoration(
-                                color: AppColors.textPrimary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
-
-                // Buscar
                 GestureDetector(
                   onTap: () => _toggleTool(_ActiveTool.buscar),
                   child: PhosphorIcon(
@@ -247,6 +200,7 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: LhotseBrandFilterRow(
+                brands: newsFilterBrands,
                 selectedBrands: _selectedBrands,
                 onBrandTap: _toggleBrand,
                 onClear: () => setState(() => _selectedBrands.clear()),
@@ -256,7 +210,7 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: _RegionFilterRow(
-                regions: newsRegions,
+                regions: regions,
                 selectedRegions: _selectedRegions,
                 onTap: _toggleRegion,
                 onClear: () => setState(() => _selectedRegions.clear()),
@@ -268,7 +222,7 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
             child: news.isEmpty
                 ? Center(
                     child: Text(
-                      'SIN RESULTADOS',
+                      allNews.isEmpty ? '' : 'SIN RESULTADOS',
                       style: AppTypography.labelLarge.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 1.5,
@@ -276,8 +230,8 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
                     ),
                   )
                 : ListView.separated(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg),
                     itemCount: news.length,
                     separatorBuilder: (_, _) =>
                         const SizedBox(height: AppSpacing.md),
@@ -300,9 +254,55 @@ class _AllNewsScreenState extends State<AllNewsScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Region filter row — flag emoji + country name, equal-width cells
-// ---------------------------------------------------------------------------
+class _ToolIcon extends StatelessWidget {
+  const _ToolIcon({
+    required this.icon,
+    required this.isActive,
+    required this.hasDot,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool isActive;
+  final bool hasDot;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 22,
+        height: 22,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Center(
+              child: PhosphorIcon(
+                icon,
+                size: 18,
+                color: isActive ? AppColors.textPrimary : AppColors.accentMuted,
+              ),
+            ),
+            if (hasDot)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: AppColors.textPrimary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _RegionFilterRow extends StatelessWidget {
   const _RegionFilterRow({

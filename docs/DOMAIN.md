@@ -7,10 +7,15 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 | Term | Definition |
 |------|-----------|
 | Lhotse Group | Parent holding company |
-| Brand / Firma | A company within the Lhotse Group (Myttas, Lacomb & Bos, Vellte, NUVE, Domorato, Andhy, Ciclo, Renta Fija). Model: `BrandData` (id, name, logoAsset?, coverImageUrl) — logoAsset nullable, fallback to initial letter |
-| Project | A specific real estate investment project managed by a brand. Model: `ProjectData` (id, name, brand, architect, location, address, imageUrl, tagline, description, galleryImages, isVip, status) |
-| Investment | A user's financial position in a project unit. Model: `InvestmentData` (id, projectId, projectName, brandName, amount, returnRate, durationMonths, expectedEndDate?, constructionPhase?, operation details...) |
-| BrandInvestmentSummary | Aggregated view per brand: total amount, avg return, list of investments |
+| Brand / Firma | A company within the Lhotse Group (Myttas, Lacomb & Bos, Vellte, NUVE, Domorato, Andhy, Ciclo, Renta Fija, Llabe…). Model: `BrandData` (id, name, logoAsset?, coverImageUrl) — logos served from Supabase Storage (brand-assets/logos/) |
+| Project | A specific real estate investment project managed by a brand. Model: `ProjectData` (id, name, brand, architect, location, imageUrl, tagline, description, galleryImages, isVip, status) |
+| Asset | A physical property unit (address, surface, bedrooms, bathrooms, floor_plan_url). Source of truth for compra directa. Independent entity; project may reference it via projects.asset_id. |
+| Compra Directa | User owns a physical asset purchased through a brand. Model: `PurchaseContractData` — linked to asset + selling brand (e.g. Myttas, Andhy). Rental income tracked separately via rental_contracts. |
+| Coinversión | User participates in a real estate development project. Model: `CoinvestmentContractData` — linked to project (brand via project). Profit scenarios and phases from project_scenarios / project_phases. |
+| Renta Fija | User subscribes to a fixed-income offering from a brand. Model: `FixedIncomeContractData` — offerings catalog + user contracts + payments ledger. |
+| Alquiler | Rental management of an owned asset, managed by a brand (e.g. Llabe). Independent domain: rental_contracts → rental_payments. Linked to asset, not to purchase_contract. |
+| BrandInvestmentSummaryData | Aggregated view per brand from brand_investment_summaries view: total amount, avg return, active count. Used in Strategy screen. |
+| PortfolioSummary | User-level totals from portfolio_summaries view: total invested, avg return, active count. 3-way UNION of all investment types. |
 | Viewer (mirón) | Registered user who is not yet an investor — browses public content |
 | Investor | Active client with investments in one or more projects |
 | Investor VIP | Premium investor tier with additional features (TBD) |
@@ -30,7 +35,7 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 
 ### Home (Inicio)
 - Project carousel (auto-scroll 5s, 5 projects max, full-width cards with beige overlay)
-- News section (5 from centralized mockNews, beige overlay cards with brand·subtitle metadata, no "Explorar todo" card)
+- News section (5 from Supabase news table, beige overlay cards with brand·subtitle metadata)
 - "NOTICIAS ↗" → AllNews screen
 - Tap project → project detail screen (SliverAppBar with collapsing hero image)
 
@@ -55,16 +60,21 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - Global search across projects, brands, and investment documents
 - Idle state: trending tags (locations, brands, categories) + collections (brand grid)
 - Active state: results grouped by type (projects, documents)
-- Documents section: investment documents per user (contracts, reports) — to be connected via Supabase
+- Documents section: investment documents per user — placeholder UI, documents table exists in Supabase (model_type + model_id pattern)
 
 ### Investments (Estrategia)
 - **Investor/VIP only** — viewers see CTA or locked state
-- **Overview (navy hero)**: total patrimony (50px, tabular figures) + avg return. Navy bg differentiates as "VIP zone"
-- **Brand ledger**: full-width rows sorted by investment desc, logo + name + operations count left, amount + return right. Ledger lines. Taps → brand detail
-- **Brand detail**: per-brand investments with cards (project name, unit, amount, return)
-- **Investment detail**: participación, return, duration, construction phase, operation details (purchase, mortgage, conditions), documents placeholder, "Ver proyecto" link
-- **New opportunities**: section with compact image cards (beige overlay, same style as Home project cards). Header with ↗ links to full opportunities screen
-- **Opportunities screen**: filtered view (brand + location + search as text tabs, combinable). Only shows projects without existing investments
+- **Overview (navy hero)**: total patrimony from portfolio_summaries view + avg return
+- **Brand ledger**: rows from brand_investment_summaries view — 3-way UNION (purchase + coinvest + fixed_income). Logo from Supabase Storage.
+- **Brand investments**: typed detail per domain (compraDirecta / coinversión / rentaFija). Navigation via GoRouter extra (pre-loaded typed model).
+- **Investment detail routing**: typed routes — `/investments/detail/purchase/:id`, `/investments/detail/coinvestment/:id`, `/investments/detail/completed/purchase/:id`, `/investments/detail/completed/coinvestment/:id`, `/investments/detail/:id` (RF inline)
+- **CompraDirecta detail**: PurchaseContractData — purchase value, rental yield, revaluation, mortgage details (3 tabs: ACTIVO / FINANCIACIÓN / DOCS)
+- **Coinversión detail**: CoinvestmentContractData — scenarios from project_scenarios, phases from project_phases, render/progress images from projects table (4 tabs: AVANCE / ACTIVO / FINANZAS / DOCS)
+- **Renta Fija**: inline in InvestmentDetailScreen — contract metrics, no L3 detail
+- **Completed detail**: CompletedContractData adapter (maps from either purchase or coinvest)
+- **Alquiler**: rental_contracts + rental_payments. Rental income shown in purchase contract detail (rental_yield_pct derived in view). No separate screen yet.
+- **New opportunities**: from get_opportunities RPC (projects not yet invested in). Compact image cards.
+- **Opportunities screen**: filtered by business model + location via RPC params
 
 ### Profile (Mi Perfil)
 - User info (name, email, photo)
@@ -90,4 +100,6 @@ App Shell (BottomNav: 5 tabs)
 - Projects are public info (visible to all roles)
 - Brands are public info
 - News is public
-- Role is determined server-side (when Supabase connects)
+- Role is determined server-side via user_profiles.role (Supabase RLS enforces access)
+- Supabase views use security_invoker = true — RLS applies at view level
+- Brand logos served from Supabase Storage public bucket (brand-assets/logos/); SVG loaded via SvgPicture.network()

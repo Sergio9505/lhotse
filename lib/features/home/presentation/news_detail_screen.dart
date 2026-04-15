@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/mock/mock_news.dart';
+import '../../../core/data/news_provider.dart';
+import '../../../core/domain/news_item_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
@@ -12,16 +15,16 @@ import '../../../core/widgets/lhotse_section_label.dart';
 
 const _kHeroHeight = 200.0;
 
-class NewsDetailScreen extends StatefulWidget {
+class NewsDetailScreen extends ConsumerStatefulWidget {
   const NewsDetailScreen({super.key, required this.newsId});
 
   final String newsId;
 
   @override
-  State<NewsDetailScreen> createState() => _NewsDetailScreenState();
+  ConsumerState<NewsDetailScreen> createState() => _NewsDetailScreenState();
 }
 
-class _NewsDetailScreenState extends State<NewsDetailScreen> {
+class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
   final _scrollController = ScrollController();
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
@@ -55,25 +58,29 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final news = findNewsById(widget.newsId);
+    final newsAsync = ref.watch(newsByIdProvider(widget.newsId));
+    final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
+    final news = newsAsync.valueOrNull;
 
     if (news == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
-          child: Text(
-            'Noticia no encontrada',
-            style: AppTypography.bodyLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
+          child: newsAsync.isLoading
+              ? const CircularProgressIndicator(strokeWidth: 1.5)
+              : Text(
+                  'Noticia no encontrada',
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
         ),
       );
     }
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    final relatedNews = mockNews
+    final relatedNews = allNews
         .where((n) => n.brand == news.brand && n.id != news.id)
         .take(3)
         .toList();
@@ -117,7 +124,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      news.brand.toUpperCase(),
+                      ((news.brand ?? '')).toUpperCase(),
                       style: AppTypography.caption.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 1.2,
@@ -194,7 +201,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                     Row(
                       children: [
                         Text(
-                          news.brand.toUpperCase(),
+                          ((news.brand ?? '')).toUpperCase(),
                           style: AppTypography.caption.copyWith(
                             color: AppColors.textPrimary,
                             letterSpacing: 1.8,
@@ -211,7 +218,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                           ),
                         ),
                         Text(
-                          news.date,
+                          DateFormat('d MMM yyyy').format(news.date),
                           style: AppTypography.caption.copyWith(
                             color: AppColors.accentMuted,
                             letterSpacing: 1.35,
@@ -247,7 +254,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
-                      news.subtitle.toUpperCase(),
+                      ((news.subtitle ?? '')).toUpperCase(),
                       style: AppTypography.caption.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 1.2,
@@ -261,7 +268,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
             // =========================================================
             // 4. BODY
             // =========================================================
-            if (news.body.isNotEmpty)
+            if (news.body?.isNotEmpty == true)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -271,7 +278,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                     0,
                   ),
                   child: Text(
-                    news.body,
+                    news.body!,
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                       height: 1.6,
@@ -290,7 +297,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                   children: [
                     const SizedBox(height: AppSpacing.xxl),
                     LhotseSectionLabel(
-                      label: 'MÁS DE ${news.brand.toUpperCase()}',
+                      label: 'MÁS DE ${((news.brand ?? '')).toUpperCase()}',
                     ),
                     const SizedBox(height: AppSpacing.md),
                     SizedBox(
@@ -308,7 +315,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                           child: LhotseNewsCard.compact(
                             title: relatedNews[i].title,
                             imageUrl: relatedNews[i].imageUrl,
-                            subtitle: relatedNews[i].date,
+                            subtitle: DateFormat('d MMM yyyy').format(relatedNews[i].date),
                             hasPlayButton: relatedNews[i].hasPlayButton,
                           ),
                         ),
@@ -419,7 +426,7 @@ class _VideoPlayerScreen extends StatelessWidget {
 
                   // Subtitle (duration info)
                   Text(
-                    news.subtitle.toUpperCase(),
+                    ((news.subtitle ?? '')).toUpperCase(),
                     style: AppTypography.caption.copyWith(
                       color: AppColors.textOnDark.withValues(alpha: 0.6),
                       letterSpacing: 1.5,

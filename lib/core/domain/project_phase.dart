@@ -12,4 +12,12 @@ class ProjectPhase {
   final DateTime startDate;
   final DateTime endDate;
   final bool isCompleted;
+
+  factory ProjectPhase.fromJson(Map<String, dynamic> json) => ProjectPhase(
+        name: json['name'] as String,
+        title: json['title'] as String?,
+        startDate: DateTime.parse(json['start_date'] as String),
+        endDate: DateTime.parse(json['end_date'] as String),
+        isCompleted: json['is_completed'] as bool? ?? false,
+      );
 }

@@ -3,15 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/mock/mock_news.dart';
-import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/data/news_provider.dart';
+import '../../../core/data/projects_provider.dart';
 import '../../../core/data/supabase_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 import 'widgets/news_section.dart';
 import 'widgets/project_carousel.dart';
-
-final _homeNews = mockNews.take(5).toList();
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -19,38 +17,46 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentRole = ref.watch(currentUserRoleProvider);
+    final projectsAsync = ref.watch(projectsProvider);
+    final newsAsync = ref.watch(newsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // Header: "PROYECTOS" + logo
           SliverToBoxAdapter(child: _Header()),
 
-          // Project carousel — fills viewport: screen - header - navbar
+          // Project carousel
           SliverToBoxAdapter(
             child: LayoutBuilder(builder: (context, constraints) {
               final screen = MediaQuery.of(context).size.height;
               final topSafe = MediaQuery.of(context).padding.top;
               final bottomSafe = MediaQuery.of(context).padding.bottom;
-              // Header: safe area + padding(16) + title line(24) + padding(16)
               final headerH = topSafe + 96;
-              // Navbar: 48px height + bottom safe area padding
               final navbarH = 48 + bottomSafe;
               final available = screen - headerH - navbarH;
               return SizedBox(
                 height: available,
-                child: ProjectCarousel(
-                  projects: mockProjects.take(5).toList(),
-                  currentRole: currentRole,
+                child: projectsAsync.when(
+                  data: (projects) => projects.isEmpty
+                      ? const Center(
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        )
+                      : ProjectCarousel(
+                          projects: projects.take(5).toList(),
+                          currentRole: currentRole,
+                        ),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                  ),
+                  error: (e, _) => Center(child: Text('$e')),
                 ),
               );
             }),
           ),
 
-          // Spacing
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
-          // "NOTICIAS" header
           SliverToBoxAdapter(
             child: _SectionHeader(
               title: 'NOTICIAS',
@@ -58,30 +64,31 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
 
-          // News horizontal scroll
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: NewsSection(news: _homeNews),
+              child: newsAsync.when(
+                data: (news) => NewsSection(news: news.take(5).toList()),
+                loading: () => const SizedBox(
+                  height: 200,
+                  child: Center(
+                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                  ),
+                ),
+                error: (e, _) => const SizedBox(height: 200),
+              ),
             ),
           ),
 
-          // Spacing
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
-          // "SOBRE NOSOTROS" header
           SliverToBoxAdapter(
             child: _SectionHeader(
               title: 'SOBRE NOSOTROS',
-              onTap: () {
-                // TODO: navigate to about us
-              },
+              onTap: () {},
             ),
           ),
 
-          // TODO: Sobre Nosotros content
-
-          // Bottom spacing for nav bar
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
       ),

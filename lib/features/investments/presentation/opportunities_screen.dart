@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/mock/mock_brands.dart';
-import '../../../core/data/mock/mock_investments.dart';
-import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/data/projects_provider.dart';
 import '../../../core/data/supabase_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/project_data.dart';
@@ -30,36 +28,25 @@ class _OpportunitiesScreenState extends ConsumerState<OpportunitiesScreen> {
   _ActiveTool _activeTool = _ActiveTool.none;
   final Set<String> _selectedLocations = {};
 
-  List<ProjectData> get _availableProjects {
-    final investedIds = mockInvestments.map((i) => i.projectId).toSet();
-    var projects =
-        mockProjects.where((p) => !investedIds.contains(p.id)).toList();
+  String? get _modelParam => switch (_selectedModel) {
+        BusinessModel.directPurchase => 'direct_purchase',
+        BusinessModel.coinvestment => 'coinvestment',
+        BusinessModel.fixedIncome => 'fixed_income',
+        null => null,
+      };
 
-    if (_selectedModel != null) {
-      projects = projects.where((p) {
-        final brand =
-            mockBrands.where((b) => b.name == p.brand).firstOrNull;
-        return brand?.businessModel == _selectedModel;
-      }).toList();
-    }
+  Map<String, String?> get _opportunityParams => {
+        'model': _modelParam,
+        'location': _selectedLocations.length == 1
+            ? _selectedLocations.first
+            : null,
+      };
 
-    if (_selectedLocations.isNotEmpty) {
-      projects = projects
-          .where((p) => _selectedLocations.contains(p.location))
-          .toList();
-    }
-
-    return projects;
-  }
-
-  List<String> get _uniqueLocations {
-    final investedIds = mockInvestments.map((i) => i.projectId).toSet();
-    return mockProjects
-        .where((p) => !investedIds.contains(p.id))
-        .map((p) => p.location)
-        .toSet()
-        .toList()
-      ..sort();
+  List<ProjectData> _applyLocalFilters(List<ProjectData> projects) {
+    if (_selectedLocations.isEmpty) return projects;
+    return projects
+        .where((p) => _selectedLocations.contains(p.location))
+        .toList();
   }
 
   void _toggleModel(BusinessModel model) {
@@ -88,7 +75,13 @@ class _OpportunitiesScreenState extends ConsumerState<OpportunitiesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final projects = _availableProjects;
+    final allProjects =
+        ref.watch(opportunitiesProvider(_opportunityParams)).valueOrNull ??
+            const [];
+    final projects = _applyLocalFilters(allProjects);
+
+    final uniqueLocations =
+        allProjects.map((p) => p.location).toSet().toList()..sort();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -96,7 +89,6 @@ class _OpportunitiesScreenState extends ConsumerState<OpportunitiesScreen> {
         children: [
           const LhotseAppHeader(title: 'OPORTUNIDADES'),
 
-          // Filter bar
           _FilterBar(
             selectedModel: _selectedModel,
             activeTool: _activeTool,
@@ -105,16 +97,14 @@ class _OpportunitiesScreenState extends ConsumerState<OpportunitiesScreen> {
             onLocationsTap: _toggleLocations,
           ),
 
-          // Location panel
           if (_activeTool == _ActiveTool.locations)
             _LocationFilterRow(
-              locations: _uniqueLocations,
+              locations: uniqueLocations,
               selectedLocations: _selectedLocations,
               onLocationTap: _toggleLocation,
               onClear: () => setState(() => _selectedLocations.clear()),
             ),
 
-          // Project list
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -139,9 +129,7 @@ class _OpportunitiesScreenState extends ConsumerState<OpportunitiesScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Filter bar — model tabs + location icon
-// ---------------------------------------------------------------------------
+// ── Filter bar ────────────────────────────────────────────────────────────────
 
 class _FilterBar extends StatelessWidget {
   const _FilterBar({
@@ -172,7 +160,6 @@ class _FilterBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Model tabs
           Row(
             children: List.generate(_modelFilters.length, (i) {
               final filter = _modelFilters[i];
@@ -187,14 +174,9 @@ class _FilterBar extends StatelessWidget {
               );
             }),
           ),
-
           const Spacer(),
-
-          // Separator
           Container(width: 1, height: 16, color: AppColors.border),
           const SizedBox(width: AppSpacing.md),
-
-          // Locations tool
           GestureDetector(
             onTap: onLocationsTap,
             child: SizedBox(
@@ -236,9 +218,7 @@ class _FilterBar extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Location filter row
-// ---------------------------------------------------------------------------
+// ── Location filter row ───────────────────────────────────────────────────────
 
 class _LocationFilterRow extends StatelessWidget {
   const _LocationFilterRow({
@@ -278,7 +258,6 @@ class _LocationFilterRow extends StatelessWidget {
               ),
             );
           }
-
           final location = locations[i];
           final isSelected = selectedLocations.contains(location);
           final double opacity =

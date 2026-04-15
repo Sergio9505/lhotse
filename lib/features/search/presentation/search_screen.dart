@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/mock/mock_brands.dart';
-import '../../../core/data/mock/mock_projects.dart';
+import '../../../core/data/brands_provider.dart';
+import '../../../core/data/projects_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
@@ -12,14 +13,14 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 
-class SearchScreen extends StatefulWidget {
+class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchController = TextEditingController();
   String _query = '';
   final List<String> _recentSearches = [];
@@ -38,15 +39,23 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  List<ProjectData> get _searchResults {
+  List<ProjectData> _searchProjects(List<ProjectData> projects) {
     if (_query.isEmpty) return [];
     final q = _query.toLowerCase();
-    return mockProjects
+    return projects
         .where((p) =>
             p.name.toLowerCase().contains(q) ||
             p.brand.toLowerCase().contains(q) ||
             p.location.toLowerCase().contains(q) ||
             p.architect.toLowerCase().contains(q))
+        .toList();
+  }
+
+  List<BrandData> _searchBrands(List<BrandData> brands) {
+    if (_query.isEmpty) return [];
+    final q = _query.toLowerCase();
+    return brands
+        .where((b) => b.name.toLowerCase().contains(q))
         .toList();
   }
 
@@ -73,13 +82,14 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final hasQuery = _query.isNotEmpty;
+    final projects = ref.watch(projectsProvider).valueOrNull ?? const [];
+    final brands = ref.watch(brandsProvider).valueOrNull ?? const [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           LhotseShellHeader(
             child: Text(
               'BUSCAR',
@@ -89,7 +99,6 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
 
-          // Search field
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: LhotseSearchField(
@@ -101,15 +110,21 @@ class _SearchScreenState extends State<SearchScreen> {
 
           const SizedBox(height: AppSpacing.xl),
 
-          // Content
           Expanded(
             child: hasQuery
                 ? _SearchResults(
-                    results: _searchResults,
+                    projectResults: _searchProjects(projects),
+                    brandResults: _searchBrands(brands),
                     query: _query,
                     onResultTap: () => _addToRecent(_query),
                   )
-                : const _IdleContent(),
+                : _IdleContent(
+                    recentSearches: _recentSearches,
+                    featuredProjects:
+                        projects.where((p) => p.isVip).take(3).toList(),
+                    onTagTap: _onTagTap,
+                    trendingTags: _trendingTags,
+                  ),
           ),
         ],
       ),
@@ -117,50 +132,66 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Idle state: Recientes + Tendencias + Destacados
-// ---------------------------------------------------------------------------
+// ── Idle state ───────────────────────────────────────────────────────────────
 
 class _IdleContent extends StatelessWidget {
-  const _IdleContent();
+  const _IdleContent({
+    required this.recentSearches,
+    required this.featuredProjects,
+    required this.onTagTap,
+    required this.trendingTags,
+  });
+
+  final List<String> recentSearches;
+  final List<ProjectData> featuredProjects;
+  final ValueChanged<String> onTagTap;
+  final List<String> trendingTags;
 
   @override
   Widget build(BuildContext context) {
-    final state = context.findAncestorStateOfType<_SearchScreenState>()!;
-
     return ListView(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       children: [
-        if (state._recentSearches.isNotEmpty) ...[
-          const _RecentSearchesSection(),
+        if (recentSearches.isNotEmpty) ...[
+          _TagSection(
+            title: 'RECIENTES',
+            tags: recentSearches,
+            onTap: onTagTap,
+          ),
           const SizedBox(height: AppSpacing.xl),
         ],
-        const _TrendingSection(),
+        _TagSection(
+          title: 'TENDENCIAS',
+          tags: trendingTags,
+          onTap: onTagTap,
+        ),
         const SizedBox(height: AppSpacing.xl),
-        const _FeaturedSection(),
+        _FeaturedSection(projects: featuredProjects),
       ],
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Recientes — in-memory recent searches
-// ---------------------------------------------------------------------------
+class _TagSection extends StatelessWidget {
+  const _TagSection({
+    required this.title,
+    required this.tags,
+    required this.onTap,
+  });
 
-class _RecentSearchesSection extends StatelessWidget {
-  const _RecentSearchesSection();
+  final String title;
+  final List<String> tags;
+  final ValueChanged<String> onTap;
 
   @override
   Widget build(BuildContext context) {
-    final state = context.findAncestorStateOfType<_SearchScreenState>()!;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'RECIENTES',
+            title,
             style: AppTypography.labelLarge.copyWith(
               color: AppColors.textPrimary,
               letterSpacing: 1.8,
@@ -170,51 +201,8 @@ class _RecentSearchesSection extends StatelessWidget {
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
-            children: state._recentSearches
-                .map((term) => _TrendingChip(
-                      label: term,
-                      onTap: () => state._onTagTap(term),
-                    ))
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Tendencias — trending tags
-// ---------------------------------------------------------------------------
-
-class _TrendingSection extends StatelessWidget {
-  const _TrendingSection();
-
-  @override
-  Widget build(BuildContext context) {
-    final state = context.findAncestorStateOfType<_SearchScreenState>()!;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'TENDENCIAS',
-            style: AppTypography.labelLarge.copyWith(
-              color: AppColors.textPrimary,
-              letterSpacing: 1.8,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: _SearchScreenState._trendingTags
-                .map((tag) => _TrendingChip(
-                      label: tag,
-                      onTap: () => state._onTagTap(tag),
-                    ))
+            children: tags
+                .map((tag) => _TrendingChip(label: tag, onTap: () => onTap(tag)))
                 .toList(),
           ),
         ],
@@ -256,17 +244,14 @@ class _TrendingChip extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Destacados — curated VIP projects
-// ---------------------------------------------------------------------------
-
 class _FeaturedSection extends StatelessWidget {
-  const _FeaturedSection();
+  const _FeaturedSection({required this.projects});
+
+  final List<ProjectData> projects;
 
   @override
   Widget build(BuildContext context) {
-    final featured = mockProjects.where((p) => p.isVip).take(3).toList();
-
+    if (projects.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(
@@ -280,9 +265,9 @@ class _FeaturedSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          for (int i = 0; i < featured.length; i++) ...[
-            _FeaturedCard(project: featured[i]),
-            if (i < featured.length - 1) const SizedBox(height: AppSpacing.md),
+          for (int i = 0; i < projects.length; i++) ...[
+            _FeaturedCard(project: projects[i]),
+            if (i < projects.length - 1) const SizedBox(height: AppSpacing.md),
           ],
         ],
       ),
@@ -353,35 +338,30 @@ class _FeaturedCard extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Search results — brands + projects
-// ---------------------------------------------------------------------------
+// ── Search results ───────────────────────────────────────────────────────────
 
 class _SearchResults extends StatelessWidget {
   const _SearchResults({
-    required this.results,
+    required this.projectResults,
+    required this.brandResults,
     required this.query,
     this.onResultTap,
   });
 
-  final List<ProjectData> results;
+  final List<ProjectData> projectResults;
+  final List<BrandData> brandResults;
   final String query;
   final VoidCallback? onResultTap;
 
   @override
   Widget build(BuildContext context) {
-    final brandResults = mockBrands
-        .where((b) => b.name.toLowerCase().contains(query.toLowerCase()))
-        .toList();
-
-    if (results.isEmpty && brandResults.isEmpty) {
+    if (projectResults.isEmpty && brandResults.isEmpty) {
       return _EmptyResults(query: query);
     }
 
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        // FIRMAS section
         if (brandResults.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -394,15 +374,11 @@ class _SearchResults extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          ...brandResults.map((brand) => _BrandResultItem(
-                brand: brand,
-                onTap: onResultTap,
-              )),
+          ...brandResults.map((brand) =>
+              _BrandResultItem(brand: brand, onTap: onResultTap)),
           const SizedBox(height: AppSpacing.xl),
         ],
-
-        // PROYECTOS section
-        if (results.isNotEmpty) ...[
+        if (projectResults.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
@@ -414,14 +390,10 @@ class _SearchResults extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          ...results.map((project) => _ProjectResultItem(
-                project: project,
-                onTap: onResultTap,
-              )),
+          ...projectResults.map((project) =>
+              _ProjectResultItem(project: project, onTap: onResultTap)),
           const SizedBox(height: AppSpacing.xl),
         ],
-
-        // Documents placeholder
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Text(
@@ -470,8 +442,12 @@ class _BrandResultItem extends StatelessWidget {
   final BrandData brand;
   final VoidCallback? onTap;
 
+  static const _filter =
+      ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn);
+
   @override
   Widget build(BuildContext context) {
+    final logo = brand.logoAsset;
     return GestureDetector(
       onTap: () {
         onTap?.call();
@@ -485,19 +461,15 @@ class _BrandResultItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Logo
             SizedBox(
               width: 48,
               height: 32,
-              child: brand.logoAsset != null
-                  ? SvgPicture.asset(
-                      brand.logoAsset!,
-                      fit: BoxFit.contain,
-                      colorFilter: const ColorFilter.mode(
-                        AppColors.textPrimary,
-                        BlendMode.srcIn,
-                      ),
-                    )
+              child: logo != null
+                  ? (logo.startsWith('http')
+                      ? SvgPicture.network(logo,
+                          fit: BoxFit.contain, colorFilter: _filter)
+                      : SvgPicture.asset(logo,
+                          fit: BoxFit.contain, colorFilter: _filter))
                   : Center(
                       child: Text(
                         brand.name.split(' ').map((w) => w[0]).join(),
@@ -509,13 +481,11 @@ class _BrandResultItem extends StatelessWidget {
                     ),
             ),
             const SizedBox(width: AppSpacing.md),
-            // Tagline
             Expanded(
               child: Text(
                 brand.tagline ?? brand.name.toUpperCase(),
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.accentMuted,
-                ),
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.accentMuted),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -548,20 +518,15 @@ class _ProjectResultItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm,
-        ),
+            horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
         child: Row(
           children: [
-            // Thumbnail
             SizedBox(
               width: 64,
               height: 64,
               child: LhotseImage(project.imageUrl),
             ),
             const SizedBox(width: AppSpacing.md),
-
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,8 +573,6 @@ class _ProjectResultItem extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Arrow
             const PhosphorIcon(
               PhosphorIconsThin.arrowUpRight,
               size: 18,
