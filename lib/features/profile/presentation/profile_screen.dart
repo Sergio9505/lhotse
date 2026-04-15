@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,9 +15,6 @@ import '../../auth/data/auth_repository.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
-
-  static const _avatarUrl =
-      'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=240&q=80';
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -180,6 +179,39 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
     );
   }
 
+  Widget _buildNetworkOrInitials(String? avatarUrl, String displayName) {
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      return Image.network(
+        avatarUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stack) =>
+            _buildInitials(displayName),
+      );
+    }
+    return _buildInitials(displayName);
+  }
+
+  Widget _buildInitials(String name) {
+    final parts = name.trim().split(' ');
+    final initials = parts.length >= 2
+        ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+        : (name.isNotEmpty ? name[0].toUpperCase() : '?');
+    return Container(
+      color: AppColors.surface,
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            fontFamily: 'Campton',
+            fontSize: 36,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     final file = await _picker.pickImage(
       source: source,
@@ -220,24 +252,12 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
                   ),
                   child: ClipOval(
                     child: _localImage != null
-                        ? Image.network(
-                            _localImage!.path,
+                        ? Image.file(
+                            File(_localImage!.path),
                             fit: BoxFit.cover,
                           )
-                        : Image.network(
-                            ProfileScreen._avatarUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stack) => Container(
-                              color: AppColors.surface,
-                              child: const Center(
-                                child: PhosphorIcon(
-                                  PhosphorIconsThin.user,
-                                  size: 48,
-                                  color: AppColors.accentMuted,
-                                ),
-                              ),
-                            ),
-                          ),
+                        : _buildNetworkOrInitials(
+                            profile?.avatarUrl, displayName),
                   ),
                 ),
               ),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/asset_info.dart';
+import '../../../core/domain/document_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
@@ -20,16 +23,17 @@ final _eurFormat = NumberFormat('#,##0', 'es_ES');
 const _kHeroHeight = 200.0;
 const _kMaxVisibleGallery = 5;
 
-class CompletedDetailScreen extends StatefulWidget {
+class CompletedDetailScreen extends ConsumerStatefulWidget {
   const CompletedDetailScreen({super.key, required this.data});
 
   final CompletedContractData data;
 
   @override
-  State<CompletedDetailScreen> createState() => _CompletedDetailScreenState();
+  ConsumerState<CompletedDetailScreen> createState() =>
+      _CompletedDetailScreenState();
 }
 
-class _CompletedDetailScreenState extends State<CompletedDetailScreen>
+class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
     with SingleTickerProviderStateMixin {
   final _outerController = ScrollController();
   late final TabController _tabController;
@@ -45,11 +49,10 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
   };
   final Set<DocCategory> _activeDocFilters = {};
 
-  List<LhotseDocument> get _filteredDocs {
-    if (_activeDocFilters.isEmpty) return _completedDocs;
-    return _completedDocs
-        .where((d) => _activeDocFilters.contains(d.category))
-        .toList();
+  List<LhotseDocument> _filteredDocs(List<DocumentData> docs) {
+    final all = docs.map((d) => d.toLhotseDocument()).toList();
+    if (_activeDocFilters.isEmpty) return all;
+    return all.where((d) => _activeDocFilters.contains(d.category)).toList();
   }
 
   void _toggleDocFilter(DocCategory cat) {
@@ -99,6 +102,9 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final returnAmount = d.totalReturn ?? d.amount;
+    final docs = ref
+        .watch(documentsProvider((type: d.modelType, id: d.id)))
+        .valueOrNull ?? const [];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -260,7 +266,7 @@ class _CompletedDetailScreenState extends State<CompletedDetailScreen>
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,
                 child: _DocsTab(
-                  documents: _filteredDocs,
+                  documents: _filteredDocs(docs),
                   chips: _buildDocChips(),
                 ),
               ),
@@ -479,31 +485,4 @@ class _DocsTab extends StatelessWidget {
   }
 }
 
-// ── Placeholder docs ──────────────────────────────────────────────────────────
-
-final _completedDocs = [
-  LhotseDocument(
-      name: 'Acta de liquidación',
-      date: '15 FEB. 2026',
-      category: DocCategory.legal),
-  LhotseDocument(
-      name: 'Certificado de retención fiscal',
-      date: '15 FEB. 2026',
-      category: DocCategory.fiscal),
-  LhotseDocument(
-      name: 'Escritura de compraventa',
-      date: '10 ENE. 2026',
-      category: DocCategory.legal),
-  LhotseDocument(
-      name: 'Informe final de rentabilidad',
-      date: '12 FEB. 2026',
-      category: DocCategory.financiero),
-  LhotseDocument(
-      name: 'Certificado de finalización de obra',
-      date: '20 DIC. 2025',
-      category: DocCategory.obra),
-  LhotseDocument(
-      name: 'Factura notaría cierre',
-      date: '15 FEB. 2026',
-      category: DocCategory.financiero),
-];
+// Documents loaded from Supabase via documentsProvider

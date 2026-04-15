@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/data/documents_provider.dart';
 import '../../../core/data/news_provider.dart';
 import '../../../core/domain/news_item_data.dart';
 import '../../../core/theme/app_theme.dart';
@@ -58,6 +59,9 @@ class InvestmentDetailScreen extends ConsumerWidget {
         .where((n) => n.brand == contract.brandName)
         .take(4)
         .toList();
+    final rfDocs = ref
+        .watch(documentsProvider((type: 'contract', id: investmentId)))
+        .valueOrNull ?? const [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -78,7 +82,7 @@ class InvestmentDetailScreen extends ConsumerWidget {
           const LhotseSectionLabel(label: 'DOCUMENTOS'),
           const SizedBox(height: AppSpacing.sm),
           LhotseDocumentsSection(
-            documents: _investmentDocs,
+            documents: rfDocs.map((d) => d.toLhotseDocument()).toList(),
             filterLabels: const {
               DocCategory.legal: 'Legal',
               DocCategory.financiero: 'Financiero',
@@ -204,22 +208,7 @@ class _RentaFijaDetail extends StatelessWidget {
   }
 }
 
-// ── Placeholder docs ──────────────────────────────────────────────────────────
-
-final _investmentDocs = [
-  LhotseDocument(
-      name: 'Contrato de inversión',
-      date: '15 MAR. 2026',
-      category: DocCategory.legal),
-  LhotseDocument(
-      name: 'Certificado de depósito',
-      date: '15 MAR. 2026',
-      category: DocCategory.fiscal),
-  LhotseDocument(
-      name: 'Condiciones generales',
-      date: '01 MAR. 2026',
-      category: DocCategory.legal),
-];
+// Documents loaded from Supabase via documentsProvider
 
 // ── All news bottom sheet ─────────────────────────────────────────────────────
 

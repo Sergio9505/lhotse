@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-
-
+import '../../../core/data/supabase_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../auth/presentation/widgets/lhotse_auth_field.dart';
 
-class SecurityScreen extends StatefulWidget {
+class SecurityScreen extends ConsumerStatefulWidget {
   const SecurityScreen({super.key});
 
   @override
-  State<SecurityScreen> createState() => _SecurityScreenState();
+  ConsumerState<SecurityScreen> createState() => _SecurityScreenState();
 }
 
-class _SecurityScreenState extends State<SecurityScreen> {
+class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   bool _biometric = true;
 
   @override
@@ -33,7 +35,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
           _ActionRow(
             icon: PhosphorIconsThin.key,
             label: 'Cambiar contraseña',
-            onTap: () {},
+            onTap: () => _showChangePasswordSheet(context),
           ),
           _ToggleRow(
             icon: PhosphorIconsThin.fingerprint,
@@ -61,6 +63,154 @@ class _SecurityScreenState extends State<SecurityScreen> {
             onTap: () {},
           ),
         ],
+      ),
+    );
+  }
+
+  void _showChangePasswordSheet(BuildContext context) {
+    final newPassController = TextEditingController();
+    final confirmController = TextEditingController();
+    String? error;
+    bool saving = false;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textPrimary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+                  child: Text(
+                    'CAMBIAR CONTRASEÑA',
+                    style: AppTypography.headingLarge.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg),
+                  child: LhotseAuthField(
+                    controller: newPassController,
+                    label: 'Nueva contraseña',
+                    obscureText: true,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg),
+                  child: LhotseAuthField(
+                    controller: confirmController,
+                    label: 'Confirmar contraseña',
+                    obscureText: true,
+                  ),
+                ),
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+                    child: Text(
+                      error!,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: AppSpacing.xl),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.xl,
+                  ),
+                  child: GestureDetector(
+                    onTap: saving
+                        ? null
+                        : () async {
+                            final newPass = newPassController.text.trim();
+                            final confirm = confirmController.text.trim();
+                            if (newPass.length < 8) {
+                              setSheet(() => error =
+                                  'La contraseña debe tener al menos 8 caracteres');
+                              return;
+                            }
+                            if (newPass != confirm) {
+                              setSheet(
+                                  () => error = 'Las contraseñas no coinciden');
+                              return;
+                            }
+                            setSheet(() {
+                              saving = true;
+                              error = null;
+                            });
+                            try {
+                              await ref
+                                  .read(supabaseClientProvider)
+                                  .auth
+                                  .updateUser(UserAttributes(password: newPass));
+                              if (ctx.mounted) Navigator.of(ctx).pop();
+                            } catch (e) {
+                              setSheet(() {
+                                saving = false;
+                                error = 'Error: ${e.toString()}';
+                              });
+                            }
+                          },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      color: AppColors.primary,
+                      child: Center(
+                        child: saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    color: Colors.white),
+                              )
+                            : Text(
+                                'GUARDAR',
+                                style: AppTypography.labelLarge.copyWith(
+                                  color: AppColors.textOnDark,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

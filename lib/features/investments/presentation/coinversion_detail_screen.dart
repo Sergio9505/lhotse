@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/documents_provider.dart';
 import '../../../core/data/news_provider.dart';
+import '../../../core/domain/document_data.dart';
 import '../../../core/domain/asset_info.dart';
 import '../../../core/domain/news_item_data.dart';
 import '../../../core/domain/profit_scenario.dart';
@@ -67,11 +69,10 @@ class _CoinversionDetailScreenState
   };
   final Set<DocCategory> _activeDocFilters = {};
 
-  List<LhotseDocument> get _filteredDocs {
-    if (_activeDocFilters.isEmpty) return _investmentDocs;
-    return _investmentDocs
-        .where((d) => _activeDocFilters.contains(d.category))
-        .toList();
+  List<LhotseDocument> _filteredDocs(List<DocumentData> docs) {
+    final all = docs.map((d) => d.toLhotseDocument()).toList();
+    if (_activeDocFilters.isEmpty) return all;
+    return all.where((d) => _activeDocFilters.contains(d.category)).toList();
   }
 
   void _toggleDocFilter(DocCategory cat) {
@@ -144,6 +145,9 @@ class _CoinversionDetailScreenState
     final projectImageUrl = c.projectImageUrl;
     // inv alias for fields used in collapsed title (same type now)
     final inv = c;
+    final docs = ref
+        .watch(documentsProvider((type: 'coinvestment', id: c.id)))
+        .valueOrNull ?? const [];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -348,7 +352,7 @@ class _CoinversionDetailScreenState
                 ),
                 _TabScrollWrapper(
                   child: _DocumentosTab(
-                    documents: _filteredDocs,
+                    documents: _filteredDocs(docs),
                     chips: _buildDocChips(),
                   ),
                   bottomPadding: bottomPadding,
@@ -1495,15 +1499,4 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
 
 const _kMaxVisibleNews = 3;
 
-final _investmentDocs = [
-  LhotseDocument(name: 'Escritura de compraventa', date: '15 MAR. 2026', category: DocCategory.legal),
-  LhotseDocument(name: 'Contrato de arras', date: '28 FEB. 2026', category: DocCategory.legal),
-  LhotseDocument(name: 'Nota simple registral', date: '10 FEB. 2026', category: DocCategory.legal),
-  LhotseDocument(name: 'Certificado fiscal', date: '02 FEB. 2026', category: DocCategory.fiscal),
-  LhotseDocument(name: 'Factura notaría', date: '15 ENE. 2026', category: DocCategory.financiero),
-  LhotseDocument(name: 'Licencia urbanística', date: '20 DIC. 2025', category: DocCategory.obra),
-  LhotseDocument(name: 'Recibo hipoteca Q4', date: '01 DIC. 2025', category: DocCategory.financiero),
-  LhotseDocument(name: 'Planos definitivos', date: '15 NOV. 2025', category: DocCategory.obra),
-  LhotseDocument(name: 'Poder notarial', date: '01 NOV. 2025', category: DocCategory.legal),
-  LhotseDocument(name: 'Informe de tasación', date: '10 OCT. 2025', category: DocCategory.financiero),
-];
+// Documents loaded from Supabase via documentsProvider

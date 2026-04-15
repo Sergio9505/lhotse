@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/asset_info.dart';
+import '../../../core/domain/document_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
@@ -21,7 +24,7 @@ final _dateFormat = DateFormat('MM/yyyy');
 const _kHeroHeight = 200.0;
 const _kMaxVisibleGallery = 5;
 
-class CompraDirectaDetailScreen extends StatefulWidget {
+class CompraDirectaDetailScreen extends ConsumerStatefulWidget {
   const CompraDirectaDetailScreen({
     super.key,
     required this.contract,
@@ -30,11 +33,12 @@ class CompraDirectaDetailScreen extends StatefulWidget {
   final PurchaseContractData contract;
 
   @override
-  State<CompraDirectaDetailScreen> createState() =>
+  ConsumerState<CompraDirectaDetailScreen> createState() =>
       _CompraDirectaDetailScreenState();
 }
 
-class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
+class _CompraDirectaDetailScreenState
+    extends ConsumerState<CompraDirectaDetailScreen>
     with SingleTickerProviderStateMixin {
   final _outerController = ScrollController();
   late final TabController _tabController;
@@ -49,9 +53,10 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
   };
   final Set<DocCategory> _activeDocFilters = {};
 
-  List<LhotseDocument> get _filteredDocs {
-    if (_activeDocFilters.isEmpty) return _docs;
-    return _docs.where((d) => _activeDocFilters.contains(d.category)).toList();
+  List<LhotseDocument> _filteredDocs(List<DocumentData> docs) {
+    final all = docs.map((d) => d.toLhotseDocument()).toList();
+    if (_activeDocFilters.isEmpty) return all;
+    return all.where((d) => _activeDocFilters.contains(d.category)).toList();
   }
 
   void _toggleDocFilter(DocCategory cat) {
@@ -98,6 +103,9 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
     final c = widget.contract;
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final docs = ref
+        .watch(documentsProvider((type: 'purchase', id: c.id)))
+        .valueOrNull ?? const [];
     final projectName = c.projectName ?? c.assetUnitName ?? '';
     final purchaseFormatted = _eurFormat.format(c.purchaseValue);
 
@@ -349,7 +357,7 @@ class _CompraDirectaDetailScreenState extends State<CompraDirectaDetailScreen>
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,
                 child: _DocumentosTab(
-                  documents: _filteredDocs,
+                  documents: _filteredDocs(docs),
                   chips: _buildDocChips(),
                 ),
               ),
@@ -730,31 +738,4 @@ void _showFloorPlan(BuildContext context, String url) {
   );
 }
 
-// ── Placeholder docs ──────────────────────────────────────────────────────────
-
-final _docs = [
-  LhotseDocument(
-      name: 'Escritura de compraventa',
-      date: '15 MAR. 2025',
-      category: DocCategory.legal),
-  LhotseDocument(
-      name: 'Contrato de arrendamiento',
-      date: '01 ABR. 2025',
-      category: DocCategory.legal),
-  LhotseDocument(
-      name: 'Certificado energético',
-      date: '10 FEB. 2025',
-      category: DocCategory.obra),
-  LhotseDocument(
-      name: 'Nota simple registral',
-      date: '12 MAR. 2025',
-      category: DocCategory.legal),
-  LhotseDocument(
-      name: 'Certificado de retención fiscal',
-      date: '02 ENE. 2026',
-      category: DocCategory.fiscal),
-  LhotseDocument(
-      name: 'Recibo IBI 2025',
-      date: '15 SEP. 2025',
-      category: DocCategory.fiscal),
-];
+// Documents are now loaded from Supabase via documentsProvider

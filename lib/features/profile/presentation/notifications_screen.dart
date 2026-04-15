@@ -1,34 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../data/notification_preferences_provider.dart';
 
-class NotificationsScreen extends StatefulWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
-  // Mock toggle state — will be replaced by provider
-  final Map<String, bool> _toggles = {
-    'investment_updates': true,
-    'new_opportunities': true,
-    'documents': false,
-    'group_news': true,
-    'events': false,
-    'push': true,
-    'email': true,
-  };
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  NotificationPreferences? _local; // optimistic local state
 
-  void _onToggle(String key, bool value) {
-    setState(() => _toggles[key] = value);
+  NotificationPreferences get _prefs =>
+      _local ??
+      ref.read(notificationPreferencesProvider).valueOrNull ??
+      const NotificationPreferences();
+
+  Future<void> _toggle(NotificationPreferences updated) async {
+    setState(() => _local = updated);
+    await updateNotificationPreferences(ref, updated);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Load on first render
+    ref.watch(notificationPreferencesProvider).whenData((prefs) {
+      if (_local == null && prefs != null) {
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => setState(() => _local = prefs));
+      }
+    });
+
     final topPadding = MediaQuery.of(context).padding.top;
+    final p = _prefs;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -37,55 +46,52 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _Header(topPadding: topPadding),
-
             const SizedBox(height: AppSpacing.xl),
 
             const _SectionLabel(title: 'INVERSIONES'),
             const SizedBox(height: AppSpacing.xs),
             _ToggleRow(
               label: 'Actualizaciones de inversión',
-              value: _toggles['investment_updates']!,
-              onChanged: (v) => _onToggle('investment_updates', v),
+              value: p.investmentUpdates,
+              onChanged: (v) => _toggle(p.copyWith(investmentUpdates: v)),
             ),
             _ToggleRow(
               label: 'Nuevas oportunidades',
-              value: _toggles['new_opportunities']!,
-              onChanged: (v) => _onToggle('new_opportunities', v),
+              value: p.newOpportunities,
+              onChanged: (v) => _toggle(p.copyWith(newOpportunities: v)),
             ),
             _ToggleRow(
               label: 'Documentos disponibles',
-              value: _toggles['documents']!,
-              onChanged: (v) => _onToggle('documents', v),
+              value: p.documents,
+              onChanged: (v) => _toggle(p.copyWith(documents: v)),
             ),
 
             const SizedBox(height: AppSpacing.xl),
-
             const _SectionLabel(title: 'GENERAL'),
             const SizedBox(height: AppSpacing.xs),
             _ToggleRow(
               label: 'Noticias del grupo',
-              value: _toggles['group_news']!,
-              onChanged: (v) => _onToggle('group_news', v),
+              value: p.groupNews,
+              onChanged: (v) => _toggle(p.copyWith(groupNews: v)),
             ),
             _ToggleRow(
               label: 'Eventos y novedades',
-              value: _toggles['events']!,
-              onChanged: (v) => _onToggle('events', v),
+              value: p.events,
+              onChanged: (v) => _toggle(p.copyWith(events: v)),
             ),
 
             const SizedBox(height: AppSpacing.xl),
-
             const _SectionLabel(title: 'CANALES'),
             const SizedBox(height: AppSpacing.xs),
             _ToggleRow(
               label: 'Notificaciones push',
-              value: _toggles['push']!,
-              onChanged: (v) => _onToggle('push', v),
+              value: p.pushEnabled,
+              onChanged: (v) => _toggle(p.copyWith(pushEnabled: v)),
             ),
             _ToggleRow(
               label: 'Correo electrónico',
-              value: _toggles['email']!,
-              onChanged: (v) => _onToggle('email', v),
+              value: p.emailEnabled,
+              onChanged: (v) => _toggle(p.copyWith(emailEnabled: v)),
             ),
           ],
         ),
@@ -94,24 +100,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Header
-// ---------------------------------------------------------------------------
+// ── Header ────────────────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
   const _Header({required this.topPadding});
-
   final double topPadding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.sm,
-        topPadding + 16,
-        AppSpacing.lg,
-        16,
-      ),
+      padding: EdgeInsets.fromLTRB(AppSpacing.sm, topPadding + 16, AppSpacing.lg, 16),
       child: SizedBox(
         height: 44,
         child: Row(
@@ -131,13 +129,10 @@ class _Header extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Section label (same pattern as profile screen)
-// ---------------------------------------------------------------------------
+// ── Section label ─────────────────────────────────────────────────────────────
 
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.title});
-
   final String title;
 
   @override
@@ -167,9 +162,7 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Toggle row
-// ---------------------------------------------------------------------------
+// ── Toggle row ────────────────────────────────────────────────────────────────
 
 class _ToggleRow extends StatelessWidget {
   const _ToggleRow({
@@ -189,9 +182,7 @@ class _ToggleRow extends StatelessWidget {
       onTap: () => onChanged(!value),
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: 18,
-        ),
+            horizontal: AppSpacing.lg, vertical: 18),
         child: Row(
           children: [
             Expanded(
@@ -211,13 +202,10 @@ class _ToggleRow extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Checkbox — rectangular, sharp edges, consistent with design system
-// ---------------------------------------------------------------------------
+// ── Checkbox ──────────────────────────────────────────────────────────────────
 
 class _Checkbox extends StatelessWidget {
   const _Checkbox({required this.value});
-
   final bool value;
 
   @override
@@ -238,12 +226,7 @@ class _Checkbox extends StatelessWidget {
       ),
       child: value
           ? const Center(
-              child: Icon(
-                Icons.check,
-                size: 13,
-                color: AppColors.textOnDark,
-              ),
-            )
+              child: Icon(Icons.check, size: 13, color: AppColors.textOnDark))
           : null,
     );
   }

@@ -7,6 +7,7 @@ import 'purchase_contract_data.dart';
 class CompletedContractData {
   const CompletedContractData({
     required this.id,
+    required this.modelType,
     required this.projectName,
     required this.brandName,
     this.imageUrl,
@@ -20,6 +21,8 @@ class CompletedContractData {
   });
 
   final String id;
+  /// 'purchase' or 'coinvestment' — used for documents query.
+  final String modelType;
   final String projectName;
   final String brandName;
   final String? imageUrl;
@@ -34,6 +37,7 @@ class CompletedContractData {
   factory CompletedContractData.fromPurchase(PurchaseContractData c) =>
       CompletedContractData(
         id: c.id,
+        modelType: 'purchase',
         projectName: c.projectName ?? c.assetUnitName ?? '',
         brandName: c.brandName,
         imageUrl: c.projectImageUrl,
@@ -49,6 +53,7 @@ class CompletedContractData {
   factory CompletedContractData.fromCoinvestment(CoinvestmentContractData c) =>
       CompletedContractData(
         id: c.id,
+        modelType: 'coinvestment',
         projectName: c.projectName,
         brandName: c.brandName,
         imageUrl: c.projectImageUrl,

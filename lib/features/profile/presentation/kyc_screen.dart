@@ -1,16 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../data/kyc_provider.dart';
 
-class KycScreen extends StatelessWidget {
+class KycScreen extends ConsumerWidget {
   const KycScreen({super.key});
 
+  static IconData _iconFor(String docType) => switch (docType) {
+        'dni_pasaporte' => PhosphorIconsThin.identificationCard,
+        'justificante_domicilio' => PhosphorIconsThin.house,
+        'origen_fondos' => PhosphorIconsThin.bank,
+        'contrato_marco' => PhosphorIconsThin.fileText,
+        _ => PhosphorIconsThin.file,
+      };
+
+  static _KycStatus _statusFor(String status) => switch (status) {
+        'verified' => _KycStatus.verified,
+        'pending' => _KycStatus.pending,
+        _ => _KycStatus.required,
+      };
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final topPadding = MediaQuery.of(context).padding.top;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final kycAsync = ref.watch(kycDocumentsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -21,7 +38,6 @@ class KycScreen extends StatelessWidget {
 
           const SizedBox(height: AppSpacing.lg),
 
-          // Status summary
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
@@ -35,30 +51,30 @@ class KycScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
 
           // Document list
-          const _DocumentRow(
-            icon: PhosphorIconsThin.identificationCard,
-            label: 'DNI / Pasaporte',
-            status: _KycStatus.verified,
-          ),
-          const _DocumentRow(
-            icon: PhosphorIconsThin.house,
-            label: 'Justificante de domicilio',
-            status: _KycStatus.pending,
-          ),
-          const _DocumentRow(
-            icon: PhosphorIconsThin.bank,
-            label: 'Origen de fondos',
-            status: _KycStatus.required,
-          ),
-          const _DocumentRow(
-            icon: PhosphorIconsThin.fileText,
-            label: 'Contrato marco',
-            status: _KycStatus.verified,
+          kycAsync.when(
+            data: (docs) => Column(
+              children: docs.map((doc) => _DocumentRow(
+                    icon: _iconFor(doc.docType),
+                    label: doc.displayName,
+                    status: _statusFor(doc.status),
+                  )).toList(),
+            ),
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.xl),
+                child: CircularProgressIndicator(strokeWidth: 1.5),
+              ),
+            ),
+            error: (e, _) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Text('$e',
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.danger)),
+            ),
           ),
 
           const Spacer(),
 
-          // Help note
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
@@ -76,24 +92,16 @@ class KycScreen extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Header
-// ---------------------------------------------------------------------------
+// ── Header ────────────────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
   const _Header({required this.topPadding});
-
   final double topPadding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.sm,
-        topPadding + 16,
-        AppSpacing.lg,
-        16,
-      ),
+      padding: EdgeInsets.fromLTRB(AppSpacing.sm, topPadding + 16, AppSpacing.lg, 16),
       child: SizedBox(
         height: 44,
         child: Row(
@@ -113,9 +121,7 @@ class _Header extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// KYC status
-// ---------------------------------------------------------------------------
+// ── KYC status enum ───────────────────────────────────────────────────────────
 
 enum _KycStatus {
   verified,
@@ -135,9 +141,7 @@ enum _KycStatus {
       };
 }
 
-// ---------------------------------------------------------------------------
-// Document row
-// ---------------------------------------------------------------------------
+// ── Document row ──────────────────────────────────────────────────────────────
 
 class _DocumentRow extends StatelessWidget {
   const _DocumentRow({
@@ -154,16 +158,10 @@ class _DocumentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: Row(
         children: [
-          PhosphorIcon(
-            icon,
-            size: 20,
-            color: AppColors.textPrimary,
-          ),
+          PhosphorIcon(icon, size: 20, color: AppColors.textPrimary),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
