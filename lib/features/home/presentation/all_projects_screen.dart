@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -134,46 +133,25 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
             ),
 
           Expanded(
-            child: LhotsePullToRefresh(
-              onRefresh: () async {
-                ref.invalidate(projectsProvider);
-                ref.invalidate(brandsProvider);
-                try {
-                  await Future.wait([
-                  ref.read(projectsProvider.future),
-                  ref.read(brandsProvider.future),
-                ]);
-                } catch (_) {}
-              },
-              child: ref.watch(projectsProvider).isLoading && projects.isEmpty
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(
-                          height: 300,
-                          child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+            child: ref.watch(projectsProvider).isLoading && projects.isEmpty
+                ? const Center(child: CircularProgressIndicator(strokeWidth: 1.5))
+                : ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: filtered.length,
+                    itemBuilder: (context, i) {
+                      return SizedBox(
+                        height: 550,
+                        child: ProjectCard(
+                          project: filtered[i],
+                          isLocked: filtered[i].isVip &&
+                              ref.read(currentUserRoleProvider) !=
+                                  UserRole.investorVip,
+                          onTap: () =>
+                              context.push('/projects/${filtered[i].id}'),
                         ),
-                      ],
-                    )
-                  : ListView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      itemCount: filtered.length,
-                      itemBuilder: (context, i) {
-                        return SizedBox(
-                          height: 550,
-                          child: ProjectCard(
-                            project: filtered[i],
-                            isLocked: filtered[i].isVip &&
-                                ref.read(currentUserRoleProvider) !=
-                                    UserRole.investorVip,
-                            onTap: () =>
-                                context.push('/projects/${filtered[i].id}'),
-                          ),
-                        );
-                      },
-                    ),
-            ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

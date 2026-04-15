@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -220,53 +219,32 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
 
           // News list
           Expanded(
-            child: LhotsePullToRefresh(
-              onRefresh: () async {
-                ref.invalidate(newsProvider);
-                ref.invalidate(brandsProvider);
-                try {
-                  await Future.wait([
-                  ref.read(newsProvider.future),
-                  ref.read(brandsProvider.future),
-                ]);
-                } catch (_) {}
-              },
-              child: news.isEmpty
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        SizedBox(
-                          height: 200,
-                          child: Center(
-                            child: Text(
-                              allNews.isEmpty ? '' : 'SIN RESULTADOS',
-                              style: AppTypography.labelLarge.copyWith(
-                                color: AppColors.accentMuted,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : ListView.separated(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                      itemCount: news.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
-                      itemBuilder: (context, i) {
-                        final item = news[i];
-                        return LhotseNewsCard(
-                          title: item.title,
-                          imageUrl: item.imageUrl,
-                          brand: item.brand,
-                          subtitle: item.subtitle,
-                          hasPlayButton: item.hasPlayButton,
-                          onTap: () => context.push('/news/${item.id}'),
-                        );
-                      },
+            child: news.isEmpty
+                ? Center(
+                    child: Text(
+                      allNews.isEmpty ? '' : 'SIN RESULTADOS',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 1.5,
+                      ),
                     ),
-            ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    itemCount: news.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
+                    itemBuilder: (context, i) {
+                      final item = news[i];
+                      return LhotseNewsCard(
+                        title: item.title,
+                        imageUrl: item.imageUrl,
+                        brand: item.brand,
+                        subtitle: item.subtitle,
+                        hasPlayButton: item.hasPlayButton,
+                        onTap: () => context.push('/news/${item.id}'),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

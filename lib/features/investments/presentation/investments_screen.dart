@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -37,20 +36,7 @@ class InvestmentsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: LhotsePullToRefresh(
-        onRefresh: () async {
-          ref.invalidate(brandSummariesProvider);
-          ref.invalidate(portfolioSummaryProvider);
-          ref.invalidate(opportunitiesProvider);
-          try {
-            await Future.wait([
-            ref.read(brandSummariesProvider.future).catchError((_) => <BrandInvestmentSummaryData>[]),
-            ref.read(portfolioSummaryProvider.future).catchError((_) => null),
-          ]);
-          } catch (_) {}
-        },
-        child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+      body: CustomScrollView(
         slivers: [
           SliverPersistentHeader(
             pinned: true,
@@ -162,7 +148,6 @@ class InvestmentsScreen extends ConsumerWidget {
                 height: MediaQuery.of(context).padding.bottom + AppSpacing.xl),
           ),
         ],
-      ),
       ),
     );
   }

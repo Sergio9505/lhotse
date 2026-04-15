@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -29,35 +28,23 @@ class BrandsScreen extends ConsumerWidget {
             ),
           ),
           Expanded(
-            child: LhotsePullToRefresh(
-              onRefresh: () async {
-                ref.invalidate(brandsProvider);
-                try { await ref.read(brandsProvider.future); } catch (_) {}
-              },
-              child: brandsAsync.maybeWhen(
-                data: (brands) => GridView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: AppSpacing.md,
-                    mainAxisSpacing: AppSpacing.md,
-                    childAspectRatio: 1.0,
-                  ),
-                  itemCount: brands.length,
-                  itemBuilder: (context, i) => _BrandCard(brand: brands[i]),
+            child: brandsAsync.when(
+              data: (brands) => GridView.builder(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppSpacing.md,
+                  mainAxisSpacing: AppSpacing.md,
+                  childAspectRatio: 1.0,
                 ),
-                orElse: () => ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [
-                    SizedBox(
-                      height: 300,
-                      child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
-                    ),
-                  ],
-                ),
+                itemCount: brands.length,
+                itemBuilder: (context, i) => _BrandCard(brand: brands[i]),
               ),
+              loading: () => const Center(
+                child: CircularProgressIndicator(strokeWidth: 1.5),
+              ),
+              error: (e, _) => Center(child: Text('$e')),
             ),
           ),
         ],
