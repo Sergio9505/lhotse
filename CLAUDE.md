@@ -6,7 +6,7 @@ Mobile app for Lhotse Group, a holding company specializing in wealth management
 ## Links
 - **Figma**: https://www.figma.com/design/qIqzt6kAKBLDGrAvm6Zr4v/Lhotse--Isma---Copy-?node-id=0-1
 - **Supabase**: project ref `mrwrmigeyatfrzwvfsfe` (MCP server configured — 21 tables, 7 views, 2 RPCs, seed data, fully connected)
-- **Bundle ID**: `com.lhotsegroup.app` (iOS + Android)
+- **Bundle ID**: `com.lhotsegroup.lhotseapp` (iOS + Android)
 
 ## Stack
 Flutter 3.x + Dart, Riverpod, GoRouter, Freezed. Supabase connected (all screens live — no mock data).
