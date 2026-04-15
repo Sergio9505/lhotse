@@ -110,7 +110,7 @@ class _CompraDirectaDetailScreenState
     final purchaseFormatted = _eurFormat.format(c.purchaseValue);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: _heroGone ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: NestedScrollView(

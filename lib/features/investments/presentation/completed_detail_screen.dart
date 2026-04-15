@@ -107,7 +107,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
         .valueOrNull ?? const [];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: _heroGone ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: NestedScrollView(
