@@ -111,7 +111,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           const SizedBox(height: AppSpacing.xl),
 
           Expanded(
-            child: hasQuery
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(projectsProvider);
+                ref.invalidate(brandsProvider);
+                await Future.wait([
+                  ref.read(projectsProvider.future).catchError((_) => <ProjectData>[]),
+                  ref.read(brandsProvider.future).catchError((_) => <BrandData>[]),
+                ]);
+              },
+              child: hasQuery
                 ? _SearchResults(
                     projectResults: _searchProjects(projects),
                     brandResults: _searchBrands(brands),
@@ -125,6 +134,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     onTagTap: _onTagTap,
                     trendingTags: _trendingTags,
                   ),
+            ),
           ),
         ],
       ),

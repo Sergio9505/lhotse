@@ -106,7 +106,15 @@ class _OpportunitiesScreenState extends ConsumerState<OpportunitiesScreen> {
             ),
 
           Expanded(
-            child: ListView.builder(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(opportunitiesProvider);
+                await ref
+                    .read(opportunitiesProvider(_opportunityParams).future)
+                    .catchError((_) => <ProjectData>[]);
+              },
+              child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.zero,
               itemCount: projects.length,
               itemBuilder: (context, i) {
@@ -121,6 +129,7 @@ class _OpportunitiesScreenState extends ConsumerState<OpportunitiesScreen> {
                   ),
                 );
               },
+            ),
             ),
           ),
         ],

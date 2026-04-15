@@ -28,23 +28,35 @@ class BrandsScreen extends ConsumerWidget {
             ),
           ),
           Expanded(
-            child: brandsAsync.when(
-              data: (brands) => GridView.builder(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: AppSpacing.md,
-                  mainAxisSpacing: AppSpacing.md,
-                  childAspectRatio: 1.0,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(brandsProvider);
+                await ref.read(brandsProvider.future).catchError((_) {});
+              },
+              child: brandsAsync.maybeWhen(
+                data: (brands) => GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: AppSpacing.md,
+                    mainAxisSpacing: AppSpacing.md,
+                    childAspectRatio: 1.0,
+                  ),
+                  itemCount: brands.length,
+                  itemBuilder: (context, i) => _BrandCard(brand: brands[i]),
                 ),
-                itemCount: brands.length,
-                itemBuilder: (context, i) => _BrandCard(brand: brands[i]),
+                orElse: () => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(
+                      height: 300,
+                      child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+                    ),
+                  ],
+                ),
               ),
-              loading: () => const Center(
-                child: CircularProgressIndicator(strokeWidth: 1.5),
-              ),
-              error: (e, _) => Center(child: Text('$e')),
             ),
           ),
         ],

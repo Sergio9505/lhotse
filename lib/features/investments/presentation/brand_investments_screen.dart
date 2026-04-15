@@ -92,7 +92,21 @@ class BrandInvestmentsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(brandByIdProvider);
+          ref.invalidate(brandPurchaseContractsProvider);
+          ref.invalidate(brandCoinvestmentContractsProvider);
+          ref.invalidate(brandFixedIncomeContractsProvider);
+          await Future.wait([
+            ref.read(brandByIdProvider(brandId).future).catchError((_) {}),
+            ref.read(brandPurchaseContractsProvider(brandId).future).catchError((_) {}),
+            ref.read(brandCoinvestmentContractsProvider(brandId).future).catchError((_) {}),
+            ref.read(brandFixedIncomeContractsProvider(brandId).future).catchError((_) {}),
+          ]);
+        },
+        child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverPersistentHeader(
             pinned: true,
@@ -282,6 +296,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -133,26 +133,44 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
             ),
 
           Expanded(
-            child: ref.watch(projectsProvider).isLoading && projects.isEmpty
-                ? const Center(
-                    child: CircularProgressIndicator(strokeWidth: 1.5))
-                : ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: filtered.length,
-                    itemBuilder: (context, i) {
-                      return SizedBox(
-                        height: 550,
-                        child: ProjectCard(
-                          project: filtered[i],
-                          isLocked: filtered[i].isVip &&
-                              ref.read(currentUserRoleProvider) !=
-                                  UserRole.investorVip,
-                          onTap: () =>
-                              context.push('/projects/${filtered[i].id}'),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(projectsProvider);
+                ref.invalidate(brandsProvider);
+                await Future.wait([
+                  ref.read(projectsProvider.future).catchError((_) {}),
+                  ref.read(brandsProvider.future).catchError((_) {}),
+                ]);
+              },
+              child: ref.watch(projectsProvider).isLoading && projects.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(
+                          height: 300,
+                          child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
                         ),
-                      );
-                    },
-                  ),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      itemCount: filtered.length,
+                      itemBuilder: (context, i) {
+                        return SizedBox(
+                          height: 550,
+                          child: ProjectCard(
+                            project: filtered[i],
+                            isLocked: filtered[i].isVip &&
+                                ref.read(currentUserRoleProvider) !=
+                                    UserRole.investorVip,
+                            onTap: () =>
+                                context.push('/projects/${filtered[i].id}'),
+                          ),
+                        );
+                      },
+                    ),
+            ),
           ),
         ],
       ),

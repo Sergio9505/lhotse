@@ -22,7 +22,17 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(featuredProjectsProvider);
+          ref.invalidate(newsProvider);
+          await Future.wait([
+            ref.read(featuredProjectsProvider(currentRole).future).catchError((_) {}),
+            ref.read(newsProvider.future).catchError((_) {}),
+          ]);
+        },
+        child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(child: _Header()),
 
@@ -91,6 +101,7 @@ class HomeScreen extends ConsumerWidget {
 
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
+      ),
       ),
     );
   }

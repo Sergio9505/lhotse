@@ -36,7 +36,18 @@ class InvestmentsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(brandSummariesProvider);
+          ref.invalidate(portfolioSummaryProvider);
+          ref.invalidate(opportunitiesProvider);
+          await Future.wait([
+            ref.read(brandSummariesProvider.future).catchError((_) {}),
+            ref.read(portfolioSummaryProvider.future).catchError((_) {}),
+          ]);
+        },
+        child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverPersistentHeader(
             pinned: true,
@@ -148,6 +159,7 @@ class InvestmentsScreen extends ConsumerWidget {
                 height: MediaQuery.of(context).padding.bottom + AppSpacing.xl),
           ),
         ],
+      ),
       ),
     );
   }

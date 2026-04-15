@@ -40,8 +40,7 @@ final featuredProjectsProvider =
       .from('featured_projects')
       .select('sort_order, projects(*, brands(name, logo_asset))')
       .eq('role', roleStr)
-      .order('sort_order', ascending: true)
-      .limit(5);
+      .order('sort_order', ascending: true);
 
   return (data as List<dynamic>).map((e) {
     final row =
