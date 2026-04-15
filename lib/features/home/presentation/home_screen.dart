@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -22,14 +23,16 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: RefreshIndicator(
+      body: LhotsePullToRefresh(
         onRefresh: () async {
           ref.invalidate(featuredProjectsProvider);
           ref.invalidate(newsProvider);
-          await Future.wait([
-            ref.read(featuredProjectsProvider(currentRole).future).catchError((_) {}),
-            ref.read(newsProvider.future).catchError((_) {}),
+          try {
+            await Future.wait([
+            ref.read(featuredProjectsProvider(currentRole).future),
+            ref.read(newsProvider.future),
           ]);
+          } catch (_) {}
         },
         child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),

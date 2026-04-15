@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -28,10 +29,10 @@ class BrandsScreen extends ConsumerWidget {
             ),
           ),
           Expanded(
-            child: RefreshIndicator(
+            child: LhotsePullToRefresh(
               onRefresh: () async {
                 ref.invalidate(brandsProvider);
-                await ref.read(brandsProvider.future).catchError((_) {});
+                try { await ref.read(brandsProvider.future); } catch (_) {}
               },
               child: brandsAsync.maybeWhen(
                 data: (brands) => GridView.builder(

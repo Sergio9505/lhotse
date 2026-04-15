@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -219,14 +220,16 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
 
           // News list
           Expanded(
-            child: RefreshIndicator(
+            child: LhotsePullToRefresh(
               onRefresh: () async {
                 ref.invalidate(newsProvider);
                 ref.invalidate(brandsProvider);
-                await Future.wait([
-                  ref.read(newsProvider.future).catchError((_) {}),
-                  ref.read(brandsProvider.future).catchError((_) {}),
+                try {
+                  await Future.wait([
+                  ref.read(newsProvider.future),
+                  ref.read(brandsProvider.future),
                 ]);
+                } catch (_) {}
               },
               child: news.isEmpty
                   ? ListView(

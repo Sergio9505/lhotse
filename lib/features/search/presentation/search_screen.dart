@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -111,14 +112,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           const SizedBox(height: AppSpacing.xl),
 
           Expanded(
-            child: RefreshIndicator(
+            child: LhotsePullToRefresh(
               onRefresh: () async {
                 ref.invalidate(projectsProvider);
                 ref.invalidate(brandsProvider);
-                await Future.wait([
+                try {
+                  await Future.wait([
                   ref.read(projectsProvider.future).catchError((_) => <ProjectData>[]),
                   ref.read(brandsProvider.future).catchError((_) => <BrandData>[]),
                 ]);
+                } catch (_) {}
               },
               child: hasQuery
                 ? _SearchResults(

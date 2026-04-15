@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -133,14 +134,16 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
             ),
 
           Expanded(
-            child: RefreshIndicator(
+            child: LhotsePullToRefresh(
               onRefresh: () async {
                 ref.invalidate(projectsProvider);
                 ref.invalidate(brandsProvider);
-                await Future.wait([
-                  ref.read(projectsProvider.future).catchError((_) {}),
-                  ref.read(brandsProvider.future).catchError((_) {}),
+                try {
+                  await Future.wait([
+                  ref.read(projectsProvider.future),
+                  ref.read(brandsProvider.future),
                 ]);
+                } catch (_) {}
               },
               child: ref.watch(projectsProvider).isLoading && projects.isEmpty
                   ? ListView(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -106,7 +107,7 @@ class _OpportunitiesScreenState extends ConsumerState<OpportunitiesScreen> {
             ),
 
           Expanded(
-            child: RefreshIndicator(
+            child: LhotsePullToRefresh(
               onRefresh: () async {
                 ref.invalidate(opportunitiesProvider);
                 await ref

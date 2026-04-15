@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/lhotse_pull_to_refresh.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -92,18 +93,20 @@ class BrandInvestmentsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: RefreshIndicator(
+      body: LhotsePullToRefresh(
         onRefresh: () async {
           ref.invalidate(brandByIdProvider);
           ref.invalidate(brandPurchaseContractsProvider);
           ref.invalidate(brandCoinvestmentContractsProvider);
           ref.invalidate(brandFixedIncomeContractsProvider);
-          await Future.wait([
-            ref.read(brandByIdProvider(brandId).future).catchError((_) {}),
-            ref.read(brandPurchaseContractsProvider(brandId).future).catchError((_) {}),
-            ref.read(brandCoinvestmentContractsProvider(brandId).future).catchError((_) {}),
-            ref.read(brandFixedIncomeContractsProvider(brandId).future).catchError((_) {}),
+          try {
+            await Future.wait([
+            ref.read(brandByIdProvider(brandId).future),
+            ref.read(brandPurchaseContractsProvider(brandId).future),
+            ref.read(brandCoinvestmentContractsProvider(brandId).future),
+            ref.read(brandFixedIncomeContractsProvider(brandId).future),
           ]);
+          } catch (_) {}
         },
         child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
