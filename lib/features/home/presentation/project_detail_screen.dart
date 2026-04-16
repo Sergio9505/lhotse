@@ -81,13 +81,35 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    // Build characteristics entries from bedrooms/bathrooms + details
+    // Build characteristics entries from typed asset fields
+    String _m2(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 1)} m²';
     final characteristicEntries = <AssetInfoEntry>[
+      if (project.surfaceM2 != null)
+        AssetInfoEntry(label: 'Superficie', value: _m2(project.surfaceM2!)),
       if (project.bedrooms != null)
         AssetInfoEntry(label: 'Habitaciones', value: '${project.bedrooms}'),
       if (project.bathrooms != null)
         AssetInfoEntry(label: 'Baños', value: '${project.bathrooms}'),
-      if (project.details != null) ...project.details!.entries,
+      if (project.floor != null)
+        AssetInfoEntry(label: 'Planta', value: project.floor!),
+      if (project.orientation != null)
+        AssetInfoEntry(label: 'Orientación', value: project.orientation!),
+      if (project.views != null)
+        AssetInfoEntry(label: 'Vistas', value: project.views!),
+      if (project.terraceM2 != null)
+        AssetInfoEntry(label: 'Terraza', value: _m2(project.terraceM2!)),
+      if (project.plotM2 != null)
+        AssetInfoEntry(label: 'Parcela', value: _m2(project.plotM2!)),
+      if (project.hasPool == true)
+        const AssetInfoEntry(label: 'Piscina', value: 'Sí'),
+      if (project.parkingSpots != null)
+        AssetInfoEntry(label: 'Garaje', value: project.parkingSpots == 1 ? '1 plaza' : '${project.parkingSpots} plazas'),
+      if (project.storageRoom == true)
+        const AssetInfoEntry(label: 'Trastero', value: 'Incluido'),
+      if (project.yearBuilt != null)
+        AssetInfoEntry(label: 'Año construcción', value: '${project.yearBuilt}'),
+      if (project.yearRenovated != null)
+        AssetInfoEntry(label: 'Año renovación', value: '${project.yearRenovated}'),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(

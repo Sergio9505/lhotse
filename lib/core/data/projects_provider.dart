@@ -7,7 +7,7 @@ final projectsProvider = FutureProvider<List<ProjectData>>((ref) async {
   final data = await ref
       .watch(supabaseClientProvider)
       .from('projects')
-      .select('*, brands(name, logo_asset)')
+      .select('*, brands(name, logo_asset), assets(city, country, address, surface_m2, bedrooms, bathrooms, floor, year_built, year_renovated, terrace_m2, parking_spots, storage_room, orientation, views, plot_m2, has_pool, floor_plan_url)')
       .order('created_at', ascending: false);
   return (data as List<dynamic>)
       .map((e) => ProjectData.fromSupabaseRow(e as Map<String, dynamic>))
@@ -19,7 +19,7 @@ final projectByIdProvider =
   final data = await ref
       .watch(supabaseClientProvider)
       .from('projects')
-      .select('*, brands(name, logo_asset)')
+      .select('*, brands(name, logo_asset), assets(city, country, address, surface_m2, bedrooms, bathrooms, floor, year_built, year_renovated, terrace_m2, parking_spots, storage_room, orientation, views, plot_m2, has_pool, floor_plan_url)')
       .eq('id', id)
       .maybeSingle();
   return data != null ? ProjectData.fromSupabaseRow(data) : null;
@@ -38,7 +38,7 @@ final featuredProjectsProvider =
   final data = await ref
       .watch(supabaseClientProvider)
       .from('featured_projects')
-      .select('sort_order, projects(*, brands(name, logo_asset))')
+      .select('sort_order, projects(*, brands(name, logo_asset), assets(city, country, address, surface_m2, bedrooms, bathrooms, floor, year_built, year_renovated, terrace_m2, parking_spots, storage_room, orientation, views, plot_m2, has_pool, floor_plan_url))')
       .eq('role', roleStr)
       .order('sort_order', ascending: true);
 

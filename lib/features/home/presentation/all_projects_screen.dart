@@ -92,7 +92,9 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
   @override
   Widget build(BuildContext context) {
     final projects = ref.watch(projectsProvider).valueOrNull ?? const [];
-    final brands = ref.watch(brandsProvider).valueOrNull ?? const [];
+    final allBrands = ref.watch(brandsProvider).valueOrNull ?? const [];
+    final projectBrandNames = projects.map((p) => p.brand).toSet();
+    final brands = allBrands.where((b) => projectBrandNames.contains(b.name)).toList();
     final filtered = _applyFilters(projects);
 
     return Scaffold(
