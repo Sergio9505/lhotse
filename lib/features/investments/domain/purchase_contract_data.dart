@@ -23,7 +23,6 @@ class PurchaseContractData {
     this.actualDuration,
     this.actualTir,
     // Asset
-    this.assetUnitName,
     this.assetBedrooms,
     this.assetBathrooms,
     this.assetSurfaceM2,
@@ -72,7 +71,6 @@ class PurchaseContractData {
   final DateTime? completionDate;
   final int? actualDuration;
   final double? actualTir;
-  final String? assetUnitName;
   final int? assetBedrooms;
   final int? assetBathrooms;
   final double? assetSurfaceM2;
@@ -129,7 +127,6 @@ class PurchaseContractData {
           : null,
       actualDuration: json['actual_duration'] as int?,
       actualTir: (json['actual_tir'] as num?)?.toDouble(),
-      assetUnitName: json['asset_unit_name'] as String?,
       assetBedrooms: json['asset_bedrooms'] as int?,
       assetBathrooms: json['asset_bathrooms'] as int?,
       assetSurfaceM2: (json['asset_surface_m2'] as num?)?.toDouble(),

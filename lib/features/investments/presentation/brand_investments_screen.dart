@@ -151,7 +151,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                 (context, i) {
                   final c = activePurchase[i];
                   return _AssetRow(
-                    projectName: c.assetUnitName ?? c.projectName ?? '',
+                    projectName: c.projectName ?? '',
                     location: c.projectLocation,
                     imageUrl: c.projectImageUrl,
                     amount: c.purchaseValue,

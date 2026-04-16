@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -86,6 +87,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     final characteristicEntries = <AssetInfoEntry>[
       if (project.surfaceM2 != null)
         AssetInfoEntry(label: 'Superficie', value: _m2(project.surfaceM2!)),
+      if (project.plotM2 != null)
+        AssetInfoEntry(label: 'Parcela', value: _m2(project.plotM2!)),
       if (project.bedrooms != null)
         AssetInfoEntry(label: 'Habitaciones', value: '${project.bedrooms}'),
       if (project.bathrooms != null)
@@ -98,8 +101,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
         AssetInfoEntry(label: 'Vistas', value: project.views!),
       if (project.terraceM2 != null)
         AssetInfoEntry(label: 'Terraza', value: _m2(project.terraceM2!)),
-      if (project.plotM2 != null)
-        AssetInfoEntry(label: 'Parcela', value: _m2(project.plotM2!)),
       if (project.hasPool == true)
         const AssetInfoEntry(label: 'Piscina', value: 'Sí'),
       if (project.parkingSpots != null)
@@ -286,8 +287,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                           child: Stack(
                             children: [
                               Center(
-                                child: Image.asset(
-                                  'assets/images/mock_floor_plan.png',
+                                child: LhotseImage(
+                                  project.floorPlanUrl!,
                                   fit: BoxFit.contain,
                                 ),
                               ),
@@ -386,6 +387,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
             // =========================================================
             // 7. CTA — DESCARGAR FOLLETO
             // =========================================================
+            if (project.brochureUrl != null)
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -395,9 +397,10 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                   bottomPadding + AppSpacing.xl,
                 ),
                 child: GestureDetector(
-                  onTap: () {
-                    // TODO: download brochure
-                  },
+                  onTap: () => launchUrl(
+                    Uri.parse(project.brochureUrl!),
+                    mode: LaunchMode.externalApplication,
+                  ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     color: AppColors.primary,
@@ -458,8 +461,8 @@ void _showFloorPlan(BuildContext context, String url) {
                             AppSpacing.lg,
                             bottomPadding + AppSpacing.lg,
                           ),
-                          child: Image.asset(
-                            'assets/images/mock_floor_plan.png',
+                          child: Image.network(
+                            url,
                             fit: BoxFit.contain,
                           ),
                         ),

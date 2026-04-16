@@ -63,11 +63,6 @@ class LhotseKeyValueList extends StatelessWidget {
                   ],
                 ),
               ),
-              if (isLast && !highlightLast)
-                Container(
-                  height: 0.5,
-                  color: AppColors.textPrimary.withValues(alpha: 0.08),
-                ),
             ],
           );
         }).toList(),

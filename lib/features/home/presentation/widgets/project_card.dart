@@ -32,9 +32,9 @@ class ProjectCard extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 LhotseImage(project.imageUrl),
-                if (isLocked)
+                if (project.isVip)
                   Positioned(
-                    top: 12,
+                    top: 20,
                     right: 12,
                     child: Container(
                       color: AppColors.primary,

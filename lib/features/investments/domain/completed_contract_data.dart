@@ -38,7 +38,7 @@ class CompletedContractData {
       CompletedContractData(
         id: c.id,
         modelType: 'purchase',
-        projectName: c.projectName ?? c.assetUnitName ?? '',
+        projectName: c.projectName ?? '',
         brandName: c.brandName,
         imageUrl: c.projectImageUrl,
         amount: c.purchaseValue,

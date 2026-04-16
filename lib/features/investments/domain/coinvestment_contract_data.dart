@@ -31,11 +31,9 @@ class CoinvestmentContractData {
     this.actualTir,
     // Asset (may not exist during construction)
     this.assetId,
-    this.assetUnitName,
     this.assetFloorPlanUrl,
     this.assetGalleryImages = const [],
     this.assetCurrentValue,
-    this.assetRevaluationPct,
     // Project
     required this.projectName,
     required this.projectLocation,
@@ -76,11 +74,9 @@ class CoinvestmentContractData {
   final int? actualDuration;
   final double? actualTir;
   final String? assetId;
-  final String? assetUnitName;
   final String? assetFloorPlanUrl;
   final List<String> assetGalleryImages;
   final double? assetCurrentValue;
-  final double? assetRevaluationPct;
   final String projectName;
   final String projectLocation;
   final String projectImageUrl;
@@ -108,9 +104,8 @@ class CoinvestmentContractData {
         actualRoi: actualRoi, netProfit: netProfit, totalReturn: totalReturn,
         projectedRoi: projectedRoi, completionDate: completionDate,
         actualDuration: actualDuration, actualTir: actualTir,
-        assetId: assetId, assetUnitName: assetUnitName, assetFloorPlanUrl: assetFloorPlanUrl,
+        assetId: assetId, assetFloorPlanUrl: assetFloorPlanUrl,
         assetGalleryImages: assetGalleryImages, assetCurrentValue: assetCurrentValue,
-        assetRevaluationPct: assetRevaluationPct,
         projectName: projectName, projectLocation: projectLocation,
         projectImageUrl: projectImageUrl, projectStatus: projectStatus,
         projectGalleryImages: projectGalleryImages, renderImages: renderImages,
@@ -161,11 +156,9 @@ class CoinvestmentContractData {
       actualDuration: json['actual_duration'] as int?,
       actualTir: (json['actual_tir'] as num?)?.toDouble(),
       assetId: json['asset_id'] as String?,
-      assetUnitName: json['asset_unit_name'] as String?,
       assetFloorPlanUrl: json['asset_floor_plan_url'] as String?,
       assetGalleryImages: _strings(json['asset_gallery_images']),
       assetCurrentValue: (json['asset_current_value'] as num?)?.toDouble(),
-      assetRevaluationPct: (json['asset_revaluation_pct'] as num?)?.toDouble(),
       projectName: json['project_name'] as String? ?? '',
       projectLocation: json['project_location'] as String? ?? '',
       projectImageUrl: json['project_image_url'] as String? ?? '',

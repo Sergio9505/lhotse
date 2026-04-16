@@ -106,7 +106,7 @@ class _CompraDirectaDetailScreenState
     final docs = ref
         .watch(documentsProvider((type: 'purchase', id: c.id)))
         .valueOrNull ?? const [];
-    final projectName = c.projectName ?? c.assetUnitName ?? '';
+    final projectName = c.projectName ?? '';
     final purchaseFormatted = _eurFormat.format(c.purchaseValue);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(

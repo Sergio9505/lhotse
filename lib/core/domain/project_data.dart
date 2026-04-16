@@ -38,6 +38,7 @@ class ProjectData {
     this.plotM2,
     this.hasPool,
     this.floorPlanUrl,
+    this.brochureUrl,
     this.assetId,
   });
 
@@ -74,6 +75,7 @@ class ProjectData {
   final double? plotM2;
   final bool? hasPool;
   final String? floorPlanUrl;
+  final String? brochureUrl;
   final String? assetId;
 
   /// Maps a Supabase row from `projects` joined with `brands` and `assets`.
@@ -111,6 +113,7 @@ class ProjectData {
       plotM2: (assets?['plot_m2'] as num?)?.toDouble(),
       hasPool: assets?['has_pool'] as bool?,
       floorPlanUrl: assets?['floor_plan_url'] as String?,
+      brochureUrl: row['brochure_url'] as String?,
       assetId: row['asset_id'] as String?,
     );
   }
