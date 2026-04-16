@@ -19,19 +19,19 @@ class DocumentData {
   final String modelId;
   final String name;
   final DateTime? date;
-  final String? category; // DB: 'legal'|'financial'|'construction'|'tax'|'contract'|'certificate'|'report'
+  final String? category; // key from document_categories table
   final String? fileUrl;
   final String? mimeType;
 
-  DocCategory? get docCategory => _categoryFromDb(category);
-
-  /// Converts to the UI model used by LhotseDocumentsSection / LhotseDocRow.
-  LhotseDocument toLhotseDocument() => LhotseDocument(
+  /// Converts to the UI model. Caller provides iconName from document_categories.
+  LhotseDocument toLhotseDocument({String iconName = 'fileText'}) =>
+      LhotseDocument(
         name: name,
         date: date != null
             ? DateFormat('d MMM. yyyy', 'es_ES').format(date!).toUpperCase()
             : '—',
-        category: docCategory ?? DocCategory.legal,
+        categoryKey: category ?? '',
+        iconName: iconName,
       );
 
   factory DocumentData.fromJson(Map<String, dynamic> json) => DocumentData(
@@ -46,15 +46,4 @@ class DocumentData {
         fileUrl: json['file_url'] as String?,
         mimeType: json['mime_type'] as String?,
       );
-
-  static DocCategory? _categoryFromDb(String? value) => switch (value) {
-        'legal' => DocCategory.legal,
-        'financial' => DocCategory.financiero,
-        'construction' => DocCategory.obra,
-        'tax' => DocCategory.fiscal,
-        'contract' => DocCategory.contrato,
-        'certificate' => DocCategory.certificado,
-        'report' => DocCategory.informe,
-        _ => null,
-      };
 }

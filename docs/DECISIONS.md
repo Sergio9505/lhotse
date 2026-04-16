@@ -779,6 +779,29 @@ Removed from view: `project_name`, `project_location`, `project_image_url`, `pro
 - (+) Decoupled: list and detail can evolve independently
 - (-) L3 makes a separate network request (acceptable — detail screens always do)
 
+---
+
+## ADR-39: Dynamic Document Categories — DB-driven, icon key in table
+
+**Date:** 2026-04-16
+**Status:** Accepted
+
+**Context:** Document categories were hardcoded in a Dart enum (`DocCategory`) + DB CHECK constraint, duplicated across 4 screens, with inconsistent labels. Admin couldn't add new categories without a code change. Filter chips showed all possible categories for a model type, even when no documents of that type existed.
+
+**Decision:** New `document_categories` table: `key`, `label`, `icon_name`, `sort_order`. Admin adds/edits rows in Supabase dashboard. Flutter fetches all categories once via `allDocumentCategoriesProvider` and filters locally per screen to show only categories present in the loaded documents.
+
+Icons stored as Phosphor icon name strings (`'scales'`, `'money'`...). Flutter maps via `_kDocIcons: Map<String, IconData>` in `lhotse_documents_section.dart`. Unknown keys fall back to `PhosphorIconsThin.file`. Admin panel will show only the icons in this map as a gallery.
+
+**Why no `model_types` column:** Categories are universal. Which ones appear as filter chips is determined by the actual documents the object has — not by a per-model config. This avoids a second maintenance surface.
+
+**Consequences:**
+- (+) Admin adds categories without any code change
+- (+) Filter chips only show categories present in the object's real documents
+- (+) Single source of truth: `document_categories` table
+- (+) Labels/icons consistent across all screens automatically
+- (+) `DocCategory` enum eliminated — no DB/Dart sync to maintain
+- (-) Extra DB query on app start (one-time, cached globally)
+
 ## ADR-32: All Physical Property Data Belongs to `assets`, Not `projects`
 
 **Date:** 2026-04-16

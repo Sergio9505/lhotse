@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
+import '../../../core/domain/document_category_data.dart';
 import '../../../core/domain/asset_info.dart';
 import '../../../core/domain/document_data.dart';
 import '../../../core/theme/app_theme.dart';
@@ -41,26 +43,29 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
   bool _showCollapsedTitle = false;
   int _tabIndex = 0;
 
-  static const _docFilterLabels = {
-    DocCategory.legal: 'Escrituras',
-    DocCategory.financiero: 'Facturas',
-    DocCategory.obra: 'Licencias',
-    DocCategory.fiscal: 'Certificados',
-  };
-  final Set<DocCategory> _activeDocFilters = {};
+  final Set<String> _activeDocFilters = {};
 
-  List<LhotseDocument> _filteredDocs(List<DocumentData> docs) {
-    final all = docs.map((d) => d.toLhotseDocument()).toList();
-    if (_activeDocFilters.isEmpty) return all;
-    return all.where((d) => _activeDocFilters.contains(d.category)).toList();
+  List<LhotseDocument> _toLhotseDocuments(
+      List<DocumentData> docs, List<DocumentCategoryData> allCategories) {
+    final iconMap = {for (var c in allCategories) c.key: c.iconName};
+    return docs
+        .map((d) => d.toLhotseDocument(iconName: iconMap[d.category] ?? 'fileText'))
+        .toList();
   }
 
-  void _toggleDocFilter(DocCategory cat) {
+  List<LhotseDocument> _filteredDocs(
+      List<DocumentData> docs, List<DocumentCategoryData> allCategories) {
+    final all = _toLhotseDocuments(docs, allCategories);
+    if (_activeDocFilters.isEmpty) return all;
+    return all.where((d) => _activeDocFilters.contains(d.categoryKey)).toList();
+  }
+
+  void _toggleDocFilter(String key) {
     setState(() {
-      if (_activeDocFilters.contains(cat)) {
-        _activeDocFilters.remove(cat);
+      if (_activeDocFilters.contains(key)) {
+        _activeDocFilters.remove(key);
       } else {
-        _activeDocFilters.add(cat);
+        _activeDocFilters.add(key);
       }
     });
   }
@@ -105,6 +110,10 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
     final docs = ref
         .watch(documentsProvider((type: d.modelType, id: d.id)))
         .valueOrNull ?? const [];
+    final allCategories =
+        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
+    final filterCategories =
+        categoriesForKeys(docs.map((doc) => doc.category), allCategories);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
@@ -266,8 +275,8 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,
                 child: _DocsTab(
-                  documents: _filteredDocs(docs),
-                  chips: _buildDocChips(),
+                  documents: _filteredDocs(docs, allCategories),
+                  chips: _buildDocChips(filterCategories),
                 ),
               ),
             ],
@@ -277,7 +286,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
     );
   }
 
-  Widget _buildDocChips() {
+  Widget _buildDocChips(List<DocumentCategoryData> categories) {
     return Container(
       color: AppColors.background,
       padding: const EdgeInsets.fromLTRB(
@@ -286,12 +295,12 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            ..._docFilterLabels.entries.map((entry) {
-              final active = _activeDocFilters.contains(entry.key);
+            ...categories.map((cat) {
+              final active = _activeDocFilters.contains(cat.key);
               return Padding(
                 padding: const EdgeInsets.only(right: AppSpacing.sm),
                 child: GestureDetector(
-                  onTap: () => _toggleDocFilter(entry.key),
+                  onTap: () => _toggleDocFilter(cat.key),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeInOut,
@@ -306,7 +315,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                       ),
                     ),
                     child: Text(
-                      entry.value.toUpperCase(),
+                      cat.label.toUpperCase(),
                       style: AppTypography.caption.copyWith(
                         color: active
                             ? AppColors.textOnDark
@@ -473,7 +482,7 @@ class _DocsTab extends StatelessWidget {
                   LhotseDocRow(
                     name: doc.name,
                     date: doc.date,
-                    icon: docCategoryIcon(doc.category),
+                    icon: docCategoryIconByKey(doc.iconName),
                   ),
                 ],
               );

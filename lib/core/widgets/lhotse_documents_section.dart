@@ -1,48 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../domain/document_category_data.dart';
 import '../theme/app_theme.dart';
 import 'lhotse_bottom_sheet.dart';
 import 'lhotse_doc_row.dart';
 
-/// Document category for filtering.
-enum DocCategory { legal, financiero, obra, fiscal, contrato, certificado, informe }
+// ---------------------------------------------------------------------------
+// Icon map — Phosphor thin icons keyed by icon_name from document_categories.
+// Add entries here when new icon_name values are added in the DB.
+// ---------------------------------------------------------------------------
+
+const _kDocIcons = <String, IconData>{
+  'scales': PhosphorIconsThin.scales,
+  'money': PhosphorIconsThin.money,
+  'hardHat': PhosphorIconsThin.hardHat,
+  'receipt': PhosphorIconsThin.receipt,
+  'fileText': PhosphorIconsThin.fileText,
+  'certificate': PhosphorIconsThin.certificate,
+  'chartBar': PhosphorIconsThin.chartBar,
+  'folder': PhosphorIconsThin.folder,
+  'houseLine': PhosphorIconsThin.houseLine,
+  'bank': PhosphorIconsThin.bank,
+  'notePencil': PhosphorIconsThin.notePencil,
+  'stamp': PhosphorIconsThin.stamp,
+  'handshake': PhosphorIconsThin.handshake,
+  'buildings': PhosphorIconsThin.buildings,
+  'key': PhosphorIconsThin.key,
+};
+
+/// Returns the Phosphor icon for the given icon_name key.
+/// Falls back to a generic file icon if the key is unknown.
+IconData docCategoryIconByKey(String iconName) =>
+    _kDocIcons[iconName] ?? PhosphorIconsThin.file;
 
 /// A single document entry.
 class LhotseDocument {
   const LhotseDocument({
     required this.name,
     required this.date,
-    required this.category,
+    required this.categoryKey,
+    required this.iconName,
   });
 
   final String name;
   final String date;
-  final DocCategory category;
+  final String categoryKey;
+  final String iconName;
 }
 
-IconData docCategoryIcon(DocCategory cat) => switch (cat) {
-      DocCategory.legal => PhosphorIconsThin.scales,
-      DocCategory.financiero => PhosphorIconsThin.money,
-      DocCategory.obra => PhosphorIconsThin.hardHat,
-      DocCategory.fiscal => PhosphorIconsThin.receipt,
-      DocCategory.contrato => PhosphorIconsThin.fileText,
-      DocCategory.certificado => PhosphorIconsThin.certificate,
-      DocCategory.informe => PhosphorIconsThin.chartBar,
-    };
-
 /// Inline documents section: shows first [maxVisible] docs + "Ver todos" link
-/// that opens a bottom sheet with filters.
+/// that opens a bottom sheet with filters derived from the actual documents.
 class LhotseDocumentsSection extends StatelessWidget {
   const LhotseDocumentsSection({
     super.key,
     required this.documents,
-    required this.filterLabels,
+    required this.filterCategories,
     this.maxVisible = 3,
   });
 
   final List<LhotseDocument> documents;
-  final Map<DocCategory, String> filterLabels;
+
+  /// Only categories that appear in [documents] — derived by the caller.
+  final List<DocumentCategoryData> filterCategories;
   final int maxVisible;
 
   @override
@@ -67,7 +87,7 @@ class LhotseDocumentsSection extends StatelessWidget {
                 LhotseDocRow(
                   name: doc.name,
                   date: doc.date,
-                  icon: docCategoryIcon(doc.category),
+                  icon: docCategoryIconByKey(doc.iconName),
                 ),
               ],
             );
@@ -78,13 +98,13 @@ class LhotseDocumentsSection extends StatelessWidget {
               onTap: () => showDocsBottomSheet(
                 context: context,
                 documents: documents,
-                filterLabels: filterLabels,
+                filterCategories: filterCategories,
               ),
               child: Text(
                 'Ver todos (${documents.length})',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.accentMuted,
-                  ),
+                ),
               ),
             ),
           ],
@@ -101,9 +121,9 @@ class LhotseDocumentsSection extends StatelessWidget {
 void showDocsBottomSheet({
   required BuildContext context,
   required List<LhotseDocument> documents,
-  required Map<DocCategory, String> filterLabels,
+  required List<DocumentCategoryData> filterCategories,
 }) {
-  final activeFilters = <DocCategory>{};
+  final activeFilters = <String>{};
 
   showModalBottomSheet(
     context: context,
@@ -117,7 +137,7 @@ void showDocsBottomSheet({
         final filteredDocs = activeFilters.isEmpty
             ? documents
             : documents
-                .where((d) => activeFilters.contains(d.category))
+                .where((d) => activeFilters.contains(d.categoryKey))
                 .toList();
 
         return LhotseBottomSheetBody(
@@ -129,16 +149,16 @@ void showDocsBottomSheet({
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Row(
                 children: [
-                  ...filterLabels.entries.map((entry) {
-                    final active = activeFilters.contains(entry.key);
+                  ...filterCategories.map((cat) {
+                    final active = activeFilters.contains(cat.key);
                     return Padding(
                       padding: const EdgeInsets.only(right: AppSpacing.sm),
                       child: GestureDetector(
                         onTap: () => setState(() {
-                          if (activeFilters.contains(entry.key)) {
-                            activeFilters.remove(entry.key);
+                          if (active) {
+                            activeFilters.remove(cat.key);
                           } else {
-                            activeFilters.add(entry.key);
+                            activeFilters.add(cat.key);
                           }
                         }),
                         child: AnimatedContainer(
@@ -160,7 +180,7 @@ void showDocsBottomSheet({
                             ),
                           ),
                           child: Text(
-                            entry.value.toUpperCase(),
+                            cat.label.toUpperCase(),
                             style: AppTypography.caption.copyWith(
                               color: active
                                   ? AppColors.textOnDark
@@ -198,7 +218,7 @@ void showDocsBottomSheet({
             itemBuilder: (context, i) => LhotseDocRow(
               name: filteredDocs[i].name,
               date: filteredDocs[i].date,
-              icon: docCategoryIcon(filteredDocs[i].category),
+              icon: docCategoryIconByKey(filteredDocs[i].iconName),
             ),
           ),
         );

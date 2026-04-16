@@ -43,6 +43,7 @@ class PurchaseContractData {
     this.assetName,
     this.assetLocation,
     this.assetImageUrl,
+    this.assetCadastralReference,
   });
 
   final String id;
@@ -93,6 +94,7 @@ class PurchaseContractData {
   final String? assetName;
   final String? assetLocation;
   final String? assetImageUrl;
+  final String? assetCadastralReference;
 
   bool get hasFinancing => mortgagePrincipal != null;
   bool get hasActiveRental => monthlyRent != null;
@@ -146,6 +148,7 @@ class PurchaseContractData {
       assetName: json['asset_name'] as String?,
       assetLocation: json['asset_location'] as String?,
       assetImageUrl: json['asset_thumbnail_image'] as String?,
+      assetCadastralReference: json['asset_cadastral_reference'] as String?,
     );
   }
 }

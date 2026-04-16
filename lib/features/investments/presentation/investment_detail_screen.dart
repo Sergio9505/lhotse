@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
 import '../../../core/data/news_provider.dart';
 import '../../../core/domain/news_item_data.dart';
@@ -62,6 +63,11 @@ class InvestmentDetailScreen extends ConsumerWidget {
     final rfDocs = ref
         .watch(documentsProvider((type: 'contract', id: investmentId)))
         .valueOrNull ?? const [];
+    final allCategories =
+        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
+    final iconMap = {for (var c in allCategories) c.key: c.iconName};
+    final filterCategories =
+        categoriesForKeys(rfDocs.map((d) => d.category), allCategories);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -82,13 +88,11 @@ class InvestmentDetailScreen extends ConsumerWidget {
           const LhotseSectionLabel(label: 'DOCUMENTOS'),
           const SizedBox(height: AppSpacing.sm),
           LhotseDocumentsSection(
-            documents: rfDocs.map((d) => d.toLhotseDocument()).toList(),
-            filterLabels: const {
-              DocCategory.legal: 'Legal',
-              DocCategory.financiero: 'Financiero',
-              DocCategory.obra: 'Obra',
-              DocCategory.fiscal: 'Fiscal',
-            },
+            documents: rfDocs
+                .map((d) => d.toLhotseDocument(
+                    iconName: iconMap[d.category] ?? 'fileText'))
+                .toList(),
+            filterCategories: filterCategories,
           ),
 
           if (relatedNews.isNotEmpty) ...[
