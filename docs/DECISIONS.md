@@ -694,3 +694,81 @@ Views updated: `portfolio_summaries` and `brand_investment_summaries` now UNION 
 - (+) `fixed_income_contracts` is the single source of truth for a user's RF position
 - (-) Strategy screen aggregation requires UNION across investments + contracts — handled in views
 - (-) Flutter models will need separate types for RF vs real estate investments
+
+---
+
+## ADR-32: All Physical Property Data Belongs to `assets`, Not `projects`
+
+**Date:** 2026-04-16
+**Status:** Accepted
+
+**Context:** `projects` had `location`, `address`, and ghost fields in `ProjectData` (`bedrooms`, `bathrooms`, `floor_plan_url`) that were never hydrated because those values only lived in `assets`. This created a split brain: marketing data and physical property data mixed in one table.
+
+**Decision:** All physical property attributes live exclusively on `assets`:
+- `city`, `country`, `address` moved from `projects` to `assets`
+- `location` (was `"Madrid, ES"`) split into `city` + `country` (ISO code)
+- `projects.asset_id` made `NOT NULL` — every project must have an associated asset
+- Assets auto-created for the 15 projects that had none
+
+`ProjectData` now fetches all property fields via assets join: `.select('*, brands(...), assets(city, country, bedrooms, floor, ...)')`.
+
+**Rationale:**
+- A project is a marketing/catalog entity (name, description, images, brand)
+- An asset is a physical/financial entity (location, bedrooms, current_value)
+- Multiple projects could wrap the same asset (different investment rounds) — FK direction `projects.asset_id → assets` makes this possible
+
+**Consequences:**
+- (+) `projects` table is clean: only marketing + status fields
+- (+) `assets` is the single source of truth for all physical property data
+- (+) `project.location` getter computes `"$city, $country"` — UI unchanged
+- (+) Project detail CARACTERÍSTICAS section now shows real data (was always null)
+- (-) One extra JOIN on every project query — absorbed by PostgREST auto-embed
+
+---
+
+## ADR-33: `asset_info` JSONB Eliminated — Typed Columns Only
+
+**Date:** 2026-04-16
+**Status:** Accepted
+
+**Context:** `assets.asset_info` was a catch-all `JSONB` array of `{label, value}` pairs for property attributes (Planta, Año construcción, Garaje, Trastero, Orientación, Vistas, Parcela, Piscina…). Each attribute was fetched and displayed as a generic string pair — no type safety, no filtering, no conditional display logic.
+
+**Decision:** Promote every recurring attribute to a typed column. Drop `asset_info`.
+
+New columns added: `floor TEXT`, `year_built INTEGER`, `year_renovated INTEGER`, `terrace_m2 NUMERIC`, `parking_spots INTEGER`, `storage_room BOOLEAN`, `orientation TEXT`, `views TEXT`, `plot_m2 NUMERIC`, `has_pool BOOLEAN`.
+
+**What gets JSONB:** nothing on `assets`. `coinvestment_contracts.economic_analysis` remains JSONB (display-only financial scenarios, never filtered individually).
+
+**Rationale:**
+- Per CONVENTIONS.md: typed attributes need their own columns; JSONB is for display-only freeform extras
+- Typed columns enable: conditional display in Flutter (`if (project.hasPool == true)`), future filtering (show only properties with pool), and type safety in models
+
+**Consequences:**
+- (+) Every asset attribute is typed, validated, and queryable
+- (+) Flutter `characteristicEntries` list is built from typed fields — no string parsing
+- (+) `AssetInfo` model retained only for `coinvestment_contracts.economic_analysis`
+- (-) Migration required to promote existing JSONB values — one-time cost
+
+---
+
+## ADR-34: `revaluation_pct` Computed in View, Not Stored
+
+**Date:** 2026-04-16
+**Status:** Accepted
+
+**Context:** `assets.revaluation_pct` stored the appreciation percentage as a static value that had to be manually updated whenever `current_value` changed. Stale data risk.
+
+**Decision:** Drop `assets.revaluation_pct`. Compute it in `purchase_contract_details` view:
+```sql
+CASE WHEN a.current_value IS NOT NULL AND pc.purchase_value > 0
+     THEN round(((a.current_value - pc.purchase_value) / pc.purchase_value) * 100, 2)
+     ELSE NULL END AS asset_revaluation_pct
+```
+
+For coinversión: no reference purchase price exists at the asset level, so `asset_revaluation_pct` is removed from `coinvestment_contract_details` entirely.
+
+**Consequences:**
+- (+) Always accurate — auto-updates when `current_value` changes
+- (+) Removes a manually-maintained derived field
+- (+) Correct semantics: compra directa has a purchase price to compare against; coinversión does not
+- (-) Cannot sort/filter by revaluation_pct in a simple query — requires subquery or materialized view if needed at scale

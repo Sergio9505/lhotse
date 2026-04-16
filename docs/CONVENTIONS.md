@@ -34,7 +34,8 @@
 - Enum-like values: **`TEXT NOT NULL CHECK (col IN (...))`** — never `CREATE TYPE AS ENUM` (enums can't remove/rename values)
 - Money: `NUMERIC(14,2)` — never `FLOAT`/`DOUBLE`
 - Percentages: `NUMERIC(5,2)` or `NUMERIC(6,2)`
-- Display-only arrays (galleries, key-value entries): `JSONB DEFAULT '[]'`
+- Display-only arrays (galleries, freeform key-value extras): `JSONB DEFAULT '[]'`
+- Typed property attributes (bedrooms, floor, orientation, surface_m2…): **individual `NUMERIC`/`INTEGER`/`TEXT` columns** — never JSONB
 - Queryable child data (scenarios, phases, documents): **separate table** with FK
 
 ### Naming
@@ -93,7 +94,7 @@
 - Home screen carousels: `LIMIT 5`, no pagination
 
 ### JSONB rules
-- **Use JSONB** when: data is display-only, never filtered/joined/aggregated individually (galleries, asset info entries, economic analysis)
+- **Use JSONB** when: data is display-only, never filtered/joined/aggregated individually (galleries, freeform extras, economic analysis)
 - **Use a separate table** when: data needs individual filtering, sorting, or FK relationships (documents, phases, scenarios)
 - JSONB arrays: always default to `'[]'`, never `NULL`
 - JSONB objects: default to `NULL` when the whole block is optional
