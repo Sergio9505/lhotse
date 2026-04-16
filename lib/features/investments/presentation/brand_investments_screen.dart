@@ -43,8 +43,8 @@ class BrandInvestmentsScreen extends ConsumerWidget {
     final isCompraDirecta = businessModel == BusinessModel.directPurchase;
     final isRentaFija = businessModel == BusinessModel.fixedIncome;
 
-    final activePurchase = allPurchase.where((c) => !c.isCompleted).toList();
-    final completedPurchase = allPurchase.where((c) => c.isCompleted).toList();
+    final activePurchase = allPurchase.where((c) => !c.isSold).toList();
+    final completedPurchase = allPurchase.where((c) => c.isSold).toList();
     final activeCoinvest = allCoinvest.where((c) => !c.isCompleted).toList();
     final completedCoinvest = allCoinvest.where((c) => c.isCompleted).toList();
     final activeRf = allRf.where((c) => c.isActive).toList();
@@ -151,14 +151,13 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                 (context, i) {
                   final c = activePurchase[i];
                   return _AssetRow(
-                    projectName: c.projectName ?? '',
-                    location: c.projectLocation,
-                    imageUrl: c.projectImageUrl,
+                    projectName: c.assetName ?? '',
+                    location: c.assetLocation,
+                    imageUrl: c.assetImageUrl,
                     amount: c.purchaseValue,
                     isLast: i == activePurchase.length - 1,
                     onTap: () => context.push(
                       '/investments/detail/purchase/${c.id}',
-                      extra: c,
                     ),
                   );
                 },

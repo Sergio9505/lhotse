@@ -23,7 +23,6 @@ class CoinvestmentContractData {
     this.constructionPhase,
     // Completion
     this.actualRoi,
-    this.netProfit,
     this.totalReturn,
     this.projectedRoi,
     this.completionDate,
@@ -67,7 +66,6 @@ class CoinvestmentContractData {
   final int? currentPhaseIndex;
   final String? constructionPhase;
   final double? actualRoi;
-  final double? netProfit;
   final double? totalReturn;
   final double? projectedRoi;
   final DateTime? completionDate;
@@ -101,7 +99,7 @@ class CoinvestmentContractData {
         estimatedReturnPct: estimatedReturnPct, estimatedDurationMonths: estimatedDurationMonths,
         startDate: startDate, expectedEndDate: expectedEndDate,
         currentPhaseIndex: currentPhaseIndex, constructionPhase: constructionPhase,
-        actualRoi: actualRoi, netProfit: netProfit, totalReturn: totalReturn,
+        actualRoi: actualRoi, totalReturn: totalReturn,
         projectedRoi: projectedRoi, completionDate: completionDate,
         actualDuration: actualDuration, actualTir: actualTir,
         assetId: assetId, assetFloorPlanUrl: assetFloorPlanUrl,
@@ -147,7 +145,6 @@ class CoinvestmentContractData {
       currentPhaseIndex: json['current_phase_index'] as int?,
       constructionPhase: json['construction_phase'] as String?,
       actualRoi: (json['actual_roi'] as num?)?.toDouble(),
-      netProfit: (json['net_profit'] as num?)?.toDouble(),
       totalReturn: (json['total_return'] as num?)?.toDouble(),
       projectedRoi: (json['projected_roi'] as num?)?.toDouble(),
       completionDate: json['completion_date'] != null

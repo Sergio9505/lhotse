@@ -38,15 +38,13 @@ class CompletedContractData {
       CompletedContractData(
         id: c.id,
         modelType: 'purchase',
-        projectName: c.projectName ?? '',
+        projectName: c.assetName ?? '',
         brandName: c.brandName,
-        imageUrl: c.projectImageUrl,
+        imageUrl: c.assetImageUrl,
         amount: c.purchaseValue,
         totalReturn: c.totalReturn,
         actualDuration: c.actualDuration,
         actualRoi: c.actualRoi,
-        actualTir: c.actualTir,
-        assetInfo: c.assetInfo,
         galleryImages: c.assetGalleryImages,
       );
 

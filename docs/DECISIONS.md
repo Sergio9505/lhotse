@@ -697,6 +697,88 @@ Views updated: `portfolio_summaries` and `brand_investment_summaries` now UNION 
 
 ---
 
+## ADR-35: purchase_contracts — Minimal Table, Computed View
+
+**Date:** 2026-04-16
+**Status:** Accepted
+
+**Context:** `purchase_contracts` accumulated many fields that were either derivable, premature, or semantically wrong for this domain (rental yield, projected ROI, is_delayed, cash_payment, actual_duration, net_profit). This made the table 17 columns when only 7 represent raw facts.
+
+**Decision:** Strip the table to raw facts only. Computed fields live in the view:
+- `actual_roi` → computed: `(total_return - purchase_value) / purchase_value * 100`
+- `cash_payment` → computed: `COALESCE(purchase_value - mortgage.principal, purchase_value)`
+- `actual_duration` → computed: months between `purchase_date` and `sold_date`
+- `asset_revaluation_pct` → computed: `(current_value - purchase_value) / purchase_value * 100`
+- `rental_yield_pct` → computed: `COALESCE(rc.yield_pct, monthly_rent * 12 / purchase_value * 100)`
+- `is_sold` → computed: `sold_date IS NOT NULL`
+
+Removed: `is_delayed`, `projected_roi`, `cash_payment`, `actual_duration`, `net_profit`, `actual_roi`, `actual_tir`.
+
+**Consequences:**
+- (+) Table is a clean fact record — 9 columns (7 business + 2 timestamps)
+- (+) Derived metrics always accurate — no stale data risk
+- (+) Admin only needs to set: `purchase_value`, `purchase_date`, `total_return` (at exit), `sold_date` (at exit)
+- (-) `actual_tir` (IRR) cannot be computed without a transaction ledger — removed until then
+
+---
+
+## ADR-36: purchase_contract_details — Asset-Centric, No Project Join
+
+**Date:** 2026-04-16
+**Status:** Accepted
+
+**Context:** The view joined `projects` to get `project_name`, `project_image_url`, `project_location`. But compra directa is about owning an ASSET, not a project. The project is a catalog/marketing entity.
+
+**Decision:** Remove the project JOIN entirely. Identity fields come from `assets`:
+- `asset_name` → `a.address` (the investor knows their property by address)
+- `asset_location` → `a.city || ', ' || a.country`
+- `asset_thumbnail_image` → `a.thumbnail_image` (new field on assets, seeded from project image)
+
+Removed from view: `project_name`, `project_location`, `project_image_url`, `project_status`, `business_model`.
+
+**Consequences:**
+- (+) View is semantically correct — compra directa ↔ asset, not project
+- (+) `assets` now self-sufficient for investor display (address, thumbnail, location)
+- (+) Coinversion correctly keeps its project join (investors participate in a project)
+
+---
+
+## ADR-37: rental_yield — Gross Fallback with Admin Override
+
+**Date:** 2026-04-16
+**Status:** Accepted
+
+**Context:** Rental yield can be computed as `monthly_rent × 12 / purchase_value`, but this is gross yield (no expenses). When expenses data is available, the admin should set a net yield. Two approaches: always compute, or allow override.
+
+**Decision:** `COALESCE(rc.yield_pct, round(monthly_rent * 12 / purchase_value * 100, 2))`. Admin can set `rental_contracts.yield_pct` manually (net or custom). If null, falls back to gross computation. View always returns a value when rental contract exists.
+
+**Why on rental_contracts, not purchase_contracts:** Yield is a property of the rental relationship (rent amount, expenses, conditions). When expenses are added in future, they'll be on the rental contract too.
+
+**Consequences:**
+- (+) Always shows a yield for active rentals (gross fallback)
+- (+) Admin can override with net yield without schema changes
+- (+) Natural home for yield — same table as the rent it derives from
+
+---
+
+## ADR-38: L2 Selective Select + L3 Self-Sufficient Fetch
+
+**Date:** 2026-04-16
+**Status:** Accepted
+
+**Context:** `brandPurchaseContractsProvider` fetched all ~35 columns for the L2 list, which only uses 6. L3 received the full object via `state.extra`, coupling list and detail.
+
+**Decision:**
+- L2 uses `.select('id, user_id, brand_id, brand_name, brand_logo_asset, purchase_value, sold_date, asset_name, asset_location, asset_thumbnail_image')` — 10 fields
+- L3 has a dedicated `purchaseContractByIdProvider` that fetches with full `.select()` by the `:id` already in the route URL
+- Router passes `contractId` (String), not the full object via `state.extra`
+
+**Consequences:**
+- (+) L2 payload reduced ~70% — faster list render
+- (+) L3 self-sufficient — works with deep links, no list dependency
+- (+) Decoupled: list and detail can evolve independently
+- (-) L3 makes a separate network request (acceptable — detail screens always do)
+
 ## ADR-32: All Physical Property Data Belongs to `assets`, Not `projects`
 
 **Date:** 2026-04-16

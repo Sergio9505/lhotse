@@ -24,6 +24,11 @@ final purchaseContractsProvider =
       .toList();
 });
 
+const _kPurchaseListSelect =
+    'id, user_id, brand_id, brand_name, brand_logo_asset, '
+    'purchase_value, sold_date, '
+    'asset_name, asset_location, asset_thumbnail_image';
+
 final brandPurchaseContractsProvider =
     FutureProvider.family<List<PurchaseContractData>, String>(
         (ref, brandId) async {
@@ -32,12 +37,28 @@ final brandPurchaseContractsProvider =
   final data = await ref
       .watch(supabaseClientProvider)
       .from('purchase_contract_details')
-      .select()
+      .select(_kPurchaseListSelect)
       .eq('user_id', userId)
       .eq('brand_id', brandId);
   return (data as List<dynamic>)
       .map((e) => PurchaseContractData.fromJson(e as Map<String, dynamic>))
       .toList();
+});
+
+final purchaseContractByIdProvider =
+    FutureProvider.family<PurchaseContractData?, String>((ref, id) async {
+  final userId = ref.watch(currentUserIdProvider).valueOrNull;
+  if (userId == null) return null;
+  final data = await ref
+      .watch(supabaseClientProvider)
+      .from('purchase_contract_details')
+      .select()
+      .eq('id', id)
+      .eq('user_id', userId)
+      .maybeSingle();
+  return data != null
+      ? PurchaseContractData.fromJson(data as Map<String, dynamic>)
+      : null;
 });
 
 // ── Coinvestment contracts ──────────────────────────────────────────────────

@@ -17,7 +17,7 @@ import '../features/investments/domain/coinvestment_contract_data.dart';
 import '../features/investments/domain/purchase_contract_data.dart';
 import '../features/investments/presentation/brand_investments_screen.dart';
 import '../features/investments/presentation/coinversion_detail_screen.dart';
-import '../features/investments/presentation/compra_directa_detail_screen.dart';
+import '../features/investments/presentation/direct_purchase_detail_screen.dart';
 import '../features/investments/presentation/completed_detail_screen.dart';
 import '../features/investments/presentation/investment_detail_screen.dart';
 import '../features/investments/presentation/investments_screen.dart';
@@ -236,8 +236,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.purchaseDetail,
               pageBuilder: (context, state) => _fadePage(
                 key: state.pageKey,
-                child: CompraDirectaDetailScreen(
-                  contract: state.extra as PurchaseContractData,
+                child: DirectPurchaseDetailScreen(
+                  contractId: state.pathParameters['id']!,
                 ),
               ),
             ),
