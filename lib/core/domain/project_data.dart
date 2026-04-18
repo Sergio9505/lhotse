@@ -1,13 +1,3 @@
-enum ProjectStatus { inDevelopment, closed }
-
-extension ProjectStatusX on ProjectStatus {
-  static ProjectStatus fromString(String value) => switch (value) {
-        'in_development' => ProjectStatus.inDevelopment,
-        'closed' => ProjectStatus.closed,
-        _ => ProjectStatus.inDevelopment,
-      };
-}
-
 class ProjectData {
   const ProjectData({
     required this.id,
@@ -23,7 +13,7 @@ class ProjectData {
     required this.description,
     this.galleryImages = const [],
     this.isVip = false,
-    this.status = ProjectStatus.inDevelopment,
+    this.isFundraisingClosed = false,
     this.surfaceM2,
     this.bedrooms,
     this.bathrooms,
@@ -58,7 +48,7 @@ class ProjectData {
   final String description;
   final List<String> galleryImages;
   final bool isVip;
-  final ProjectStatus status;
+  final bool isFundraisingClosed;
 
   // Asset physical characteristics
   final double? surfaceM2;
@@ -98,7 +88,7 @@ class ProjectData {
       description: row['description'] as String? ?? '',
       galleryImages: galleryRaw?.cast<String>() ?? [],
       isVip: row['is_vip'] as bool? ?? false,
-      status: ProjectStatusX.fromString(row['status'] as String? ?? ''),
+      isFundraisingClosed: row['is_fundraising_closed'] as bool? ?? false,
       surfaceM2: (assets?['surface_m2'] as num?)?.toDouble(),
       bedrooms: assets?['bedrooms'] as int?,
       bathrooms: assets?['bathrooms'] as int?,
@@ -118,7 +108,7 @@ class ProjectData {
     );
   }
 
-  /// Maps a row from the `get_opportunities` RPC.
+  /// Maps a row from the `user_opportunities` view.
   factory ProjectData.fromOpportunityRow(Map<String, dynamic> row) {
     return ProjectData(
       id: row['id'] as String,
@@ -127,15 +117,13 @@ class ProjectData {
       brandLogoAsset: row['logo_asset'] as String?,
       brandId: row['brand_id'] as String?,
       architect: '',
-      city: (row['location'] as String? ?? '').split(',').first.trim(),
-      country: (row['location'] as String? ?? '').contains(',')
-          ? (row['location'] as String).split(',').last.trim()
-          : '',
+      city: row['city'] as String? ?? '',
+      country: row['country'] as String? ?? '',
       imageUrl: row['image_url'] as String,
       tagline: '',
       description: '',
       isVip: row['is_vip'] as bool? ?? false,
-      status: ProjectStatusX.fromString(row['status'] as String? ?? ''),
+      isFundraisingClosed: row['is_fundraising_closed'] as bool? ?? false,
     );
   }
 }

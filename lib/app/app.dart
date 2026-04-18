@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/data/brands_provider.dart';
@@ -55,8 +56,7 @@ class _LhotseAppState extends ConsumerState<LhotseApp>
     // ≥ 5 min: investment summaries + news
     if (elapsed >= const Duration(minutes: 5)) {
       ref.invalidate(newsProvider);
-      ref.invalidate(brandSummariesProvider);
-      ref.invalidate(portfolioSummaryProvider);
+      ref.invalidate(userPortfolioProvider);
     }
 
     // ≥ 1 hour: catalog (brands, projects, featured carousel)
@@ -77,6 +77,10 @@ class _LhotseAppState extends ConsumerState<LhotseApp>
       theme: AppTheme.light,
       themeMode: ThemeMode.light,
       routerConfig: router,
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.dark,
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }

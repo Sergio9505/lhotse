@@ -12,7 +12,7 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_notification_bell.dart';
 import '../data/investments_provider.dart';
 import '../../../core/data/projects_provider.dart';
-import '../domain/investment_summary.dart';
+import '../domain/portfolio_entry.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
@@ -22,13 +22,12 @@ class InvestmentsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final topPadding = MediaQuery.of(context).padding.top;
-    final summariesAsync = ref.watch(brandSummariesProvider);
-    final portfolioAsync = ref.watch(portfolioSummaryProvider);
+    final summariesAsync = ref.watch(userPortfolioProvider);
     final opportunitiesAsync =
         ref.watch(opportunitiesProvider(const {}));
 
     final summaries = summariesAsync.valueOrNull ?? const [];
-    final total = portfolioAsync.valueOrNull?.totalInvested ?? 0.0;
+    final total = summaries.fold<double>(0, (acc, s) => acc + s.totalAmount);
     final opportunities = opportunitiesAsync.valueOrNull ?? const [];
 
     final totalFormatted = _eurFormat.format(total);
@@ -73,8 +72,13 @@ class InvestmentsScreen extends ConsumerWidget {
                     summary: summary,
                     isEstimated: isEstimated,
                     isLast: i == summaries.length - 1,
-                    onTap: () =>
-                        context.push('/investments/brand/${summary.brandId}'),
+                    onTap: () => context.push(
+                      '/investments/brand/${summary.brandId}',
+                      extra: (
+                        brandName: summary.brandName,
+                        businessModel: summary.businessModel,
+                      ),
+                    ),
                   );
                 },
                 childCount: summaries.length,
@@ -267,7 +271,7 @@ class _BrandRow extends StatefulWidget {
     this.onTap,
   });
 
-  final BrandInvestmentSummaryData summary;
+  final PortfolioEntry summary;
   final bool isEstimated;
   final bool isLast;
   final VoidCallback? onTap;

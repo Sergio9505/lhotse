@@ -781,10 +781,108 @@ Removed from view: `project_name`, `project_location`, `project_image_url`, `pro
 
 ---
 
+## ADR-43: Coinvestment Data Separation — Deal Terms vs Investor Performance vs Derived Progress
+
+**Date:** 2026-04-17
+**Status:** Accepted
+
+**Context:** `coinvestment_contracts` had 20 columns conflating three concerns: (a) deal terms shared across all investors of the same project, (b) individual investor performance, (c) denormalized phase progress. Seed data confirmed conceptual grouping: `estimated_return_pct`, `estimated_duration_months`, `expected_end_date`, `projected_roi`, `is_delayed`, `current_phase_index`, `construction_phase` were effectively project-level (1 distinct value per project across contracts). `actual_duration` was derivable from two existing dates.
+
+**Decision:** Three-layer separation:
+
+1. **Deal terms → `projects` (moved, 5 cols):** `estimated_return_pct`, `estimated_duration_months`, `expected_exit_date` (renamed from `expected_end_date` for clarity), `projected_roi`, `is_delayed`. All shared by all investors of the same project.
+
+2. **Investor performance → `coinvestment_contracts` (stays):** `actual_roi`, `actual_tir`, `total_return`, `completion_date`, `is_completed`. Stored per-contract, NOT derived. Rationale: investors within the same project may legitimately receive different actual figures due to fees, share classes, or late-entry bonuses. Admin panel stores what was actually paid, not a formula.
+
+3. **Phase progress → derived in view:** `current_phase_index` (count of completed `project_phases`), `construction_phase` (name of next incomplete phase). Single source of truth is `project_phases.is_completed + sort_order`.
+
+Also derived in view: `actual_duration = completion_date − start_date` in months (kept as a view column so Flutter doesn't change; the underlying storage is just the two dates).
+
+**Consequences:**
+- (+) `coinvestment_contracts` goes from 20 to 12 columns (-40%)
+- (+) No risk of deal terms drifting between contracts of same project (single source on `projects`)
+- (+) Phase progress cannot go stale (always reflects current `project_phases` state)
+- (+) View aliases preserve Flutter field names → zero code changes in Dart
+- (-) Queries joining contracts with project deal terms always need join (acceptable — view handles this)
+- (-) Two other views (`portfolio_summaries`, `brand_investment_summaries`) needed recreation to pull `estimated_return_pct` from `projects` instead of `coinvestment_contracts`
+
+**Why `actual_roi` is NOT derived:** Mathematically `total_return = amount × (1 + actual_roi/100)`, but real payouts differ due to management fees, carried interest splits, or withholding. Storing all three as independent fields on the contract lets admin record what actually happened, accepting the risk of minor drift for accuracy.
+
+---
+
+## ADR-42: Typed Economic Columns on Projects, Boolean Status, Drop Dead Columns
+
+**Date:** 2026-04-17
+**Status:** Accepted
+
+**Context:** `projects` had several columns that either (a) duplicated derived data in free-form JSON, (b) were never read, or (c) modeled a concept that could be simpler:
+
+- `status` (text enum `in_development` / `closed`) — 2-state field better modeled as boolean. No third value planned. Derivation from `project_phases` rejected: commercialization status ≠ construction progress (a project can be closed to new investors while still in build).
+- `video_url`, `video_thumbnail_url` — unused after video feature was deferred (detail screen shows "PRÓXIMAMENTE").
+- `search_vector` (tsvector) — never queried from Flutter; search uses in-memory filtering. Dead column.
+- `economic_analysis` (JSONB) — 4-key free-form array that in practice always held the same fields: precio compra, m² construidos, reforma, gastos totales. Business spec defines 10 fixed fields with strict percentage rules (ITP 2%, gastos compra 1%).
+
+Also missing: `target_capital` — the "raising X" figure shown to investors, with no home on the schema.
+
+**Decision:**
+1. `status` → `is_fundraising_closed boolean NOT NULL DEFAULT false`. View exposes as `project_is_fundraising_closed`. Naming is explicit to avoid confusion with (a) construction progress (derived from `project_phases.is_completed`) and (b) hypothetical future `is_archived`/`is_cancelled` states.
+2. Drop `video_url`, `video_thumbnail_url`, `search_vector`.
+3. Replace `economic_analysis` JSONB with typed numeric columns: `purchase_price`, `built_sqm`, `agency_commission`, `itp_amount`, `purchase_expenses_amount`, `renovation_cost`, `furniture_cost`, `other_costs`. Plus `total_cost` as `GENERATED ALWAYS AS` sum of all components, `STORED`.
+4. Add `target_capital numeric` (nullable — only populated for projects actively raising).
+5. Flutter `CoinvestmentContractData.economicAnalysis` becomes a getter that composes the `List<AssetInfoEntry>` from typed fields at read time (keeps UI contract stable). `€/m² construido` computed on the fly (not a DB column).
+
+**Consequences:**
+- (+) Queryable: admin panel can filter projects by price range, sum ITP across portfolio, etc.
+- (+) `total_cost` always correct (can't drift from inputs)
+- (+) `ITP` and `gastos compra` percentages documented in code + visible to admin as amounts (not hidden in labels)
+- (+) 4 dead/redundant columns removed — simpler schema
+- (-) Migration required backfill for 10 coinvestment projects (done in seed migration)
+- (-) If a non-standard cost category appears in future (e.g. "impuesto regional"), needs a new typed column rather than just a new JSON entry — acceptable trade-off for the stricter contract
+
+---
+
+## ADR-41: Asset Belongs to Project, Not Coinvestment Contract
+
+**Date:** 2026-04-17
+**Status:** Accepted
+
+**Context:** `coinvestment_contracts` had a nullable `asset_id` column duplicating `projects.asset_id`. In coinvestment, all investors share the same physical asset (the project's asset) — there's no scenario where two coinvestors on the same project reference different assets. The redundant column was 0/15 populated in seed, and the view `coinvestment_contract_details` joined assets via `cc.asset_id`, so the view returned null asset data everywhere even though each project had its asset linked.
+
+**Decision:** Drop `coinvestment_contracts.asset_id`. The view joins assets via `projects.asset_id`. Single source of truth: asset is a property of the project, not of the individual investor's contract.
+
+Contrast with `purchase_contracts.asset_id` which **stays** — in compra directa, a contract IS for a specific asset (potentially different units within a project), and the asset identity is the core of the contract.
+
+**Consequences:**
+- (+) No silent data gap (asset data now flows through the view for all contracts)
+- (+) Single source of truth; no risk of cc.asset_id diverging from projects.asset_id
+- (+) One less nullable column to maintain in seed
+- (-) Future feature "investor-specific asset variant" would need to reintroduce the column (not on roadmap)
+
+---
+
+## ADR-40: Drop `document_categories.key`, Link Documents by FK
+
+**Date:** 2026-04-17
+**Status:** Accepted — supersedes part of ADR-39
+
+**Context:** ADR-39 added a string `key` column to `document_categories` and stored `documents.category` as the same string. With an admin panel coming, `key` became a liability: renaming a key silently breaks all referencing documents (no FK integrity), and admins have to memorize exact strings. Two sources of truth (`key` + `label`).
+
+**Decision:** Drop `document_categories.key`. Link documents via `documents.category_id` (uuid, NOT NULL, FK → `document_categories.id`). Flutter filter state and icon map now use `id` instead of `key`. Admin panel freely renames labels / adds / removes categories; Postgres enforces integrity on FK.
+
+Icons still stored as Phosphor icon name strings in `icon_name` — that part of ADR-39 stands. Admin picks from a known library, not from Flutter code, so it's not a hardcoded coupling.
+
+**Consequences:**
+- (+) Referential integrity at DB level; no orphan `documents.category` strings
+- (+) Admin renames labels freely without touching documents
+- (+) One less column, one less source of truth
+- (-) Filter state holds UUIDs instead of readable keys (acceptable — filter state is ephemeral UI state)
+
+---
+
 ## ADR-39: Dynamic Document Categories — DB-driven, icon key in table
 
 **Date:** 2026-04-16
-**Status:** Accepted
+**Status:** Partially superseded by ADR-40 (the `key` column was dropped)
 
 **Context:** Document categories were hardcoded in a Dart enum (`DocCategory`) + DB CHECK constraint, duplicated across 4 screens, with inconsistent labels. Admin couldn't add new categories without a code change. Filter chips showed all possible categories for a model type, even when no documents of that type existed.
 
@@ -877,3 +975,72 @@ For coinversión: no reference purchase price exists at the asset level, so `ass
 - (+) Removes a manually-maintained derived field
 - (+) Correct semantics: compra directa has a purchase price to compare against; coinversión does not
 - (-) Cannot sort/filter by revaluation_pct in a simple query — requires subquery or materialized view if needed at scale
+
+---
+
+## ADR-35: Split Contract Views into Contract (per-row) + Project/Asset Details (per-entity)
+
+**Date:** 2026-04-18
+**Status:** Accepted
+
+**Context:** `coinvestment_contract_details` and `purchase_contract_details` were wide views that inlined every project/asset field onto every contract row: renders, progress images, gallery, economics, all 15+ physical asset attributes. Lists (Strategy → brand rows, brand investments) and detail heroes only read a small subset; the heavy fields were only consumed inside detail tabs (ACTIVO, FINANZAS, AVANCE). Effect: every list request duplicated per-project/per-asset data across rows and every row paid the wire cost of fields the list never rendered.
+
+**Decision:** Two-layer split per business model.
+
+- **`<model>_contract_details`** — minimal per-contract view. Only fields needed for lists + detail hero + per-contract tabs (mortgage for purchase, outcomes for completed). Filtered by `user_id`.
+- **`<model>_project_details`** (coinvestment) / **`<model>_asset_details`** (purchase) — per-project or per-asset view with the heavy static data (asset physical info, floor plan, gallery, economics, renders). No user filter. Loaded lazily via `FutureProvider.family` keyed by `projectId` or `assetId` only when a detail screen opens.
+
+Flutter: contract models drop the moved fields; new `CoinvestmentProjectDetails` / `PurchaseAssetDetails` models own `assetInfo` / `economicAnalysis` getters. Detail screens `ref.watch` the per-entity provider and pass derived lists to tab widgets.
+
+`fixed_income_contract_details` is NOT split — all its fields are per-contract (no project-level heavy data) and the detail screen has no tab structure.
+
+**Rationale:**
+- Lists send 1/3 to 1/2 the payload (coinvestment: 43 → 20 columns; purchase: 47 → 24).
+- Eliminates per-row duplication when multiple contracts share a project/asset (coinvestment: N investors in same project).
+- Aligns with the tab-level lazy-loading already in place for phases, scenarios, and documents.
+
+**Consequences:**
+- (+) Faster list responses, less memory in contract list providers.
+- (+) One extra request when a detail screen opens — lazy and cached per `projectId`/`assetId`.
+- (+) Physical asset data centralized: future commercial `project_details` view (home/AllProjects) can reuse the same asset columns.
+- (+) Floor plan fallback hardcoded in `CoinversionDetailScreen` (`Image.asset('mock_floor_plan.png')`) removed — `LhotseImage` resolves the DB value, asset or URL.
+- (-) Detail screens must handle a second async state; acceptable (AsyncValue fallback is trivial).
+- (-) Two views per model to keep in sync when schema evolves.
+
+---
+
+## ADR-36: Pure RLS + RLS Isolation Tests as the Authorization Model
+
+**Date:** 2026-04-18
+**Status:** Accepted
+
+**Context:** User-scoped views (`user_portfolio`, contract views) previously exposed a `user_id` column, and every provider filtered with `.eq('user_id', userId)`. At the same time, the base tables (`purchase_contracts`, `coinvestment_contracts`, `fixed_income_contracts`) had RLS policies `user_id = auth.uid()`, and the views ran with `security_invoker = true`. So the filter was applied twice: once by RLS (canonical), once by the client (redundant). The "defense in depth" justification doesn't hold up:
+
+- If RLS is correct, the client filter is noise that ships `user_id` to every client and clutters the providers.
+- If RLS is misconfigured, the client filter can **mask the bug silently** — a view returns 0 rows and nobody realises the policy broke; the filter happens to be filtering what should have been filtered by RLS anyway.
+
+The guard that actually works is an **integration test**: a SQL harness that impersonates two users and verifies user A cannot read user B's rows. This fails loud, in CI.
+
+**Decision:** Adopt **pure RLS** as the single canonical authorization source.
+
+- User-scoped views do NOT expose `user_id` as a column.
+- Client providers do NOT filter by `user_id`. They still watch `currentUserIdProvider.distinct()` to trigger re-fetch on auth state change (logout + login as different user).
+- Row isolation is verified by `docs/sql/tests/rls_user_isolation.sql` — a test file run against a staging DB that impersonates two users and asserts zero leakage.
+- Every migration that touches a user-scoped view includes "RLS test executed ✅" in its header per `docs/sql/MIGRATION_CHECKLIST.md`.
+
+**Rationale:**
+- **One canonical source** for authorization (principle #1). RLS is where data access is decided.
+- **Fail loud, not silent**: tests fail with a clear assertion; redundant filters hide regressions.
+- **Smaller surface**: views ship fewer columns, providers have less code, models drop unused fields.
+- **Industry alignment**: Supabase's own docs, Vercel Supabase templates, and Resend-style architectures all recommend pure RLS over belt-and-suspenders when the schema is Supabase-first.
+
+**Consequences:**
+- (+) Views and providers are leaner — `user_id` removed from 4 views and ~8 providers.
+- (+) RLS bugs surface as assertion failures in tests, not silent nulls in the UI.
+- (+) Future schema changes to user-scoped tables automatically inherit the pattern via the checklist.
+- (-) One-time discipline cost: RLS tests must be written and kept fresh when policies evolve.
+- (-) If RLS on the base tables is ever disabled, data leaks immediately (no belt). Mitigation: never ship a migration that disables RLS on user-scoped tables; the migration header flags the risk.
+
+**Not in scope for this ADR** (deferred):
+- Tables without user scoping (`brands`, `projects`, `news`, `assets`) are read-public for authenticated users. This ADR applies to user-scoped tables and their views only.
+- Admin/staff access paths (via service_role key) are outside RLS by design.

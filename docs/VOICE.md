@@ -24,7 +24,7 @@ Spanish (Spain). All user-facing text in the app is in Spanish.
 | Success | Confirmation | "Datos actualizados correctamente." |
 | Loading | — | Use skeleton/shimmer, not text |
 | Section header | Noun or short phrase | "Proyectos destacados", "Últimas noticias" |
-| Tab labels | Short noun | "Inicio", "Marcas", "Buscar", "Inversiones", "Mi perfil" |
+| Tab labels | Short noun | "Inicio", "Firmas", "Buscar", "Estrategia", "Perfil" |
 
 ## Number Formatting
 - Currency: `€1.234.567,89` (European format: dots for thousands, comma for decimals)

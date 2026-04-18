@@ -25,7 +25,8 @@ class AllProjectsScreen extends ConsumerStatefulWidget {
 enum _ActiveTool { none, brands, search }
 
 class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
-  ProjectStatus? _selectedStatus;
+  // null = all; false = en desarrollo; true = cerrados
+  bool? _selectedIsFundraisingClosed;
   _ActiveTool _activeTool = _ActiveTool.none;
   final Set<String> _selectedBrands = {};
   String _searchQuery = '';
@@ -39,8 +40,8 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
 
   List<ProjectData> _applyFilters(List<ProjectData> projects) {
     var result = projects;
-    if (_selectedStatus != null) {
-      result = result.where((p) => p.status == _selectedStatus).toList();
+    if (_selectedIsFundraisingClosed != null) {
+      result = result.where((p) => p.isFundraisingClosed == _selectedIsFundraisingClosed).toList();
     }
     if (_selectedBrands.isNotEmpty) {
       result = result.where((p) => _selectedBrands.contains(p.brand)).toList();
@@ -57,9 +58,9 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
     return result;
   }
 
-  void _toggleStatus(ProjectStatus status) {
+  void _toggleStatus(bool isClosed) {
     setState(() {
-      _selectedStatus = _selectedStatus == status ? null : status;
+      _selectedIsFundraisingClosed = _selectedIsFundraisingClosed == isClosed ? null : isClosed;
     });
   }
 
@@ -104,7 +105,7 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
           LhotseAppHeader(title: 'PROYECTOS', onBack: () => context.pop()),
 
           _FilterBar(
-            selectedStatus: _selectedStatus,
+            selectedIsFundraisingClosed: _selectedIsFundraisingClosed,
             activeTool: _activeTool,
             hasBrandSelection: _selectedBrands.isNotEmpty,
             onStatusTap: _toggleStatus,
@@ -163,7 +164,7 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
 
 class _FilterBar extends StatelessWidget {
   const _FilterBar({
-    required this.selectedStatus,
+    required this.selectedIsFundraisingClosed,
     required this.activeTool,
     required this.hasBrandSelection,
     required this.onStatusTap,
@@ -171,16 +172,16 @@ class _FilterBar extends StatelessWidget {
     required this.onSearchTap,
   });
 
-  final ProjectStatus? selectedStatus;
+  final bool? selectedIsFundraisingClosed;
   final _ActiveTool activeTool;
   final bool hasBrandSelection;
-  final ValueChanged<ProjectStatus> onStatusTap;
+  final ValueChanged<bool> onStatusTap;
   final VoidCallback onBrandsTap;
   final VoidCallback onSearchTap;
 
   static const _statusFilters = [
-    (status: ProjectStatus.inDevelopment, label: 'EN DESARROLLO'),
-    (status: ProjectStatus.closed, label: 'CERRADOS'),
+    (isClosed: false, label: 'EN DESARROLLO'),
+    (isClosed: true, label: 'CERRADOS'),
   ];
 
   @override
@@ -199,8 +200,8 @@ class _FilterBar extends StatelessWidget {
                     right: i < _statusFilters.length - 1 ? AppSpacing.lg : 0),
                 child: LhotseFilterTab(
                   label: filter.label,
-                  isActive: selectedStatus == filter.status,
-                  onTap: () => onStatusTap(filter.status),
+                  isActive: selectedIsFundraisingClosed == filter.isClosed,
+                  onTap: () => onStatusTap(filter.isClosed),
                 ),
               );
             }),

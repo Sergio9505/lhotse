@@ -5,6 +5,7 @@ import '../domain/document_category_data.dart';
 import '../theme/app_theme.dart';
 import 'lhotse_bottom_sheet.dart';
 import 'lhotse_doc_row.dart';
+import 'lhotse_filter_chip.dart';
 
 // ---------------------------------------------------------------------------
 // Icon map — Phosphor thin icons keyed by icon_name from document_categories.
@@ -39,13 +40,13 @@ class LhotseDocument {
   const LhotseDocument({
     required this.name,
     required this.date,
-    required this.categoryKey,
+    required this.categoryId,
     required this.iconName,
   });
 
   final String name;
   final String date;
-  final String categoryKey;
+  final String categoryId;
   final String iconName;
 }
 
@@ -137,7 +138,7 @@ void showDocsBottomSheet({
         final filteredDocs = activeFilters.isEmpty
             ? documents
             : documents
-                .where((d) => activeFilters.contains(d.categoryKey))
+                .where((d) => activeFilters.contains(d.categoryId))
                 .toList();
 
         return LhotseBottomSheetBody(
@@ -150,45 +151,19 @@ void showDocsBottomSheet({
               child: Row(
                 children: [
                   ...filterCategories.map((cat) {
-                    final active = activeFilters.contains(cat.key);
+                    final active = activeFilters.contains(cat.id);
                     return Padding(
                       padding: const EdgeInsets.only(right: AppSpacing.sm),
-                      child: GestureDetector(
+                      child: LhotseFilterChip(
+                        label: cat.label,
+                        isActive: active,
                         onTap: () => setState(() {
                           if (active) {
-                            activeFilters.remove(cat.key);
+                            activeFilters.remove(cat.id);
                           } else {
-                            activeFilters.add(cat.key);
+                            activeFilters.add(cat.id);
                           }
                         }),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: active
-                                ? AppColors.primary
-                                : Colors.transparent,
-                            border: Border.all(
-                              color: active
-                                  ? AppColors.primary
-                                  : AppColors.textPrimary
-                                      .withValues(alpha: 0.1),
-                            ),
-                          ),
-                          child: Text(
-                            cat.label.toUpperCase(),
-                            style: AppTypography.caption.copyWith(
-                              color: active
-                                  ? AppColors.textOnDark
-                                  : AppColors.accentMuted,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                        ),
                       ),
                     );
                   }),

@@ -49,6 +49,7 @@
 1. **Always** `ALTER VIEW {name} SET (security_invoker = true)` — ensures RLS applies to the calling user, not the view owner
 2. **Always** `NOTIFY pgrst, 'reload schema'` after creating/altering views — flushes PostgREST cache
 3. No `v_` or `_` prefix — views are first-class API endpoints
+4. **Pluralization**: views are plural by default (like tables). Exception: when the scope is semantically singular per filter (one portfolio per user, one profile per user, etc.), singular is allowed if it reads better. Justify the exception in the migration header.
 
 ### RLS
 - Enable on every table: `ALTER TABLE {name} ENABLE ROW LEVEL SECURITY`
@@ -56,6 +57,7 @@
 - User-scoped tables (investments, notifications): `WHERE user_id = auth.uid()`
 - Child tables (documents, phases, scenarios): ownership check via parent: `EXISTS (SELECT 1 FROM investments WHERE id = X.investment_id AND user_id = auth.uid())`
 - Admin write operations (brands, projects, news): managed via Supabase dashboard or service_role key, not RLS
+- **Pure RLS + isolation tests model** — user-scoped views don't expose `user_id`; clients don't filter by it. See ADR-36 + `docs/ARCHITECTURE.md` "Security model".
 
 ### Enum values — always English
 - DB values use English snake_case: `direct_purchase`, `in_development`, `fixed_income`
@@ -94,7 +96,8 @@
 - Home screen carousels: `LIMIT 5`, no pagination
 
 ### JSONB rules
-- **Use JSONB** when: data is display-only, never filtered/joined/aggregated individually (galleries, freeform extras, economic analysis)
+- **Use JSONB** when: data is display-only, variable-shape, never filtered/joined/aggregated individually (gallery_images, render_images, progress_images)
+- **Use typed columns** when: the schema is known and stable, even if the fields are many (see `projects.purchase_price`, `built_sqm`, `itp_amount`, etc. — ex-`economic_analysis` JSONB, migrated to 10 typed columns + GENERATED `total_cost`. ADR-42)
 - **Use a separate table** when: data needs individual filtering, sorting, or FK relationships (documents, phases, scenarios)
 - JSONB arrays: always default to `'[]'`, never `NULL`
 - JSONB objects: default to `NULL` when the whole block is optional

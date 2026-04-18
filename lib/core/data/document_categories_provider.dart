@@ -16,13 +16,13 @@ final allDocumentCategoriesProvider =
       .toList();
 });
 
-/// Returns only the categories that appear in the given document category keys.
-List<DocumentCategoryData> categoriesForKeys(
-  Iterable<String?> categoryKeys,
+/// Returns only the categories that appear in the given document category ids.
+List<DocumentCategoryData> categoriesForIds(
+  Iterable<String?> categoryIds,
   List<DocumentCategoryData> allCategories,
 ) {
-  final presentKeys = categoryKeys.whereType<String>().toSet();
+  final presentIds = categoryIds.whereType<String>().toSet();
   return allCategories
-      .where((c) => presentKeys.contains(c.key))
+      .where((c) => presentIds.contains(c.id))
       .toList();
 }

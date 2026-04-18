@@ -6,9 +6,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
-import '../../../core/domain/document_category_data.dart';
 import '../../../core/domain/asset_info.dart';
-import '../../../core/domain/document_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
@@ -17,8 +15,10 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
+import '../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../core/widgets/lhotse_metric_block.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
+import '../data/investments_provider.dart';
 import '../domain/completed_contract_data.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
@@ -44,21 +44,6 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
   int _tabIndex = 0;
 
   final Set<String> _activeDocFilters = {};
-
-  List<LhotseDocument> _toLhotseDocuments(
-      List<DocumentData> docs, List<DocumentCategoryData> allCategories) {
-    final iconMap = {for (var c in allCategories) c.key: c.iconName};
-    return docs
-        .map((d) => d.toLhotseDocument(iconName: iconMap[d.category] ?? 'fileText'))
-        .toList();
-  }
-
-  List<LhotseDocument> _filteredDocs(
-      List<DocumentData> docs, List<DocumentCategoryData> allCategories) {
-    final all = _toLhotseDocuments(docs, allCategories);
-    if (_activeDocFilters.isEmpty) return all;
-    return all.where((d) => _activeDocFilters.contains(d.categoryKey)).toList();
-  }
 
   void _toggleDocFilter(String key) {
     setState(() {
@@ -107,13 +92,22 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final returnAmount = d.totalReturn ?? d.amount;
-    final docs = ref
-        .watch(documentsProvider((type: d.modelType, id: d.id)))
-        .valueOrNull ?? const [];
-    final allCategories =
-        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
-    final filterCategories =
-        categoriesForKeys(docs.map((doc) => doc.category), allCategories);
+
+    // Gallery is lazy-loaded per-asset or per-project depending on the
+    // business model (physical/render images live outside the contract view).
+    final coinvestmentProjectDetail = d.projectId != null
+        ? ref
+            .watch(coinvestmentProjectDetailProvider(d.projectId!))
+            .valueOrNull
+        : null;
+    final purchaseAssetDetail = d.assetId != null
+        ? ref.watch(purchaseAssetDetailProvider(d.assetId!)).valueOrNull
+        : null;
+    final galleryImages = d.galleryImages.isNotEmpty
+        ? d.galleryImages
+        : purchaseAssetDetail?.galleryImages ??
+            coinvestmentProjectDetail?.renderImages ??
+            const <String>[];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
@@ -228,16 +222,18 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                         const SizedBox(width: AppSpacing.lg),
                         Expanded(
                           child: LhotseMetricBlock(
-                            value: '${d.actualDuration ?? '–'} meses',
-                            label: 'Duración',
+                            value:
+                                '+${d.actualRoi?.toStringAsFixed(1) ?? '-'}%',
+                            label: 'ROI',
+                            valueColor: const Color(0xFF2D6A4F),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.lg),
                         Expanded(
                           child: LhotseMetricBlock(
                             value:
-                                '+${d.actualRoi?.toStringAsFixed(1) ?? '-'}%',
-                            label: 'ROI',
+                                '+${d.actualTir?.toStringAsFixed(1) ?? '-'}%',
+                            label: 'TIR',
                             valueColor: const Color(0xFF2D6A4F),
                           ),
                         ),
@@ -268,77 +264,23 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                 bottomPadding: bottomPadding,
                 child: _ActivoTab(
                   assetInfo: d.assetInfo,
-                  galleryImages: d.galleryImages,
+                  galleryImages: galleryImages,
                   cardWidth: screenWidth * 0.75,
                 ),
               ),
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,
                 child: _DocsTab(
-                  documents: _filteredDocs(docs, allCategories),
-                  chips: _buildDocChips(filterCategories),
+                  modelType: d.modelType,
+                  modelId: d.id,
+                  activeFilters: _activeDocFilters,
+                  onToggleFilter: _toggleDocFilter,
+                  onClearFilters: () =>
+                      setState(() => _activeDocFilters.clear()),
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDocChips(List<DocumentCategoryData> categories) {
-    return Container(
-      color: AppColors.background,
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            ...categories.map((cat) {
-              final active = _activeDocFilters.contains(cat.key);
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: GestureDetector(
-                  onTap: () => _toggleDocFilter(cat.key),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOut,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: active ? AppColors.primary : Colors.transparent,
-                      border: Border.all(
-                        color: active
-                            ? AppColors.primary
-                            : AppColors.textPrimary.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: Text(
-                      cat.label.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
-                        color: active
-                            ? AppColors.textOnDark
-                            : AppColors.accentMuted,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-            if (_activeDocFilters.isNotEmpty)
-              GestureDetector(
-                onTap: () => setState(() => _activeDocFilters.clear()),
-                behavior: HitTestBehavior.opaque,
-                child: const Padding(
-                  padding: EdgeInsets.all(6),
-                  child: PhosphorIcon(PhosphorIconsThin.x,
-                      size: 14, color: AppColors.accentMuted),
-                ),
-              ),
-          ],
         ),
       ),
     );
@@ -452,18 +394,74 @@ class _ActivoTab extends StatelessWidget {
 
 // ── DOCS tab ──────────────────────────────────────────────────────────────────
 
-class _DocsTab extends StatelessWidget {
-  const _DocsTab({required this.documents, required this.chips});
-  final List<LhotseDocument> documents;
-  final Widget chips;
+class _DocsTab extends ConsumerWidget {
+  const _DocsTab({
+    required this.modelType,
+    required this.modelId,
+    required this.activeFilters,
+    required this.onToggleFilter,
+    required this.onClearFilters,
+  });
+
+  final String modelType;
+  final String modelId;
+  final Set<String> activeFilters;
+  final void Function(String) onToggleFilter;
+  final VoidCallback onClearFilters;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rawDocs = ref
+            .watch(documentsProvider((type: modelType, id: modelId)))
+            .valueOrNull ??
+        const [];
+    final allCategories =
+        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
+    final iconMap = {for (var c in allCategories) c.id: c.iconName};
+    final allDocs = rawDocs
+        .map((d) =>
+            d.toLhotseDocument(iconName: iconMap[d.categoryId] ?? 'fileText'))
+        .toList();
+    final documents = activeFilters.isEmpty
+        ? allDocs
+        : allDocs.where((d) => activeFilters.contains(d.categoryId)).toList();
+    final filterCategories =
+        categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: AppSpacing.md),
-        chips,
+        Container(
+          color: AppColors.background,
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                ...filterCategories.map((cat) => Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: LhotseFilterChip(
+                        label: cat.label,
+                        isActive: activeFilters.contains(cat.id),
+                        onTap: () => onToggleFilter(cat.id),
+                      ),
+                    )),
+                if (activeFilters.isNotEmpty)
+                  GestureDetector(
+                    onTap: onClearFilters,
+                    behavior: HitTestBehavior.opaque,
+                    child: const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: PhosphorIcon(PhosphorIconsThin.x,
+                          size: 14, color: AppColors.accentMuted),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: AppSpacing.sm),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),

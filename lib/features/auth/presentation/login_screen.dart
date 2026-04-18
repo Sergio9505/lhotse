@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -83,7 +84,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final topPadding = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
@@ -138,7 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onSubmitted: (_) => _signIn(),
                   ),
 
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Forgot password
                   Align(
@@ -151,17 +154,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Text(
-                          '¿Olvidaste tu contraseña?',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.accentMuted,
-                            decoration: TextDecoration.underline,
+                          'OLVIDÉ MI CONTRASEÑA',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textSecondary,
+                            letterSpacing: 1.5,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.xxl),
 
                   // Error banner
                   if (_errorMessage != null) ...[
@@ -189,6 +193,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
           SizedBox(height: bottomPadding + AppSpacing.lg),
         ],
+      ),
       ),
     );
   }

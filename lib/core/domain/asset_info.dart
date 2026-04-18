@@ -12,10 +12,15 @@ class AssetInfo {
 }
 
 class AssetInfoEntry {
-  const AssetInfoEntry({required this.label, required this.value});
+  const AssetInfoEntry({
+    required this.label,
+    required this.value,
+    this.copyable = false,
+  });
 
   final String label; // "Superficie"
   final String value; // "308 m²"
+  final bool copyable;
 
   factory AssetInfoEntry.fromJson(Map<String, dynamic> json) => AssetInfoEntry(
         label: json['label'] as String,

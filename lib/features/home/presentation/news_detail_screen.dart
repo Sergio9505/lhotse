@@ -81,7 +81,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     final relatedNews = allNews
-        .where((n) => n.brand == news.brand && n.id != news.id)
+        .where((n) => n.brandId == news.brandId && n.id != news.id)
         .take(3)
         .toList();
 

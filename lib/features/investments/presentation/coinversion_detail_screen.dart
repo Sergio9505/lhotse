@@ -5,11 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/brands_provider.dart';
 import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
-import '../../../core/domain/document_category_data.dart';
 import '../../../core/data/news_provider.dart';
-import '../../../core/domain/document_data.dart';
 import '../../../core/domain/asset_info.dart';
 import '../../../core/domain/news_item_data.dart';
 import '../../../core/domain/profit_scenario.dart';
@@ -22,6 +21,7 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
+import '../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 import '../data/investments_provider.dart';
@@ -43,9 +43,14 @@ class CoinversionDetailScreen extends ConsumerStatefulWidget {
   const CoinversionDetailScreen({
     super.key,
     required this.contract,
+    this.brandName,
   });
 
   final CoinvestmentContractData contract;
+
+  /// Passed via router extra from the L2 Strategy flow. Null on deep-link
+  /// entries — screen falls back to `brandByIdProvider(contract.brandId)`.
+  final String? brandName;
 
   @override
   ConsumerState<CoinversionDetailScreen> createState() =>
@@ -64,21 +69,6 @@ class _CoinversionDetailScreenState
 
   // Doc filter state (lives here so the pinned header can access it)
   final Set<String> _activeDocFilters = {};
-
-  List<LhotseDocument> _toLhotseDocuments(
-      List<DocumentData> docs, List<DocumentCategoryData> allCategories) {
-    final iconMap = {for (var c in allCategories) c.key: c.iconName};
-    return docs
-        .map((d) => d.toLhotseDocument(iconName: iconMap[d.category] ?? 'fileText'))
-        .toList();
-  }
-
-  List<LhotseDocument> _filteredDocs(
-      List<DocumentData> docs, List<DocumentCategoryData> allCategories) {
-    final all = _toLhotseDocuments(docs, allCategories);
-    if (_activeDocFilters.isEmpty) return all;
-    return all.where((d) => _activeDocFilters.contains(d.categoryKey)).toList();
-  }
 
   void _toggleDocFilter(String key) {
     setState(() {
@@ -134,6 +124,12 @@ class _CoinversionDetailScreenState
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
+    // Brand identity: prefer heroContext (router extra); deep-link falls back
+    // to brandByIdProvider.
+    final brandName = widget.brandName ??
+        ref.watch(brandByIdProvider(c.brandId)).valueOrNull?.name ??
+        '';
+
     // Load sub-data from Supabase
     final scenarios = ref
         .watch(projectScenariosProvider(c.projectId))
@@ -141,22 +137,26 @@ class _CoinversionDetailScreenState
     final phases = ref
         .watch(projectPhasesProvider(c.projectId))
         .valueOrNull ?? const [];
+    final projectDetail = ref
+        .watch(coinvestmentProjectDetailProvider(c.projectId))
+        .valueOrNull;
     final relatedNews = (ref.watch(newsProvider).valueOrNull ?? const [])
-        .where((n) => n.brand == c.brandName)
+        .where((n) => n.brandId == c.brandId)
         .take(4)
         .toList();
 
     final projectLocation = c.projectLocation;
     final projectImageUrl = c.projectImageUrl;
+    final currentPhaseIndex =
+        phases.where((p) => p.isCompleted).length;
+    final renderImages = projectDetail?.renderImages ?? const <String>[];
+    final progressImages = projectDetail?.progressImages ?? const <String>[];
+    final assetFloorPlanUrl = projectDetail?.assetFloorPlanUrl;
+    final assetInfo = projectDetail?.assetInfo ?? const <AssetInfoEntry>[];
+    final economicAnalysis =
+        projectDetail?.economicAnalysis ?? const <AssetInfoEntry>[];
     // inv alias for fields used in collapsed title (same type now)
     final inv = c;
-    final docs = ref
-        .watch(documentsProvider((type: 'coinvestment', id: c.id)))
-        .valueOrNull ?? const [];
-    final allCategories =
-        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
-    final filterCategories =
-        categoriesForKeys(docs.map((d) => d.category), allCategories);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
@@ -210,7 +210,7 @@ class _CoinversionDetailScreenState
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      LhotseImage(projectImageUrl ?? ''),
+                      LhotseImage(projectImageUrl),
                       const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -252,14 +252,14 @@ class _CoinversionDetailScreenState
                       Row(
                         children: [
                           Text(
-                            inv.brandName.toUpperCase(),
+                            brandName.toUpperCase(),
                             style: AppTypography.caption.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w500,
                               letterSpacing: 1.8,
                             ),
                           ),
-                          if (projectLocation != null) ...[
+                          if (projectLocation.isNotEmpty) ...[
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8),
@@ -333,9 +333,8 @@ class _CoinversionDetailScreenState
                 _TabScrollWrapper(
                   child: _AvanceTab(
                     phases: phases,
-                    currentPhaseIndex: c.currentPhaseIndex ?? 0,
-                    progressImages: c.progressImages,
-                    videoThumbnailUrl: c.videoThumbnailUrl,
+                    currentPhaseIndex: currentPhaseIndex,
+                    progressImages: progressImages,
                     news: relatedNews,
                     cardWidth: screenWidth * 0.75,
                   ),
@@ -343,15 +342,16 @@ class _CoinversionDetailScreenState
                 ),
                 _TabScrollWrapper(
                   child: _ProyectoTab(
-                    floorPlanUrl: c.assetFloorPlanUrl,
-                    renderImages: c.renderImages,
+                    assetInfo: assetInfo,
+                    floorPlanUrl: assetFloorPlanUrl,
+                    renderImages: renderImages,
                     cardWidth: screenWidth * 0.75,
                   ),
                   bottomPadding: bottomPadding,
                 ),
                 _TabScrollWrapper(
                   child: _FinancieroTab(
-                    economicAnalysis: c.economicAnalysis,
+                    economicAnalysis: economicAnalysis,
                     scenarios: scenarios,
                     selectedScenario: _selectedScenario,
                     onScenarioSelected: (i) =>
@@ -361,8 +361,12 @@ class _CoinversionDetailScreenState
                 ),
                 _TabScrollWrapper(
                   child: _DocumentosTab(
-                    documents: _filteredDocs(docs, allCategories),
-                    chips: _buildDocChips(filterCategories),
+                    modelType: 'coinvestment',
+                    modelId: c.id,
+                    activeFilters: _activeDocFilters,
+                    onToggleFilter: _toggleDocFilter,
+                    onClearFilters: () =>
+                        setState(() => _activeDocFilters.clear()),
                   ),
                   bottomPadding: bottomPadding,
                 ),
@@ -373,71 +377,6 @@ class _CoinversionDetailScreenState
     );
   }
 
-  Widget _buildDocChips(List<DocumentCategoryData> categories) {
-    return Container(
-      color: AppColors.background,
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            ...categories.map((cat) {
-              final active = _activeDocFilters.contains(cat.key);
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: GestureDetector(
-                  onTap: () => _toggleDocFilter(cat.key),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOut,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: active
-                          ? AppColors.primary
-                          : Colors.transparent,
-                      border: Border.all(
-                        color: active
-                            ? AppColors.primary
-                            : AppColors.textPrimary
-                                .withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: Text(
-                      cat.label.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
-                        color: active
-                            ? AppColors.textOnDark
-                            : AppColors.accentMuted,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-            if (_activeDocFilters.isNotEmpty)
-              GestureDetector(
-                onTap: () => setState(() => _activeDocFilters.clear()),
-                behavior: HitTestBehavior.opaque,
-                child: const Padding(
-                  padding: EdgeInsets.all(6),
-                  child: PhosphorIcon(
-                    PhosphorIconsThin.x,
-                    size: 14,
-                    color: AppColors.accentMuted,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 
@@ -478,7 +417,7 @@ class _FinancieroTab extends StatelessWidget {
     required this.onScenarioSelected,
   });
 
-  final List<AssetInfoEntry>? economicAnalysis;
+  final List<AssetInfoEntry> economicAnalysis;
   final List<ProfitScenario> scenarios;
   final int selectedScenario;
   final ValueChanged<int> onScenarioSelected;
@@ -488,11 +427,11 @@ class _FinancieroTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (economicAnalysis != null && economicAnalysis!.isNotEmpty) ...[
+        if (economicAnalysis.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
           const LhotseSectionLabel(label: 'ANÁLISIS ECONÓMICO'),
           const SizedBox(height: AppSpacing.sm),
-          LhotseKeyValueList(entries: economicAnalysis!, highlightLast: true),
+          LhotseKeyValueList(entries: economicAnalysis, highlightLast: true),
         ],
         if (scenarios.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
@@ -518,7 +457,6 @@ class _AvanceTab extends StatelessWidget {
     required this.phases,
     required this.currentPhaseIndex,
     required this.progressImages,
-    required this.videoThumbnailUrl,
     required this.news,
     required this.cardWidth,
   });
@@ -526,7 +464,6 @@ class _AvanceTab extends StatelessWidget {
   final List<ProjectPhase> phases;
   final int currentPhaseIndex;
   final List<String> progressImages;
-  final String? videoThumbnailUrl;
   final List<NewsItemData> news;
   final double cardWidth;
 
@@ -554,7 +491,6 @@ class _AvanceTab extends StatelessWidget {
                 ? progressImages.sublist(0, _kMaxVisibleGallery)
                 : progressImages,
             progressImages: const [],
-            videoThumbnailUrl: videoThumbnailUrl,
             selectedTab: 0,
             onTabChanged: (_) {},
             cardWidth: cardWidth,
@@ -602,11 +538,13 @@ class _AvanceTab extends StatelessWidget {
 
 class _ProyectoTab extends StatelessWidget {
   const _ProyectoTab({
+    required this.assetInfo,
     required this.floorPlanUrl,
     required this.renderImages,
     required this.cardWidth,
   });
 
+  final List<AssetInfoEntry> assetInfo;
   final String? floorPlanUrl;
   final List<String> renderImages;
   final double cardWidth;
@@ -616,6 +554,12 @@ class _ProyectoTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (assetInfo.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xl),
+          const LhotseSectionLabel(label: 'INFORMACIÓN'),
+          const SizedBox(height: AppSpacing.sm),
+          LhotseKeyValueList(entries: assetInfo),
+        ],
         if (floorPlanUrl != null) ...[
           const SizedBox(height: AppSpacing.xxl),
           const LhotseSectionLabel(label: 'PLANO DEL INMUEBLE'),
@@ -633,8 +577,8 @@ class _ProyectoTab extends StatelessWidget {
                 child: Stack(
                   children: [
                     Center(
-                      child: Image.asset(
-                        'assets/images/mock_floor_plan.png',
+                      child: LhotseImage(
+                        floorPlanUrl!,
                         fit: BoxFit.contain,
                       ),
                     ),
@@ -666,7 +610,6 @@ class _ProyectoTab extends StatelessWidget {
                 ? renderImages.sublist(0, _kMaxVisibleGallery)
                 : renderImages,
             progressImages: const [],
-            videoThumbnailUrl: null,
             selectedTab: 0,
             onTabChanged: (_) {},
             cardWidth: cardWidth,
@@ -757,8 +700,8 @@ void _showFloorPlan(BuildContext context, String url) {
                             AppSpacing.lg,
                             bottomPadding + AppSpacing.lg,
                           ),
-                          child: Image.asset(
-                            'assets/images/mock_floor_plan.png',
+                          child: LhotseImage(
+                            url,
                             fit: BoxFit.contain,
                           ),
                         ),
@@ -799,18 +742,77 @@ void _showFloorPlan(BuildContext context, String url) {
 // TAB: DOCUMENTOS
 // ===========================================================================
 
-class _DocumentosTab extends StatelessWidget {
-  const _DocumentosTab({required this.documents, required this.chips});
-  final List<LhotseDocument> documents;
-  final Widget chips;
+class _DocumentosTab extends ConsumerWidget {
+  const _DocumentosTab({
+    required this.modelType,
+    required this.modelId,
+    required this.activeFilters,
+    required this.onToggleFilter,
+    required this.onClearFilters,
+  });
+
+  final String modelType;
+  final String modelId;
+  final Set<String> activeFilters;
+  final void Function(String) onToggleFilter;
+  final VoidCallback onClearFilters;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rawDocs = ref
+            .watch(documentsProvider((type: modelType, id: modelId)))
+            .valueOrNull ??
+        const [];
+    final allCategories =
+        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
+    final iconMap = {for (var c in allCategories) c.id: c.iconName};
+    final allDocs = rawDocs
+        .map((d) =>
+            d.toLhotseDocument(iconName: iconMap[d.categoryId] ?? 'fileText'))
+        .toList();
+    final documents = activeFilters.isEmpty
+        ? allDocs
+        : allDocs.where((d) => activeFilters.contains(d.categoryId)).toList();
+    final filterCategories =
+        categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: AppSpacing.md),
-        chips,
+        Container(
+          color: AppColors.background,
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                ...filterCategories.map((cat) => Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: LhotseFilterChip(
+                        label: cat.label,
+                        isActive: activeFilters.contains(cat.id),
+                        onTap: () => onToggleFilter(cat.id),
+                      ),
+                    )),
+                if (activeFilters.isNotEmpty)
+                  GestureDetector(
+                    onTap: onClearFilters,
+                    behavior: HitTestBehavior.opaque,
+                    child: const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: PhosphorIcon(
+                        PhosphorIconsThin.x,
+                        size: 14,
+                        color: AppColors.accentMuted,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: AppSpacing.sm),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -1200,7 +1202,6 @@ class _InvestmentGallery extends StatelessWidget {
   const _InvestmentGallery({
     required this.renderImages,
     required this.progressImages,
-    this.videoThumbnailUrl,
     required this.selectedTab,
     required this.onTabChanged,
     required this.cardWidth,
@@ -1208,7 +1209,6 @@ class _InvestmentGallery extends StatelessWidget {
 
   final List<String> renderImages;
   final List<String> progressImages;
-  final String? videoThumbnailUrl;
   final int selectedTab;
   final ValueChanged<int> onTabChanged;
   final double cardWidth;
@@ -1218,8 +1218,6 @@ class _InvestmentGallery extends StatelessWidget {
     final images = selectedTab == 0 ? renderImages : progressImages;
     final hasRenders = renderImages.isNotEmpty;
     final hasProgress = progressImages.isNotEmpty;
-    final totalItems = images.length +
-        (videoThumbnailUrl != null && selectedTab == 1 ? 1 : 0);
 
     return Column(
       children: [
@@ -1251,19 +1249,11 @@ class _InvestmentGallery extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding:
                 const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: totalItems,
+            itemCount: images.length,
             separatorBuilder: (_, _) =>
                 const SizedBox(width: AppSpacing.sm),
-            itemBuilder: (context, i) {
-              if (i == images.length && videoThumbnailUrl != null) {
-                return _GalleryCard(
-                    width: cardWidth,
-                    imageUrl: videoThumbnailUrl!,
-                    isVideo: true);
-              }
-              return _GalleryCard(
-                  width: cardWidth, imageUrl: images[i]);
-            },
+            itemBuilder: (context, i) => _GalleryCard(
+                width: cardWidth, imageUrl: images[i]),
           ),
         ),
       ],
@@ -1317,16 +1307,14 @@ class _GalleryCard extends StatelessWidget {
   const _GalleryCard({
     required this.width,
     required this.imageUrl,
-    this.isVideo = false,
   });
   final double width;
   final String imageUrl;
-  final bool isVideo;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: isVideo ? null : () => showFullImage(context, imageUrl),
+      onTap: () => showFullImage(context, imageUrl),
       child: Container(
         width: width,
         decoration: const BoxDecoration(
@@ -1338,26 +1326,7 @@ class _GalleryCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            LhotseImage(imageUrl),
-          if (isVideo)
-            Center(
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  border:
-                      Border.all(color: Colors.white, width: 1.5),
-                ),
-                child: const PhosphorIcon(PhosphorIconsThin.play,
-                    color: Colors.white, size: 18),
-              ),
-            ),
-        ],
-      ),
+        child: LhotseImage(imageUrl),
       ),
     );
   }

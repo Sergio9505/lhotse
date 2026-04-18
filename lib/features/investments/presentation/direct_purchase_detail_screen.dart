@@ -4,11 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/brands_provider.dart';
 import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/asset_info.dart' show AssetInfoEntry;
-import '../../../core/domain/document_category_data.dart';
-import '../../../core/domain/document_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
@@ -17,9 +16,11 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
+import '../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 import '../data/investments_provider.dart';
 import '../domain/purchase_contract_data.dart';
+import '../domain/purchase_mortgage_details.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 final _dateFormat = DateFormat('MM/yyyy');
@@ -29,9 +30,17 @@ const _kMaxVisibleGallery = 5;
 
 // Shell widget — handles async loading
 class DirectPurchaseDetailScreen extends ConsumerWidget {
-  const DirectPurchaseDetailScreen({super.key, required this.contractId});
+  const DirectPurchaseDetailScreen({
+    super.key,
+    required this.contractId,
+    this.brandName,
+  });
 
   final String contractId;
+
+  /// Passed via router extra from L2 Strategy. Null on deep-link — screen
+  /// falls back to `brandByIdProvider(contract.brandId)`.
+  final String? brandName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,16 +56,20 @@ class DirectPurchaseDetailScreen extends ConsumerWidget {
       ),
       data: (c) => c == null
           ? const Scaffold(backgroundColor: AppColors.background, body: SizedBox.shrink())
-          : _DirectPurchaseDetailContent(contract: c),
+          : _DirectPurchaseDetailContent(contract: c, brandName: brandName),
     );
   }
 }
 
 // Content widget — receives contract synchronously, owns TabController
 class _DirectPurchaseDetailContent extends ConsumerStatefulWidget {
-  const _DirectPurchaseDetailContent({required this.contract});
+  const _DirectPurchaseDetailContent({
+    required this.contract,
+    this.brandName,
+  });
 
   final PurchaseContractData contract;
+  final String? brandName;
 
   @override
   ConsumerState<_DirectPurchaseDetailContent> createState() =>
@@ -72,21 +85,6 @@ class _DirectPurchaseDetailContentState
   bool _showCollapsedTitle = false;
 
   final Set<String> _activeDocFilters = {};
-
-  List<LhotseDocument> _toLhotseDocuments(
-      List<DocumentData> docs, List<DocumentCategoryData> allCategories) {
-    final iconMap = {for (var c in allCategories) c.key: c.iconName};
-    return docs
-        .map((d) => d.toLhotseDocument(iconName: iconMap[d.category] ?? 'fileText'))
-        .toList();
-  }
-
-  List<LhotseDocument> _filteredDocs(
-      List<DocumentData> docs, List<DocumentCategoryData> allCategories) {
-    final all = _toLhotseDocuments(docs, allCategories);
-    if (_activeDocFilters.isEmpty) return all;
-    return all.where((d) => _activeDocFilters.contains(d.categoryKey)).toList();
-  }
 
   void _toggleDocFilter(String key) {
     setState(() {
@@ -133,14 +131,17 @@ class _DirectPurchaseDetailContentState
     final c = widget.contract;
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final docs = ref
-            .watch(documentsProvider((type: 'purchase', id: c.id)))
-            .valueOrNull ??
-        const [];
-    final allCategories =
-        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
-    final filterCategories = categoriesForKeys(
-        docs.map((d) => d.category), allCategories);
+    final brandName = widget.brandName ??
+        ref.watch(brandByIdProvider(c.brandId)).valueOrNull?.name ??
+        '';
+    final assetDetail = ref
+        .watch(purchaseAssetDetailProvider(c.assetId))
+        .valueOrNull;
+    // FINANCIACIÓN tab content is lazy — only fetched if the contract has
+    // financing AND the tab is rendered.
+    final mortgageDetail = c.hasFinancing
+        ? ref.watch(purchaseMortgageDetailProvider(c.id)).valueOrNull
+        : null;
     final projectName = c.assetName ?? '';
     final purchaseFormatted = _eurFormat.format(c.purchaseValue);
 
@@ -220,7 +221,7 @@ class _DirectPurchaseDetailContentState
                     Row(
                       children: [
                         Text(
-                          c.brandName.toUpperCase(),
+                          brandName.toUpperCase(),
                           style: AppTypography.caption.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w500,
@@ -356,22 +357,10 @@ class _DirectPurchaseDetailContentState
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,
                 child: _AssetTab(
-                  surfaceM2: c.assetSurfaceM2,
-                  plotM2: c.assetPlotM2,
-                  bedrooms: c.assetBedrooms,
-                  bathrooms: c.assetBathrooms,
-                  floor: c.assetFloor,
-                  orientation: c.assetOrientation,
-                  views: c.assetViews,
-                  terraceM2: c.assetTerraceM2,
-                  hasPool: c.assetHasPool,
-                  parkingSpots: c.assetParkingSpots,
-                  storageRoom: c.assetStorageRoom,
-                  yearBuilt: c.assetYearBuilt,
-                  yearRenovated: c.assetYearRenovated,
-                  cadastralRef: c.assetCadastralReference,
-                  floorPlanUrl: c.assetFloorPlanUrl,
-                  galleryImages: c.assetGalleryImages,
+                  assetInfo: assetDetail?.assetInfo ?? const <AssetInfoEntry>[],
+                  floorPlanUrl: assetDetail?.floorPlanUrl,
+                  galleryImages:
+                      assetDetail?.galleryImages ?? const <String>[],
                   cardWidth: screenWidth * 0.75,
                 ),
               ),
@@ -380,79 +369,22 @@ class _DirectPurchaseDetailContentState
                   bottomPadding: bottomPadding,
                   child: _FinancingTab(
                     cashPayment: c.cashPayment,
-                    mortgage: c.mortgagePrincipal,
-                    mortgageConditions: c.mortgageConditions,
-                    monthlyPayment: c.mortgageMonthlyPayment,
-                    mortgageEndDate: c.mortgageEndDate,
+                    mortgage: mortgageDetail,
                   ),
                 ),
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,
                 child: _DocsTab(
-                  documents: _filteredDocs(docs, allCategories),
-                  chips: _buildDocChips(filterCategories),
+                  modelType: 'purchase',
+                  modelId: c.id,
+                  activeFilters: _activeDocFilters,
+                  onToggleFilter: _toggleDocFilter,
+                  onClearFilters: () =>
+                      setState(() => _activeDocFilters.clear()),
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDocChips(List<DocumentCategoryData> categories) {
-    return Container(
-      color: AppColors.background,
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            ...categories.map((cat) {
-              final active = _activeDocFilters.contains(cat.key);
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: GestureDetector(
-                  onTap: () => _toggleDocFilter(cat.key),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOut,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: active ? AppColors.primary : Colors.transparent,
-                      border: Border.all(
-                        color: active
-                            ? AppColors.primary
-                            : AppColors.textPrimary.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: Text(
-                      cat.label.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
-                        color: active
-                            ? AppColors.textOnDark
-                            : AppColors.accentMuted,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-            if (_activeDocFilters.isNotEmpty)
-              GestureDetector(
-                onTap: () => setState(() => _activeDocFilters.clear()),
-                behavior: HitTestBehavior.opaque,
-                child: const Padding(
-                  padding: EdgeInsets.all(6),
-                  child: PhosphorIcon(PhosphorIconsThin.x,
-                      size: 14, color: AppColors.accentMuted),
-                ),
-              ),
-          ],
         ),
       ),
     );
@@ -479,71 +411,27 @@ class _TabScrollWrapper extends StatelessWidget {
 
 class _AssetTab extends StatelessWidget {
   const _AssetTab({
-    this.surfaceM2,
-    this.plotM2,
-    this.bedrooms,
-    this.bathrooms,
-    this.floor,
-    this.orientation,
-    this.views,
-    this.terraceM2,
-    this.hasPool,
-    this.parkingSpots,
-    this.storageRoom,
-    this.yearBuilt,
-    this.yearRenovated,
-    this.cadastralRef,
+    required this.assetInfo,
     required this.floorPlanUrl,
     required this.galleryImages,
     required this.cardWidth,
   });
 
-  final double? surfaceM2;
-  final double? plotM2;
-  final int? bedrooms;
-  final int? bathrooms;
-  final String? floor;
-  final String? orientation;
-  final String? views;
-  final double? terraceM2;
-  final bool? hasPool;
-  final int? parkingSpots;
-  final bool? storageRoom;
-  final int? yearBuilt;
-  final int? yearRenovated;
-  final String? cadastralRef;
+  final List<AssetInfoEntry> assetInfo;
   final String? floorPlanUrl;
   final List<String> galleryImages;
   final double cardWidth;
 
   @override
   Widget build(BuildContext context) {
-    String m2(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 1)} m²';
-    final entries = <AssetInfoEntry>[
-      if (surfaceM2 != null) AssetInfoEntry(label: 'Superficie', value: m2(surfaceM2!)),
-      if (plotM2 != null) AssetInfoEntry(label: 'Parcela', value: m2(plotM2!)),
-      if (bedrooms != null) AssetInfoEntry(label: 'Habitaciones', value: '$bedrooms'),
-      if (bathrooms != null) AssetInfoEntry(label: 'Baños', value: '$bathrooms'),
-      if (floor != null) AssetInfoEntry(label: 'Planta', value: floor!),
-      if (orientation != null) AssetInfoEntry(label: 'Orientación', value: orientation!),
-      if (views != null) AssetInfoEntry(label: 'Vistas', value: views!),
-      if (terraceM2 != null) AssetInfoEntry(label: 'Terraza', value: m2(terraceM2!)),
-      if (hasPool == true) const AssetInfoEntry(label: 'Piscina', value: 'Sí'),
-      if (parkingSpots != null) AssetInfoEntry(label: 'Garaje', value: parkingSpots == 1 ? '1 plaza' : '$parkingSpots plazas'),
-      if (storageRoom == true) const AssetInfoEntry(label: 'Trastero', value: 'Incluido'),
-      if (yearBuilt != null) AssetInfoEntry(label: 'Año construcción', value: '$yearBuilt'),
-      if (yearRenovated != null) AssetInfoEntry(label: 'Año renovación', value: '$yearRenovated'),
-      if (cadastralRef != null) AssetInfoEntry(label: 'Ref. catastral', value: cadastralRef),
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (entries.isNotEmpty) ...[
+        if (assetInfo.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
           const LhotseSectionLabel(label: 'INFORMACIÓN'),
           const SizedBox(height: AppSpacing.sm),
-          LhotseKeyValueList(entries: entries),
+          LhotseKeyValueList(entries: assetInfo),
         ],
         if (floorPlanUrl != null) ...[
           const SizedBox(height: AppSpacing.xxl),
@@ -647,41 +535,43 @@ class _FinancingTab extends StatelessWidget {
   const _FinancingTab({
     required this.cashPayment,
     required this.mortgage,
-    required this.mortgageConditions,
-    required this.monthlyPayment,
-    required this.mortgageEndDate,
   });
 
   final double? cashPayment;
-  final double? mortgage;
-  final String? mortgageConditions;
-  final double? monthlyPayment;
-  final DateTime? mortgageEndDate;
+  final PurchaseMortgageDetails? mortgage;
 
   @override
   Widget build(BuildContext context) {
+    if (mortgage == null) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+      );
+    }
+    final m = mortgage!;
     final entries = <AssetInfoEntry>[];
     if (cashPayment != null) {
       entries.add(AssetInfoEntry(
           label: 'Contado', value: '${_eurFormat.format(cashPayment)}€'));
     }
-    if (mortgage != null) {
+    if (m.mortgagePrincipal != null) {
       entries.add(AssetInfoEntry(
-          label: 'Hipoteca', value: '${_eurFormat.format(mortgage)}€'));
+          label: 'Hipoteca',
+          value: '${_eurFormat.format(m.mortgagePrincipal)}€'));
     }
-    if (mortgageConditions != null) {
+    if (m.mortgageConditions != null) {
       entries.add(
-          AssetInfoEntry(label: 'Condiciones', value: mortgageConditions!));
+          AssetInfoEntry(label: 'Condiciones', value: m.mortgageConditions!));
     }
-    if (monthlyPayment != null) {
+    if (m.mortgageMonthlyPayment != null) {
       entries.add(AssetInfoEntry(
           label: 'Cuota',
-          value: '${_eurFormat.format(monthlyPayment)}€/mes'));
+          value: '${_eurFormat.format(m.mortgageMonthlyPayment)}€/mes'));
     }
-    if (mortgageEndDate != null) {
+    if (m.mortgageEndDate != null) {
       entries.add(AssetInfoEntry(
           label: 'Finalización hipoteca',
-          value: _dateFormat.format(mortgageEndDate!)));
+          value: _dateFormat.format(m.mortgageEndDate!)));
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -697,18 +587,74 @@ class _FinancingTab extends StatelessWidget {
 
 // ── DOCS tab ──────────────────────────────────────────────────────────────────
 
-class _DocsTab extends StatelessWidget {
-  const _DocsTab({required this.documents, required this.chips});
-  final List<LhotseDocument> documents;
-  final Widget chips;
+class _DocsTab extends ConsumerWidget {
+  const _DocsTab({
+    required this.modelType,
+    required this.modelId,
+    required this.activeFilters,
+    required this.onToggleFilter,
+    required this.onClearFilters,
+  });
+
+  final String modelType;
+  final String modelId;
+  final Set<String> activeFilters;
+  final void Function(String) onToggleFilter;
+  final VoidCallback onClearFilters;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rawDocs = ref
+            .watch(documentsProvider((type: modelType, id: modelId)))
+            .valueOrNull ??
+        const [];
+    final allCategories =
+        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
+    final iconMap = {for (var c in allCategories) c.id: c.iconName};
+    final allDocs = rawDocs
+        .map((d) =>
+            d.toLhotseDocument(iconName: iconMap[d.categoryId] ?? 'fileText'))
+        .toList();
+    final documents = activeFilters.isEmpty
+        ? allDocs
+        : allDocs.where((d) => activeFilters.contains(d.categoryId)).toList();
+    final filterCategories =
+        categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: AppSpacing.md),
-        chips,
+        Container(
+          color: AppColors.background,
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                ...filterCategories.map((cat) => Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: LhotseFilterChip(
+                        label: cat.label,
+                        isActive: activeFilters.contains(cat.id),
+                        onTap: () => onToggleFilter(cat.id),
+                      ),
+                    )),
+                if (activeFilters.isNotEmpty)
+                  GestureDetector(
+                    onTap: onClearFilters,
+                    behavior: HitTestBehavior.opaque,
+                    child: const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: PhosphorIcon(PhosphorIconsThin.x,
+                          size: 14, color: AppColors.accentMuted),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: AppSpacing.sm),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),

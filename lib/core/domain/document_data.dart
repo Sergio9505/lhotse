@@ -9,7 +9,7 @@ class DocumentData {
     required this.modelId,
     required this.name,
     this.date,
-    this.category,
+    this.categoryId,
     this.fileUrl,
     this.mimeType,
   });
@@ -19,7 +19,7 @@ class DocumentData {
   final String modelId;
   final String name;
   final DateTime? date;
-  final String? category; // key from document_categories table
+  final String? categoryId; // FK to document_categories.id
   final String? fileUrl;
   final String? mimeType;
 
@@ -30,7 +30,7 @@ class DocumentData {
         date: date != null
             ? DateFormat('d MMM. yyyy', 'es_ES').format(date!).toUpperCase()
             : '—',
-        categoryKey: category ?? '',
+        categoryId: categoryId ?? '',
         iconName: iconName,
       );
 
@@ -42,7 +42,7 @@ class DocumentData {
         date: json['date'] != null
             ? DateTime.tryParse(json['date'] as String)
             : null,
-        category: json['category'] as String?,
+        categoryId: json['category_id'] as String?,
         fileUrl: json['file_url'] as String?,
         mimeType: json['mime_type'] as String?,
       );

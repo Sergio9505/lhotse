@@ -4,42 +4,76 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/brands_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../data/investments_provider.dart';
+import '../domain/coinvestment_contract_data.dart';
 import '../domain/completed_contract_data.dart';
 import '../domain/fixed_income_contract_data.dart';
+import '../domain/portfolio_entry.dart';
+import '../domain/purchase_contract_data.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
 class BrandInvestmentsScreen extends ConsumerWidget {
-  const BrandInvestmentsScreen({super.key, required this.brandId});
+  const BrandInvestmentsScreen({
+    super.key,
+    required this.brandId,
+    this.heroContext,
+  });
 
   final String brandId;
 
+  /// Minimum context passed via router extra from the Strategy ledger.
+  /// Avoids fetching `brands` when we already know name + business model.
+  /// Null only on deep-link entries (push notifications, etc.).
+  final ({String brandName, String businessModel})? heroContext;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final brandAsync = ref.watch(brandByIdProvider(brandId));
-    final purchaseAsync = ref.watch(brandPurchaseContractsProvider(brandId));
-    final coinvestAsync = ref.watch(brandCoinvestmentContractsProvider(brandId));
-    final rfAsync = ref.watch(brandFixedIncomeContractsProvider(brandId));
+    // Common path: heroContext is passed via router extra from Strategy.
+    // Deep-link fallback: resolve from user_portfolio — the L2 is
+    // semantically "my investments in brand X", so if the user has no entry
+    // for this brand, the screen has nothing to show.
+    final fallbackAsync = heroContext == null
+        ? ref.watch(userPortfolioEntryProvider(brandId))
+        : const AsyncValue<PortfolioEntry?>.data(null);
+    final fallbackEntry = fallbackAsync.valueOrNull;
 
-    final brand = brandAsync.valueOrNull;
-    final allPurchase = purchaseAsync.valueOrNull ?? const [];
-    final allCoinvest = coinvestAsync.valueOrNull ?? const [];
-    final allRf = rfAsync.valueOrNull ?? const [];
+    final brandName = heroContext?.brandName ?? fallbackEntry?.brandName ?? '';
+    final businessModelString =
+        heroContext?.businessModel ?? fallbackEntry?.businessModel;
+    final businessModel = businessModelString != null
+        ? BusinessModelLabel.fromString(businessModelString)
+        : null;
 
-    if (brand == null && brandAsync.isLoading) {
+    if (businessModel == null) {
+      // Deep-link still resolving, or user has no investments in this brand.
+      if (heroContext == null && fallbackAsync.hasValue && fallbackEntry == null) {
+        return _EmptyState(brandId: brandId);
+      }
       return const Scaffold(
         backgroundColor: AppColors.background,
         body: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
       );
     }
 
-    final businessModel = brand?.businessModel;
+    // Only fetch the contract view for this brand's business model.
+    final allPurchase = businessModel == BusinessModel.directPurchase
+        ? (ref.watch(brandPurchaseContractsProvider(brandId)).valueOrNull ??
+            const <PurchaseContractData>[])
+        : const <PurchaseContractData>[];
+    final allCoinvest = businessModel == BusinessModel.coinvestment
+        ? (ref.watch(brandCoinvestmentContractsProvider(brandId)).valueOrNull ??
+            const <CoinvestmentContractData>[])
+        : const <CoinvestmentContractData>[];
+    final allRf = businessModel == BusinessModel.fixedIncome
+        ? (ref.watch(brandFixedIncomeContractsProvider(brandId)).valueOrNull ??
+            const <FixedIncomeContractData>[])
+        : const <FixedIncomeContractData>[];
+
     final isCompraDirecta = businessModel == BusinessModel.directPurchase;
     final isRentaFija = businessModel == BusinessModel.fixedIncome;
 
@@ -73,7 +107,6 @@ class BrandInvestmentsScreen extends ConsumerWidget {
             ? (activePurchase.isEmpty ? 0.0 : activePurchase.map((c) => c.rentalYieldPct ?? 0).reduce((a, b) => a + b) / activePurchase.length)
             : (allCoinvest.isEmpty ? 0.0 : allCoinvest.map((c) => c.estimatedReturnPct ?? 0).reduce((a, b) => a + b) / allCoinvest.length);
 
-    final brandName = brand?.name ?? '';
     final heroTitle = isRentaFija
         ? 'MIS INVERSIONES\nA RENTA FIJA'
         : 'MIS INVERSIONES\nEN ${brandName.toUpperCase()}';
@@ -158,6 +191,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                     isLast: i == activePurchase.length - 1,
                     onTap: () => context.push(
                       '/investments/detail/purchase/${c.id}',
+                      extra: (brandName: brandName,),
                     ),
                   );
                 },
@@ -179,7 +213,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                     isLast: i == activeCoinvest.length - 1,
                     onTap: () => context.push(
                       '/investments/detail/coinvestment/${c.id}',
-                      extra: c,
+                      extra: (contract: c, brandName: brandName),
                     ),
                   );
                 },
@@ -203,76 +237,120 @@ class BrandInvestmentsScreen extends ConsumerWidget {
               ),
             ),
 
-          // Completed section
-          if (!isCompraDirecta)
-            SliverToBoxAdapter(
-              child: Builder(builder: (context) {
-                final completed =
-                    isRentaFija ? completedRf : completedCoinvest;
-                if (completed.isEmpty) return const SizedBox.shrink();
+          // Completed section (all business models)
+          SliverToBoxAdapter(
+            child: Builder(builder: (context) {
+              final completed = isCompraDirecta
+                  ? completedPurchase
+                  : isRentaFija
+                      ? completedRf
+                      : completedCoinvest;
+              if (completed.isEmpty) return const SizedBox.shrink();
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppSpacing.xl),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg),
-                      child: Text(
-                        'FINALIZADAS',
-                        style: AppTypography.labelLarge.copyWith(
-                          color: AppColors.accentMuted,
-                          letterSpacing: 1.8,
-                        ),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.xl),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg),
+                    child: Text(
+                      'FINALIZADAS',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 1.8,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (isRentaFija)
-                      ...completedRf.indexed.map((e) => _RentaFijaRow(
-                            contract: e.$2,
-                            isCompleted: true,
-                            isLast: e.$1 == completedRf.length - 1,
-                          ))
-                    else
-                      ...completedCoinvest.indexed.map((e) {
-                        final c = e.$2;
-                        final hasResults = c.actualRoi != null;
-                        final duration = c.actualDuration ??
-                            c.estimatedDurationMonths ??
-                            0;
-                        final returnLabelSpans = hasResults
-                            ? [
-                                TextSpan(
-                                    text:
-                                        '${_eurFormat.format(c.amount)}€  ·  $duration MESES  ·  '),
-                                TextSpan(
-                                  text:
-                                      '+${c.actualRoi!.toStringAsFixed(1)}%',
-                                  style: AppTypography.caption.copyWith(
-                                    color: const Color(0xFF2D6A4F),
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 1.2,
-                                  ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  if (isCompraDirecta)
+                    ...completedPurchase.indexed.map((e) {
+                      final c = e.$2;
+                      final hasResults = c.actualRoi != null;
+                      final duration = c.actualDuration ?? 0;
+                      final returnLabelSpans = hasResults
+                          ? [
+                              TextSpan(
+                                text:
+                                    '${_eurFormat.format(c.purchaseValue)}€  ·  $duration MESES  ·  ',
+                              ),
+                              TextSpan(
+                                text:
+                                    '+${c.actualRoi!.toStringAsFixed(1)}%',
+                                style: AppTypography.caption.copyWith(
+                                  color: const Color(0xFF2D6A4F),
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 1.2,
                                 ),
-                              ]
-                            : null;
-                        return _AssetRow(
-                          projectName: c.projectName,
-                          imageUrl: c.projectImageUrl,
-                          amount: c.totalReturn ?? c.amount,
-                          returnLabel: hasResults ? null : '–',
-                          returnLabelSpans: returnLabelSpans,
-                          isLast: e.$1 == completedCoinvest.length - 1,
-                          onTap: () => context.push(
-                            '/investments/detail/completed/coinvestment/${c.id}',
-                            extra: CompletedContractData.fromCoinvestment(c),
+                              ),
+                            ]
+                          : null;
+                      return _AssetRow(
+                        projectName: c.assetName ?? '',
+                        location: c.assetLocation,
+                        imageUrl: c.assetImageUrl,
+                        amount: c.totalReturn ?? c.purchaseValue,
+                        returnLabel: hasResults ? null : '–',
+                        returnLabelSpans: returnLabelSpans,
+                        isLast: e.$1 == completedPurchase.length - 1,
+                        onTap: () => context.push(
+                          '/investments/detail/completed/purchase/${c.id}',
+                          extra: CompletedContractData.fromPurchase(
+                            c,
+                            brandName: brandName,
                           ),
-                        );
-                      }),
-                  ],
-                );
-              }),
-            ),
+                        ),
+                      );
+                    })
+                  else if (isRentaFija)
+                    ...completedRf.indexed.map((e) => _RentaFijaRow(
+                          contract: e.$2,
+                          isCompleted: true,
+                          isLast: e.$1 == completedRf.length - 1,
+                        ))
+                  else
+                    ...completedCoinvest.indexed.map((e) {
+                      final c = e.$2;
+                      final hasResults = c.actualRoi != null;
+                      final duration = c.actualDuration ??
+                          c.estimatedDurationMonths ??
+                          0;
+                      final returnLabelSpans = hasResults
+                          ? [
+                              TextSpan(
+                                  text:
+                                      '${_eurFormat.format(c.amount)}€  ·  $duration MESES  ·  '),
+                              TextSpan(
+                                text:
+                                    '+${c.actualRoi!.toStringAsFixed(1)}%',
+                                style: AppTypography.caption.copyWith(
+                                  color: const Color(0xFF2D6A4F),
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ]
+                          : null;
+                      return _AssetRow(
+                        projectName: c.projectName,
+                        imageUrl: c.projectImageUrl,
+                        amount: c.totalReturn ?? c.amount,
+                        returnLabel: hasResults ? null : '–',
+                        returnLabelSpans: returnLabelSpans,
+                        isLast: e.$1 == completedCoinvest.length - 1,
+                        onTap: () => context.push(
+                          '/investments/detail/completed/coinvestment/${c.id}',
+                          extra: CompletedContractData.fromCoinvestment(
+                            c,
+                            brandName: brandName,
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              );
+            }),
+          ),
 
           SliverFillRemaining(
             hasScrollBody: false,
@@ -802,6 +880,83 @@ class _RentaFijaRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Shown when a deep-link lands on a brand the user has no investments in.
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.brandId});
+
+  final String brandId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [LhotseBackButton.onSurface()],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'SIN INVERSIONES',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Todavía no tienes inversiones en esta firma.',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodyLarge.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    GestureDetector(
+                      onTap: () => context.push('/brand/$brandId'),
+                      child: Container(
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.textPrimary,
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Text(
+                          'VER LA FIRMA',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.textPrimary,
+                            letterSpacing: 2.0,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -8,6 +8,8 @@ class CompletedContractData {
   const CompletedContractData({
     required this.id,
     required this.modelType,
+    this.assetId,
+    this.projectId,
     required this.projectName,
     required this.brandName,
     this.imageUrl,
@@ -23,6 +25,12 @@ class CompletedContractData {
   final String id;
   /// 'purchase' or 'coinvestment' — used for documents query.
   final String modelType;
+  /// Set for purchase contracts so the screen can lazy-load asset gallery
+  /// via purchaseAssetDetailProvider.
+  final String? assetId;
+  /// Set for coinvestment contracts so the screen can lazy-load project
+  /// renders/asset info via coinvestmentProjectDetailProvider.
+  final String? projectId;
   final String projectName;
   final String brandName;
   final String? imageUrl;
@@ -34,32 +42,38 @@ class CompletedContractData {
   final AssetInfo? assetInfo;
   final List<String> galleryImages;
 
-  factory CompletedContractData.fromPurchase(PurchaseContractData c) =>
+  factory CompletedContractData.fromPurchase(
+    PurchaseContractData c, {
+    required String brandName,
+  }) =>
       CompletedContractData(
         id: c.id,
         modelType: 'purchase',
+        assetId: c.assetId,
         projectName: c.assetName ?? '',
-        brandName: c.brandName,
+        brandName: brandName,
         imageUrl: c.assetImageUrl,
         amount: c.purchaseValue,
         totalReturn: c.totalReturn,
         actualDuration: c.actualDuration,
         actualRoi: c.actualRoi,
-        galleryImages: c.assetGalleryImages,
       );
 
-  factory CompletedContractData.fromCoinvestment(CoinvestmentContractData c) =>
+  factory CompletedContractData.fromCoinvestment(
+    CoinvestmentContractData c, {
+    required String brandName,
+  }) =>
       CompletedContractData(
         id: c.id,
         modelType: 'coinvestment',
+        projectId: c.projectId,
         projectName: c.projectName,
-        brandName: c.brandName,
+        brandName: brandName,
         imageUrl: c.projectImageUrl,
         amount: c.amount,
         totalReturn: c.totalReturn,
         actualDuration: c.actualDuration,
         actualRoi: c.actualRoi,
         actualTir: c.actualTir,
-        galleryImages: c.renderImages,
       );
 }

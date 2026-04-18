@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../domain/asset_info.dart';
 import '../theme/app_theme.dart';
@@ -52,14 +54,52 @@ class LhotseKeyValueList extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Text(
-                      e.value,
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight:
-                            isBold ? FontWeight.w600 : FontWeight.w500,
+                    if (e.copyable)
+                      InkWell(
+                        onTap: () async {
+                          await Clipboard.setData(ClipboardData(text: e.value));
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${e.label} copiada'),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              e.value,
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: isBold
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Icon(
+                                PhosphorIconsThin.copy,
+                                size: 18,
+                                color: AppColors.accentMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Text(
+                        e.value,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight:
+                              isBold ? FontWeight.w600 : FontWeight.w500,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),

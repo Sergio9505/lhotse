@@ -2,10 +2,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/data/supabase_provider.dart';
 import '../../../core/domain/profit_scenario.dart';
 import '../../../core/domain/project_phase.dart';
+import '../domain/purchase_asset_details.dart';
 import '../domain/purchase_contract_data.dart';
+import '../domain/purchase_mortgage_details.dart';
 import '../domain/coinvestment_contract_data.dart';
+import '../domain/coinvestment_project_details.dart';
 import '../domain/fixed_income_contract_data.dart';
-import '../domain/investment_summary.dart';
+import '../domain/portfolio_entry.dart';
+
+// Authorization model: pure RLS (see docs/ARCHITECTURE.md Security model + ADR-36).
+// User-scoped views do not expose user_id and providers do not filter by it.
+// `currentUserIdProvider.distinct()` is still watched to force re-fetch on auth
+// changes (logout + login as different user). Verified by
+// docs/sql/tests/rls_user_isolation.sql.
 
 // ── Purchase contracts ──────────────────────────────────────────────────────
 
@@ -15,9 +24,8 @@ final purchaseContractsProvider =
   if (userId == null) return [];
   final data = await ref
       .watch(supabaseClientProvider)
-      .from('purchase_contract_details')
+      .from('user_direct_purchases')
       .select()
-      .eq('user_id', userId)
       .order('purchase_date', ascending: false);
   return (data as List<dynamic>)
       .map((e) => PurchaseContractData.fromJson(e as Map<String, dynamic>))
@@ -25,7 +33,7 @@ final purchaseContractsProvider =
 });
 
 const _kPurchaseListSelect =
-    'id, user_id, brand_id, brand_name, brand_logo_asset, '
+    'id, brand_id, asset_id, '
     'purchase_value, sold_date, '
     'asset_name, asset_location, asset_thumbnail_image';
 
@@ -36,9 +44,8 @@ final brandPurchaseContractsProvider =
   if (userId == null) return [];
   final data = await ref
       .watch(supabaseClientProvider)
-      .from('purchase_contract_details')
+      .from('user_direct_purchases')
       .select(_kPurchaseListSelect)
-      .eq('user_id', userId)
       .eq('brand_id', brandId);
   return (data as List<dynamic>)
       .map((e) => PurchaseContractData.fromJson(e as Map<String, dynamic>))
@@ -51,13 +58,12 @@ final purchaseContractByIdProvider =
   if (userId == null) return null;
   final data = await ref
       .watch(supabaseClientProvider)
-      .from('purchase_contract_details')
+      .from('user_direct_purchases')
       .select()
       .eq('id', id)
-      .eq('user_id', userId)
       .maybeSingle();
   return data != null
-      ? PurchaseContractData.fromJson(data as Map<String, dynamic>)
+      ? PurchaseContractData.fromJson(data)
       : null;
 });
 
@@ -69,9 +75,8 @@ final coinvestmentContractsProvider =
   if (userId == null) return [];
   final data = await ref
       .watch(supabaseClientProvider)
-      .from('coinvestment_contract_details')
+      .from('user_coinvestments')
       .select()
-      .eq('user_id', userId)
       .order('created_at', ascending: false);
   return (data as List<dynamic>)
       .map((e) => CoinvestmentContractData.fromJson(e as Map<String, dynamic>))
@@ -85,13 +90,48 @@ final brandCoinvestmentContractsProvider =
   if (userId == null) return [];
   final data = await ref
       .watch(supabaseClientProvider)
-      .from('coinvestment_contract_details')
+      .from('user_coinvestments')
       .select()
-      .eq('user_id', userId)
       .eq('brand_id', brandId);
   return (data as List<dynamic>)
       .map((e) => CoinvestmentContractData.fromJson(e as Map<String, dynamic>))
       .toList();
+});
+
+final purchaseMortgageDetailProvider =
+    FutureProvider.family<PurchaseMortgageDetails, String>(
+        (ref, purchaseContractId) async {
+  final data = await ref
+      .watch(supabaseClientProvider)
+      .from('purchase_mortgage_details')
+      .select()
+      .eq('purchase_contract_id', purchaseContractId)
+      .single();
+  return PurchaseMortgageDetails.fromJson(data);
+});
+
+final purchaseAssetDetailProvider =
+    FutureProvider.family<PurchaseAssetDetails, String>(
+        (ref, assetId) async {
+  final data = await ref
+      .watch(supabaseClientProvider)
+      .from('purchase_asset_details')
+      .select()
+      .eq('asset_id', assetId)
+      .single();
+  return PurchaseAssetDetails.fromJson(data);
+});
+
+final coinvestmentProjectDetailProvider =
+    FutureProvider.family<CoinvestmentProjectDetails, String>(
+        (ref, projectId) async {
+  final data = await ref
+      .watch(supabaseClientProvider)
+      .from('coinvestment_project_details')
+      .select()
+      .eq('project_id', projectId)
+      .single();
+  return CoinvestmentProjectDetails.fromJson(data);
 });
 
 // ── Fixed income contracts ──────────────────────────────────────────────────
@@ -102,9 +142,8 @@ final fixedIncomeContractsProvider =
   if (userId == null) return [];
   final data = await ref
       .watch(supabaseClientProvider)
-      .from('fixed_income_contract_details')
+      .from('user_fixed_income_contracts')
       .select()
-      .eq('user_id', userId)
       .order('start_date', ascending: false);
   return (data as List<dynamic>)
       .map((e) => FixedIncomeContractData.fromJson(e as Map<String, dynamic>))
@@ -118,9 +157,8 @@ final brandFixedIncomeContractsProvider =
   if (userId == null) return [];
   final data = await ref
       .watch(supabaseClientProvider)
-      .from('fixed_income_contract_details')
+      .from('user_fixed_income_contracts')
       .select()
-      .eq('user_id', userId)
       .eq('brand_id', brandId);
   return (data as List<dynamic>)
       .map((e) => FixedIncomeContractData.fromJson(e as Map<String, dynamic>))
@@ -129,32 +167,34 @@ final brandFixedIncomeContractsProvider =
 
 // ── Strategy screen aggregations ────────────────────────────────────────────
 
-final brandSummariesProvider =
-    FutureProvider<List<BrandInvestmentSummaryData>>((ref) async {
-  final userId = ref.watch(currentUserIdProvider).valueOrNull;
-  if (userId == null) return [];
-  final data = await ref
-      .watch(supabaseClientProvider)
-      .from('brand_investment_summaries')
-      .select()
-      .eq('user_id', userId)
-      .order('total_amount', ascending: false);
-  return (data as List<dynamic>)
-      .map((e) => BrandInvestmentSummaryData.fromJson(e as Map<String, dynamic>))
-      .toList();
-});
-
-final portfolioSummaryProvider =
-    FutureProvider<PortfolioSummary?>((ref) async {
+/// Single portfolio entry for a given brand — used as deep-link fallback on
+/// the L2 "my investments in brand X" screen. Returns null if the user has
+/// no investments in that brand (semantically: the L2 has nothing to show).
+final userPortfolioEntryProvider =
+    FutureProvider.family<PortfolioEntry?, String>((ref, brandId) async {
   final userId = ref.watch(currentUserIdProvider).valueOrNull;
   if (userId == null) return null;
   final data = await ref
       .watch(supabaseClientProvider)
-      .from('portfolio_summaries')
+      .from('user_portfolio')
       .select()
-      .eq('user_id', userId)
+      .eq('brand_id', brandId)
       .maybeSingle();
-  return data != null ? PortfolioSummary.fromJson(data) : null;
+  return data != null ? PortfolioEntry.fromJson(data) : null;
+});
+
+final userPortfolioProvider =
+    FutureProvider<List<PortfolioEntry>>((ref) async {
+  final userId = ref.watch(currentUserIdProvider).valueOrNull;
+  if (userId == null) return [];
+  final data = await ref
+      .watch(supabaseClientProvider)
+      .from('user_portfolio')
+      .select()
+      .order('total_amount', ascending: false);
+  return (data as List<dynamic>)
+      .map((e) => PortfolioEntry.fromJson(e as Map<String, dynamic>))
+      .toList();
 });
 
 // ── Coinvestment sub-data (scenarios + phases) ───────────────────────────────

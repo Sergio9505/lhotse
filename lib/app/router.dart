@@ -209,9 +209,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.brandInvestments,
               pageBuilder: (context, state) {
                 final brandId = state.pathParameters['brandId']!;
+                final heroContext =
+                    state.extra as ({String brandName, String businessModel})?;
                 return _fadePage(
                   key: state.pageKey,
-                  child: BrandInvestmentsScreen(brandId: brandId),
+                  child: BrandInvestmentsScreen(
+                    brandId: brandId,
+                    heroContext: heroContext,
+                  ),
                 );
               },
             ),
@@ -234,21 +239,32 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
             GoRoute(
               path: AppRoutes.purchaseDetail,
-              pageBuilder: (context, state) => _fadePage(
-                key: state.pageKey,
-                child: DirectPurchaseDetailScreen(
-                  contractId: state.pathParameters['id']!,
-                ),
-              ),
+              pageBuilder: (context, state) {
+                final extra = state.extra as ({String brandName})?;
+                return _fadePage(
+                  key: state.pageKey,
+                  child: DirectPurchaseDetailScreen(
+                    contractId: state.pathParameters['id']!,
+                    brandName: extra?.brandName,
+                  ),
+                );
+              },
             ),
             GoRoute(
               path: AppRoutes.coinvestmentDetail,
-              pageBuilder: (context, state) => _fadePage(
-                key: state.pageKey,
-                child: CoinversionDetailScreen(
-                  contract: state.extra as CoinvestmentContractData,
-                ),
-              ),
+              pageBuilder: (context, state) {
+                final extra = state.extra as ({
+                  CoinvestmentContractData contract,
+                  String brandName,
+                });
+                return _fadePage(
+                  key: state.pageKey,
+                  child: CoinversionDetailScreen(
+                    contract: extra.contract,
+                    brandName: extra.brandName,
+                  ),
+                );
+              },
             ),
             GoRoute(
               path: AppRoutes.completedPurchaseDetail,

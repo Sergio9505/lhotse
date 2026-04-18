@@ -57,7 +57,7 @@ class InvestmentDetailScreen extends ConsumerWidget {
     }
 
     final relatedNews = allNews
-        .where((n) => n.brand == contract.brandName)
+        .where((n) => n.brandId == contract.brandId)
         .take(4)
         .toList();
     final rfDocs = ref
@@ -65,9 +65,9 @@ class InvestmentDetailScreen extends ConsumerWidget {
         .valueOrNull ?? const [];
     final allCategories =
         ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
-    final iconMap = {for (var c in allCategories) c.key: c.iconName};
+    final iconMap = {for (var c in allCategories) c.id: c.iconName};
     final filterCategories =
-        categoriesForKeys(rfDocs.map((d) => d.category), allCategories);
+        categoriesForIds(rfDocs.map((d) => d.categoryId), allCategories);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -90,7 +90,7 @@ class InvestmentDetailScreen extends ConsumerWidget {
           LhotseDocumentsSection(
             documents: rfDocs
                 .map((d) => d.toLhotseDocument(
-                    iconName: iconMap[d.category] ?? 'fileText'))
+                    iconName: iconMap[d.categoryId] ?? 'fileText'))
                 .toList(),
             filterCategories: filterCategories,
           ),

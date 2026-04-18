@@ -185,28 +185,77 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Logo — hero visual
-                    SvgPicture.asset(
-                      'assets/images/lhotse_logo.svg',
-                      height: 44,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
+                    // Logo + wordmark — hero visual
+                    SizedBox(
+                      height: 48,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SvgPicture.asset(
+                            'assets/images/lhotse_logo.svg',
+                            height: 48,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'LHOTSE',
+                                style: TextStyle(
+                                  fontFamily: 'Campton',
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                  letterSpacing: 2.0,
+                                  height: 1.0,
+                                ),
+                                strutStyle: StrutStyle(
+                                  fontSize: 24,
+                                  height: 1.0,
+                                  forceStrutHeight: true,
+                                ),
+                              ),
+                              Text(
+                                'GROUP',
+                                style: TextStyle(
+                                  fontFamily: 'Campton',
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                  letterSpacing: 2.0,
+                                  height: 1.0,
+                                ),
+                                strutStyle: StrutStyle(
+                                  fontSize: 24,
+                                  height: 1.0,
+                                  forceStrutHeight: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                    // Tagline — engraved whisper
+                    // Subtitle — engraved whisper
                     Text(
-                      'Inversión inmobiliaria estratégica',
+                      'Lhotse Group, a holding company specialized in redefining wealth management and creation through strategic investments in real estate assets.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Campton',
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
                         color: Colors.white.withValues(alpha: 0.75),
-                        letterSpacing: 2.0,
+                        letterSpacing: 0.3,
+                        height: 1.5,
                       ),
                     ),
 
