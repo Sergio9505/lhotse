@@ -930,18 +930,18 @@ class _ScenarioData extends StatelessWidget {
       children: [
         _ScenarioRow(
           left: _ScenarioMetric(
-            value: '${scenario.roiProject.toStringAsFixed(2)}%',
+            value: '${scenario.roiProject.toStringAsFixed(1)}%',
             label: 'ROI proyecto',
           ),
           right: _ScenarioMetric(
-            value: '${scenario.roiInvestor.toStringAsFixed(2)}%',
+            value: '${scenario.roiInvestor.toStringAsFixed(1)}%',
             label: 'ROI inversor',
           ),
         ),
         _scenarioDivider(),
         _ScenarioRow(
           left: _ScenarioMetric(
-            value: '${scenario.tirAnnualized.toStringAsFixed(2)}%',
+            value: '${scenario.tirAnnualized.toStringAsFixed(1)}%',
             label: 'TIR anualizada',
           ),
           right: _ScenarioMetric(

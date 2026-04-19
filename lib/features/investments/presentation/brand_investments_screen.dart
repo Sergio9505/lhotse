@@ -4,9 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/document_categories_provider.dart';
+import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/widgets/lhotse_bottom_sheet.dart';
+import '../../../core/widgets/lhotse_doc_row.dart';
+import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../data/investments_provider.dart';
 import '../domain/coinvestment_contract_data.dart';
@@ -77,8 +82,8 @@ class BrandInvestmentsScreen extends ConsumerWidget {
     final isCompraDirecta = businessModel == BusinessModel.directPurchase;
     final isRentaFija = businessModel == BusinessModel.fixedIncome;
 
-    final activePurchase = allPurchase.where((c) => !c.isSold).toList();
-    final completedPurchase = allPurchase.where((c) => c.isSold).toList();
+    final activePurchase = allPurchase.where((c) => !c.isCompleted).toList();
+    final completedPurchase = allPurchase.where((c) => c.isCompleted).toList();
     final activeCoinvest = allCoinvest.where((c) => !c.isCompleted).toList();
     final completedCoinvest = allCoinvest.where((c) => c.isCompleted).toList();
     final activeRf = allRf.where((c) => c.isActive).toList();
@@ -95,17 +100,18 @@ class BrandInvestmentsScreen extends ConsumerWidget {
             ? completedRf.length
             : completedCoinvest.length;
 
+    // Total = active capital (matches L1 user_portfolio aggregation).
     final totalAmount = isCompraDirecta
-        ? allPurchase.fold(0.0, (s, c) => s + c.purchaseValue)
+        ? activePurchase.fold(0.0, (s, c) => s + c.purchaseValue)
         : isRentaFija
-            ? allRf.fold(0.0, (s, c) => s + c.amount)
-            : allCoinvest.fold(0.0, (s, c) => s + c.amount);
+            ? activeRf.fold(0.0, (s, c) => s + c.amount)
+            : activeCoinvest.fold(0.0, (s, c) => s + c.amount);
 
     final avgReturn = isRentaFija
-        ? (allRf.isEmpty ? 0.0 : allRf.map((c) => c.guaranteedRate).reduce((a, b) => a + b) / allRf.length)
+        ? (activeRf.isEmpty ? 0.0 : activeRf.map((c) => c.guaranteedRate).reduce((a, b) => a + b) / activeRf.length)
         : isCompraDirecta
             ? (activePurchase.isEmpty ? 0.0 : activePurchase.map((c) => c.rentalYieldPct ?? 0).reduce((a, b) => a + b) / activePurchase.length)
-            : (allCoinvest.isEmpty ? 0.0 : allCoinvest.map((c) => c.estimatedReturnPct ?? 0).reduce((a, b) => a + b) / allCoinvest.length);
+            : (activeCoinvest.isEmpty ? 0.0 : activeCoinvest.map((c) => c.estimatedReturnPct ?? 0).reduce((a, b) => a + b) / activeCoinvest.length);
 
     final heroTitle = isRentaFija
         ? 'MIS INVERSIONES\nA RENTA FIJA'
@@ -204,7 +210,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                 (context, i) {
                   final c = activeCoinvest[i];
                   final months = c.estimatedDurationMonths ?? 0;
-                  final pct = c.estimatedReturnPct?.toStringAsFixed(0) ?? '–';
+                  final pct = c.estimatedReturnPct?.toStringAsFixed(1) ?? '–';
                   return _AssetRow(
                     projectName: c.projectName,
                     imageUrl: c.projectImageUrl,
@@ -312,22 +318,26 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                     ...completedCoinvest.indexed.map((e) {
                       final c = e.$2;
                       final hasResults = c.actualRoi != null;
-                      final duration = c.actualDuration ??
-                          c.estimatedDurationMonths ??
-                          0;
+                      final greenStyle = AppTypography.caption.copyWith(
+                        color: const Color(0xFF2D6A4F),
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 1.2,
+                      );
                       final returnLabelSpans = hasResults
                           ? [
                               TextSpan(
                                   text:
-                                      '${_eurFormat.format(c.amount)}€  ·  $duration MESES  ·  '),
+                                      '${_eurFormat.format(c.amount)}€  ·  '),
                               TextSpan(
                                 text:
                                     '+${c.actualRoi!.toStringAsFixed(1)}%',
-                                style: AppTypography.caption.copyWith(
-                                  color: const Color(0xFF2D6A4F),
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1.2,
-                                ),
+                                style: greenStyle,
+                              ),
+                              const TextSpan(text: '  ·  '),
+                              TextSpan(
+                                text:
+                                    '+${c.actualTir?.toStringAsFixed(1) ?? '–'}%',
+                                style: greenStyle,
                               ),
                             ]
                           : null;
@@ -537,7 +547,7 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: '${averageReturn.toStringAsFixed(0)}%',
+                            text: '${averageReturn.toStringAsFixed(1)}%',
                             style: AppTypography.bodyLarge.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w500,
@@ -752,7 +762,7 @@ class _AssetRowState extends State<_AssetRow> {
 
 // ── Renta Fija row ────────────────────────────────────────────────────────────
 
-class _RentaFijaRow extends StatelessWidget {
+class _RentaFijaRow extends ConsumerWidget {
   const _RentaFijaRow({
     required this.contract,
     this.index,
@@ -771,10 +781,16 @@ class _RentaFijaRow extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = contract;
-    final amount = isCompleted ? (c.amount) : c.amount;
+    final amount = c.amount;
     final badgeDate = c.startDate;
+    final docs = ref
+            .watch(documentsProvider(
+                (type: 'fixed_income', id: c.id)))
+            .valueOrNull ??
+        const [];
+    final hasDocs = docs.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -870,7 +886,7 @@ class _RentaFijaRow extends StatelessWidget {
                   )
                 else
                   Text(
-                    '${c.termMonths ?? '–'} MESES  ·  ${c.guaranteedRate.toStringAsFixed(0)}%',
+                    '${c.termMonths ?? '–'} MESES  ·  ${c.guaranteedRate.toStringAsFixed(1)}%',
                     style: AppTypography.caption.copyWith(
                       color: AppColors.accentMuted,
                       letterSpacing: 1.2,
@@ -879,10 +895,51 @@ class _RentaFijaRow extends StatelessWidget {
               ],
             ),
           ),
+          if (hasDocs)
+            GestureDetector(
+              onTap: () => _showRentaFijaDocs(context, ref, c.id),
+              behavior: HitTestBehavior.opaque,
+              child: const Padding(
+                padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                child: PhosphorIcon(
+                  PhosphorIconsThin.fileText,
+                  size: 18,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+}
+
+void _showRentaFijaDocs(BuildContext context, WidgetRef ref, String contractId) {
+  final docs = ref
+          .read(documentsProvider((type: 'fixed_income', id: contractId)))
+          .valueOrNull ??
+      const [];
+  final categories =
+      ref.read(allDocumentCategoriesProvider).valueOrNull ?? const [];
+  final iconMap = {for (final c in categories) c.id: c.iconName};
+
+  showLhotseBottomSheet(
+    context: context,
+    title: 'DOCUMENTOS',
+    itemCount: docs.length,
+    itemBuilder: (context, i) {
+      final doc = docs[i];
+      final ui = doc.toLhotseDocument(
+        iconName: iconMap[doc.categoryId] ?? 'fileText',
+      );
+      return LhotseDocRow(
+        name: ui.name,
+        date: ui.date,
+        icon: docCategoryIconByKey(ui.iconName),
+      );
+    },
+  );
 }
 
 /// Shown when a deep-link lands on a brand the user has no investments in.

@@ -36,8 +36,8 @@ One feature → one migration. No "prepárate-para-después" batch migrations. I
 
 ## Naming & consistency
 
-### 6. Unified contract status (pending debt)
-Currently we have `purchase_contracts.sold_date` / `coinvestment_contracts.is_completed` / `fixed_income_contracts.status`. This is inconsistent. Until we converge (future ADR), any NEW contract table uses `status TEXT CHECK (status IN ('active','completed','cancelled'))`.
+### 6. Unified contract status
+All contract tables use `status TEXT NOT NULL DEFAULT 'signed' CHECK (status IN ('pending','signed','cancelled'))` — only human-driven state on the contract document. "Finalizado" is a **UI projection** derived per domain in the view as `is_completed BOOLEAN` (from `sold_date` for purchase, `completion_date` for coinvestment, `maturity_date < CURRENT_DATE` for fixed income, `end_date < CURRENT_DATE` for rental). See ADR-44.
 
 ### 7. Column naming
 `snake_case` in DB, `camelCase` in Dart, mapping in `fromJson`. Never expose two names for the same concept across the stack.

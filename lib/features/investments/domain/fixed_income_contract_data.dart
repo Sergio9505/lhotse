@@ -1,16 +1,4 @@
-enum FixedIncomeStatus { active, completed, cancelled }
-
-extension FixedIncomeStatusX on FixedIncomeStatus {
-  static FixedIncomeStatus fromString(String value) => switch (value) {
-        'active' => FixedIncomeStatus.active,
-        'completed' => FixedIncomeStatus.completed,
-        'cancelled' => FixedIncomeStatus.cancelled,
-        _ => FixedIncomeStatus.active,
-      };
-
-  bool get isActive => this == FixedIncomeStatus.active;
-  bool get isCompleted => this == FixedIncomeStatus.completed;
-}
+import '../../../core/domain/contract_status.dart';
 
 class FixedIncomeContractData {
   const FixedIncomeContractData({
@@ -25,6 +13,7 @@ class FixedIncomeContractData {
     this.startDate,
     this.maturityDate,
     required this.status,
+    required this.isCompleted,
   });
 
   final String id;
@@ -37,10 +26,12 @@ class FixedIncomeContractData {
   final int? termMonths;
   final DateTime? startDate;
   final DateTime? maturityDate;
-  final FixedIncomeStatus status;
+  final ContractStatus status;
 
-  bool get isActive => status == FixedIncomeStatus.active;
-  bool get isCompleted => status == FixedIncomeStatus.completed;
+  /// Derived in `user_fixed_income_contracts` view as `maturity_date < CURRENT_DATE`.
+  final bool isCompleted;
+
+  bool get isActive => status.isSigned && !isCompleted;
 
   factory FixedIncomeContractData.fromJson(Map<String, dynamic> json) =>
       FixedIncomeContractData(
@@ -58,8 +49,7 @@ class FixedIncomeContractData {
         maturityDate: json['maturity_date'] != null
             ? DateTime.parse(json['maturity_date'] as String)
             : null,
-        status: FixedIncomeStatusX.fromString(
-          json['status'] as String? ?? 'active',
-        ),
+        status: ContractStatusX.fromString(json['status'] as String?),
+        isCompleted: json['is_completed'] as bool? ?? false,
       );
 }

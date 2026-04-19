@@ -93,7 +93,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final returnAmount = d.totalReturn ?? d.amount;
 
-    // Gallery is lazy-loaded per-asset or per-project depending on the
+    // Gallery + asset info are lazy-loaded per-asset or per-project depending on the
     // business model (physical/render images live outside the contract view).
     final coinvestmentProjectDetail = d.projectId != null
         ? ref
@@ -108,6 +108,12 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
         : purchaseAssetDetail?.galleryImages ??
             coinvestmentProjectDetail?.renderImages ??
             const <String>[];
+    final assetInfoEntries = purchaseAssetDetail?.assetInfo ??
+        coinvestmentProjectDetail?.assetInfo ??
+        const <AssetInfoEntry>[];
+    final assetInfo = assetInfoEntries.isNotEmpty
+        ? AssetInfo(entries: assetInfoEntries)
+        : null;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
@@ -263,7 +269,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,
                 child: _ActivoTab(
-                  assetInfo: d.assetInfo,
+                  assetInfo: assetInfo,
                   galleryImages: galleryImages,
                   cardWidth: screenWidth * 0.75,
                 ),

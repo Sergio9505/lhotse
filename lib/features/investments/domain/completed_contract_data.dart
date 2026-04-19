@@ -1,9 +1,11 @@
-import '../../../core/domain/asset_info.dart';
 import 'coinvestment_contract_data.dart';
 import 'purchase_contract_data.dart';
 
 /// Thin adapter for CompletedDetailScreen.
 /// Maps from either PurchaseContractData or CoinvestmentContractData.
+/// Physical asset info + gallery are loaded lazily in the screen via
+/// purchaseAssetDetailProvider / coinvestmentProjectDetailProvider — not
+/// carried on this model.
 class CompletedContractData {
   const CompletedContractData({
     required this.id,
@@ -18,7 +20,6 @@ class CompletedContractData {
     this.actualDuration,
     this.actualRoi,
     this.actualTir,
-    this.assetInfo,
     this.galleryImages = const [],
   });
 
@@ -39,7 +40,6 @@ class CompletedContractData {
   final int? actualDuration;
   final double? actualRoi;
   final double? actualTir;
-  final AssetInfo? assetInfo;
   final List<String> galleryImages;
 
   factory CompletedContractData.fromPurchase(

@@ -395,7 +395,7 @@ class _BrandRowState extends State<_BrandRow> {
                           ),
                           TextSpan(
                             text:
-                                '  ·  ${avgReturn.toStringAsFixed(0)}%${widget.isEstimated ? '*' : ''}',
+                                '  ·  ${avgReturn.toStringAsFixed(1)}%${widget.isEstimated ? '*' : ''}',
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.accentMuted,
                               fontWeight: FontWeight.w500,

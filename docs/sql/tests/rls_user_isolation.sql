@@ -89,18 +89,20 @@ BEGIN
   SELECT COALESCE(sum(total_amount), 0) INTO user_a_visible_total
   FROM user_portfolio;
 
-  -- Sum of ALL user B contract amounts (from base tables, bypassing view)
+  -- Sum of ALL user B active contract amounts (from base tables, bypassing view).
+  -- Filters mirror the user_portfolio view (ADR-44): active = signed AND not completed.
   SELECT COALESCE(
     (SELECT sum(purchase_value) FROM purchase_contracts
-     WHERE user_id = '<USER_B_UUID>' AND sold_date IS NULL),
+     WHERE user_id = '<USER_B_UUID>' AND status = 'signed' AND sold_date IS NULL),
     0
   ) + COALESCE(
     (SELECT sum(amount) FROM coinvestment_contracts
-     WHERE user_id = '<USER_B_UUID>' AND is_completed = false),
+     WHERE user_id = '<USER_B_UUID>' AND status = 'signed' AND completion_date IS NULL),
     0
   ) + COALESCE(
     (SELECT sum(amount) FROM fixed_income_contracts
-     WHERE user_id = '<USER_B_UUID>' AND status = 'active'),
+     WHERE user_id = '<USER_B_UUID>' AND status = 'signed'
+       AND (maturity_date IS NULL OR maturity_date > CURRENT_DATE)),
     0
   ) INTO user_b_known_total;
 

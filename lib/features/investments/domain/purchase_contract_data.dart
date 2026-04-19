@@ -1,3 +1,5 @@
+import '../../../core/domain/contract_status.dart';
+
 /// Per-contract data for list screens + L3 hero.
 ///
 /// Tab content is split into dedicated lazy views:
@@ -14,6 +16,8 @@ class PurchaseContractData {
     required this.brandId,
     required this.assetId,
     required this.purchaseValue,
+    required this.status,
+    required this.isCompleted,
     this.cashPayment,
     this.purchaseDate,
     this.hasFinancing = false,
@@ -36,6 +40,11 @@ class PurchaseContractData {
   final String brandId;
   final String assetId;
   final double purchaseValue;
+  final ContractStatus status;
+
+  /// Derived in `user_direct_purchases` view as `sold_date IS NOT NULL`.
+  final bool isCompleted;
+
   final double? cashPayment;
   final DateTime? purchaseDate;
   final bool hasFinancing;
@@ -43,8 +52,6 @@ class PurchaseContractData {
   final double? totalReturn;
   final DateTime? soldDate;
   final int? actualDuration;
-
-  bool get isSold => soldDate != null;
 
   final String? assetName;
   final String? assetLocation;
@@ -62,6 +69,8 @@ class PurchaseContractData {
       brandId: json['brand_id'] as String,
       assetId: json['asset_id'] as String,
       purchaseValue: (json['purchase_value'] as num).toDouble(),
+      status: ContractStatusX.fromString(json['status'] as String?),
+      isCompleted: json['is_completed'] as bool? ?? false,
       cashPayment: (json['cash_payment'] as num?)?.toDouble(),
       purchaseDate: json['purchase_date'] != null
           ? DateTime.parse(json['purchase_date'] as String)

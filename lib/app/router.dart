@@ -19,7 +19,6 @@ import '../features/investments/presentation/brand_investments_screen.dart';
 import '../features/investments/presentation/coinversion_detail_screen.dart';
 import '../features/investments/presentation/direct_purchase_detail_screen.dart';
 import '../features/investments/presentation/completed_detail_screen.dart';
-import '../features/investments/presentation/investment_detail_screen.dart';
 import '../features/investments/presentation/investments_screen.dart';
 import '../features/investments/presentation/opportunities_screen.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
@@ -64,7 +63,6 @@ abstract final class AppRoutes {
   static const search = '/search';
   static const investments = '/investments';
   static const brandInvestments = '/investments/brand/:brandId';
-  static const investmentDetail = '/investments/detail/:id';
   static const purchaseDetail = '/investments/detail/purchase/:id';
   static const coinvestmentDetail = '/investments/detail/coinvestment/:id';
   static const completedPurchaseDetail = '/investments/detail/completed/purchase/:id';
@@ -226,16 +224,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 key: state.pageKey,
                 child: const OpportunitiesScreen(),
               ),
-            ),
-            GoRoute(
-              path: AppRoutes.investmentDetail,
-              pageBuilder: (context, state) {
-                final id = state.pathParameters['id']!;
-                return _fadePage(
-                  key: state.pageKey,
-                  child: InvestmentDetailScreen(investmentId: id),
-                );
-              },
             ),
             GoRoute(
               path: AppRoutes.purchaseDetail,

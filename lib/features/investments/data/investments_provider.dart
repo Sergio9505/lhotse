@@ -34,7 +34,7 @@ final purchaseContractsProvider =
 
 const _kPurchaseListSelect =
     'id, brand_id, asset_id, '
-    'purchase_value, sold_date, '
+    'purchase_value, sold_date, status, is_completed, '
     'asset_name, asset_location, asset_thumbnail_image';
 
 final brandPurchaseContractsProvider =

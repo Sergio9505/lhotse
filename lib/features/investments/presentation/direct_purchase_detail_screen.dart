@@ -318,7 +318,7 @@ class _DirectPurchaseDetailContentState
                           children: [
                             Text(
                               c.assetRevaluationPct != null
-                                  ? '${c.assetRevaluationPct!.toStringAsFixed(0)}%'
+                                  ? '${c.assetRevaluationPct!.toStringAsFixed(1)}%'
                                   : '—',
                               style: AppTypography.headingLarge
                                   .copyWith(color: AppColors.textPrimary),

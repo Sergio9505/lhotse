@@ -1,3 +1,4 @@
+import '../../../core/domain/contract_status.dart';
 import '../../../core/domain/profit_scenario.dart';
 import '../../../core/domain/project_phase.dart';
 
@@ -10,6 +11,7 @@ class CoinvestmentContractData {
     required this.projectId,
     required this.brandId,
     required this.amount,
+    required this.status,
     this.isCompleted = false,
     this.startDate,
     this.estimatedReturnPct,
@@ -30,7 +32,11 @@ class CoinvestmentContractData {
   final String projectId;
   final String brandId;
   final double amount;
+  final ContractStatus status;
+
+  /// Derived in `user_coinvestments` view as `completion_date IS NOT NULL`.
   final bool isCompleted;
+
   final DateTime? startDate;
   final double? estimatedReturnPct;
   final int? estimatedDurationMonths;
@@ -53,6 +59,7 @@ class CoinvestmentContractData {
         projectId: projectId,
         brandId: brandId,
         amount: amount,
+        status: status,
         isCompleted: isCompleted,
         startDate: startDate,
         estimatedReturnPct: estimatedReturnPct,
@@ -74,6 +81,7 @@ class CoinvestmentContractData {
       projectId: json['project_id'] as String,
       brandId: json['brand_id'] as String,
       amount: (json['amount'] as num).toDouble(),
+      status: ContractStatusX.fromString(json['status'] as String?),
       isCompleted: json['is_completed'] as bool? ?? false,
       startDate: json['start_date'] != null
           ? DateTime.parse(json['start_date'] as String)

@@ -1044,3 +1044,92 @@ The guard that actually works is an **integration test**: a SQL harness that imp
 **Not in scope for this ADR** (deferred):
 - Tables without user scoping (`brands`, `projects`, `news`, `assets`) are read-public for authenticated users. This ADR applies to user-scoped tables and their views only.
 - Admin/staff access paths (via service_role key) are outside RLS by design.
+
+---
+
+## ADR-44: Unified Contract Status — pending/signed/cancelled + Derived Completion
+
+**Date:** 2026-04-19
+**Status:** Accepted
+
+**Context:** Before this ADR, the 4 investment domains each modelled contract lifecycle differently:
+- `purchase_contracts`: no status column (implicit via `sold_date`).
+- `coinvestment_contracts.is_completed BOOLEAN`.
+- `fixed_income_contracts.status TEXT CHECK ('active','completed','cancelled')` with default `'active'`.
+- `rental_contracts`: no status column (implicit via `is_active` / `end_date`).
+
+This was flagged as pending debt in `ARCHITECTURE.md#6` ("future ADR"). The inconsistency forced per-model UI logic for "ACTIVAS / FINALIZADAS" sections and made cancellation non-modellable in 3 of 4 domains.
+
+**Decision:** Introduce `status TEXT NOT NULL DEFAULT 'signed' CHECK (status IN ('pending','signed','cancelled'))` on **all 4 contract tables**. The enum captures only **human-driven state** on the contract document itself:
+- `pending`: row created, awaiting signature.
+- `signed`: signed, in force.
+- `cancelled`: cancelled (before or after signature).
+
+"Finalizado" is **not** a contract status — it's a **UI projection** derived in the view, with a different source per domain:
+
+| Domain | `is_completed` derived in view from |
+|---|---|
+| purchase | `sold_date IS NOT NULL` — external event (asset sold) |
+| coinvestment | `cc.completion_date IS NOT NULL` — contract-level event (investor received final distribution) |
+| fixed_income | `maturity_date < CURRENT_DATE` — natural contract end |
+| rental | `end_date < CURRENT_DATE` — natural contract end (rental has no standalone view; semantics reserved for future use) |
+
+The 3 contract views (`user_direct_purchases`, `user_coinvestments`, `user_fixed_income_contracts`) expose both `status` and `is_completed` so the UI filter "FINALIZADAS" reads one uniform boolean.
+
+**Why CHECK, not PostgreSQL ENUM:** ADR-26 already establishes TEXT + CHECK as the project convention. Constraint naming: `chk_<table>_status`.
+
+**Why `cancelled` in all 4 models even without UI today:** contingency / operational blindaje. Renaming a CHECK is cheap; renaming + backfilling a column after contracts start referencing the enum in UI is not.
+
+**Rationale:**
+- **Principle #1** (canonical source): one column, one vocabulary across 4 domains.
+- **Principle #3** (computed > stored): `is_completed` is derived, not stored. Two sources of truth for "finalized" would drift.
+- **Principle #6** (naming consistency): removes the last pending-debt note from `ARCHITECTURE.md`.
+- **UI uniformity**: `brand_investments_screen` drops per-model getters (`isSold`, `isCompleted` from enum, etc.) in favor of a single `isCompleted` read from the view.
+
+**Consequences:**
+- (+) One vocabulary for all 4 domains; cancellation modellable everywhere.
+- (+) `coinvestment_contracts.is_completed` eliminated (dead column — derivable from projects).
+- (+) `fixed_income_contracts.status` aligned with the rest (was the odd one with `active/completed`).
+- (+) `ARCHITECTURE.md#6` pending debt closed.
+- (-) Existing UI code referencing `PurchaseContractData.isSold` / `FixedIncomeStatus.active|completed` must be updated in the same migration (Flutter sweep).
+- (-) `completion_date` on coinvestment contracts is now decoupled from `is_completed` (still used to compute `actual_duration`). If it drifts from project close date, handle in a future ADR.
+
+**Migration:** `docs/sql/migrations/20260419145816_unify_contract_status.sql`.
+
+**Not in scope:**
+- Rental has no standalone contract view yet; adding `status` to the table is blindaje for when that view exists. Current `rc.is_active` filter in `user_direct_purchases` untouched.
+- UI for cancellation workflow (flag only; no admin screen to set `status = 'cancelled'` yet).
+
+---
+
+## ADR-45: Project Estimates Derived from `project_scenarios` (P50), Not Stored on `projects`
+
+**Date:** 2026-04-19
+**Status:** Accepted (supersedes the `estimated_return_pct` / `estimated_duration_months` / `projected_roi` / `expected_exit_date` columns introduced in ADR-43)
+
+**Context:** `projects` carried 4 deal-term columns that duplicated or drifted from `project_scenarios`:
+- `estimated_return_pct` (10/18 filled — headline figure stored independently of scenarios, e.g. Allegro 22% vs P50 17.60%)
+- `estimated_duration_months` (10/18 filled — same pattern)
+- `projected_roi` (2/18 filled, 0 consumers — dead column)
+- `expected_exit_date` (10/18 filled, 0 consumers — speculative, principle #4)
+
+In parallel, `project_scenarios` stores the probabilistic distribution (P90 / P50 / P10) used in the L3 Bloomberg panel. Having two sources for the same concept ("expected return / duration of a project") violates principle #1 (canonical source) and leads to headline drift.
+
+**Decision:** Drop the 4 columns from `projects`. Expose `estimated_return_pct` and `estimated_duration_months` in `user_coinvestments` (and `return_pct` in the coinvestment branch of `user_portfolio`) **derived** via a `LEFT JOIN LATERAL` to the scenario closest to the median (`ORDER BY abs(sort_order - 2), sort_order LIMIT 1`). If P50 exists it is used; otherwise the closest available scenario (P10 before P90 on ties) gives a best-effort fallback.
+
+**Rationale:**
+- **Principle #1** (canonical source): one vocabulary for "expected return" — the scenario model.
+- **Principle #3** (computed > stored): the view derives; we don't store the same number twice.
+- **Principle #4** (no speculative fields): `projected_roi` and `expected_exit_date` had no consumers.
+- **Flutter-invisible change**: the Dart model (`CoinvestmentContractData.estimatedReturnPct` / `estimatedDurationMonths`) reads the same column names from the view; only the source changes.
+
+**Consequences:**
+- (+) Single source of truth for headline projections.
+- (+) L3 Bloomberg panel and L1/L2 list headlines read from the same table — no more drift.
+- (+) `projects` lost 4 columns; 2 were dead to start with.
+- (−) The visible headline number changes for projects whose old `estimated_return_pct` didn't match P50 (e.g. Allegro 22% → 17.60%). Acceptable: the previous value was a marketing figure disconnected from the modelled distribution.
+- (−) Projects without scenarios show `null` in list views — same behaviour as before (those projects had `null` in the dropped columns too).
+
+**Migration:** `docs/sql/migrations/20260419153747_project_estimates_from_scenarios.sql`.
+
+**Not in scope:** `is_delayed` on `projects` remains (unchanged by this ADR). Projects without any scenarios still render as `null` in the headline; if a UX pass later needs a default for those, backfill with a P50 scenario rather than reintroducing the headline column.
