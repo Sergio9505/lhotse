@@ -24,9 +24,18 @@ class AllProjectsScreen extends ConsumerStatefulWidget {
 
 enum _ActiveTool { none, brands, search }
 
+/// Single-select status filter. Null = default catalog view (construction +
+/// exited). Projects still in `pre_construction` (open fundraising, work not
+/// started) are not shown here — they live in Strategy → Oportunidades so the
+/// two screens have distinct intents: this one is the portfolio catalog,
+/// Strategy surfaces deals the user can join.
+enum _StatusFilter {
+  construction, // phase = construction
+  exited, // phase = exited
+}
+
 class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
-  // null = all; false = en desarrollo; true = cerrados
-  bool? _selectedIsFundraisingClosed;
+  _StatusFilter? _selectedStatus;
   _ActiveTool _activeTool = _ActiveTool.none;
   final Set<String> _selectedBrands = {};
   String _searchQuery = '';
@@ -39,9 +48,16 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
   }
 
   List<ProjectData> _applyFilters(List<ProjectData> projects) {
-    var result = projects;
-    if (_selectedIsFundraisingClosed != null) {
-      result = result.where((p) => p.isFundraisingClosed == _selectedIsFundraisingClosed).toList();
+    // Hide pre_construction projects; they surface only in Strategy →
+    // Oportunidades. This screen is the portfolio catalog.
+    var result = projects
+        .where((p) => p.phase != ProjectPhase.preConstruction)
+        .toList();
+    if (_selectedStatus != null) {
+      result = result.where((p) => switch (_selectedStatus!) {
+            _StatusFilter.construction => p.phase == ProjectPhase.construction,
+            _StatusFilter.exited => p.phase == ProjectPhase.exited,
+          }).toList();
     }
     if (_selectedBrands.isNotEmpty) {
       result = result.where((p) => _selectedBrands.contains(p.brand)).toList();
@@ -58,9 +74,9 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
     return result;
   }
 
-  void _toggleStatus(bool isClosed) {
+  void _toggleStatus(_StatusFilter status) {
     setState(() {
-      _selectedIsFundraisingClosed = _selectedIsFundraisingClosed == isClosed ? null : isClosed;
+      _selectedStatus = _selectedStatus == status ? null : status;
     });
   }
 
@@ -105,7 +121,7 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
           LhotseAppHeader(title: 'PROYECTOS', onBack: () => context.pop()),
 
           _FilterBar(
-            selectedIsFundraisingClosed: _selectedIsFundraisingClosed,
+            selectedStatus: _selectedStatus,
             activeTool: _activeTool,
             hasBrandSelection: _selectedBrands.isNotEmpty,
             onStatusTap: _toggleStatus,
@@ -164,7 +180,7 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
 
 class _FilterBar extends StatelessWidget {
   const _FilterBar({
-    required this.selectedIsFundraisingClosed,
+    required this.selectedStatus,
     required this.activeTool,
     required this.hasBrandSelection,
     required this.onStatusTap,
@@ -172,16 +188,16 @@ class _FilterBar extends StatelessWidget {
     required this.onSearchTap,
   });
 
-  final bool? selectedIsFundraisingClosed;
+  final _StatusFilter? selectedStatus;
   final _ActiveTool activeTool;
   final bool hasBrandSelection;
-  final ValueChanged<bool> onStatusTap;
+  final ValueChanged<_StatusFilter> onStatusTap;
   final VoidCallback onBrandsTap;
   final VoidCallback onSearchTap;
 
   static const _statusFilters = [
-    (isClosed: false, label: 'EN DESARROLLO'),
-    (isClosed: true, label: 'CERRADOS'),
+    (status: _StatusFilter.construction, label: 'EN DESARROLLO'),
+    (status: _StatusFilter.exited, label: 'FINALIZADOS'),
   ];
 
   @override
@@ -200,8 +216,8 @@ class _FilterBar extends StatelessWidget {
                     right: i < _statusFilters.length - 1 ? AppSpacing.lg : 0),
                 child: LhotseFilterTab(
                   label: filter.label,
-                  isActive: selectedIsFundraisingClosed == filter.isClosed,
-                  onTap: () => onStatusTap(filter.isClosed),
+                  isActive: selectedStatus == filter.status,
+                  onTap: () => onStatusTap(filter.status),
                 ),
               );
             }),

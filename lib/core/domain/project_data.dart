@@ -1,3 +1,19 @@
+/// Physical stage of a coinvestment project asset.
+///
+/// `projects` table only describes coinvestment (flip model: raise → build → sell),
+/// so 3 phases suffice; there is no long-term "operating" state.
+enum ProjectPhase {
+  preConstruction,
+  construction,
+  exited;
+
+  static ProjectPhase fromDb(String? value) => switch (value) {
+        'construction' => ProjectPhase.construction,
+        'exited' => ProjectPhase.exited,
+        _ => ProjectPhase.preConstruction,
+      };
+}
+
 class ProjectData {
   const ProjectData({
     required this.id,
@@ -13,7 +29,9 @@ class ProjectData {
     required this.description,
     this.galleryImages = const [],
     this.isVip = false,
-    this.isFundraisingClosed = false,
+    this.isFundraisingOpen = true,
+    this.phase = ProjectPhase.preConstruction,
+    this.constructionCompletedAt,
     this.surfaceM2,
     this.bedrooms,
     this.bathrooms,
@@ -48,7 +66,16 @@ class ProjectData {
   final String description;
   final List<String> galleryImages;
   final bool isVip;
-  final bool isFundraisingClosed;
+
+  /// True while the project accepts new investors. Orthogonal to `phase`:
+  /// construction can start while fundraising is still open.
+  final bool isFundraisingOpen;
+
+  /// Physical stage of the asset. Orthogonal to `isFundraisingOpen`.
+  final ProjectPhase phase;
+
+  /// Optional marker for the "construction done, sale pending" window.
+  final DateTime? constructionCompletedAt;
 
   // Asset physical characteristics
   final double? surfaceM2;
@@ -88,7 +115,11 @@ class ProjectData {
       description: row['description'] as String? ?? '',
       galleryImages: galleryRaw?.cast<String>() ?? [],
       isVip: row['is_vip'] as bool? ?? false,
-      isFundraisingClosed: row['is_fundraising_closed'] as bool? ?? false,
+      isFundraisingOpen: row['is_fundraising_open'] as bool? ?? true,
+      phase: ProjectPhase.fromDb(row['phase'] as String?),
+      constructionCompletedAt: row['construction_completed_at'] != null
+          ? DateTime.parse(row['construction_completed_at'] as String)
+          : null,
       surfaceM2: (assets?['surface_m2'] as num?)?.toDouble(),
       bedrooms: assets?['bedrooms'] as int?,
       bathrooms: assets?['bathrooms'] as int?,
@@ -123,7 +154,8 @@ class ProjectData {
       tagline: '',
       description: '',
       isVip: row['is_vip'] as bool? ?? false,
-      isFundraisingClosed: row['is_fundraising_closed'] as bool? ?? false,
+      isFundraisingOpen: row['is_fundraising_open'] as bool? ?? true,
+      phase: ProjectPhase.fromDb(row['phase'] as String?),
     );
   }
 }

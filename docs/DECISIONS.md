@@ -1133,3 +1133,103 @@ In parallel, `project_scenarios` stores the probabilistic distribution (P90 / P5
 **Migration:** `docs/sql/migrations/20260419153747_project_estimates_from_scenarios.sql`.
 
 **Not in scope:** `is_delayed` on `projects` remains (unchanged by this ADR). Projects without any scenarios still render as `null` in the headline; if a UX pass later needs a default for those, backfill with a P50 scenario rather than reintroducing the headline column.
+
+---
+
+## ADR-46: Fixed Income Schema + UX Consolidation
+
+**Date:** 2026-04-20
+**Status:** Accepted
+
+**Context:** The fixed_income domain accumulated three unrelated issues: (1) document rows used `model_type = 'contract'`, inconsistent with `'purchase'` / `'coinvestment'` on the other domains; (2) an unreachable `InvestmentDetailScreen` (L3 for RF) existed in `lib/` with a registered route but no navigation; (3) the L2 row pretended to carry a "doc icon per operation" but rendered none, because the list view didn't expose whether a contract had docs and the `fixed_income_payments` table had zero consumers despite holding real data.
+
+**Decision:** Consolidate RF into a single, self-sufficient L2 experience backed by view-derived flags:
+
+1. **Rename `documents.model_type` `'contract'` → `'fixed_income'`** (16 rows), update CHECK to the 4-domain vocabulary, and add the missing `WHEN 'fixed_income'` branch to the SELECT RLS policy.
+2. **RF is L2-only by design.** Delete `investment_detail_screen.dart` + route. The L2 `_RentaFijaRow` owns all RF data presentation.
+3. **Add derived columns to `user_fixed_income_contracts`** (principles #2 + #3):
+   - `has_documents BOOLEAN` — `EXISTS(SELECT 1 FROM documents WHERE model_type='fixed_income' AND model_id = c.id)`. Drives the doc icon visibility with zero extra queries.
+   - `interest_paid_to_date NUMERIC` — sum of `fixed_income_payments.amount` with `type='interest' AND date <= CURRENT_DATE`. Powers the active-row "+€cobrados" figure.
+   - `total_interest_earned NUMERIC` — sum across all interest rows. Powers the completed-row total.
+4. **UX pattern for RF docs**: conditional `fileText` icon on the row; tap opens a bottom sheet (`_RentaFijaDocsSheet`, `ConsumerStatefulWidget`) that lazy-loads `documentsProvider` and renders filter chips via `categoriesForIds`, replicating the UX of the L3 DOCS tabs in purchase/coinversion without needing an L3.
+5. **RF main figure = capital invertido** (both active and completed). Breaks the pattern used in purchase/coinvestment completed rows (total return) because RF interest is a **periodic cash flow**, not a single payout at close. Showing `invested + total_interest` as the big number would misrepresent the payment mechanics — the investor already received those interests in installments.
+6. **Drop dead columns from `fixed_income_offerings`**: `is_capital_guaranteed`, `min_amount`, `description` (0 Flutter consumers, principle #4). `is_active` retained for future admin UI.
+
+**Rationale:**
+- **Principle #1 (canonical source)**: one vocabulary for `model_type` across 4 domains.
+- **Principle #2 (request ∝ screen needs)**: `has_documents` + interest aggregates exposed in the L2 list view → zero per-row docs queries and no lazy fetch needed for the headline figures.
+- **Principle #3 (computed > stored)**: interest aggregates derived from `fixed_income_payments`; never stored on the contract.
+- **Principle #4 (no speculative fields)**: 3 unused offering columns removed.
+- **Principle #8 (views as API)**: the view carries the full payload the L2 row + bottom sheet + metrics need.
+
+**Consequences:**
+- (+) RF L2 row ships with doc-icon + cobrados + vence + rate in a single query.
+- (+) `fixed_income_payments` gets its first consumer (via the derived columns) — table is no longer orphan.
+- (+) Delete of dead L3 removes ~317 lines + one stale route.
+- (+) Doc workflow now works on RF (was broken because RLS had only a `'contract'` branch; renaming + adding the `'fixed_income'` branch fixed both issues).
+- (−) Pattern break: RF main figure = invested, whereas completed purchase/coinvest rows show total return. Documented.
+
+**Migrations:**
+- `docs/sql/migrations/20260419160133_fixed_income_cleanup.sql` (rename + drop offering cols).
+- `docs/sql/migrations/20260419172030_rls_documents_fixed_income_branch.sql` (RLS branch fix).
+- `docs/sql/migrations/20260419161855_user_fi_has_documents.sql` (derived flag).
+- `docs/sql/migrations/20260419210610_user_fi_interest_metrics.sql` (derived aggregates).
+
+**Not in scope:** Admin panel wiring of `fixed_income_offerings.is_active`. Future L3 for RF if the product surface grows (e.g. per-payment detail view).
+
+---
+
+## ADR-47: Project Lifecycle — Two Orthogonal Axes
+
+**Date:** 2026-04-20
+**Status:** Accepted
+
+**Context:** `projects.is_fundraising_closed boolean` tried to encode two independent business dimensions in one flag:
+
+- **Commercial**: is the project still accepting new investors?
+- **Physical**: where is the asset in its build-to-sale lifecycle?
+
+This collapses a real scenario that crowdfunded real estate depends on: partial capital raised, construction starts, capture continues during the build. A single boolean forces us to either (a) hide the fact that fundraising is still open during construction or (b) misreport construction as "not started" because capture isn't closed yet.
+
+`projects` is used exclusively by coinvestment (flip: raise → build → sell). Direct purchase, rental, and fixed income do not go through a "project" — they live on their own domain tables. So this ADR only concerns the coinvestment lifecycle.
+
+**Decision:** Replace `is_fundraising_closed` with two orthogonal columns plus an invariant CHECK:
+
+```sql
+is_fundraising_open       boolean     NOT NULL DEFAULT true
+phase                     text        NOT NULL DEFAULT 'pre_construction'
+  CHECK (phase IN ('pre_construction','construction','exited'))
+construction_completed_at timestamptz  -- optional marker for the "built but unsold" window
+CHECK (phase <> 'exited' OR is_fundraising_open = false)  -- you can't exit while still capturing
+```
+
+3 phases (not 4). No `operating` / `built` state because coinvestment is a flip: the interval between "construction done" and "exited" is short (weeks/months, not years) and is captured by the optional `construction_completed_at` timestamp. There is no long-term tenure phase at the project level for this domain.
+
+**UI mapping** (single-select filter tabs):
+- `is_fundraising_open = true` → **"EN CAPTACIÓN"**
+- `phase = 'construction'` → **"EN OBRA"**
+- `phase = 'exited'` → **"FINALIZADO"**
+
+Tabs are compositional: a project with `is_fundraising_open=true ∧ phase='construction'` matches both "EN CAPTACIÓN" and "EN OBRA" filters.
+
+**Rationale:**
+- **Principle #6 (unified status)**: TEXT+CHECK per ADR-26 (not ENUM), aligned with how contract statuses are modelled. Divergence from the pattern: instead of a single enum, two columns + invariant CHECK — because the two axes are genuinely orthogonal and an enum would encode a state machine that doesn't exist.
+- **Honest modelling**: eliminates the class of bug where a single boolean has to "lie" to cover a valid real-world state.
+- **Principle #3 (computed > stored)**: rejected alternatives where phase is derived from contract milestones — `completion_date` on an individual contract means one investor exited, not that the project exited. The project-level exit is a business decision that must be stored explicitly.
+
+**Consequences:**
+- (+) The "partial capital raised, construction started" state is now representable.
+- (+) Views can filter independently on either axis (`brands_with_metrics.coinv_active_projects` now counts `is_fundraising_open=true` regardless of phase).
+- (+) Admin can move phase forward (pre_construction → construction → exited) without forcing captación-closed implicitly.
+- (−) Two columns instead of one; CHECK required to prevent `phase='exited' ∧ is_fundraising_open=true`. Considered acceptable: a single-boolean model made worse states (semantically invalid combinations) silently representable.
+- (−) Backfill of 18 seed projects defaulted to `phase='pre_construction'`; construction/exit states must be set manually per project via Dashboard. We deliberately did not invent a heuristic from `completion_date` counts (unreliable).
+
+**Migration:** `docs/sql/migrations/20260420174731_projects_lifecycle_status.sql` — recreates `user_opportunities`, `projects_with_metrics`, `brands_with_metrics` (the 3 views that referenced the dropped column).
+
+**Consumers updated in the same PR:**
+- `lib/core/domain/project_data.dart` — `isFundraisingOpen`, `phase` (Dart enum `ProjectPhase`), `constructionCompletedAt`.
+- `lib/features/home/presentation/all_projects_screen.dart` — filter tabs `EN CAPTACIÓN` / `EN OBRA` / `FINALIZADO`.
+
+**Not in scope:** An "EN VENTA" state for the post-construction/pre-exit window. If that window ever becomes long enough to warrant its own UX, add a 4th phase value (not a separate boolean) and extend the CHECK.
+
+**Follow-up (2026-04-20):** AllProjects and Strategy → Oportunidades split by intent. AllProjects is the portfolio catalogue (`phase IN ('construction','exited')` only); `user_opportunities` view tightened with `WHERE is_fundraising_open = true` so only open deals surface as opportunities. Rationale: different user mental models (browsing what exists vs. discovering what can be joined). Migration: `docs/sql/migrations/20260420191513_user_opportunities_only_fundraising.sql`.

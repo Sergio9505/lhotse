@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/data/assets_provider.dart';
 import '../core/data/brands_provider.dart';
+import '../core/data/document_categories_provider.dart';
+import '../core/data/documents_provider.dart';
 import '../core/data/news_provider.dart';
 import '../core/data/projects_provider.dart';
 import '../core/data/supabase_provider.dart';
@@ -53,17 +56,39 @@ class _LhotseAppState extends ConsumerState<LhotseApp>
     ref.invalidate(unreadNotificationCountProvider);
     ref.invalidate(currentUserProfileProvider);
 
-    // ≥ 5 min: investment summaries + news
+    // ≥ 5 min: investor positions + payments + documents + news.
+    //   Data that reflects investment activity — admin uploads docs, coupons
+    //   get paid, mortgage balances move. A stale L2 hides new cash flow.
     if (elapsed >= const Duration(minutes: 5)) {
       ref.invalidate(newsProvider);
       ref.invalidate(userPortfolioProvider);
+      ref.invalidate(userPortfolioEntryProvider);
+      ref.invalidate(purchaseContractsProvider);
+      ref.invalidate(brandPurchaseContractsProvider);
+      ref.invalidate(purchaseContractByIdProvider);
+      ref.invalidate(coinvestmentContractsProvider);
+      ref.invalidate(brandCoinvestmentContractsProvider);
+      ref.invalidate(fixedIncomeContractsProvider);
+      ref.invalidate(brandFixedIncomeContractsProvider);
+      ref.invalidate(purchaseMortgageDetailProvider);
+      ref.invalidate(documentsProvider);
+      ref.invalidate(allUserDocumentsProvider);
     }
 
-    // ≥ 1 hour: catalog (brands, projects, featured carousel)
+    // ≥ 1 hour: catalog + slow-moving metadata (physical asset info,
+    //   project renders/economics, scenarios, phases, doc categories,
+    //   opportunity listings).
     if (elapsed >= const Duration(hours: 1)) {
       ref.invalidate(brandsProvider);
       ref.invalidate(projectsProvider);
+      ref.invalidate(assetsProvider);
       ref.invalidate(featuredProjectsProvider);
+      ref.invalidate(opportunitiesProvider);
+      ref.invalidate(purchaseAssetDetailProvider);
+      ref.invalidate(coinvestmentProjectDetailProvider);
+      ref.invalidate(projectScenariosProvider);
+      ref.invalidate(projectPhasesProvider);
+      ref.invalidate(allDocumentCategoriesProvider);
     }
   }
 

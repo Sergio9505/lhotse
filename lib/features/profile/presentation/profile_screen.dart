@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +10,7 @@ import '../../../core/data/supabase_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 import '../../auth/data/auth_repository.dart';
+import '../data/avatar_repository.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -147,10 +146,11 @@ class _IdentitySection extends ConsumerStatefulWidget {
 }
 
 class _IdentitySectionState extends ConsumerState<_IdentitySection> {
-  XFile? _localImage;
   final _picker = ImagePicker();
+  bool _uploading = false;
 
   void _showImageSourceSheet() {
+    if (_uploading) return;
     showCupertinoModalPopup<void>(
       context: context,
       builder: (ctx) => CupertinoActionSheet(
@@ -216,16 +216,29 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
     final file = await _picker.pickImage(
       source: source,
       imageQuality: 85,
-      maxWidth: 480,
+      maxWidth: 720,
     );
-    if (file != null && mounted) setState(() => _localImage = file);
+    if (file == null || !mounted) return;
+
+    setState(() => _uploading = true);
+    try {
+      await uploadAvatar(ref, file);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo subir la imagen: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(currentUserProfileProvider).valueOrNull;
     final role = ref.watch(currentUserRoleProvider);
-    final displayName = profile?.fullName ?? 'Inversor';
+    final rawName = profile?.fullName?.trim() ?? '';
+    final displayName = rawName.isEmpty ? 'Inversor' : rawName;
     final memberSince = profile?.memberSince;
     final city = profile?.city;
     final country = profile?.country;
@@ -251,13 +264,27 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
                     ),
                   ),
                   child: ClipOval(
-                    child: _localImage != null
-                        ? Image.file(
-                            File(_localImage!.path),
-                            fit: BoxFit.cover,
-                          )
-                        : _buildNetworkOrInitials(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _buildNetworkOrInitials(
                             profile?.avatarUrl, displayName),
+                        if (_uploading)
+                          Container(
+                            color: AppColors.primary.withValues(alpha: 0.35),
+                            child: const Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: AppColors.textOnDark,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -2,16 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/assets_provider.dart';
 import '../../../core/data/brands_provider.dart';
+import '../../../core/data/document_categories_provider.dart';
+import '../../../core/data/documents_provider.dart';
 import '../../../core/data/projects_provider.dart';
+import '../../../core/domain/asset_data.dart';
 import '../../../core/domain/brand_data.dart';
+import '../../../core/domain/document_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lhotse_doc_row.dart';
+import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
+import '../../investments/data/investments_provider.dart';
+import '../../investments/domain/coinvestment_contract_data.dart';
+import '../../investments/domain/fixed_income_contract_data.dart';
+import '../../investments/domain/purchase_contract_data.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -55,8 +67,175 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (_query.isEmpty) return [];
     final q = _query.toLowerCase();
     return brands
-        .where((b) => b.name.toLowerCase().contains(q))
+        .where((b) =>
+            b.name.toLowerCase().contains(q) ||
+            (b.tagline?.toLowerCase().contains(q) ?? false) ||
+            (b.description?.toLowerCase().contains(q) ?? false))
         .toList();
+  }
+
+  List<AssetData> _searchAssets(List<AssetData> assets) {
+    if (_query.isEmpty) return [];
+    final q = _query.toLowerCase();
+    return assets
+        .where((a) =>
+            (a.address?.toLowerCase().contains(q) ?? false) ||
+            (a.city?.toLowerCase().contains(q) ?? false) ||
+            (a.country?.toLowerCase().contains(q) ?? false) ||
+            (a.cadastralReference?.toLowerCase().contains(q) ?? false))
+        .toList();
+  }
+
+  /// Docs whose name matches the query (direct match).
+  List<DocumentData> _searchDocsDirect(List<DocumentData> docs) {
+    if (_query.isEmpty) return [];
+    final q = _query.toLowerCase();
+    return docs.where((d) => d.name.toLowerCase().contains(q)).toList();
+  }
+
+  /// Docs whose associated contract/brand/project/asset is in the matched set.
+  /// Resolves `documents.model_type + model_id` against the user's contracts.
+  List<DocumentData> _contextualDocs({
+    required List<DocumentData> allDocs,
+    required Set<String> matchedBrandIds,
+    required Set<String> matchedProjectIds,
+    required Set<String> matchedAssetIds,
+    required List<PurchaseContractData> purchaseContracts,
+    required List<CoinvestmentContractData> coinvestmentContracts,
+    required List<FixedIncomeContractData> fixedIncomeContracts,
+  }) {
+    if (matchedBrandIds.isEmpty &&
+        matchedProjectIds.isEmpty &&
+        matchedAssetIds.isEmpty) {
+      return const [];
+    }
+
+    final purchaseIds = purchaseContracts
+        .where((c) =>
+            matchedBrandIds.contains(c.brandId) ||
+            matchedAssetIds.contains(c.assetId))
+        .map((c) => c.id)
+        .toSet();
+    final coinvestIds = coinvestmentContracts
+        .where((c) =>
+            matchedBrandIds.contains(c.brandId) ||
+            matchedProjectIds.contains(c.projectId))
+        .map((c) => c.id)
+        .toSet();
+    final fiIds = fixedIncomeContracts
+        .where((c) => matchedBrandIds.contains(c.brandId))
+        .map((c) => c.id)
+        .toSet();
+
+    return allDocs.where((d) {
+      switch (d.modelType) {
+        case 'brand':
+          return matchedBrandIds.contains(d.modelId);
+        case 'project':
+          return matchedProjectIds.contains(d.modelId);
+        case 'purchase':
+          return purchaseIds.contains(d.modelId);
+        case 'coinvestment':
+          return coinvestIds.contains(d.modelId);
+        case 'fixed_income':
+          return fiIds.contains(d.modelId);
+        default:
+          return false;
+      }
+    }).toList();
+  }
+
+  /// Short context string for a doc shown in the search results. Returns the
+  /// project / asset / offering / brand name it belongs to.
+  String? _docSubtitle(
+    DocumentData doc, {
+    required List<BrandData> brands,
+    required List<ProjectData> projects,
+    required List<AssetData> assets,
+    required List<PurchaseContractData> purchaseContracts,
+    required List<CoinvestmentContractData> coinvestmentContracts,
+    required List<FixedIncomeContractData> fixedIncomeContracts,
+  }) {
+    switch (doc.modelType) {
+      case 'brand':
+        return brands
+            .where((b) => b.id == doc.modelId)
+            .firstOrNull
+            ?.name
+            .toUpperCase();
+      case 'project':
+        return projects
+            .where((p) => p.id == doc.modelId)
+            .firstOrNull
+            ?.name
+            .toUpperCase();
+      case 'purchase':
+        final c = purchaseContracts
+            .where((c) => c.id == doc.modelId)
+            .firstOrNull;
+        final addr = c?.assetName;
+        if (addr != null && addr.isNotEmpty) return addr.toUpperCase();
+        if (c?.assetId != null) {
+          return assets
+              .where((a) => a.id == c!.assetId)
+              .firstOrNull
+              ?.address
+              ?.toUpperCase();
+        }
+        return null;
+      case 'coinvestment':
+        final c = coinvestmentContracts
+            .where((c) => c.id == doc.modelId)
+            .firstOrNull;
+        return c?.projectName.toUpperCase();
+      case 'fixed_income':
+        final c = fixedIncomeContracts
+            .where((c) => c.id == doc.modelId)
+            .firstOrNull;
+        return c?.offeringName.toUpperCase();
+    }
+    return null;
+  }
+
+  void _openDoc(
+    BuildContext context,
+    DocumentData doc, {
+    required List<PurchaseContractData> purchaseContracts,
+    required List<CoinvestmentContractData> coinvestmentContracts,
+    required List<FixedIncomeContractData> fixedIncomeContracts,
+  }) {
+    switch (doc.modelType) {
+      case 'brand':
+        context.push('/brands/${doc.modelId}');
+        return;
+      case 'project':
+        context.push('/projects/${doc.modelId}');
+        return;
+      case 'purchase':
+        final contract =
+            purchaseContracts.where((c) => c.id == doc.modelId).firstOrNull;
+        if (contract == null) return;
+        context.push(
+          '/investments/detail/purchase/${contract.id}',
+          extra: (brandName: '', contract: contract),
+        );
+        return;
+      case 'coinvestment':
+        final contract =
+            coinvestmentContracts.where((c) => c.id == doc.modelId).firstOrNull;
+        if (contract == null) return;
+        context.push(
+          '/investments/detail/coinvestment/${contract.id}',
+          extra: (contract: contract, brandName: ''),
+        );
+        return;
+      case 'fixed_income':
+        final contract =
+            fixedIncomeContracts.where((c) => c.id == doc.modelId).firstOrNull;
+        if (contract == null) return;
+        context.push('/investments/brand/${contract.brandId}');
+        return;
+    }
   }
 
   void _onTagTap(String tag) {
@@ -84,6 +263,66 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final hasQuery = _query.isNotEmpty;
     final projects = ref.watch(projectsProvider).valueOrNull ?? const [];
     final brands = ref.watch(brandsProvider).valueOrNull ?? const [];
+    final assets = ref.watch(assetsProvider).valueOrNull ?? const [];
+    final allDocs =
+        ref.watch(allUserDocumentsProvider).valueOrNull ?? const [];
+    final categories =
+        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
+    final purchaseContracts =
+        ref.watch(purchaseContractsProvider).valueOrNull ?? const [];
+    final coinvestmentContracts =
+        ref.watch(coinvestmentContractsProvider).valueOrNull ?? const [];
+    final fixedIncomeContracts =
+        ref.watch(fixedIncomeContractsProvider).valueOrNull ?? const [];
+
+    List<DocumentData> docResults = const [];
+    List<AssetData> assetResults = const [];
+    List<BrandData> brandResults = const [];
+    List<ProjectData> projectResults = const [];
+
+    if (hasQuery) {
+      brandResults = _searchBrands(brands);
+      projectResults = _searchProjects(projects);
+      assetResults = _searchAssets(assets);
+      final directDocs = _searchDocsDirect(allDocs);
+      final contextualDocs = _contextualDocs(
+        allDocs: allDocs,
+        matchedBrandIds: brandResults.map((b) => b.id).toSet(),
+        matchedProjectIds: projectResults.map((p) => p.id).toSet(),
+        matchedAssetIds: assetResults.map((a) => a.id).toSet(),
+        purchaseContracts: purchaseContracts,
+        coinvestmentContracts: coinvestmentContracts,
+        fixedIncomeContracts: fixedIncomeContracts,
+      );
+      final seen = <String>{};
+      docResults = [
+        for (final d in [...directDocs, ...contextualDocs])
+          if (seen.add(d.id)) d,
+      ];
+    }
+
+    final docSubtitles = <String, String>{
+      for (final d in docResults)
+        if (_docSubtitle(
+              d,
+              brands: brands,
+              projects: projects,
+              assets: assets,
+              purchaseContracts: purchaseContracts,
+              coinvestmentContracts: coinvestmentContracts,
+              fixedIncomeContracts: fixedIncomeContracts,
+            ) !=
+            null)
+          d.id: _docSubtitle(
+            d,
+            brands: brands,
+            projects: projects,
+            assets: assets,
+            purchaseContracts: purchaseContracts,
+            coinvestmentContracts: coinvestmentContracts,
+            fixedIncomeContracts: fixedIncomeContracts,
+          )!,
+    };
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -113,10 +352,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Expanded(
             child: hasQuery
                 ? _SearchResults(
-                    projectResults: _searchProjects(projects),
-                    brandResults: _searchBrands(brands),
+                    projectResults: projectResults,
+                    brandResults: brandResults,
+                    assetResults: assetResults,
+                    docResults: docResults,
+                    docSubtitles: docSubtitles,
+                    categories: categories,
                     query: _query,
                     onResultTap: () => _addToRecent(_query),
+                    onDocTap: (doc) {
+                      _addToRecent(_query);
+                      _openDoc(
+                        context,
+                        doc,
+                        purchaseContracts: purchaseContracts,
+                        coinvestmentContracts: coinvestmentContracts,
+                        fixedIncomeContracts: fixedIncomeContracts,
+                      );
+                    },
                   )
                 : _IdleContent(
                     recentSearches: _recentSearches,
@@ -344,94 +597,179 @@ class _SearchResults extends StatelessWidget {
   const _SearchResults({
     required this.projectResults,
     required this.brandResults,
+    required this.assetResults,
+    required this.docResults,
+    required this.docSubtitles,
+    required this.categories,
     required this.query,
     this.onResultTap,
+    this.onDocTap,
   });
 
   final List<ProjectData> projectResults;
   final List<BrandData> brandResults;
+  final List<AssetData> assetResults;
+  final List<DocumentData> docResults;
+  final Map<String, String> docSubtitles;
+  final List<dynamic> categories;
   final String query;
   final VoidCallback? onResultTap;
+  final ValueChanged<DocumentData>? onDocTap;
 
   @override
   Widget build(BuildContext context) {
-    if (projectResults.isEmpty && brandResults.isEmpty) {
+    if (projectResults.isEmpty &&
+        brandResults.isEmpty &&
+        assetResults.isEmpty &&
+        docResults.isEmpty) {
       return _EmptyResults(query: query);
     }
+
+    final iconByCategoryId = {
+      for (final c in categories) c.id as String: c.iconName as String,
+    };
 
     return ListView(
       padding: EdgeInsets.zero,
       children: [
         if (brandResults.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text(
-              'FIRMAS',
-              style: AppTypography.labelLarge.copyWith(
-                color: AppColors.textPrimary,
-                letterSpacing: 1.8,
-              ),
-            ),
-          ),
+          const _SectionLabel('FIRMAS'),
           const SizedBox(height: AppSpacing.md),
           ...brandResults.map((brand) =>
               _BrandResultItem(brand: brand, onTap: onResultTap)),
           const SizedBox(height: AppSpacing.xl),
         ],
         if (projectResults.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text(
-              'PROYECTOS',
-              style: AppTypography.labelLarge.copyWith(
-                color: AppColors.textPrimary,
-                letterSpacing: 1.8,
-              ),
-            ),
-          ),
+          const _SectionLabel('PROYECTOS'),
           const SizedBox(height: AppSpacing.md),
           ...projectResults.map((project) =>
               _ProjectResultItem(project: project, onTap: onResultTap)),
           const SizedBox(height: AppSpacing.xl),
         ],
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Text(
-            'DOCUMENTOS',
-            style: AppTypography.labelLarge.copyWith(
-              color: AppColors.textPrimary,
-              letterSpacing: 1.8,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            color: Colors.white.withValues(alpha: 0.3),
-            child: Row(
+        if (assetResults.isNotEmpty) ...[
+          const _SectionLabel('ACTIVOS'),
+          const SizedBox(height: AppSpacing.md),
+          ...assetResults.map((asset) =>
+              _AssetResultItem(asset: asset, onTap: onResultTap)),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+        if (docResults.isNotEmpty) ...[
+          const _SectionLabel('DOCUMENTOS'),
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Column(
               children: [
-                PhosphorIcon(
-                  PhosphorIconsThin.fileText,
-                  size: 20,
-                  color: AppColors.accentMuted,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    'Los documentos de inversión estarán disponibles próximamente',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.accentMuted,
+                for (int i = 0; i < docResults.length; i++) ...[
+                  if (i > 0)
+                    Container(
+                      height: 0.5,
+                      color: AppColors.textPrimary.withValues(alpha: 0.08),
                     ),
+                  LhotseDocRow(
+                    name: docResults[i].name,
+                    date: _formatDocDate(docResults[i].date),
+                    subtitle: docSubtitles[docResults[i].id],
+                    icon: docCategoryIconByKey(
+                      iconByCategoryId[docResults[i].categoryId] ?? 'fileText',
+                    ),
+                    onTap: () => onDocTap?.call(docResults[i]),
                   ),
-                ),
+                ],
               ],
             ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.xl),
+        ],
       ],
+    );
+  }
+
+  static String _formatDocDate(DateTime? date) {
+    if (date == null) return '—';
+    return DateFormat('d MMM. yyyy', 'es_ES').format(date).toUpperCase();
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Text(
+        label,
+        style: AppTypography.labelLarge.copyWith(
+          color: AppColors.textPrimary,
+          letterSpacing: 1.8,
+        ),
+      ),
+    );
+  }
+}
+
+class _AssetResultItem extends StatelessWidget {
+  const _AssetResultItem({required this.asset, this.onTap});
+
+  final AssetData asset;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = asset.address ?? asset.location;
+    final secondary = asset.address != null ? asset.location : null;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: asset.thumbnailImage != null
+                ? LhotseImage(asset.thumbnailImage!)
+                : Container(
+                    color: AppColors.textPrimary.withValues(alpha: 0.05),
+                    child: const Center(
+                      child: PhosphorIcon(
+                        PhosphorIconsThin.buildings,
+                        size: 18,
+                        color: AppColors.accentMuted,
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  primary.toUpperCase(),
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (secondary != null && secondary.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    secondary,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.accentMuted,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

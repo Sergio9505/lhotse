@@ -12,6 +12,7 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
+import '../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../data/investments_provider.dart';
 import '../domain/coinvestment_contract_data.dart';
@@ -197,7 +198,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                     isLast: i == activePurchase.length - 1,
                     onTap: () => context.push(
                       '/investments/detail/purchase/${c.id}',
-                      extra: (brandName: brandName,),
+                      extra: (brandName: brandName, contract: c),
                     ),
                   );
                 },
@@ -762,7 +763,7 @@ class _AssetRowState extends State<_AssetRow> {
 
 // ── Renta Fija row ────────────────────────────────────────────────────────────
 
-class _RentaFijaRow extends ConsumerWidget {
+class _RentaFijaRow extends StatelessWidget {
   const _RentaFijaRow({
     required this.contract,
     this.index,
@@ -780,17 +781,22 @@ class _RentaFijaRow extends ConsumerWidget {
     'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC',
   ];
 
+  static const _kMaturityMonthFormat = 'MM/yy';
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final c = contract;
-    final amount = c.amount;
+    // Unlike purchase/coinvestment (single payout at close), RF interest is
+    // paid periodically. The "big" figure is always the invested capital;
+    // accumulated interest lives in the subtitle.
+    final mainAmount = c.amount;
     final badgeDate = c.startDate;
-    final docs = ref
-            .watch(documentsProvider(
-                (type: 'fixed_income', id: c.id)))
-            .valueOrNull ??
-        const [];
-    final hasDocs = docs.isNotEmpty;
+    final hasDocs = c.hasDocuments;
+    final greenStyle = AppTypography.caption.copyWith(
+      color: const Color(0xFF2D6A4F),
+      fontWeight: FontWeight.w500,
+      letterSpacing: 1.2,
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -854,7 +860,7 @@ class _RentaFijaRow extends ConsumerWidget {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: _eurFormat.format(amount),
+                        text: _eurFormat.format(mainAmount),
                         style: AppTypography.headingSmall.copyWith(
                           color: AppColors.textPrimary,
                           fontFeatures: const [FontFeature.tabularFigures()],
@@ -880,16 +886,38 @@ class _RentaFijaRow extends ConsumerWidget {
                       children: [
                         TextSpan(
                             text:
-                                '${_eurFormat.format(c.amount)}€  ·  ${c.termMonths ?? '–'} MESES'),
+                                'duración ${c.termMonths ?? '–'}m  ·  '),
+                        TextSpan(
+                          text: '+${_eurFormat.format(c.totalInterestEarned)}€',
+                          style: greenStyle,
+                        ),
                       ],
                     ),
                   )
                 else
-                  Text(
-                    '${c.termMonths ?? '–'} MESES  ·  ${c.guaranteedRate.toStringAsFixed(1)}%',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.accentMuted,
-                      letterSpacing: 1.2,
+                  RichText(
+                    text: TextSpan(
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 1.2,
+                      ),
+                      children: [
+                        TextSpan(
+                            text:
+                                '${c.guaranteedRate.toStringAsFixed(1)}% anual'),
+                        if (c.maturityDate != null)
+                          TextSpan(
+                              text:
+                                  '  ·  vence ${DateFormat(_kMaturityMonthFormat).format(c.maturityDate!)}'),
+                        if (c.interestPaidToDate > 0) ...[
+                          const TextSpan(text: '  ·  '),
+                          TextSpan(
+                            text:
+                                '+${_eurFormat.format(c.interestPaidToDate)}€',
+                            style: greenStyle,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
               ],
@@ -897,7 +925,7 @@ class _RentaFijaRow extends ConsumerWidget {
           ),
           if (hasDocs)
             GestureDetector(
-              onTap: () => _showRentaFijaDocs(context, ref, c.id),
+              onTap: () => _showRentaFijaDocs(context, c.id),
               behavior: HitTestBehavior.opaque,
               child: const Padding(
                 padding: EdgeInsets.symmetric(
@@ -915,31 +943,115 @@ class _RentaFijaRow extends ConsumerWidget {
   }
 }
 
-void _showRentaFijaDocs(BuildContext context, WidgetRef ref, String contractId) {
-  final docs = ref
-          .read(documentsProvider((type: 'fixed_income', id: contractId)))
-          .valueOrNull ??
-      const [];
-  final categories =
-      ref.read(allDocumentCategoriesProvider).valueOrNull ?? const [];
-  final iconMap = {for (final c in categories) c.id: c.iconName};
-
-  showLhotseBottomSheet(
+void _showRentaFijaDocs(BuildContext context, String contractId) {
+  showModalBottomSheet(
     context: context,
-    title: 'DOCUMENTOS',
-    itemCount: docs.length,
-    itemBuilder: (context, i) {
-      final doc = docs[i];
-      final ui = doc.toLhotseDocument(
-        iconName: iconMap[doc.categoryId] ?? 'fileText',
-      );
-      return LhotseDocRow(
-        name: ui.name,
-        date: ui.date,
-        icon: docCategoryIconByKey(ui.iconName),
-      );
-    },
+    isScrollControlled: true,
+    backgroundColor: AppColors.background,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+    ),
+    builder: (context) => _RentaFijaDocsSheet(contractId: contractId),
   );
+}
+
+class _RentaFijaDocsSheet extends ConsumerStatefulWidget {
+  const _RentaFijaDocsSheet({required this.contractId});
+
+  final String contractId;
+
+  @override
+  ConsumerState<_RentaFijaDocsSheet> createState() =>
+      _RentaFijaDocsSheetState();
+}
+
+class _RentaFijaDocsSheetState extends ConsumerState<_RentaFijaDocsSheet> {
+  final Set<String> _activeFilters = {};
+
+  void _toggleFilter(String id) {
+    setState(() {
+      if (_activeFilters.contains(id)) {
+        _activeFilters.remove(id);
+      } else {
+        _activeFilters.add(id);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rawDocs = ref
+            .watch(documentsProvider(
+                (type: 'fixed_income', id: widget.contractId)))
+            .valueOrNull ??
+        const [];
+    final allCategories =
+        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
+    final iconMap = {for (final c in allCategories) c.id: c.iconName};
+    final filterCategories =
+        categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
+    final docs = _activeFilters.isEmpty
+        ? rawDocs
+        : rawDocs.where((d) => _activeFilters.contains(d.categoryId)).toList();
+
+    return LhotseBottomSheetBody(
+      title: 'DOCUMENTOS',
+      header: filterCategories.isEmpty
+          ? null
+          : SizedBox(
+              width: double.infinity,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                child: Row(
+                  children: [
+                    ...filterCategories.map((cat) => Padding(
+                          padding:
+                              const EdgeInsets.only(right: AppSpacing.sm),
+                          child: LhotseFilterChip(
+                            label: cat.label,
+                            isActive: _activeFilters.contains(cat.id),
+                            onTap: () => _toggleFilter(cat.id),
+                          ),
+                        )),
+                    if (_activeFilters.isNotEmpty)
+                      GestureDetector(
+                        onTap: () => setState(() => _activeFilters.clear()),
+                        behavior: HitTestBehavior.opaque,
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: PhosphorIcon(PhosphorIconsThin.x,
+                              size: 14, color: AppColors.accentMuted),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+      bodyBuilder: (bottomPadding) => ListView.separated(
+        shrinkWrap: true,
+        padding: EdgeInsets.fromLTRB(
+            AppSpacing.lg, 0, AppSpacing.lg, bottomPadding + AppSpacing.md),
+        itemCount: docs.length,
+        separatorBuilder: (_, _) => Container(
+          height: 0.5,
+          color: AppColors.textPrimary.withValues(alpha: 0.08),
+        ),
+        itemBuilder: (context, i) {
+          final doc = docs[i];
+          final ui = doc.toLhotseDocument(
+            iconName: iconMap[doc.categoryId] ?? 'fileText',
+          );
+          return LhotseDocRow(
+            name: ui.name,
+            date: ui.date,
+            icon: docCategoryIconByKey(ui.iconName),
+          );
+        },
+      ),
+    );
+  }
 }
 
 /// Shown when a deep-link lands on a brand the user has no investments in.

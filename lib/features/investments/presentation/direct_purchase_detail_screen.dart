@@ -28,12 +28,14 @@ final _dateFormat = DateFormat('MM/yyyy');
 const _kHeroHeight = 200.0;
 const _kMaxVisibleGallery = 5;
 
-// Shell widget — handles async loading
+// Shell widget — prefers the contract passed via router extra (common path
+// from L2), falls back to `purchaseContractByIdProvider` only on deep-link.
 class DirectPurchaseDetailScreen extends ConsumerWidget {
   const DirectPurchaseDetailScreen({
     super.key,
     required this.contractId,
     this.brandName,
+    this.contract,
   });
 
   final String contractId;
@@ -42,8 +44,16 @@ class DirectPurchaseDetailScreen extends ConsumerWidget {
   /// falls back to `brandByIdProvider(contract.brandId)`.
   final String? brandName;
 
+  /// Passed via router extra from L2 (normal path). When null, the shell
+  /// refetches via `purchaseContractByIdProvider` for deep-link entries.
+  final PurchaseContractData? contract;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = contract;
+    if (c != null) {
+      return _DirectPurchaseDetailContent(contract: c, brandName: brandName);
+    }
     final contractAsync = ref.watch(purchaseContractByIdProvider(contractId));
     return contractAsync.when(
       loading: () => const Scaffold(
@@ -54,9 +64,9 @@ class DirectPurchaseDetailScreen extends ConsumerWidget {
         backgroundColor: AppColors.background,
         body: SizedBox.shrink(),
       ),
-      data: (c) => c == null
+      data: (fetched) => fetched == null
           ? const Scaffold(backgroundColor: AppColors.background, body: SizedBox.shrink())
-          : _DirectPurchaseDetailContent(contract: c, brandName: brandName),
+          : _DirectPurchaseDetailContent(contract: fetched, brandName: brandName),
     );
   }
 }

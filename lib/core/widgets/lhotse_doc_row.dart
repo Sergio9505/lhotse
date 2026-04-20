@@ -11,6 +11,7 @@ class LhotseDocRow extends StatefulWidget {
     required this.name,
     required this.date,
     required this.icon,
+    this.subtitle,
     this.onTap,
     this.onDownload,
   });
@@ -18,6 +19,12 @@ class LhotseDocRow extends StatefulWidget {
   final String name;
   final String date;
   final IconData icon;
+
+  /// Optional context line (e.g. project / asset / offering) shown between
+  /// `name` and `date`. Used by the search screen to disambiguate docs like
+  /// "Memoria del proyecto" that would otherwise be meaningless out of
+  /// context.
+  final String? subtitle;
   final VoidCallback? onTap;
   final VoidCallback? onDownload;
 
@@ -27,6 +34,9 @@ class LhotseDocRow extends StatefulWidget {
 
 class _LhotseDocRowState extends State<LhotseDocRow> {
   bool _pressed = false;
+
+  bool get _hasSubtitle =>
+      widget.subtitle != null && widget.subtitle!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +64,21 @@ class _LhotseDocRowState extends State<LhotseDocRow> {
                       style: AppTypography.bodyMedium.copyWith(
                         color: AppColors.textPrimary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      widget.date,
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.accentMuted,
-                        letterSpacing: 0.8,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        _hasSubtitle
+                            ? '${widget.subtitle} · ${widget.date}'
+                            : widget.date,
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.accentMuted,
+                          letterSpacing: 0.8,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

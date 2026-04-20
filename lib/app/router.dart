@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/data/supabase_provider.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
 import '../features/brands/presentation/brand_detail_screen.dart';
 import '../features/brands/presentation/brands_screen.dart';
@@ -49,6 +50,8 @@ CustomTransitionPage<void> _fadePage({
 }
 
 abstract final class AppRoutes {
+  // Boot
+  static const splash = '/splash';
   // Auth
   static const welcome = '/welcome';
   static const login = '/login';
@@ -83,6 +86,11 @@ const _kAuthRoutes = {
   AppRoutes.login,
 };
 
+/// Routes that bypass the auth redirect (splash decides destination itself).
+const _kBootRoutes = {
+  AppRoutes.splash,
+};
+
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -94,9 +102,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.splash,
     refreshListenable: authNotifier,
     redirect: (context, state) {
+      // Splash handles its own navigation after warm-up; skip guard.
+      if (_kBootRoutes.contains(state.matchedLocation)) return null;
+
       final authValue = authNotifier.value;
 
       // Still loading session — don't redirect yet
@@ -110,6 +121,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      // ── Boot ──
+      GoRoute(
+        path: AppRoutes.splash,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: SplashScreen(),
+        ),
+      ),
       // ── Auth routes (outside shell — no bottom nav) ──
       GoRoute(
         path: AppRoutes.welcome,
@@ -228,12 +246,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(
               path: AppRoutes.purchaseDetail,
               pageBuilder: (context, state) {
-                final extra = state.extra as ({String brandName})?;
+                final extra = state.extra as ({
+                  PurchaseContractData contract,
+                  String brandName,
+                })?;
                 return _fadePage(
                   key: state.pageKey,
                   child: DirectPurchaseDetailScreen(
                     contractId: state.pathParameters['id']!,
                     brandName: extra?.brandName,
+                    contract: extra?.contract,
                   ),
                 );
               },

@@ -32,20 +32,18 @@ final purchaseContractsProvider =
       .toList();
 });
 
-const _kPurchaseListSelect =
-    'id, brand_id, asset_id, '
-    'purchase_value, sold_date, status, is_completed, '
-    'asset_name, asset_location, asset_thumbnail_image';
-
 final brandPurchaseContractsProvider =
     FutureProvider.family<List<PurchaseContractData>, String>(
         (ref, brandId) async {
   final userId = ref.watch(currentUserIdProvider).valueOrNull;
   if (userId == null) return [];
+  // Full select: the L2 row uses a subset, but the contract is handed off to
+  // the L3 `DirectPurchaseDetailScreen` via router extra (no refetch), so
+  // the list must carry every field L3 renders (monthly_rent, yield, etc.).
   final data = await ref
       .watch(supabaseClientProvider)
       .from('user_direct_purchases')
-      .select(_kPurchaseListSelect)
+      .select()
       .eq('brand_id', brandId);
   return (data as List<dynamic>)
       .map((e) => PurchaseContractData.fromJson(e as Map<String, dynamic>))
