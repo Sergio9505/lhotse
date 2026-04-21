@@ -37,7 +37,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   static const _placeholderLottieUrl =
       'https://raw.githubusercontent.com/xvrh/lottie-flutter/master/example/assets/Logo/LogoSmall.json';
 
-  static const _minSplashDuration = Duration(milliseconds: 1500);
+  static const _minSplashDuration = Duration(milliseconds: 3000);
   static const _warmUpTimeout = Duration(seconds: 5);
 
   @override
