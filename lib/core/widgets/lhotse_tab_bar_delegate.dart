@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'lhotse_filter_tab.dart';
 
 const _kTabBarHeight = 49.0;
 
-/// Shared pinned tab bar delegate for investment detail screens.
-/// Fill alignment, full-width indicator, consistent typography.
+/// Shared pinned tab bar delegate for investment detail screens. Renders the
+/// tabs as **full-width peer-equal** `LhotseFilterTab(fullWidth: true)` cells
+/// driven by the given [TabController]. Fintech-premium pattern (Apple
+/// Wallet, Revolut, BBVA Premium) — each tab gets an equal cell and the
+/// active underline spans its full width, giving a clear "this section is
+/// active" signal.
 class LhotseTabBarDelegate extends SliverPersistentHeaderDelegate {
   const LhotseTabBarDelegate({
     required this.controller,
     required this.tabs,
-    this.labelPadding = const EdgeInsets.symmetric(horizontal: 4),
   });
 
   final TabController controller;
   final List<Tab> tabs;
-  final EdgeInsetsGeometry labelPadding;
 
   @override
   double get minExtent => _kTabBarHeight;
@@ -27,43 +30,31 @@ class LhotseTabBarDelegate extends SliverPersistentHeaderDelegate {
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: AppColors.background,
-      child: Column(
-        children: [
-          Expanded(
-            child: TabBar(
-              controller: controller,
-              tabAlignment: TabAlignment.fill,
-              isScrollable: false,
-              labelPadding: labelPadding,
-              labelStyle: AppTypography.labelLarge.copyWith(
-                letterSpacing: 1.5,
-              ),
-              unselectedLabelStyle: AppTypography.labelLarge.copyWith(
-                fontWeight: FontWeight.w400,
-                letterSpacing: 1.5,
-              ),
-              labelColor: AppColors.textPrimary,
-              unselectedLabelColor: AppColors.accentMuted,
-              indicator: const UnderlineTabIndicator(
-                borderSide:
-                    BorderSide(width: 1.5, color: AppColors.textPrimary),
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              overlayColor: WidgetStateProperty.all(Colors.transparent),
-              tabs: tabs,
-            ),
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (_, _) => Padding(
+          // Respect the content column — underlines align with the rest of
+          // the screen (title, metrics, lists all sit at lg from the edge).
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Row(
+            children: [
+              for (int i = 0; i < tabs.length; i++)
+                Expanded(
+                  child: LhotseFilterTab(
+                    label: tabs[i].text ?? '',
+                    isActive: controller.index == i,
+                    onTap: () => controller.animateTo(i),
+                    fullWidth: true,
+                  ),
+                ),
+            ],
           ),
-          Container(
-            height: 0.5,
-            color: AppColors.textPrimary.withValues(alpha: 0.08),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   @override
   bool shouldRebuild(covariant LhotseTabBarDelegate oldDelegate) =>
-      controller != oldDelegate.controller;
+      controller != oldDelegate.controller || tabs != oldDelegate.tabs;
 }

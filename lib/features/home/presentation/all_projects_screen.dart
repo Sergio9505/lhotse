@@ -135,6 +135,7 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
                   AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
               child: LhotseSearchField(
                 controller: _searchController,
+                hint: 'Buscar proyectos, marcas, ubicaciones...',
                 autofocus: true,
                 onChanged: (v) => setState(() => _searchQuery = v),
                 onClose: () => _toggleTool(_ActiveTool.search),
@@ -147,7 +148,6 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
                 brands: brands,
                 selectedBrands: _selectedBrands,
                 onBrandTap: _toggleBrand,
-                onClear: () => setState(() => _selectedBrands.clear()),
               ),
             ),
 

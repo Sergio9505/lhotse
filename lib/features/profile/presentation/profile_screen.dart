@@ -46,14 +46,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: Column(
           children: [
             // Header
-            LhotseShellHeader(
-              child: Text(
-                'PERFIL',
-                style: AppTypography.headingLarge.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
+            const LhotseShellHeader(),
 
             const SizedBox(height: AppSpacing.lg),
 

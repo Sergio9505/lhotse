@@ -9,8 +9,9 @@ import '../../../../core/data/supabase_provider.dart';
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/domain/user_role.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/search_utils.dart';
 import '../../../../core/widgets/lhotse_brand_filter_row.dart';
-import '../../../../core/widgets/lhotse_filter_tab.dart';
+import '../../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../../core/widgets/lhotse_search_field.dart';
 import '../../../home/presentation/widgets/project_card.dart';
 
@@ -58,45 +59,44 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
       result = result.where((p) => _selectedBrands.contains(p.brand)).toList();
     }
     if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      result = result
-          .where((p) =>
-              p.name.toLowerCase().contains(q) ||
-              p.brand.toLowerCase().contains(q) ||
-              p.location.toLowerCase().contains(q))
-          .toList();
+      final q = normalizeForSearch(_searchQuery);
+      result = result.where((p) {
+        final haystack = [
+          p.name,
+          p.brand,
+          p.architect,
+          p.city,
+          p.country,
+          p.tagline,
+          p.description,
+        ].map(normalizeForSearch).join(' ');
+        return haystack.contains(q);
+      }).toList();
     }
     return result;
   }
 
-  void _toggleStatus(_StatusFilter status) {
-    setState(() {
-      _selectedStatus = _selectedStatus == status ? null : status;
-    });
+  void _setStatus(_StatusFilter? status) {
+    setState(() => _selectedStatus = status);
   }
 
   void _toggleTool(_ActiveTool tool) {
     setState(() {
-      if (_activeTool == tool) {
-        _activeTool = _ActiveTool.none;
-      } else {
-        _activeTool = tool;
-        if (tool == _ActiveTool.brands) {
-          _searchQuery = '';
-          _searchController.clear();
-        } else {
-          _selectedBrands.clear();
-        }
-      }
+      _activeTool = _activeTool == tool ? _ActiveTool.none : tool;
     });
   }
 
   void _toggleBrand(String brandName) {
+    // Single-select: tap the already-selected brand clears; tap a different
+    // brand replaces. Users browse brand-by-brand rather than compare several
+    // catalogs at once.
     setState(() {
       if (_selectedBrands.contains(brandName)) {
-        _selectedBrands.remove(brandName);
+        _selectedBrands.clear();
       } else {
-        _selectedBrands.add(brandName);
+        _selectedBrands
+          ..clear()
+          ..add(brandName);
       }
     });
   }
@@ -116,19 +116,33 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
           selectedStatus: _selectedStatus,
           activeTool: _activeTool,
           hasBrandSelection: _selectedBrands.isNotEmpty,
-          onStatusTap: _toggleStatus,
+          onStatusTap: _setStatus,
           onBrandsTap: () => _toggleTool(_ActiveTool.brands),
           onSearchTap: () => _toggleTool(_ActiveTool.search),
         ),
+        // Both reveals share the same 52px height + md bottom padding so
+        // toggling between stack and magnifier never causes a layout jump.
         if (_activeTool == _ActiveTool.search)
           Padding(
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-            child: LhotseSearchField(
-              controller: _searchController,
-              autofocus: true,
-              onChanged: (v) => setState(() => _searchQuery = v),
-              onClose: () => _toggleTool(_ActiveTool.search),
+            child: SizedBox(
+              height: 52,
+              child: Center(
+                child: LhotseSearchField(
+                  controller: _searchController,
+                  hint: 'Buscar proyectos, marcas, ubicaciones...',
+                  autofocus: true,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  onClose: () {
+                    setState(() {
+                      _searchQuery = '';
+                      _searchController.clear();
+                      _activeTool = _ActiveTool.none;
+                    });
+                  },
+                ),
+              ),
             ),
           )
         else if (_activeTool == _ActiveTool.brands)
@@ -138,7 +152,6 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
               brands: brands,
               selectedBrands: _selectedBrands,
               onBrandTap: _toggleBrand,
-              onClear: () => setState(() => _selectedBrands.clear()),
             ),
           ),
         Expanded(
@@ -180,14 +193,9 @@ class _FilterBar extends StatelessWidget {
   final _StatusFilter? selectedStatus;
   final _ActiveTool activeTool;
   final bool hasBrandSelection;
-  final ValueChanged<_StatusFilter> onStatusTap;
+  final ValueChanged<_StatusFilter?> onStatusTap;
   final VoidCallback onBrandsTap;
   final VoidCallback onSearchTap;
-
-  static const _statusFilters = [
-    (status: _StatusFilter.construction, label: 'EN DESARROLLO'),
-    (status: _StatusFilter.exited, label: 'FINALIZADOS'),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -197,20 +205,22 @@ class _FilterBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: List.generate(_statusFilters.length, (i) {
-              final filter = _statusFilters[i];
-              return Padding(
-                padding: EdgeInsets.only(
-                    right:
-                        i < _statusFilters.length - 1 ? AppSpacing.lg : 0),
-                child: LhotseFilterTab(
-                  label: filter.label,
-                  isActive: selectedStatus == filter.status,
-                  onTap: () => onStatusTap(filter.status),
-                ),
-              );
-            }),
+          LhotseFilterChip(
+            label: 'TODOS',
+            isActive: selectedStatus == null,
+            onTap: () => onStatusTap(null),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          LhotseFilterChip(
+            label: 'EN DESARROLLO',
+            isActive: selectedStatus == _StatusFilter.construction,
+            onTap: () => onStatusTap(_StatusFilter.construction),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          LhotseFilterChip(
+            label: 'FINALIZADOS',
+            isActive: selectedStatus == _StatusFilter.exited,
+            onTap: () => onStatusTap(_StatusFilter.exited),
           ),
           const Spacer(),
           Container(width: 1, height: 16, color: AppColors.border),

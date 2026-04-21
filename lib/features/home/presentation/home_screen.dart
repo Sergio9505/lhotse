@@ -88,9 +88,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           // Floating Lhotse mark — branding anchor on the immersive feed.
           // Positioned outside the PageView so it stays put while cards swap.
+          // Top-left to match the app-wide rule (logo left, action right).
           Positioned(
             top: mq.padding.top + 12,
-            right: 16,
+            left: 16,
             child: const LhotseMark(
               color: AppColors.textOnDark,
               height: 22,

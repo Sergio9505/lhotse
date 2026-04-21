@@ -191,6 +191,7 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
                   AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
               child: LhotseSearchField(
                 controller: _searchController,
+                hint: 'Buscar noticias, firmas, regiones...',
                 autofocus: true,
                 onChanged: (v) => setState(() => _searchQuery = v),
                 onClose: () => _toggleTool(_ActiveTool.buscar),
@@ -203,7 +204,6 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
                 brands: newsFilterBrands,
                 selectedBrands: _selectedBrands,
                 onBrandTap: _toggleBrand,
-                onClear: () => setState(() => _selectedBrands.clear()),
               ),
             )
           else if (_activeTool == _ActiveTool.region)

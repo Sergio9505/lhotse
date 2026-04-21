@@ -7,8 +7,9 @@ import '../../../../core/data/brands_provider.dart';
 import '../../../../core/data/news_provider.dart';
 import '../../../../core/domain/news_item_data.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/search_utils.dart';
 import '../../../../core/widgets/lhotse_brand_filter_row.dart';
-import '../../../../core/widgets/lhotse_filter_tab.dart';
+import '../../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../../core/widgets/lhotse_news_card.dart';
 import '../../../../core/widgets/lhotse_search_field.dart';
 
@@ -54,46 +55,41 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
           .toList();
     }
     if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      result = result
-          .where((n) =>
-              n.title.toLowerCase().contains(q) ||
-              (n.brand ?? '').toLowerCase().contains(q) ||
-              (n.subtitle ?? '').toLowerCase().contains(q))
-          .toList();
+      final q = normalizeForSearch(_searchQuery);
+      result = result.where((n) {
+        final haystack = [
+          n.title,
+          n.brand,
+          n.subtitle,
+          n.body,
+          n.region,
+        ].map(normalizeForSearch).join(' ');
+        return haystack.contains(q);
+      }).toList();
     }
     return result;
   }
 
-  void _toggleType(NewsType type) {
-    setState(() {
-      _activeType = _activeType == type ? null : type;
-    });
+  void _setType(NewsType? type) {
+    setState(() => _activeType = type);
   }
 
   void _toggleTool(_ActiveTool tool) {
     setState(() {
-      if (_activeTool == tool) {
-        _activeTool = _ActiveTool.none;
-      } else {
-        _activeTool = tool;
-        if (tool == _ActiveTool.buscar) {
-          _selectedBrands.clear();
-          _selectedRegions.clear();
-        } else {
-          _searchQuery = '';
-          _searchController.clear();
-        }
-      }
+      _activeTool = _activeTool == tool ? _ActiveTool.none : tool;
     });
   }
 
   void _toggleBrand(String brand) {
+    // Single-select: tapping another brand replaces the selection. Matches
+    // the projects archive for consistency across the catalog.
     setState(() {
       if (_selectedBrands.contains(brand)) {
-        _selectedBrands.remove(brand);
+        _selectedBrands.clear();
       } else {
-        _selectedBrands.add(brand);
+        _selectedBrands
+          ..clear()
+          ..add(brand);
       }
     });
   }
@@ -134,16 +130,22 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              LhotseFilterTab(
+              LhotseFilterChip(
+                label: 'TODAS',
+                isActive: _activeType == null,
+                onTap: () => _setType(null),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              LhotseFilterChip(
                 label: 'PROYECTOS',
                 isActive: _activeType == NewsType.project,
-                onTap: () => _toggleType(NewsType.project),
+                onTap: () => _setType(NewsType.project),
               ),
-              const SizedBox(width: AppSpacing.lg),
-              LhotseFilterTab(
+              const SizedBox(width: AppSpacing.sm),
+              LhotseFilterChip(
                 label: 'PRENSA',
                 isActive: _activeType == NewsType.press,
-                onTap: () => _toggleType(NewsType.press),
+                onTap: () => _setType(NewsType.press),
               ),
               const Spacer(),
               Container(width: 1, height: 16, color: AppColors.border),
@@ -177,15 +179,29 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
             ],
           ),
         ),
+        // Todos los reveals comparten altura (52 + md bottom) para evitar
+        // saltos de layout al toggle entre stack/mapPin/magnifier.
         if (_activeTool == _ActiveTool.buscar)
           Padding(
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-            child: LhotseSearchField(
-              controller: _searchController,
-              autofocus: true,
-              onChanged: (v) => setState(() => _searchQuery = v),
-              onClose: () => _toggleTool(_ActiveTool.buscar),
+            child: SizedBox(
+              height: 52,
+              child: Center(
+                child: LhotseSearchField(
+                  controller: _searchController,
+                  hint: 'Buscar noticias, firmas, regiones...',
+                  autofocus: true,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  onClose: () {
+                    setState(() {
+                      _searchQuery = '';
+                      _searchController.clear();
+                      _activeTool = _ActiveTool.none;
+                    });
+                  },
+                ),
+              ),
             ),
           )
         else if (_activeTool == _ActiveTool.firma)
@@ -195,7 +211,6 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
               brands: newsFilterBrands,
               selectedBrands: _selectedBrands,
               onBrandTap: _toggleBrand,
-              onClear: () => setState(() => _selectedBrands.clear()),
             ),
           )
         else if (_activeTool == _ActiveTool.region)
@@ -319,7 +334,7 @@ class _RegionFilterRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasSelection = selectedRegions.isNotEmpty;
     return SizedBox(
-      height: 72,
+      height: 52,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Row(
@@ -339,15 +354,15 @@ class _RegionFilterRow extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SizedBox(
-                          height: 32,
+                          height: 22,
                           child: Center(
                             child: Text(
                               _regionFlags[region] ?? '📍',
-                              style: const TextStyle(fontSize: 22),
+                              style: const TextStyle(fontSize: 18),
                             ),
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.xs),
+                        const SizedBox(height: 2),
                         Text(
                           region.toUpperCase(),
                           style: AppTypography.captionSmall.copyWith(
@@ -368,14 +383,14 @@ class _RegionFilterRow extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(
-                      height: 32,
+                      height: 22,
                       child: PhosphorIcon(
                         PhosphorIconsThin.x,
-                        size: 16,
+                        size: 14,
                         color: AppColors.accentMuted,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: 2),
                     Text(
                       'LIMPIAR',
                       style: AppTypography.captionSmall.copyWith(

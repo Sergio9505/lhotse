@@ -210,49 +210,63 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
               ),
             ),
           ),
+          // Amount sits below the chrome (logo + bell). Alignment interpolates
+          // from bottom-left (expanded, editorial) to center (collapsed,
+          // pinned in the bar) matching the L2/L3 collapsing-hero pattern.
           Positioned(
-            bottom: AppSpacing.md,
+            top: topPadding + 44 + AppSpacing.md,
             left: AppSpacing.lg,
-            right: AppSpacing.lg + 44,
-            child: RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: totalFormatted,
-                    style: TextStyle(
-                      fontFamily: 'Campton',
-                      fontSize: amountSize,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textOnDark,
-                      letterSpacing: -1.2,
-                      height: 1.0,
-                      fontFeatures: const [FontFeature.tabularFigures()],
+            right: AppSpacing.lg,
+            bottom: AppSpacing.md,
+            child: Align(
+              alignment: Alignment.lerp(
+                Alignment.center,
+                Alignment.bottomLeft,
+                expandRatio,
+              )!,
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: totalFormatted,
+                      style: TextStyle(
+                        fontFamily: 'Campton',
+                        fontSize: amountSize,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textOnDark,
+                        letterSpacing: -1.2,
+                        height: 1.0,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: '€',
-                    style: TextStyle(
-                      fontFamily: 'Campton',
-                      fontSize: euroSize,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.textOnDark,
-                      letterSpacing: -0.5,
+                    TextSpan(
+                      text: '€',
+                      style: TextStyle(
+                        fontFamily: 'Campton',
+                        fontSize: euroSize,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textOnDark,
+                        letterSpacing: -0.5,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
           Positioned(
             top: topPadding + 16,
+            left: AppSpacing.lg,
+            child: const LhotseMark(
+              color: AppColors.textOnDark,
+              height: 20,
+            ),
+          ),
+          Positioned(
+            top: topPadding + 16,
             right: AppSpacing.md,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                LhotseMark(color: AppColors.textOnDark, height: 20),
-                SizedBox(width: AppSpacing.sm),
-                LhotseNotificationBell(color: AppColors.textOnDark),
-              ],
+            child: const LhotseNotificationBell(
+              color: AppColors.textOnDark,
             ),
           ),
         ],

@@ -15,9 +15,9 @@ import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/document_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/search_utils.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
-import '../../../core/widgets/lhotse_filter_tab.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
@@ -25,13 +25,10 @@ import '../../investments/data/investments_provider.dart';
 import '../../investments/domain/coinvestment_contract_data.dart';
 import '../../investments/domain/fixed_income_contract_data.dart';
 import '../../investments/domain/purchase_contract_data.dart';
-import 'widgets/news_archive_body.dart';
-import 'widgets/projects_archive_body.dart';
 
-/// Dual-mode Search tab. When the query field is empty, Search acts as a
-/// browseable archive (catalog of projects + archive of news) — this replaces
-/// the old "PROYECTOS ↗" and "NOTICIAS ↗" headers from the Home tab. When the
-/// user types, Search conmutes to cross-entity text results.
+/// Search tab — pure text search across brands, projects, assets and the
+/// user's documents. Idle state shows trending tags, recent searches, and
+/// featured VIP projects. Catalog/news browsing lives in the Firmas tab.
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
@@ -39,12 +36,18 @@ class SearchScreen extends ConsumerStatefulWidget {
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-enum _IdleTab { projects, news }
-
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchController = TextEditingController();
   String _query = '';
-  _IdleTab _idleTab = _IdleTab.projects;
+  final List<String> _recentSearches = [];
+
+  static const _trendingTags = [
+    'Madrid Centro',
+    'Dubai',
+    'Vellte',
+    'Residencial',
+    'Marbella',
+  ];
 
   @override
   void dispose() {
@@ -54,43 +57,43 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   List<ProjectData> _searchProjects(List<ProjectData> projects) {
     if (_query.isEmpty) return [];
-    final q = _query.toLowerCase();
-    return projects
-        .where((p) =>
-            p.name.toLowerCase().contains(q) ||
-            p.brand.toLowerCase().contains(q) ||
-            p.location.toLowerCase().contains(q) ||
-            p.architect.toLowerCase().contains(q))
-        .toList();
+    final q = normalizeForSearch(_query);
+    return projects.where((p) {
+      final haystack = [p.name, p.brand, p.location, p.architect]
+          .map(normalizeForSearch)
+          .join(' ');
+      return haystack.contains(q);
+    }).toList();
   }
 
   List<BrandData> _searchBrands(List<BrandData> brands) {
     if (_query.isEmpty) return [];
-    final q = _query.toLowerCase();
-    return brands
-        .where((b) =>
-            b.name.toLowerCase().contains(q) ||
-            (b.tagline?.toLowerCase().contains(q) ?? false) ||
-            (b.description?.toLowerCase().contains(q) ?? false))
-        .toList();
+    final q = normalizeForSearch(_query);
+    return brands.where((b) {
+      final haystack = [b.name, b.tagline, b.description]
+          .map(normalizeForSearch)
+          .join(' ');
+      return haystack.contains(q);
+    }).toList();
   }
 
   List<AssetData> _searchAssets(List<AssetData> assets) {
     if (_query.isEmpty) return [];
-    final q = _query.toLowerCase();
-    return assets
-        .where((a) =>
-            (a.address?.toLowerCase().contains(q) ?? false) ||
-            (a.city?.toLowerCase().contains(q) ?? false) ||
-            (a.country?.toLowerCase().contains(q) ?? false) ||
-            (a.cadastralReference?.toLowerCase().contains(q) ?? false))
-        .toList();
+    final q = normalizeForSearch(_query);
+    return assets.where((a) {
+      final haystack = [a.address, a.city, a.country, a.cadastralReference]
+          .map(normalizeForSearch)
+          .join(' ');
+      return haystack.contains(q);
+    }).toList();
   }
 
   List<DocumentData> _searchDocsDirect(List<DocumentData> docs) {
     if (_query.isEmpty) return [];
-    final q = _query.toLowerCase();
-    return docs.where((d) => d.name.toLowerCase().contains(q)).toList();
+    final q = normalizeForSearch(_query);
+    return docs
+        .where((d) => normalizeForSearch(d.name).contains(q))
+        .toList();
   }
 
   List<DocumentData> _contextualDocs({
@@ -234,6 +237,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
+  void _onTagTap(String tag) {
+    _searchController.text = tag;
+    setState(() => _query = tag);
+    _addToRecent(tag);
+  }
+
+  void _addToRecent(String term) {
+    if (term.trim().isEmpty) return;
+    setState(() {
+      _recentSearches.remove(term);
+      _recentSearches.insert(0, term);
+      if (_recentSearches.length > 3) _recentSearches.removeLast();
+    });
+  }
+
   void _clearSearch() {
     _searchController.clear();
     setState(() => _query = '');
@@ -310,18 +328,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LhotseShellHeader(
-            child: Text(
-              'BUSCAR',
-              style: AppTypography.headingLarge.copyWith(
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
+          const LhotseShellHeader(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: LhotseSearchField(
               controller: _searchController,
+              hint: 'Buscar proyectos, marcas, ubicaciones...',
               onChanged: (v) => setState(() => _query = v),
               onClose: hasQuery ? _clearSearch : null,
             ),
@@ -337,17 +349,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     docSubtitles: docSubtitles,
                     categories: categories,
                     query: _query,
-                    onDocTap: (doc) => _openDoc(
-                      context,
-                      doc,
-                      purchaseContracts: purchaseContracts,
-                      coinvestmentContracts: coinvestmentContracts,
-                      fixedIncomeContracts: fixedIncomeContracts,
-                    ),
+                    onResultTap: () => _addToRecent(_query),
+                    onDocTap: (doc) {
+                      _addToRecent(_query);
+                      _openDoc(
+                        context,
+                        doc,
+                        purchaseContracts: purchaseContracts,
+                        coinvestmentContracts: coinvestmentContracts,
+                        fixedIncomeContracts: fixedIncomeContracts,
+                      );
+                    },
                   )
                 : _IdleContent(
-                    tab: _idleTab,
-                    onTabChanged: (t) => setState(() => _idleTab = t),
+                    recentSearches: _recentSearches,
+                    featuredProjects:
+                        projects.where((p) => p.isVip).take(3).toList(),
+                    onTagTap: _onTagTap,
+                    trendingTags: _trendingTags,
                   ),
           ),
         ],
@@ -356,47 +375,208 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 }
 
-// ── Idle state (archive-as-home) ─────────────────────────────────────────────
+// ── Idle state ───────────────────────────────────────────────────────────────
 
 class _IdleContent extends StatelessWidget {
   const _IdleContent({
-    required this.tab,
-    required this.onTabChanged,
+    required this.recentSearches,
+    required this.featuredProjects,
+    required this.onTagTap,
+    required this.trendingTags,
   });
 
-  final _IdleTab tab;
-  final ValueChanged<_IdleTab> onTabChanged;
+  final List<String> recentSearches;
+  final List<ProjectData> featuredProjects;
+  final ValueChanged<String> onTagTap;
+  final List<String> trendingTags;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return ListView(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-          child: Row(
+        if (recentSearches.isNotEmpty) ...[
+          _TagSection(
+            title: 'RECIENTES',
+            tags: recentSearches,
+            onTap: onTagTap,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+        _TagSection(
+          title: 'TENDENCIAS',
+          tags: trendingTags,
+          onTap: onTagTap,
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        _FeaturedSection(projects: featuredProjects),
+      ],
+    );
+  }
+}
+
+class _TagSection extends StatelessWidget {
+  const _TagSection({
+    required this.title,
+    required this.tags,
+    required this.onTap,
+  });
+
+  final String title;
+  final List<String> tags;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTypography.labelLarge.copyWith(
+              color: AppColors.textPrimary,
+              letterSpacing: 1.8,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: tags
+                .map((tag) => _TrendingChip(label: tag, onTap: () => onTap(tag)))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrendingChip extends StatelessWidget {
+  const _TrendingChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: AppColors.textPrimary.withValues(alpha: 0.1),
+            width: 0.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.bodySmall.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeaturedSection extends StatelessWidget {
+  const _FeaturedSection({required this.projects});
+
+  final List<ProjectData> projects;
+
+  @override
+  Widget build(BuildContext context) {
+    if (projects.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'DESTACADOS',
+            style: AppTypography.labelLarge.copyWith(
+              color: AppColors.textPrimary,
+              letterSpacing: 1.8,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          for (int i = 0; i < projects.length; i++) ...[
+            _FeaturedCard(project: projects[i]),
+            if (i < projects.length - 1) const SizedBox(height: AppSpacing.md),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FeaturedCard extends StatelessWidget {
+  const _FeaturedCard({required this.project});
+
+  final ProjectData project;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/projects/${project.id}'),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 200,
+            width: double.infinity,
+            child: LhotseImage(project.imageUrl),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            project.name.toUpperCase(),
+            style: AppTypography.headingSmall.copyWith(
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
             children: [
-              LhotseFilterTab(
-                label: 'CATÁLOGO',
-                isActive: tab == _IdleTab.projects,
-                onTap: () => onTabChanged(_IdleTab.projects),
+              Text(
+                project.brand.toUpperCase(),
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.5,
+                ),
               ),
-              const SizedBox(width: AppSpacing.lg),
-              LhotseFilterTab(
-                label: 'NOTICIAS',
-                isActive: tab == _IdleTab.news,
-                onTap: () => onTabChanged(_IdleTab.news),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  '·',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textPrimary.withValues(alpha: 0.4),
+                  ),
+                ),
+              ),
+              Flexible(
+                child: Text(
+                  project.location.toUpperCase(),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.accentMuted,
+                    letterSpacing: 1.2,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
-        ),
-        Expanded(
-          child: switch (tab) {
-            _IdleTab.projects => const ProjectsArchiveBody(),
-            _IdleTab.news => const NewsArchiveBody(),
-          },
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -412,6 +592,7 @@ class _SearchResults extends StatelessWidget {
     required this.docSubtitles,
     required this.categories,
     required this.query,
+    this.onResultTap,
     this.onDocTap,
   });
 
@@ -422,6 +603,7 @@ class _SearchResults extends StatelessWidget {
   final Map<String, String> docSubtitles;
   final List<dynamic> categories;
   final String query;
+  final VoidCallback? onResultTap;
   final ValueChanged<DocumentData>? onDocTap;
 
   @override
@@ -443,20 +625,22 @@ class _SearchResults extends StatelessWidget {
         if (brandResults.isNotEmpty) ...[
           const _SectionLabel('FIRMAS'),
           const SizedBox(height: AppSpacing.md),
-          ...brandResults.map((brand) => _BrandResultItem(brand: brand)),
+          ...brandResults.map((brand) =>
+              _BrandResultItem(brand: brand, onTap: onResultTap)),
           const SizedBox(height: AppSpacing.xl),
         ],
         if (projectResults.isNotEmpty) ...[
           const _SectionLabel('PROYECTOS'),
           const SizedBox(height: AppSpacing.md),
-          ...projectResults
-              .map((project) => _ProjectResultItem(project: project)),
+          ...projectResults.map((project) =>
+              _ProjectResultItem(project: project, onTap: onResultTap)),
           const SizedBox(height: AppSpacing.xl),
         ],
         if (assetResults.isNotEmpty) ...[
           const _SectionLabel('ACTIVOS'),
           const SizedBox(height: AppSpacing.md),
-          ...assetResults.map((asset) => _AssetResultItem(asset: asset)),
+          ...assetResults.map((asset) =>
+              _AssetResultItem(asset: asset, onTap: onResultTap)),
           const SizedBox(height: AppSpacing.xl),
         ],
         if (docResults.isNotEmpty) ...[
@@ -517,8 +701,10 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _AssetResultItem extends StatelessWidget {
-  const _AssetResultItem({required this.asset});
+  const _AssetResultItem({required this.asset, this.onTap});
+
   final AssetData asset;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -579,8 +765,10 @@ class _AssetResultItem extends StatelessWidget {
 }
 
 class _BrandResultItem extends StatelessWidget {
-  const _BrandResultItem({required this.brand});
+  const _BrandResultItem({required this.brand, this.onTap});
+
   final BrandData brand;
+  final VoidCallback? onTap;
 
   static const _filter =
       ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn);
@@ -589,7 +777,10 @@ class _BrandResultItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final logo = brand.logoAsset;
     return GestureDetector(
-      onTap: () => context.push('/brands/${brand.id}'),
+      onTap: () {
+        onTap?.call();
+        context.push('/brands/${brand.id}');
+      },
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -640,13 +831,18 @@ class _BrandResultItem extends StatelessWidget {
 }
 
 class _ProjectResultItem extends StatelessWidget {
-  const _ProjectResultItem({required this.project});
+  const _ProjectResultItem({required this.project, this.onTap});
+
   final ProjectData project;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/projects/${project.id}'),
+      onTap: () {
+        onTap?.call();
+        context.push('/projects/${project.id}');
+      },
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(

@@ -7,7 +7,7 @@ class LhotseSearchField extends StatelessWidget {
   const LhotseSearchField({
     super.key,
     required this.controller,
-    this.hint = 'Buscar proyectos, marcas, ubicaciones...',
+    this.hint = 'Buscar...',
     this.onChanged,
     this.onClose,
     this.autofocus = false,
