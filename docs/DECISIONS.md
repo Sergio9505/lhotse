@@ -1233,3 +1233,55 @@ Tabs are compositional: a project with `is_fundraising_open=true ∧ phase='cons
 **Not in scope:** An "EN VENTA" state for the post-construction/pre-exit window. If that window ever becomes long enough to warrant its own UX, add a 4th phase value (not a separate boolean) and extend the CHECK.
 
 **Follow-up (2026-04-20):** AllProjects and Strategy → Oportunidades split by intent. AllProjects is the portfolio catalogue (`phase IN ('construction','exited')` only); `user_opportunities` view tightened with `WHERE is_fundraising_open = true` so only open deals surface as opportunities. Rationale: different user mental models (browsing what exists vs. discovering what can be joined). Migration: `docs/sql/migrations/20260420191513_user_opportunities_only_fundraising.sql`.
+
+---
+
+## ADR-48: Home Feed — Nike SNKRS-Style Vertical (Zara Visual Language)
+
+**Date:** 2026-04-21
+**Status:** Accepted
+
+**Context:** The original Home tab was an editorial portal (auto-scroll carousel of featured projects + horizontal news row + section stubs). Client asked for a Nike SNKRS-style immersive feed: one content unit per viewport, vertical scroll, mixed formats including video.
+
+**Decision:** Rebuild Home as a vertical feed of full-viewport cards. Interaction model inspired by Nike; visual language stays Zara/editorial (beige caption below pure image, no dark scrim, no text-over-image). Each card = media block (~65% — image or muted autoplay video, pauses when off-screen) + beige caption (~35% — title headingLarge, brand·location·date, textual CTA). Sealed class `FeedItem` with variants `projectHero`, `news`, `opportunity`, `brandSpotlight`. `homeFeedProvider` composes client-side from existing providers with a fixed recipe.
+
+**Rationale for the Zara/editorial hybrid over Nike cinematographic:**
+- Lhotse audience is wealth-management clients (45+, high-consideration decisions). Nike's cinematic text-over-image + FOMO tone clashes with the serious, patient positioning of real estate investment.
+- The rest of the app already uses image-pure + text-below-on-beige (ProjectCard, LhotseNewsCard, BrandDetail). Keeping the visual language coherent avoids turning Home into a stylistic island.
+- The interaction shift (one unit per viewport, vertical feed, mixed formats) captures the Nike immersion without importing the visual grammar that would clash with the rest of the app.
+
+**Rationale for no kickers / no haptics / no progress indicator:**
+- Kickers (labels like `DESTACADO`, `NOTICIA`) are training wheels; in a sophisticated editorial system the content identifies itself (a real-estate photo is a project, an editorial portrait is news).
+- Haptics on tap feel gamified. Premium private-banking apps reserve them for transactional confirmations — Lhotse will follow the same rule when confirmation flows appear.
+- Progress indicators (side rails, bars) are decorative chrome; a serious audience reads position from content, not UI.
+
+**Rationale for archive entries in Search idle:**
+- AllProjects and AllNews had their only visible entries on the Home header/section ("PROYECTOS ↗", "NOTICIAS ↗"). The feed absorbs those signals but doesn't replace them.
+- Rather than cluttering the feed with "see all" cards, archive browsing moves to the Search tab's idle state (tabs `CATÁLOGO · NOTICIAS`, each rendering the archive body). Philosophy: "when you search, you search; when idle, you browse inventory" (Google Flights, Airbnb).
+- Routes `/projects` and `/news` stay alive for deeplinks. Screens `AllProjectsScreen` and `AllNewsScreen` continue to exist for those paths; archive bodies extracted as reusable widgets so both the standalone screens and Search idle state share behavior.
+
+**Consequences:**
+- (+) Home is pure curated content; zero navigation chrome.
+- (+) Search gains a clear browsing surface beyond text search.
+- (+) Firmas stays untouched as "who we are", not muddled with cross-brand catalog.
+- (−) Lower information density on Home (1 item per viewport vs. ~10 signals per scroll in the old layout). Accepted because the client prioritizes the immersive moment over efficiency.
+- (−) Introduces `video_url` columns on `projects` and `news` that are mostly null in v1 — the feed falls back to image until branded videos are delivered.
+
+**Migrations:** `add_video_url_to_projects_and_news`, `add_video_url_to_user_opportunities_view`.
+
+**Anti-patterns considered and rejected:**
+- Kicker tappables (e.g., tapping `DESTACADO` jumping to `/projects`) — hidden patterns violate "obvious" principle.
+- Collection cards (`CATÁLOGO · 18 PROYECTOS` editorial tiles every 6 items) — felt like ads; one clear archive entry in Search is enough.
+- "Final card" ancla at the end of the feed — feed should end cleanly when content ends; archives live in Search, not in the feed itself.
+
+
+---
+
+## ADR-48: Home Feed — Nike SNKRS-Style Vertical (Zara Visual Language)
+
+**Date:** 2026-04-21
+**Status:** Accepted
+
+**Context:** The original Home tab was an editorial portal (auto-scroll carousel of featured projects + horizontal news row + section stubs). Client asked for a Nike SNKRS-style immersive feed: one content unit per viewport, vertical scroll, mixed formats including video.
+
+**Decision:** Rebuild Home as a vertical feed of full-viewport cards. Interaction model inspired by Nike; visual language stays Zara/editorial (beige caption below pure image, no dark scrim, no text-over-image). Each card = media block (~65

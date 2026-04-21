@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/widgets/lhotse_mark.dart';
 import '../../../core/widgets/lhotse_notification_bell.dart';
 import '../data/investments_provider.dart';
 import '../../../core/data/projects_provider.dart';
@@ -245,8 +246,13 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
           Positioned(
             top: topPadding + 16,
             right: AppSpacing.md,
-            child: const LhotseNotificationBell(
-              color: AppColors.textOnDark,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                LhotseMark(color: AppColors.textOnDark, height: 20),
+                SizedBox(width: AppSpacing.sm),
+                LhotseNotificationBell(color: AppColors.textOnDark),
+              ],
             ),
           ),
         ],

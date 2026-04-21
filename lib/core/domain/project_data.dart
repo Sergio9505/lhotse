@@ -25,6 +25,7 @@ class ProjectData {
     required this.city,
     required this.country,
     required this.imageUrl,
+    this.videoUrl,
     required this.tagline,
     required this.description,
     this.galleryImages = const [],
@@ -59,6 +60,7 @@ class ProjectData {
   final String city;
   final String country;
   final String imageUrl;
+  final String? videoUrl;
 
   String get location => '$city, $country';
 
@@ -111,6 +113,7 @@ class ProjectData {
       city: assets?['city'] as String? ?? '',
       country: assets?['country'] as String? ?? '',
       imageUrl: row['image_url'] as String,
+      videoUrl: row['video_url'] as String?,
       tagline: row['tagline'] as String? ?? '',
       description: row['description'] as String? ?? '',
       galleryImages: galleryRaw?.cast<String>() ?? [],
@@ -151,6 +154,7 @@ class ProjectData {
       city: row['city'] as String? ?? '',
       country: row['country'] as String? ?? '',
       imageUrl: row['image_url'] as String,
+      videoUrl: row['video_url'] as String?,
       tagline: '',
       description: '',
       isVip: row['is_vip'] as bool? ?? false,

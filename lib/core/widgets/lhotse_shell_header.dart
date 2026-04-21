@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'lhotse_mark.dart';
 import 'lhotse_notification_bell.dart';
 
-/// Reusable header for shell-level screens (Home, Brands, Search).
-/// Row with [child] on the left and notification bell on the right.
-/// Handles safe area padding automatically.
+/// Reusable header for shell-level screens (Brands, Search, Profile).
+/// Row with [child] on the left and the Lhotse mark + notification bell on
+/// the right. Handles safe area padding automatically.
 class LhotseShellHeader extends StatelessWidget {
   const LhotseShellHeader({super.key, required this.child});
 
@@ -32,6 +33,8 @@ class LhotseShellHeader extends StatelessWidget {
                 child: child,
               ),
             ),
+            const LhotseMark(color: AppColors.textPrimary, height: 20),
+            const SizedBox(width: AppSpacing.sm),
             const LhotseNotificationBell(),
           ],
         ),

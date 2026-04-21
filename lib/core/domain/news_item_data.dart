@@ -18,6 +18,7 @@ class NewsItemData {
     this.region,
     this.subtitle,
     required this.imageUrl,
+    this.videoUrl,
     required this.date,
     required this.type,
     this.hasPlayButton = false,
@@ -37,6 +38,7 @@ class NewsItemData {
   final String? region;
   final String? subtitle;
   final String imageUrl;
+  final String? videoUrl;
   final DateTime date;
   final NewsType type;
   final bool hasPlayButton;
@@ -53,6 +55,7 @@ class NewsItemData {
       region: row['region'] as String?,
       subtitle: row['subtitle'] as String?,
       imageUrl: row['image_url'] as String,
+      videoUrl: row['video_url'] as String?,
       date: DateTime.parse(row['date'] as String),
       type: NewsTypeX.fromString(row['type'] as String? ?? ''),
       hasPlayButton: row['has_play_button'] as bool? ?? false,
