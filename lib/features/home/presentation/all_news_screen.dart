@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/brands_provider.dart';
@@ -12,6 +13,7 @@ import '../../../core/widgets/lhotse_brand_filter_row.dart';
 import '../../../core/widgets/lhotse_filter_tab.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
+import '../../../core/widgets/scroll_aware_filter_bar.dart';
 
 enum _ActiveTool { none, firma, region, buscar }
 
@@ -29,10 +31,12 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
   final Set<String> _selectedRegions = {};
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -133,89 +137,96 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
         children: [
           const LhotseAppHeader(title: 'NOTICIAS'),
 
-          // Filter bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+          // Filter bar — collapses to a compact pill while scrolling,
+          // restores itself after ~2s of idle (premium reading-app UX).
+          ScrollAwareFilterBar(
+            scrollController: _scrollController,
+            expanded: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                LhotseFilterTab(
-                  label: 'PROYECTOS',
-                  isActive: _activeType == NewsType.project,
-                  onTap: () => _toggleType(NewsType.project),
-                ),
-                const SizedBox(width: AppSpacing.lg),
-                LhotseFilterTab(
-                  label: 'PRENSA',
-                  isActive: _activeType == NewsType.press,
-                  onTap: () => _toggleType(NewsType.press),
-                ),
-                const Spacer(),
-                Container(width: 1, height: 16, color: AppColors.border),
-                const SizedBox(width: AppSpacing.md),
-                _ToolIcon(
-                  icon: PhosphorIconsThin.stack,
-                  isActive: _activeTool == _ActiveTool.firma ||
-                      _selectedBrands.isNotEmpty,
-                  hasDot: _selectedBrands.isNotEmpty,
-                  onTap: () => _toggleTool(_ActiveTool.firma),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                _ToolIcon(
-                  icon: PhosphorIconsThin.mapPin,
-                  isActive: _activeTool == _ActiveTool.region ||
-                      _selectedRegions.isNotEmpty,
-                  hasDot: _selectedRegions.isNotEmpty,
-                  onTap: () => _toggleTool(_ActiveTool.region),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                GestureDetector(
-                  onTap: () => _toggleTool(_ActiveTool.buscar),
-                  child: PhosphorIcon(
-                    PhosphorIconsThin.magnifyingGlass,
-                    size: 18,
-                    color: _activeTool == _ActiveTool.buscar
-                        ? AppColors.textPrimary
-                        : AppColors.accentMuted,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      LhotseFilterTab(
+                        label: 'PROYECTOS',
+                        isActive: _activeType == NewsType.project,
+                        onTap: () => _toggleType(NewsType.project),
+                      ),
+                      const SizedBox(width: AppSpacing.lg),
+                      LhotseFilterTab(
+                        label: 'PRENSA',
+                        isActive: _activeType == NewsType.press,
+                        onTap: () => _toggleType(NewsType.press),
+                      ),
+                      const Spacer(),
+                      Container(width: 1, height: 16, color: AppColors.border),
+                      const SizedBox(width: AppSpacing.md),
+                      _ToolIcon(
+                        icon: PhosphorIconsThin.stack,
+                        isActive: _activeTool == _ActiveTool.firma ||
+                            _selectedBrands.isNotEmpty,
+                        hasDot: _selectedBrands.isNotEmpty,
+                        onTap: () => _toggleTool(_ActiveTool.firma),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      _ToolIcon(
+                        icon: PhosphorIconsThin.mapPin,
+                        isActive: _activeTool == _ActiveTool.region ||
+                            _selectedRegions.isNotEmpty,
+                        hasDot: _selectedRegions.isNotEmpty,
+                        onTap: () => _toggleTool(_ActiveTool.region),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      GestureDetector(
+                        onTap: () => _toggleTool(_ActiveTool.buscar),
+                        child: PhosphorIcon(
+                          PhosphorIconsThin.magnifyingGlass,
+                          size: 18,
+                          color: _activeTool == _ActiveTool.buscar
+                              ? AppColors.textPrimary
+                              : AppColors.accentMuted,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                if (_activeTool == _ActiveTool.buscar)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
+                    child: LhotseSearchField(
+                      controller: _searchController,
+                      hint: 'Buscar noticias, firmas, regiones...',
+                      autofocus: true,
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                      onClose: () => _toggleTool(_ActiveTool.buscar),
+                    ),
+                  )
+                else if (_activeTool == _ActiveTool.firma)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: LhotseBrandFilterRow(
+                      brands: newsFilterBrands,
+                      selectedBrands: _selectedBrands,
+                      onBrandTap: _toggleBrand,
+                    ),
+                  )
+                else if (_activeTool == _ActiveTool.region)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: _RegionFilterRow(
+                      regions: regions,
+                      selectedRegions: _selectedRegions,
+                      onTap: _toggleRegion,
+                      onClear: () => setState(() => _selectedRegions.clear()),
+                    ),
+                  ),
               ],
             ),
           ),
-
-          // Tool panels
-          if (_activeTool == _ActiveTool.buscar)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-              child: LhotseSearchField(
-                controller: _searchController,
-                hint: 'Buscar noticias, firmas, regiones...',
-                autofocus: true,
-                onChanged: (v) => setState(() => _searchQuery = v),
-                onClose: () => _toggleTool(_ActiveTool.buscar),
-              ),
-            )
-          else if (_activeTool == _ActiveTool.firma)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: LhotseBrandFilterRow(
-                brands: newsFilterBrands,
-                selectedBrands: _selectedBrands,
-                onBrandTap: _toggleBrand,
-              ),
-            )
-          else if (_activeTool == _ActiveTool.region)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: _RegionFilterRow(
-                regions: regions,
-                selectedRegions: _selectedRegions,
-                onTap: _toggleRegion,
-                onClear: () => setState(() => _selectedRegions.clear()),
-              ),
-            ),
 
           // News list
           Expanded(
@@ -230,17 +241,22 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    controller: _scrollController,
+                    padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
                     itemCount: news.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
+                    separatorBuilder: (_, _) => const SizedBox(height: 56),
                     itemBuilder: (context, i) {
                       final item = news[i];
                       return LhotseNewsCard(
                         title: item.title,
                         imageUrl: item.imageUrl,
+                        heroTag: 'news-hero-${item.id}',
                         brand: item.brand,
                         subtitle: item.subtitle,
+                        date: DateFormat('d MMM yyyy', 'es_ES').format(item.date),
+                        type: item.type == NewsType.press ? 'PRENSA' : 'PROYECTO',
                         hasPlayButton: item.hasPlayButton,
+                        isLeadStory: i == 0,
                         onTap: () => context.push('/news/${item.id}'),
                       );
                     },

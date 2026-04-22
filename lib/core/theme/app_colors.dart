@@ -29,4 +29,9 @@ abstract final class AppColors {
   static const navBackground = Color(0xFF000000);
   static const navBorderTop = Color(0x0DFFFFFF);
   static const navShadow = Color(0x66000000);
+
+  // Overlay — warm dark tone for editorial image gradients (projects + detail
+  // heroes). Replaces pure black to avoid the "sport story overlay" feel and
+  // push toward Sotheby's / Openhouse sepia-luxury.
+  static const overlayWarm = Color(0xFF1F1916);
 }

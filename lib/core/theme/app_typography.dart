@@ -5,6 +5,20 @@ abstract final class AppTypography {
   static const _fontFamily = 'Campton';
 
   // Display
+  //
+  // `displayHero` — cover-of-magazine treatment for editorial archive titles
+  // (ProjectShowcaseCard, LhotseNewsCard, and their detail hero titles). Light
+  // weight + XL size + tight line-height is the signature of minimal luxury
+  // contemporary (Céline, Jil Sander, Totême). Used ONLY in archive / detail
+  // hero contexts; everything else stays with the established scale.
+  static const displayHero = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 48,
+    fontWeight: FontWeight.w300,
+    height: 0.95,
+    letterSpacing: -0.5,
+  );
+
   static const displayLarge = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 40,

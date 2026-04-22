@@ -1243,45 +1243,123 @@ Tabs are compositional: a project with `is_fundraising_open=true ∧ phase='cons
 
 **Context:** The original Home tab was an editorial portal (auto-scroll carousel of featured projects + horizontal news row + section stubs). Client asked for a Nike SNKRS-style immersive feed: one content unit per viewport, vertical scroll, mixed formats including video.
 
-**Decision:** Rebuild Home as a vertical feed of full-viewport cards. Interaction model inspired by Nike; visual language stays Zara/editorial (beige caption below pure image, no dark scrim, no text-over-image). Each card = media block (~65% — image or muted autoplay video, pauses when off-screen) + beige caption (~35% — title headingLarge, brand·location·date, textual CTA). Sealed class `FeedItem` with variants `projectHero`, `news`, `opportunity`, `brandSpotlight`. `homeFeedProvider` composes client-side from existing providers with a fixed recipe.
-
-**Rationale for the Zara/editorial hybrid over Nike cinematographic:**
-- Lhotse audience is wealth-management clients (45+, high-consideration decisions). Nike's cinematic text-over-image + FOMO tone clashes with the serious, patient positioning of real estate investment.
-- The rest of the app already uses image-pure + text-below-on-beige (ProjectCard, LhotseNewsCard, BrandDetail). Keeping the visual language coherent avoids turning Home into a stylistic island.
-- The interaction shift (one unit per viewport, vertical feed, mixed formats) captures the Nike immersion without importing the visual grammar that would clash with the rest of the app.
-
-**Rationale for no kickers / no haptics / no progress indicator:**
-- Kickers (labels like `DESTACADO`, `NOTICIA`) are training wheels; in a sophisticated editorial system the content identifies itself (a real-estate photo is a project, an editorial portrait is news).
-- Haptics on tap feel gamified. Premium private-banking apps reserve them for transactional confirmations — Lhotse will follow the same rule when confirmation flows appear.
-- Progress indicators (side rails, bars) are decorative chrome; a serious audience reads position from content, not UI.
-
-**Rationale for archive entries in Search idle:**
-- AllProjects and AllNews had their only visible entries on the Home header/section ("PROYECTOS ↗", "NOTICIAS ↗"). The feed absorbs those signals but doesn't replace them.
-- Rather than cluttering the feed with "see all" cards, archive browsing moves to the Search tab's idle state (tabs `CATÁLOGO · NOTICIAS`, each rendering the archive body). Philosophy: "when you search, you search; when idle, you browse inventory" (Google Flights, Airbnb).
-- Routes `/projects` and `/news` stay alive for deeplinks. Screens `AllProjectsScreen` and `AllNewsScreen` continue to exist for those paths; archive bodies extracted as reusable widgets so both the standalone screens and Search idle state share behavior.
-
-**Consequences:**
-- (+) Home is pure curated content; zero navigation chrome.
-- (+) Search gains a clear browsing surface beyond text search.
-- (+) Firmas stays untouched as "who we are", not muddled with cross-brand catalog.
-- (−) Lower information density on Home (1 item per viewport vs. ~10 signals per scroll in the old layout). Accepted because the client prioritizes the immersive moment over efficiency.
-- (−) Introduces `video_url` columns on `projects` and `news` that are mostly null in v1 — the feed falls back to image until branded videos are delivered.
-
-**Migrations:** `add_video_url_to_projects_and_news`, `add_video_url_to_user_opportunities_view`.
-
-**Anti-patterns considered and rejected:**
-- Kicker tappables (e.g., tapping `DESTACADO` jumping to `/projects`) — hidden patterns violate "obvious" principle.
-- Collection cards (`CATÁLOGO · 18 PROYECTOS` editorial tiles every 6 items) — felt like ads; one clear archive entry in Search is enough.
-- "Final card" ancla at the end of the feed — feed should end cleanly when content ends; archives live in Search, not in the feed itself.
-
+**Decision:** Rebuild Home as a vertical feed of full-viewport cards. Interaction model inspired by Nike; visual language stays Zara/editorial (beige caption below pure image, no dark scrim, no text-over-image). Each card = media block (~65%) + beige caption (~35%).
 
 ---
 
-## ADR-48: Home Feed — Nike SNKRS-Style Vertical (Zara Visual Language)
+## ADR-49: Four Zone Calibration — Lookbook Editorial for Projects + News Archives
 
-**Date:** 2026-04-21
+**Date:** 2026-04-22
+**Status:** Accepted (v2 after simulator verification — v1 overlay/85vh/alternating-ratios approach was rejected; see v2 addendum at bottom)
+
+**Context:** AllProjects (PROYECTOS) and AllNews (NOTICIAS) were rendered as uniform lists of standard cards (`ProjectCard` 550px fixed and `LhotseNewsCard` 4:3 default). Three problems:
+
+1. `ProjectCard` was used identically in three zones with very different intents (AllProjects archive, Search catálogo, Opportunities deal-scan) — zero differentiation.
+2. `LhotseNewsCard` had editorial base vocabulary (kicker, byline) but no deck, no rhythm. Read as "RSS feed", not "magazine archive".
+3. Card designs did not cohere with detail screens (200px hero vs card full-bleed; title smaller in detail than in card).
+
+Brand positioning for Lhotse is **luxury-fashion × real-estate**. The correct editorial family is T Magazine / Openhouse / AD / Cabana / Sotheby's International — *not* Monocle/Bloomberg (too corporate-austere) or Vogue (too commercial-glossy). ADR-15's "Bloomberg × Sotheby's" reference applies specifically to the coinversion L3 detail (fintech-heavy with scenarios/TIR) and should not be generalised as the app-wide direction.
+
+**Decision:** Four distinct zone calibrations. Each pair of card + matching detail screen speaks the same visual language so tapping a card feels like turning a page.
+
+| Zone | Carácter | Card / Screen |
+|---|---|---|
+| Home feed | SNKRS loud rotativo | `FeedCard` — one per viewport, mixed types |
+| **AllProjects + Search catálogo** | **Lookbook producto** (Sotheby's) | `ProjectShowcaseCard` — full-bleed edge-to-edge, warm sepia gradient, text overlay bottom-left, 4:5/3:2 alternated, 85vh lead |
+| **AllNews + NewsArchiveBody** | **Lookbook editorial** (T Magazine) | `LhotseNewsCard` full — full-bleed image, beige caption below with kicker/mixed-case-title/deck/byline(`POR X · DATE`), 4:5/3:2 alternated, 85vh lead |
+| Opportunities | Deal-scan aspiracional | `ProjectCard` (unchanged) — loud image-dominant |
+
+**Shared editorial vocabulary** between Projects and News archives:
+- Mixed-case display titles (no `.toUpperCase()`). Uppercase reserved for kicker/byline/metadata.
+- Kicker above title (caption 10px w500 ls 2.0): `FIRMA · FASE` for projects, `PROYECTO`/`PRENSA` for news.
+- Full-bleed edge-to-edge with alternating 4:5/3:2 ratios and 85vh lead.
+- Generous whitespace between cards (no hairlines — Monocle language rejected). 32px projects, 48px news.
+- Warm sepia gradient (`AppColors.overlayWarm` #1F1916) replaces pure black overlays — Sotheby's/Openhouse feel vs "instagram story" coldness.
+
+**Detail screens updated for coherence**:
+- `NewsDetailScreen` + `ProjectDetailScreen`: hero `200px` → `screen * 0.55`, warm gradient added, title `headingLarge uppercase` → `displayMedium mixed case`, kicker elevated above title (news type-badge lateral row removed), deck/tagline rendered between title and byline. Collapsed app bar titles stay uppercase.
+
+**Fuera de alcance**: Home `FeedCard`, Opportunities, compact carousels, detail sections below hero (body/characteristics/gallery/related) unchanged. No new fonts. Share affordance on project cards deferred.
+
+**Consequences:**
+- (+) Each zone has a distinct editorial identity; Home vs archive vs deal-scan no longer compete.
+- (+) Cards become screenshot-ready posters — supports "users share projects with friends" intent.
+- (+) Card → detail reads as continuous (large hero in both, same title treatment).
+- (+) Removes duplication: `ProjectCard` lives only in Home carousel + Opportunities, `ProjectShowcaseCard` owns archives.
+- (−) AllProjects scroll length increases (lead 85vh + subsequent ≈65-75vh). Mitigated by the lookbook feel encouraging slow browse.
+- (−) Mixed case titles diverge from rest of app (headers, section labels still uppercase). Justified: luxury-fashion editorial uses mixed case for long-form titles.
+
+**Reference audit:** ADR-15's "Bloomberg × Sotheby's" remains valid *for coinversion L3*. App-wide editorial direction is T Magazine × Sotheby's × Openhouse.
+
+### v2 addendum (2026-04-22, post-simulator verification)
+
+The v1 concrete choices (85vh lead + alternating 4:5/3:2 ratios + warm-gradient overlay + text-on-image) failed in the simulator:
+
+1. **Viewport math broken**: persistent chrome (status + header + tabs + filter bar + nav + home indicator) consumes ~337pt on iPhone 17 Pro Max, leaving ~595pt of usable vertical. A "lead 85vh" = ~792pt cannot fit; overlay text fell below viewport and the user saw only photograph, no info.
+2. **Text-on-image reintroduced the legibility risk** that had been rejected in an earlier iteration.
+3. **Alternating ratios (85vh / 4:5 / 3:2)** read as visual noise, not editorial pacing.
+
+v2 revises the concrete execution while keeping the zone calibration intent intact:
+
+- **Uniform 4:5 ratio** for both zones (lead included). Rhythm comes from typography, not altura variable.
+- **Text always on beige, never overlay**. AllProjects uses a beige label **adhered** to the image (card-as-object, `AppColors.surface` darker beige) — the card reads as a self-contained poster, supporting shareability. AllNews uses an **open** caption on the page `background` — the image and text are separate pieces, more editorial/spread feel.
+- **Lead differentiated by typography only**: `displayLarge` (40px) + 3-line deck vs `displayMedium` (28px) + 1-2 line deck. Same ratio everywhere.
+- **Filter bar scroll-aware** (`ScrollAwareFilterBar`): collapses to a compact pill while scrolling, restores itself after 2s idle. Premium reading-app UX (Apple Stocks / NYT) that gives the editorial content more room during active scroll without making the filters hard to find.
+- **`AppColors.overlayWarm`** token kept (used in news-detail + project-detail hero gradients) but no longer applied to archive cards.
+- Detail screens unchanged (already use mixed case + kicker + deck + warm gradient in hero, coherent with both v1 and v2 cards).
+
+Rejected references during v2 iteration: Monocle / Bloomberg (corporate-austere, incompatible with luxury-fashion positioning). Reconfirmed family: T Magazine × Openhouse × Sotheby's.
+
+### v3 addendum (2026-04-22, post-v2 iteration in simulator)
+
+Further refinements after walking through the v2 cards with the client:
+
+- **Filter bar collapse: no pill substitute**. v2 used a textual pill (`SECCIÓN · N FILTROS · ⌵`) while collapsed. Rejected because the primary navigation tabs (FIRMAS/PROYECTOS/NOTICIAS) above already communicate the active section — a textual placeholder was redundant. Now the secondary filter bar simply hides and restores.
+- **Unified beige across cards**. v2 used `AppColors.surface` (darker beige) as an adhered label under the image on `ProjectShowcaseCard` to make it read as a "card-object" poster. Rejected because it broke the unified palette and felt like a gray block against the page. Both cards now use the page `background` — captions flow as open editorial text below the photograph, consistent with `LhotseNewsCard`.
+- **Ratio 4:5 → 1:1 square**. v2 portrait (4:5) made the first card overflow the viewport once filters were expanded (517pt image + ~200pt caption > 595pt usable vertical). Square (1:1) gives ~103pt back, fits cleanly, and remains editorial-contemporary (Cabana / AD Collector use 1:1 in digital grids).
+- **Typography-only lead (no `displayLarge`)**. v2 bumped lead titles to `displayLarge` (40px). Combined with 1:1 image, still forced scroll to see tagline/location. Now all titles are `displayMedium` (28px); lead only differs by extended tagline maxLines (3 vs 1).
+- **Projects caption reordered location-first**. v2 used `FIRMA · FASE` as kicker + LOCATION as footer. Revised because in luxury real estate listings (Sotheby's International, Engel & Völkers, Christie's) location is the primary hook — what sells. Now: location kicker → title → tagline → `[firma logo] · fase` byline.
+- **Byline: SVG logo instead of wordmark text — tried and rolled back**. The LVMH-inspired maison mark idea was implemented with `SvgPicture.network`/`.asset` + `ColorFilter.mode srcIn` to render each brand logo monochrome black in the byline. Rolled back after testing in simulator: Lhotse's brand logos are too heterogeneous to coexist at a uniform size — Ciclo Capital is a two-line mark, Lacomb & Bos has thin serif weight, Vellte is a heavy wordmark, Revolut is a long horizontal logotype. Forcing them into 64×14pt broke each one differently. LVMH works because its maisons (Louis Vuitton, Dior, Fendi, Tiffany) are all serif wordmarks of similar optical weight; Lhotse's family is not there yet. Reverted to textual `{BRAND} · {FASE}` in the byline — listings stay typographically uniform. The logo gets its proper treatment in the project detail screen, where it has prime real estate and doesn't compete with others. News keeps `POR {BRAND}` textual because in editorial content the brand is an author, not a maison.
+- **"POR" prefix removed from Projects byline**. In architecture/interior credits the convention is just the name (like closing credits of a film) — "POR" is reserved for editorial authorship (news).
+
+Rejected in v3: full LVMH restraint (tagline + country + fase stripped from listing) — real estate needs contextual hooks per card that moda does not. The adopted hybrid keeps the Sotheby's/T Magazine editorial structure while borrowing one LVMH element (maison mark as logo).
+
+---
+
+## ADR-50: Archive card premium — minimal luxury modern (Campton-only transformación)
+
+**Date:** 2026-04-22
 **Status:** Accepted
 
-**Context:** The original Home tab was an editorial portal (auto-scroll carousel of featured projects + horizontal news row + section stubs). Client asked for a Nike SNKRS-style immersive feed: one content unit per viewport, vertical scroll, mixed formats including video.
+**Context:** Tras iterar estructura, ratio, jerarquía y logo de firma en `ProjectShowcaseCard` y `LhotseNewsCard`, las cards quedaban "correctas" pero no transmitían el carácter luxury auténtico pedido por el cliente ("tiene que ser un producto premium, busquemos la mejor solución"). Diagnóstico: les faltaba el factor fundacional que separa productos digitales luxury editoriales auténticos (Faena, Aman, Openhouse, Cabana, Auberge) de productos premium genéricos (Airbnb Luxe, Compass, Sotheby's International app). Dos territorios viables:
 
-**Decision:** Rebuild Home as a vertical feed of full-viewport cards. Interaction model inspired by Nike; visual language stays Zara/editorial (beige caption below pure image, no dark scrim, no text-over-image). Each card = media block (~65
+- **Editorial magazine warm** (T Magazine / Openhouse / Cabana) — requiere serif display para ser auténtico
+- **Minimal luxury modern** (Céline / Jil Sander / Totême / The Row) — sans puro con composición extrema
+
+Sergio rechaza introducir fuente serif nueva. Elegido el segundo territorio, que además se alinea mejor con HNW español conservador (sobrio, moderno, menos decorativo).
+
+**Decisión:** Upgrade premium Campton-only con los siguientes moves coordinados:
+
+1. Nuevo token `displayHero` — Campton Light w300, fontSize 48, line-height 0.95, letterSpacing -0.5. Aplicado a títulos de `ProjectShowcaseCard`, `LhotseNewsCard` y sus detail hero titles
+2. Tagline / deck en italic (Campton Book Italic) — convención magazine de declarative captions
+3. Hairlines editoriales 0.5px alpha 15% top y bottom del caption, enmarcando el bloque como spread de revista
+4. Logo SVG de firma uniforme en byline de projects — widget `_BrandStamp` con `SizedBox(100×28)` + `BoxFit.contain` + `ColorFilter srcIn` negro (patrón exacto de `_BrandCard` en Firmas, reducido de 40→28pt). News mantiene byline textual `POR {BRAND} · {DATE}` porque el brand es autor editorial, no maison
+5. Shared-element `Hero` transition al abrir detail (`tag: 'project-hero-{id}'` y `'news-hero-{id}'`)
+
+**Deferred (no implementado en esta iteración):**
+- Grain texture 2% overlay sobre caption beige — print-magazine feel, requiere asset PNG noise
+- Parallax 0.85 en imagen al scroll — depth cinematográfica, requiere ScrollController tracking per-card
+
+Son dos refinements visuales low-impact que se pueden añadir después sin restructurar.
+
+**Consequences:**
+- (+) Cards premium auténticas con Campton solo — sin añadir fuentes, sin tocar bundle size, consistencia total del sistema
+- (+) Título Campton Light 48pt transforma el carácter de "ficha" a "cover de revista" instantáneamente
+- (+) Italic en tagline/deck introduce sabor editorial usando una variante ya disponible en la licencia Campton
+- (+) Hairlines son marca compositiva editorial sin añadir contenido
+- (+) Logo SVG uniforme resuelve la heterogeneidad de logos (Ciclo Capital 2 líneas, Lacomb & Bos fino, Vellte grueso) con el mismo pattern que ya funciona en Firmas
+- (+) Hero transition crea continuidad perceptual card → detail
+- (−) Pierde el "warm editorial" que daría una serif display (T Magazine territory)
+- (−) Requiere Campton Light (w300) disponible en pubspec — verificado: todos los pesos de Campton están cargados como assets
+
+**Reference audit:** los 7 moves son coordinados — no es un menú a elegir. La transformación viene del cambio tipográfico hero + italic + framing + logo uniforme + continuidad al detail funcionando juntos. Quitar cualquiera de los 5 principales reduce el efecto desproporcionadamente.

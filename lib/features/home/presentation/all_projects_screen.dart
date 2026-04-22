@@ -13,7 +13,8 @@ import '../../../core/widgets/lhotse_app_header.dart';
 import '../../../core/widgets/lhotse_brand_filter_row.dart';
 import '../../../core/widgets/lhotse_filter_tab.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
-import 'widgets/project_card.dart';
+import '../../../core/widgets/scroll_aware_filter_bar.dart';
+import 'widgets/project_showcase_card.dart';
 
 class AllProjectsScreen extends ConsumerStatefulWidget {
   const AllProjectsScreen({super.key});
@@ -40,10 +41,12 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
   final Set<String> _selectedBrands = {};
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -120,54 +123,62 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
         children: [
           LhotseAppHeader(title: 'PROYECTOS', onBack: () => context.pop()),
 
-          _FilterBar(
-            selectedStatus: _selectedStatus,
-            activeTool: _activeTool,
-            hasBrandSelection: _selectedBrands.isNotEmpty,
-            onStatusTap: _toggleStatus,
-            onBrandsTap: () => _toggleTool(_ActiveTool.brands),
-            onSearchTap: () => _toggleTool(_ActiveTool.search),
-          ),
-
-          if (_activeTool == _ActiveTool.search)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-              child: LhotseSearchField(
-                controller: _searchController,
-                hint: 'Buscar proyectos, marcas, ubicaciones...',
-                autofocus: true,
-                onChanged: (v) => setState(() => _searchQuery = v),
-                onClose: () => _toggleTool(_ActiveTool.search),
-              ),
-            )
-          else if (_activeTool == _ActiveTool.brands)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: LhotseBrandFilterRow(
-                brands: brands,
-                selectedBrands: _selectedBrands,
-                onBrandTap: _toggleBrand,
-              ),
+          ScrollAwareFilterBar(
+            scrollController: _scrollController,
+            expanded: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _FilterBar(
+                  selectedStatus: _selectedStatus,
+                  activeTool: _activeTool,
+                  hasBrandSelection: _selectedBrands.isNotEmpty,
+                  onStatusTap: _toggleStatus,
+                  onBrandsTap: () => _toggleTool(_ActiveTool.brands),
+                  onSearchTap: () => _toggleTool(_ActiveTool.search),
+                ),
+                if (_activeTool == _ActiveTool.search)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
+                    child: LhotseSearchField(
+                      controller: _searchController,
+                      hint: 'Buscar proyectos, marcas, ubicaciones...',
+                      autofocus: true,
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                      onClose: () => _toggleTool(_ActiveTool.search),
+                    ),
+                  )
+                else if (_activeTool == _ActiveTool.brands)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: LhotseBrandFilterRow(
+                      brands: brands,
+                      selectedBrands: _selectedBrands,
+                      onBrandTap: _toggleBrand,
+                    ),
+                  ),
+              ],
             ),
+          ),
 
           Expanded(
             child: ref.watch(projectsProvider).isLoading && projects.isEmpty
                 ? const Center(child: CircularProgressIndicator(strokeWidth: 1.5))
-                : ListView.builder(
-                    padding: EdgeInsets.zero,
+                : ListView.separated(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
                     itemCount: filtered.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppSpacing.md),
                     itemBuilder: (context, i) {
-                      return SizedBox(
-                        height: 550,
-                        child: ProjectCard(
-                          project: filtered[i],
-                          isLocked: filtered[i].isVip &&
-                              ref.read(currentUserRoleProvider) !=
-                                  UserRole.investorVip,
-                          onTap: () =>
-                              context.push('/projects/${filtered[i].id}'),
-                        ),
+                      return ProjectShowcaseCard(
+                        project: filtered[i],
+                        isLeadStory: i == 0,
+                        isLocked: filtered[i].isVip &&
+                            ref.read(currentUserRoleProvider) !=
+                                UserRole.investorVip,
+                        onTap: () =>
+                            context.push('/projects/${filtered[i].id}'),
                       );
                     },
                   ),

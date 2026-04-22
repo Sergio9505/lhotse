@@ -13,8 +13,6 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 
-const _kHeroHeight = 200.0;
-
 class NewsDetailScreen extends ConsumerStatefulWidget {
   const NewsDetailScreen({super.key, required this.newsId});
 
@@ -28,6 +26,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
   final _scrollController = ScrollController();
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
+  double _heroHeight = 0;
 
   @override
   void initState() {
@@ -43,9 +42,9 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
 
   void _onScroll() {
     final offset = _scrollController.offset;
-    final heroThreshold = _kHeroHeight - kToolbarHeight;
+    final heroThreshold = _heroHeight - kToolbarHeight;
     final heroGone = offset >= heroThreshold;
-    final titleThreshold = _kHeroHeight + 50.0;
+    final titleThreshold = _heroHeight + 50.0;
     final showTitle = offset >= titleThreshold;
 
     if (heroGone != _heroGone || showTitle != _showCollapsedTitle) {
@@ -79,6 +78,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     }
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    _heroHeight = MediaQuery.of(context).size.height * 0.55;
 
     final relatedNews = allNews
         .where((n) => n.brandId == news.brandId && n.id != news.id)
@@ -99,7 +99,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
             // =========================================================
             SliverAppBar(
               pinned: true,
-              expandedHeight: _kHeroHeight,
+              expandedHeight: _heroHeight,
               backgroundColor: AppColors.background,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
@@ -141,13 +141,28 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      LhotseImage(news.imageUrl),
+                      Hero(
+                        tag: 'news-hero-${news.id}',
+                        child: LhotseImage(news.imageUrl),
+                      ),
                       const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.center,
                             colors: [Color(0x66000000), Colors.transparent],
+                          ),
+                        ),
+                      ),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(0, 0.2),
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Color(0x8C1F1916),
+                            ],
                           ),
                         ),
                       ),
@@ -183,83 +198,47 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
             ),
 
             // =========================================================
-            // 2. IDENTITY
+            // 2. IDENTITY — lookbook editorial (kicker · title · deck · byline)
             // =========================================================
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      news.title.toUpperCase(),
-                      style: AppTypography.headingLarge.copyWith(
+                      news.type == NewsType.project ? 'PROYECTO' : 'PRENSA',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accentMuted,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      news.title,
+                      style: AppTypography.displayHero.copyWith(
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      children: [
-                        Text(
-                          ((news.brand ?? '')).toUpperCase(),
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textPrimary,
-                            letterSpacing: 1.8,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            '·',
-                            style: AppTypography.caption.copyWith(
-                              color:
-                                  AppColors.textPrimary.withValues(alpha: 0.4),
-                            ),
-                          ),
-                        ),
-                        Text(
-                          DateFormat('d MMM yyyy').format(news.date),
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.accentMuted,
-                            letterSpacing: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // =========================================================
-            // 3. TYPE BADGE + LOCATION
-            // =========================================================
-            SliverToBoxAdapter(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Row(
-                  children: [
-                    Container(
-                      color: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      child: Text(
-                        news.type == NewsType.project ? 'PROYECTO' : 'PRENSA',
-                        style: AppTypography.captionSmall.copyWith(
-                          color: AppColors.textOnDark,
-                          letterSpacing: 1.0,
+                    if ((news.subtitle ?? '').isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        news.subtitle!,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.accentMuted,
+                          height: 1.6,
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      ((news.subtitle ?? '')).toUpperCase(),
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.accentMuted,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
+                    ],
+                    const SizedBox(height: 12),
+                    _buildByline(news),
                   ],
                 ),
               ),
@@ -331,6 +310,40 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Byline: `POR {BRAND}  ·  {DATE}`. Brand keeps primary ink; date mutes.
+  Widget _buildByline(NewsItemData news) {
+    final brand = news.brand;
+    final hasBrand = brand != null && brand.isNotEmpty;
+    final dateStr = DateFormat('d MMM yyyy', 'es_ES').format(news.date);
+    final children = <InlineSpan>[];
+    if (hasBrand) {
+      children.add(TextSpan(
+        text: 'POR ',
+        style: TextStyle(color: AppColors.accentMuted, letterSpacing: 1.5),
+      ));
+      children.add(TextSpan(
+        text: brand.toUpperCase(),
+        style: TextStyle(color: AppColors.textPrimary, letterSpacing: 1.5),
+      ));
+      children.add(TextSpan(
+        text: '  ·  ',
+        style: TextStyle(
+          color: AppColors.textPrimary.withValues(alpha: 0.4),
+        ),
+      ));
+    }
+    children.add(TextSpan(
+      text: dateStr.toUpperCase(),
+      style: TextStyle(color: AppColors.accentMuted, letterSpacing: 1.2),
+    ));
+    return RichText(
+      text: TextSpan(
+        style: AppTypography.caption.copyWith(letterSpacing: 1.5),
+        children: children,
       ),
     );
   }

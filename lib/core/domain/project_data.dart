@@ -12,6 +12,13 @@ enum ProjectPhase {
         'exited' => ProjectPhase.exited,
         _ => ProjectPhase.preConstruction,
       };
+
+  /// Uppercase user-facing label used in editorial kickers (card + detail).
+  String get label => switch (this) {
+        ProjectPhase.preConstruction => 'EN FINANCIACIÓN',
+        ProjectPhase.construction => 'EN DESARROLLO',
+        ProjectPhase.exited => 'FINALIZADO',
+      };
 }
 
 class ProjectData {

@@ -3,25 +3,30 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'lhotse_image.dart';
 
-/// Reusable news card with image background + beige overlay (same as ProjectCard).
-/// Supports two sizes:
-/// - Full (Home, AllNews): 320×213px
-/// - Compact (investment detail): 260×160px
+/// Reusable news card. Two variants:
+/// - **Default (full)**: minimal-luxury-modern captioned photograph. 1:1
+///   image wrapped in a shared-element `Hero`, editorial hairlines framing
+///   the caption, `displayHero` Light 48pt title, italic deck and textual
+///   `POR {BRAND} · {DATE}` byline. Used in AllNews + NewsArchiveBody.
+/// - **Compact**: 260×160 with beige overlay on image — unchanged, for
+///   horizontal carousels inside detail screens.
 class LhotseNewsCard extends StatelessWidget {
-  /// Full-size card.
   const LhotseNewsCard({
     super.key,
     required this.title,
     required this.imageUrl,
+    required this.heroTag,
     this.brand,
     this.subtitle,
-    this.width = 320,
-    this.height = 208,
+    this.date,
+    this.type,
     this.hasPlayButton = false,
+    this.isLeadStory = false,
     this.onTap,
-  });
+  })  : width = null,
+        height = null;
 
-  /// Compact card for project context.
+  /// Compact card for horizontal carousels inside detail screens.
   const LhotseNewsCard.compact({
     super.key,
     required this.title,
@@ -31,77 +36,163 @@ class LhotseNewsCard extends StatelessWidget {
     this.hasPlayButton = false,
     this.onTap,
   })  : width = 260,
-        height = 160;
+        height = 160,
+        date = null,
+        type = null,
+        isLeadStory = false,
+        heroTag = null;
 
   final String title;
   final String imageUrl;
+  final String? heroTag;
   final String? brand;
   final String? subtitle;
-  final double width;
-  final double height;
+  final String? date;
+  final String? type;
+  final double? width;
+  final double? height;
   final bool hasPlayButton;
+  final bool isLeadStory;
   final VoidCallback? onTap;
+
+  bool get _isCompact => width != null;
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = height <= 210;
-
-    if (isCompact) return _buildCompact();
-    return _buildFull();
+    return _isCompact ? _buildCompact() : _buildFull();
   }
 
-  /// Full-size: Zara-style — image pure + text below on beige
   Widget _buildFull() {
+    final deckMaxLines = isLeadStory ? 3 : 2;
+    final image = AspectRatio(
+      aspectRatio: 1,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          LhotseImage(imageUrl),
+          if (hasPlayButton) _playButton(false),
+        ],
+      ),
+    );
+
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
-        width: width,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              height: height,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  LhotseImage(imageUrl),
-                  if (hasPlayButton) _playButton(false),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 12, 0, AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (heroTag != null) Hero(tag: heroTag!, child: image) else image,
+          const SizedBox(height: 16),
+          const _EditorialHairline(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 20),
+                if (type != null && type!.isNotEmpty) ...[
                   Text(
-                    title.toUpperCase(),
-                    style: AppTypography.headingSmall.copyWith(
-                      color: AppColors.textPrimary,
+                    type!.toUpperCase(),
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.accentMuted,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 2.0,
                     ),
-                    maxLines: 1,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                // Title — Campton Light 48pt, mixed case, tight line-height.
+                Text(
+                  title,
+                  style: AppTypography.displayHero.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (subtitle != null && subtitle!.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  // Deck in italic — magazine pull-quote treatment.
+                  Text(
+                    subtitle!,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.accentMuted,
+                      height: 1.6,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    maxLines: deckMaxLines,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  _subtitle(false),
                 ],
-              ),
+                const SizedBox(height: 20),
+              ],
             ),
-          ],
-        ),
+          ),
+          const _EditorialHairline(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              12,
+              AppSpacing.lg,
+              0,
+            ),
+            child: _byline(),
+          ),
+        ],
       ),
     );
   }
 
-  /// Compact: overlay on image (carousels)
+  /// Byline — `POR {BRAND}  ·  {DATE}`. News keeps the textual treatment
+  /// because the brand is an *author* (editorial publisher), not a maison.
+  Widget _byline() {
+    final hasBrand = brand != null && brand!.isNotEmpty;
+    final hasDate = date != null && date!.isNotEmpty;
+    if (!hasBrand && !hasDate) return const SizedBox.shrink();
+
+    final children = <InlineSpan>[];
+    if (hasBrand) {
+      children.add(TextSpan(
+        text: 'POR ',
+        style: TextStyle(color: AppColors.accentMuted, letterSpacing: 1.5),
+      ));
+      children.add(TextSpan(
+        text: brand!.toUpperCase(),
+        style: TextStyle(color: AppColors.textPrimary, letterSpacing: 1.5),
+      ));
+    }
+    if (hasBrand && hasDate) {
+      children.add(TextSpan(
+        text: '  ·  ',
+        style: TextStyle(
+          color: AppColors.textPrimary.withValues(alpha: 0.4),
+        ),
+      ));
+    }
+    if (hasDate) {
+      children.add(TextSpan(
+        text: date!.toUpperCase(),
+        style: TextStyle(color: AppColors.accentMuted, letterSpacing: 1.2),
+      ));
+    }
+
+    return RichText(
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      text: TextSpan(
+        style: AppTypography.caption.copyWith(letterSpacing: 1.5),
+        children: children,
+      ),
+    );
+  }
+
   Widget _buildCompact() {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        width: width,
-        height: height,
+        width: width!,
+        height: height!,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -131,7 +222,7 @@ class LhotseNewsCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    _subtitle(true),
+                    _compactSubtitle(),
                   ],
                 ),
               ),
@@ -142,8 +233,8 @@ class LhotseNewsCard extends StatelessWidget {
     );
   }
 
-  Widget _subtitle(bool isCompact) {
-    final style = isCompact ? AppTypography.captionSmall : AppTypography.caption;
+  Widget _compactSubtitle() {
+    final style = AppTypography.captionSmall;
     return Row(
       children: [
         if (brand != null) ...[
@@ -204,6 +295,19 @@ class LhotseNewsCard extends StatelessWidget {
           size: isCompact ? 20 : 28,
         ),
       ),
+    );
+  }
+}
+
+/// Thin hairline used to "open" and "close" the caption block editorially.
+class _EditorialHairline extends StatelessWidget {
+  const _EditorialHairline();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 0.5,
+      color: AppColors.textPrimary.withValues(alpha: 0.15),
     );
   }
 }

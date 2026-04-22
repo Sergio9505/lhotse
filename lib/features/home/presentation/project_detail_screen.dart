@@ -13,7 +13,6 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 
-const _kHeroHeight = 200.0;
 const _kMaxVisibleGallery = 5;
 
 class ProjectDetailScreen extends ConsumerStatefulWidget {
@@ -30,6 +29,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
   final _scrollController = ScrollController();
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
+  double _heroHeight = 0;
 
   @override
   void initState() {
@@ -45,9 +45,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
 
   void _onScroll() {
     final offset = _scrollController.offset;
-    final heroThreshold = _kHeroHeight - kToolbarHeight;
+    final heroThreshold = _heroHeight - kToolbarHeight;
     final heroGone = offset >= heroThreshold;
-    final titleThreshold = _kHeroHeight + 50.0;
+    final titleThreshold = _heroHeight + 50.0;
     final showTitle = offset >= titleThreshold;
 
     if (heroGone != _heroGone || showTitle != _showCollapsedTitle) {
@@ -81,6 +81,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    _heroHeight = MediaQuery.of(context).size.height * 0.55;
 
     // Build characteristics entries from typed asset fields
     String _m2(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 1)} m²';
@@ -127,7 +128,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
             // =========================================================
             SliverAppBar(
               pinned: true,
-              expandedHeight: _kHeroHeight,
+              expandedHeight: _heroHeight,
               backgroundColor: AppColors.background,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
@@ -163,7 +164,10 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    LhotseImage(project.imageUrl),
+                    Hero(
+                      tag: 'project-hero-${project.id}',
+                      child: LhotseImage(project.imageUrl),
+                    ),
                     const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -173,57 +177,71 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                         ),
                       ),
                     ),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment(0, 0.2),
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Color(0x8C1F1916),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
 
             // =========================================================
-            // 2. IDENTITY
+            // 2. IDENTITY — lookbook producto (kicker · title · tagline · byline)
             // =========================================================
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      project.name.toUpperCase(),
-                      style: AppTypography.headingLarge.copyWith(
+                      '${project.brand.toUpperCase()}  ·  ${project.phase.label}',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.accentMuted,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      project.name,
+                      style: AppTypography.displayHero.copyWith(
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      children: [
-                        Text(
-                          project.brand.toUpperCase(),
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textPrimary,
-                            letterSpacing: 1.8,
-                          ),
+                    if (project.tagline.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        project.tagline,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.accentMuted,
+                          height: 1.6,
+                          fontStyle: FontStyle.italic,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            '•',
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.textPrimary
-                                  .withValues(alpha: 0.4),
-                            ),
-                          ),
-                        ),
-                        Flexible(
-                          child: Text(
-                            project.location.toUpperCase(),
-                            style: AppTypography.caption.copyWith(
-                              color: AppColors.accentMuted,
-                              letterSpacing: 1.35,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Text(
+                      project.location.toUpperCase(),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textPrimary,
+                        letterSpacing: 1.5,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
