@@ -1363,3 +1363,17 @@ Son dos refinements visuales low-impact que se pueden añadir después sin restr
 - (−) Requiere Campton Light (w300) disponible en pubspec — verificado: todos los pesos de Campton están cargados como assets
 
 **Reference audit:** los 7 moves son coordinados — no es un menú a elegir. La transformación viene del cambio tipográfico hero + italic + framing + logo uniforme + continuidad al detail funcionando juntos. Quitar cualquiera de los 5 principales reduce el efecto desproporcionadamente.
+
+### Addendum v2 (2026-04-22, pulido definitivo tras revisión integral)
+
+Seis refinamientos tras mirar la card como un todo:
+
+- **Hairlines editoriales eliminadas**. 0.5px alpha 15% sobre fondo beige no se percibían en simulador; aportaban "sensación caja" sin función visible. Sustituidas por whitespace ajustado (24pt uniforme antes y después del bloque title+subtitle+tagline).
+- **Compactado spacing tagline → byline** de ~50pt (original hairline + padding doble) a 24pt. El byline ahora se siente "pie de foto" continuo con el caption, no bloque suelto.
+- **Logo SVG reducido** de 100×28 → **72×20**. La altura 20pt casa mejor con texto caption (10px) adyacente — evita desbalance óptico donde el logo quedaba "flotante" al lado de la fase textual.
+- **Fase movida de byline a chip sobre imagen**. Separación semántica: estado operacional (condiciona acción — "¿puedo invertir aún?") pertenece a chip badge, no a byline de créditos. Convención del sector real estate (Sotheby's International, Engel & Völkers, Christie's).
+- **Chip variants fill vs outline**. Dos chips fill negros (VIP + fase) se sentirían "e-commerce flat". PRIVATE mantiene fill black (privilegio máximo); la fase usa outline (transparent + 0.5px white border + soft shadow). Jerarquía visual automática cuando ambos coexisten.
+- **Location simplificada a `project.city`**. "Dubai, AE" con código ISO se leía seco/dudoso en todo el catálogo (MADRID, ES / MIAMI, US / DUBAI, AE). Usar solo la ciudad ("Dubai", "Madrid", "Miami") es más luxury, screenshot-universal, menos ruido.
+- **Edge-to-edge imagen confirmado**. El efecto marco (imagen con padding lateral) se descartó definitivamente: crea tensión semántica con scroll vertical continuo ("soy pieza curada separada" vs "hay 18 más inmediatamente debajo"). La diferenciación con Home ya viene del modelo de interacción (1 per viewport vs scroll catálogo), no del padding.
+
+Esta es la estructura final de `ProjectShowcaseCard` y la alineada `LhotseNewsCard` (que mantiene byline `POR BRAND · DATE` textual porque la firma es autor editorial, no maison).

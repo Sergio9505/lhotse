@@ -82,15 +82,13 @@ class LhotseNewsCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (heroTag != null) Hero(tag: heroTag!, child: image) else image,
-          const SizedBox(height: 16),
-          const _EditorialHairline(),
+          const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 20),
                 if (type != null && type!.isNotEmpty) ...[
                   Text(
                     type!.toUpperCase(),
@@ -125,19 +123,10 @@ class LhotseNewsCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
+                _byline(),
               ],
             ),
-          ),
-          const _EditorialHairline(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              12,
-              AppSpacing.lg,
-              0,
-            ),
-            child: _byline(),
           ),
         ],
       ),
@@ -295,19 +284,6 @@ class LhotseNewsCard extends StatelessWidget {
           size: isCompact ? 20 : 28,
         ),
       ),
-    );
-  }
-}
-
-/// Thin hairline used to "open" and "close" the caption block editorially.
-class _EditorialHairline extends StatelessWidget {
-  const _EditorialHairline();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 0.5,
-      color: AppColors.textPrimary.withValues(alpha: 0.15),
     );
   }
 }
