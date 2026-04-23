@@ -1377,3 +1377,24 @@ Seis refinamientos tras mirar la card como un todo:
 - **Edge-to-edge imagen confirmado**. El efecto marco (imagen con padding lateral) se descartó definitivamente: crea tensión semántica con scroll vertical continuo ("soy pieza curada separada" vs "hay 18 más inmediatamente debajo"). La diferenciación con Home ya viene del modelo de interacción (1 per viewport vs scroll catálogo), no del padding.
 
 Esta es la estructura final de `ProjectShowcaseCard` y la alineada `LhotseNewsCard` (que mantiene byline `POR BRAND · DATE` textual porque la firma es autor editorial, no maison).
+
+### Addendum v3 (2026-04-23, convergencia news↔projects)
+
+`LhotseNewsCard` converge con `ProjectShowcaseCard`:
+- **Tipo (PROYECTO/PRENSA) movido de kicker textual a chip outline sobre imagen** (top-left, mismo styling exacto que la fase chip de projects)
+- Caption arranca directamente con el título — 3 bloques (título + deck italic + byline) en simetría compositiva con projects
+- Byline textual `POR {BRAND} · {DATE}` se mantiene — asimetría semántica intencional con projects (que usa logo SVG): en news el brand es **autor editorial**, no maison; la convención magazine es "POR/BY autor"
+
+Resultado: ambas cards comparten gramática visual unificada — **chip outline top-left = clasificación, caption = contenido editorial**. El usuario aprende el patrón una vez y se aplica igual en todo el archivo. Diferenciación entre cards queda en los campos semánticos propios (logo de maison vs autor editorial textual; chip de fase vs chip de tipo; con/sin VIP), no en la arquitectura.
+
+Rechazado en v3: añadir intro/lead paragraph en la card de news. Card es preview, detail es lectura — el deck italic ya es el equivalente magazine al "standfirst". Lead paragraph rompería el carácter scan-friendly.
+
+### Addendum v4 (2026-04-23, separator news + decisión de aspect en news)
+
+Dos cambios + una decisión revertida tras verificación en simulador:
+
+- **Separator entre cards de news** reducido de 56pt → 32pt. La altura previa generaba ~104pt de aire entre items, la siguiente noticia no asomaba en viewport y el scroll se sentía "vacío". 32pt mantiene algo más de respiro que projects (16pt) — news escanea un beat más lento por carácter editorial — pero permite el "asomar" como en projects.
+
+- **Aspect 4:5 portrait probado y revertido** a 1:1. Hipótesis inicial: cada tab de Search puede adoptar su formato (Firmas grid 2×2 ya rompe el patrón listing) → news a 4:5 daría carácter cover-magazine. Verificación en simulador: con 4:5 (414×517pt), el caption (título displayHero + deck italic + byline) sale del viewport en escenarios comunes (título 2 líneas + deck 2 líneas), forzando scroll para ver la info. En un catálogo scrollable donde el usuario escanea pieza a pieza, sacrificar la legibilidad de la info por carácter visual rompe la función primaria. **El cover-magazine treatment pertenece al detail screen**, no al listing tile. Vuelta a 1:1.
+
+- **Regla del sistema clarificada**: "cada tab adopta el formato que mejor sirve a su CONTENIDO". Firmas usa grid 2×2 porque su contenido (logos discretos, comparables) **literalmente lo requiere**. Projects y News son ambos listings de teasers con misma función (escanear y elegir cuál abrir) → mismo aspect 1:1. La diferenciación entre projects y news viene de los campos semánticos (chip de fase vs tipo, byline logo vs textual, location/tagline vs deck), no del formato. Diferenciar por aspect cuando rompe la legibilidad del catálogo es regla artificial sin payoff.

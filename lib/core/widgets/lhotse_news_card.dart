@@ -64,13 +64,52 @@ class LhotseNewsCard extends StatelessWidget {
 
   Widget _buildFull() {
     final deckMaxLines = isLeadStory ? 3 : 2;
+    // Image stack hosts the optional play button + the type chip overlay.
+    // The Hero wraps only the LhotseImage so the chip stays in the card and
+    // doesn't travel during the shared-element transition. 1:1 aspect keeps
+    // the full caption (title + deck + byline) visible without scroll —
+    // critical for a scrollable catalogue where the user is scanning piece
+    // to piece. Cover-magazine treatment lives in the news detail screen,
+    // not in this listing tile.
     final image = AspectRatio(
       aspectRatio: 1,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          LhotseImage(imageUrl),
+          if (heroTag != null)
+            Hero(tag: heroTag!, child: LhotseImage(imageUrl))
+          else
+            LhotseImage(imageUrl),
           if (hasPlayButton) _playButton(false),
+          if (type != null && type!.isNotEmpty)
+            Positioned(
+              top: 20,
+              left: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 0.5,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  type!.toUpperCase(),
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -81,7 +120,7 @@ class LhotseNewsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (heroTag != null) Hero(tag: heroTag!, child: image) else image,
+          image,
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -89,17 +128,6 @@ class LhotseNewsCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (type != null && type!.isNotEmpty) ...[
-                  Text(
-                    type!.toUpperCase(),
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.accentMuted,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
                 // Title — Campton Light 48pt, mixed case, tight line-height.
                 Text(
                   title,

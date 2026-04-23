@@ -248,7 +248,7 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                   controller: _scrollController,
                   padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
                   itemCount: news.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 56),
+                  separatorBuilder: (_, _) => const SizedBox(height: 32),
                   itemBuilder: (context, i) {
                     final item = news[i];
                     return LhotseNewsCard(
