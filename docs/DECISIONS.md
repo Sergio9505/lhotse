@@ -1398,3 +1398,21 @@ Dos cambios + una decisión revertida tras verificación en simulador:
 - **Aspect 4:5 portrait probado y revertido** a 1:1. Hipótesis inicial: cada tab de Search puede adoptar su formato (Firmas grid 2×2 ya rompe el patrón listing) → news a 4:5 daría carácter cover-magazine. Verificación en simulador: con 4:5 (414×517pt), el caption (título displayHero + deck italic + byline) sale del viewport en escenarios comunes (título 2 líneas + deck 2 líneas), forzando scroll para ver la info. En un catálogo scrollable donde el usuario escanea pieza a pieza, sacrificar la legibilidad de la info por carácter visual rompe la función primaria. **El cover-magazine treatment pertenece al detail screen**, no al listing tile. Vuelta a 1:1.
 
 - **Regla del sistema clarificada**: "cada tab adopta el formato que mejor sirve a su CONTENIDO". Firmas usa grid 2×2 porque su contenido (logos discretos, comparables) **literalmente lo requiere**. Projects y News son ambos listings de teasers con misma función (escanear y elegir cuál abrir) → mismo aspect 1:1. La diferenciación entre projects y news viene de los campos semánticos (chip de fase vs tipo, byline logo vs textual, location/tagline vs deck), no del formato. Diferenciar por aspect cuando rompe la legibilidad del catálogo es regla artificial sin payoff.
+
+### Addendum ADR-48 (2026-04-23, alineación tipográfica con archive)
+
+Con el upgrade premium del archive (ADR-50: `displayHero` Campton Light 48pt + italic + Hero shared-element), el Home feed quedaba con tipografía inconsistente: mismo proyecto mostraba `headingLarge` w500 24pt en Home y `displayHero` Light 48pt en archive. Además no había Hero shared-element entre Home → detail.
+
+**Refinamiento aplicado en `FeedCard` sin tocar estructura SNKRS**:
+
+- Título: `headingLarge` (24pt w500) → `displayLarge` override a w300 (40pt Light, line-height 1.0). Un paso bajo el hero de archive (48pt) para mantener un beat más loud que el archive mientras comparte la familia tipográfica Campton Light.
+- Hero shared-element tag añadido al media block: `project-hero-{id}` para projects + opportunities, `news-hero-{id}` para news. Matching con los tags ya definidos en ProjectShowcaseCard / LhotseNewsCard / detail screens. Tap en feed card → imagen se expande con continuidad cinemática al detail.
+- Brand feed item queda sin Hero tag por ahora — brand detail no define Hero matching todavía.
+
+**No tocado** (estructura SNKRS intacta per ADR-48):
+- 1 per viewport, 65% media + 35% caption beige
+- CTA textual (VER PROYECTO / LEER / etc)
+- Video autoplay activo-only, pull-to-refresh, scroll memory
+- Mixed content types (project/news/opportunity/brand), curación server-side
+
+Resultado: Home sigue siendo "stadium loud SNKRS discovery" en comportamiento e interacción; gana coherencia tipográfica con el resto de la app. Rechazado: subir el título a `displayHero` 48pt (rompería carácter loud Home), chips outline sobre imagen (Home no usa chips, caption beige debajo es el lenguaje propio).

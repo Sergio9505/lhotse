@@ -34,6 +34,7 @@ class FeedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final content = _contentFor(item);
+    final heroTag = _heroTagFor(item);
     return GestureDetector(
       onTap: () => _navigate(context, item),
       behavior: HitTestBehavior.opaque,
@@ -43,18 +44,44 @@ class FeedCard extends StatelessWidget {
           children: [
             // Media takes all remaining space — caption hugs its content so
             // the image dominates the viewport without a wall of empty beige.
+            // Hero tag matches the archive cards so tapping a feed item
+            // animates the image into the detail hero with shared-element
+            // continuity (project-hero-{id}, news-hero-{id}).
             Expanded(
-              child: _Media(
-                imageUrl: content.imageUrl,
-                videoUrl: content.videoUrl,
-                isActive: isActive,
-              ),
+              child: heroTag != null
+                  ? Hero(
+                      tag: heroTag,
+                      child: _Media(
+                        imageUrl: content.imageUrl,
+                        videoUrl: content.videoUrl,
+                        isActive: isActive,
+                      ),
+                    )
+                  : _Media(
+                      imageUrl: content.imageUrl,
+                      videoUrl: content.videoUrl,
+                      isActive: isActive,
+                    ),
             ),
             _Caption(content: content),
           ],
         ),
       ),
     );
+  }
+
+  static String? _heroTagFor(FeedItem item) {
+    switch (item) {
+      case FeedProjectItem(:final project):
+      case FeedOpportunityItem(:final project):
+        return 'project-hero-${project.id}';
+      case FeedNewsItem(:final news):
+        return 'news-hero-${news.id}';
+      case FeedBrandItem():
+        // Brand detail does not define a matching Hero yet; leaving null
+        // skips the shared-element transition for that variant.
+        return null;
+    }
   }
 
   static _FeedContent _contentFor(FeedItem item) {
@@ -131,10 +158,17 @@ class _Caption extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Title — one step below archive's displayHero (48pt Light) to
+          // stay a beat louder than archive while sharing the same Campton
+          // Light (w300) tipographic family. Keeps Home's SNKRS character
+          // in structure (one per viewport, media dominates) but aligns
+          // tipografía with the rest of the system.
           Text(
             content.title,
-            style: AppTypography.headingLarge.copyWith(
+            style: AppTypography.displayLarge.copyWith(
               color: AppColors.textPrimary,
+              fontWeight: FontWeight.w300,
+              height: 1.0,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -158,6 +192,15 @@ class _MetaWithCta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Meta in mixed case for data consistency with the archive views
+    // (project.city is rendered mixed case in ProjectShowcaseCard as a
+    // descriptive subtitle; "Málaga" must read the same in Home and
+    // archive, not "MÁLAGA" here and "Málaga" there).
+    //
+    // CTA keeps uppercase for UI convention consistency with the rest of
+    // the app (filter chips, detail buttons like DESCARGAR FOLLETO, etc.).
+    // The case contrast gives the CTA slightly more presence — acceptable
+    // because it's the actionable element.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -168,11 +211,11 @@ class _MetaWithCta extends StatelessWidget {
             text: TextSpan(
               style: AppTypography.bodySmall.copyWith(
                 color: AppColors.accentMuted,
-                letterSpacing: 1.2,
+                letterSpacing: 0.2,
               ),
               children: [
                 for (int i = 0; i < parts.length; i++) ...[
-                  TextSpan(text: parts[i].toUpperCase()),
+                  TextSpan(text: parts[i]),
                   if (i < parts.length - 1)
                     TextSpan(
                       text: '  ·  ',
@@ -188,15 +231,15 @@ class _MetaWithCta extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Text(
           cta,
-          style: AppTypography.labelLarge.copyWith(
+          style: AppTypography.bodySmall.copyWith(
             color: AppColors.textPrimary,
-            letterSpacing: 1.8,
+            letterSpacing: 1.2,
           ),
         ),
         const SizedBox(width: 4),
         const PhosphorIcon(
           PhosphorIconsThin.arrowUpRight,
-          size: 14,
+          size: 12,
           color: AppColors.textPrimary,
         ),
       ],
@@ -228,9 +271,14 @@ class _FeedContent {
       title: p.name,
       imageUrl: p.imageUrl,
       videoUrl: p.videoUrl,
+      // City only (no country code): consistent with ProjectShowcaseCard in
+      // archive — "Málaga" / "Dubai" / "Miami" read cleaner and more luxury
+      // than "Málaga, ES" / "Dubai, AE". Same data, same treatment across
+      // Home and archive so the project's location string is identical in
+      // both views.
       metaParts: [
         if (p.brand.isNotEmpty) p.brand,
-        if (p.city.isNotEmpty) p.location,
+        if (p.city.isNotEmpty) p.city,
       ],
       cta: cta,
     );
