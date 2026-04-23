@@ -98,7 +98,7 @@ class _BrandsGrid extends ConsumerWidget {
           crossAxisCount: 2,
           crossAxisSpacing: AppSpacing.lg,
           mainAxisSpacing: AppSpacing.lg,
-          childAspectRatio: 1.0,
+          childAspectRatio: 0.82,
         ),
         itemCount: brands.length,
         itemBuilder: (context, i) => _BrandCard(brand: brands[i]),

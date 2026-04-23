@@ -1429,6 +1429,13 @@ Reutiliza `brand.coverImageUrl` (ya existente en `BrandData`, leído de `brands.
 
 **Regla actualizada (ADR-50 v5):** "cada tab adopta el formato que mejor sirve a su CONTENIDO" sigue vigente — Firmas requiere grid 2×2 por logos comparables, y ahora **además añade imagen** porque el cliente quiere proyectar mundo editorial por maison. La regla no cambia; cambia el contenido de Firmas (pasa de "set de logos" a "set de covers-con-wordmark").
 
+**Pulido v5.1 (mismo día, 2026-04-23):** tras ver el grid en simulador, tres afinados:
+
+- Border alpha `0.1` → `0.18` (el hairline sobre card beige-sobre-fondo-beige era visualmente nulo — ahora el frame se percibe sin romper el flat-editorial)
+- Grid spacing `AppSpacing.md` (16) → `AppSpacing.lg` (24) — cards respiraban poco verticalmente
+- Column split `3/7` → `25/75` — logo arriba con menos aire, cover abajo con más presencia
+- `childAspectRatio` `1.0` → `0.82` — **gesto final**. Sin portrait, el símil con *The World of Interiors* queda a medias (esas portadas son claramente verticales). No introduce un tercer ratio al sistema porque Firmas ya vive en su propia gramática compositiva (grid 2×2 vs listing 1:1 de projects/news); su aspect es independiente. Coste: ~2 filas por viewport en vez de ~2.5 — irrelevante con 13 firmas fijas.
+
 ### Addendum ADR-48 (2026-04-23, alineación tipográfica con archive)
 
 Con el upgrade premium del archive (ADR-50: `displayHero` Campton Light 48pt + italic + Hero shared-element), el Home feed quedaba con tipografía inconsistente: mismo proyecto mostraba `headingLarge` w500 24pt en Home y `displayHero` Light 48pt en archive. Además no había Hero shared-element entre Home → detail.
