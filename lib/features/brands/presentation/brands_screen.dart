@@ -96,8 +96,8 @@ class _BrandsGrid extends ConsumerWidget {
             AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: AppSpacing.md,
-          mainAxisSpacing: AppSpacing.md,
+          crossAxisSpacing: AppSpacing.lg,
+          mainAxisSpacing: AppSpacing.lg,
           childAspectRatio: 1.0,
         ),
         itemCount: brands.length,
@@ -131,16 +131,16 @@ class _BrandCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.background,
           border: Border.all(
-            color: AppColors.textPrimary.withValues(alpha: 0.1),
+            color: AppColors.textPrimary.withValues(alpha: 0.18),
             width: 0.5,
           ),
         ),
         child: hasCover
             ? Column(
                 children: [
-                  Expanded(flex: 3, child: Center(child: _logo())),
+                  Expanded(flex: 25, child: Center(child: _logo())),
                   Expanded(
-                    flex: 7,
+                    flex: 75,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                       child: SizedBox.expand(
