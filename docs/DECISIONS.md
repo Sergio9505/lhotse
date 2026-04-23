@@ -1399,6 +1399,36 @@ Dos cambios + una decisión revertida tras verificación en simulador:
 
 - **Regla del sistema clarificada**: "cada tab adopta el formato que mejor sirve a su CONTENIDO". Firmas usa grid 2×2 porque su contenido (logos discretos, comparables) **literalmente lo requiere**. Projects y News son ambos listings de teasers con misma función (escanear y elegir cuál abrir) → mismo aspect 1:1. La diferenciación entre projects y news viene de los campos semánticos (chip de fase vs tipo, byline logo vs textual, location/tagline vs deck), no del formato. Diferenciar por aspect cuando rompe la legibilidad del catálogo es regla artificial sin payoff.
 
+### Addendum v5 (2026-04-23, Firmas grid — magazine cover format)
+
+Evolución del grid de Firmas de logo-only monocromo a **formato magazine cover** (referencia directa: *The World of Interiors* biblioteca de issues). El cliente quiere narrativa editorial por firma, no solo identificación.
+
+**Cambio:**
+
+- **Top 30% beige** con logo SVG centrado reducido a **64×18** (wordmark discreto tipo cabecera de revista — antes 100×40, ahora prima la imagen como protagonista)
+- **Bottom 70%** con `LhotseImage(brand.coverImageUrl)` envuelto en `Padding.symmetric(horizontal: 12)` sobre fondo `AppColors.background` — la imagen queda con margen lateral simétrico sobre beige, evocando el rectángulo de portada de revista dentro de la card (fiel a referencia — edge-to-edge se descartó por "plano de app" vs "objeto editorial")
+- **Fondo de la card** pasa a `AppColors.background` (antes transparent sobre el beige del screen)
+- Hairline border 0.5px alpha 0.1 se mantiene — sharp-edge coherente con el sistema
+- Fallback: si `coverImageUrl` está vacío, card vuelve al layout logo-only centrado anterior sin romper grid
+
+Reutiliza `brand.coverImageUrl` (ya existente en `BrandData`, leído de `brands.cover_image_url` y usado en `brand_detail_screen`). No requiere schema change.
+
+**Consequences:**
+
+- (+) Firmas gana narrativa editorial por marca — cada maison proyecta su mundo visual sin necesidad de texto
+- (+) Tab FIRMAS se diferencia del resto (grid 2×2 + composición magazine) mantiene identidad propia dentro del hub Search
+- (−) **Fragmenta la unidad cromática monocroma del holding** — 13 covers introducen 13 paletas. Se asume como tradeoff consciente: la narrativa de marca por firma pesa más que la lectura "pertenecen al mismo grupo" en esta pantalla (la pertenencia al holding la comunica el chrome de la app, no el grid)
+- (−) Acerca formalmente Firmas a `ProjectShowcaseCard` del catálogo (ambos son "imagen + signifier de marca"). Diferenciación queda en: grid 2×2 vs stream vertical, ratio 1:1 card vs 1:1 imagen, wordmark top vs byline bottom
+- (−) Requiere `cover_image_url` curado por firma (ya existe en seed, verificado)
+
+**Rechazado:**
+
+- Edge-to-edge sin padding — pierde el guiño "portada enmarcada" de la referencia
+- Padding también inferior (logo arriba + imagen centrada + aire abajo) — acerca demasiado a "card de revista" hiperrealista, sobrecargado para grid 2×2 en móvil
+- Logo 72×20 (patrón `_BrandStamp`) — demasiado presente; 64×18 deja respirar mejor la cover
+
+**Regla actualizada (ADR-50 v5):** "cada tab adopta el formato que mejor sirve a su CONTENIDO" sigue vigente — Firmas requiere grid 2×2 por logos comparables, y ahora **además añade imagen** porque el cliente quiere proyectar mundo editorial por maison. La regla no cambia; cambia el contenido de Firmas (pasa de "set de logos" a "set de covers-con-wordmark").
+
 ### Addendum ADR-48 (2026-04-23, alineación tipográfica con archive)
 
 Con el upgrade premium del archive (ADR-50: `displayHero` Campton Light 48pt + italic + Hero shared-element), el Home feed quedaba con tipografía inconsistente: mismo proyecto mostraba `headingLarge` w500 24pt en Home y `displayHero` Light 48pt en archive. Además no había Hero shared-element entre Home → detail.

@@ -7,6 +7,7 @@ import '../../../core/data/brands_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_filter_tab.dart';
+import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 import 'widgets/news_archive_body.dart';
 import 'widgets/projects_archive_body.dart';
@@ -122,41 +123,61 @@ class _BrandCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasCover = brand.coverImageUrl.isNotEmpty;
     return GestureDetector(
       onTap: () => context.push('/brands/${brand.id}'),
       behavior: HitTestBehavior.opaque,
       child: Container(
         decoration: BoxDecoration(
+          color: AppColors.background,
           border: Border.all(
             color: AppColors.textPrimary.withValues(alpha: 0.1),
             width: 0.5,
           ),
         ),
-        child: Center(
-          child: brand.logoAsset != null
-              ? SizedBox(
-                  width: 100,
-                  height: 40,
-                  child: brand.logoAsset!.startsWith('http')
-                      ? SvgPicture.network(
-                          brand.logoAsset!,
-                          fit: BoxFit.contain,
-                          colorFilter: _filter,
-                        )
-                      : SvgPicture.asset(
-                          brand.logoAsset!,
-                          fit: BoxFit.contain,
-                          colorFilter: _filter,
-                        ),
-                )
-              : Text(
-                  brand.name.toUpperCase(),
-                  style: AppTypography.headingSmall.copyWith(
-                    color: AppColors.textPrimary,
+        child: hasCover
+            ? Column(
+                children: [
+                  Expanded(flex: 3, child: Center(child: _logo())),
+                  Expanded(
+                    flex: 7,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      child: SizedBox.expand(
+                        child: LhotseImage(brand.coverImageUrl),
+                      ),
+                    ),
                   ),
-                ),
-        ),
+                ],
+              )
+            : Center(child: _logo()),
       ),
+    );
+  }
+
+  Widget _logo() {
+    if (brand.logoAsset == null) {
+      return Text(
+        brand.name.toUpperCase(),
+        style: AppTypography.headingSmall.copyWith(
+          color: AppColors.textPrimary,
+        ),
+      );
+    }
+    return SizedBox(
+      width: 64,
+      height: 18,
+      child: brand.logoAsset!.startsWith('http')
+          ? SvgPicture.network(
+              brand.logoAsset!,
+              fit: BoxFit.contain,
+              colorFilter: _filter,
+            )
+          : SvgPicture.asset(
+              brand.logoAsset!,
+              fit: BoxFit.contain,
+              colorFilter: _filter,
+            ),
     );
   }
 }
