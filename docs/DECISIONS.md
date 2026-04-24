@@ -1453,3 +1453,37 @@ Con el upgrade premium del archive (ADR-50: `displayHero` Campton Light 48pt + i
 - Mixed content types (project/news/opportunity/brand), curación server-side
 
 Resultado: Home sigue siendo "stadium loud SNKRS discovery" en comportamiento e interacción; gana coherencia tipográfica con el resto de la app. Rechazado: subir el título a `displayHero` 48pt (rompería carácter loud Home), chips outline sobre imagen (Home no usa chips, caption beige debajo es el lenguaje propio).
+
+## ADR-51: Strategy Screen — Full-Beige Collapsing Hero (Supersedes ADR-7 Navy + refines ADR-14 Sequential Fade)
+
+**Date:** 2026-04-24
+
+**Context:** The Strategy screen hero went through several iterations — navy slab (ADR-7), collapsing black hero with sequential fade (ADR-14), and most recently an editorial photo hero (Alberto Aguilera 58 salon + warm gradient with the same collapsing mechanic). The photo iteration also extracted the asset-allocation breakdown (Coinversión / Compra directa / Renta fija %) into a dedicated table below the slab.
+
+Client review: the editorial photo hero felt too heavy for a wealth-report screen, and the allocation breakdown was redundant noise on top of the brand rows (which already disclose the model per row). But the **scroll-collapse mechanic itself was valuable** — title fading out + patrimonio total interpolating into the chrome-band center is the signal that keeps orientation while browsing the ledger. Preference: **strip the visual drama (photo, gradient, dark background, text shadows) but keep the collapse behaviour**, all on beige.
+
+**Decision:**
+
+- Keep the `SliverPersistentHeader` + `_HeroDelegate` pattern (same mechanic as the photo iteration) but simplified:
+  - **Background** `AppColors.background` (beige) — no photo, no gradient, no `overlayWarm`.
+  - **Text** `AppColors.textPrimary` (black) — no text shadows. Status bar icons stay dark (default over beige), so no `AnnotatedRegion<SystemUiOverlayStyle>` override.
+  - **Title** `'Mi estrategia\npatrimonial'` in `displayLarge` Campton Light w300, fades out over the first ~60% of the collapse (`titleOpacity = ((expandRatio - 0.4) / 0.6).clamp(0,1)`) — softer ramp than the photo iteration (which used `/0.4`) because there are no shadows to mask the transition.
+  - **Patrimonio total** as `RichText`: amount interpolates `28 + 20*expandRatio` (i.e. 48pt expanded → 28pt collapsed), ` €` interpolates `13 + 9*expandRatio` (22pt → 13pt). Fixed-padding position slides bottom-left (expanded) → chrome-band center (collapsed).
+  - **Logo + bell** drawn as `Positioned` children of the same delegate (`LhotseMark(color: textPrimary)` + `LhotseNotificationBell(color: textPrimary)`, no `hasShadow`) so they stay pinned while the cifra moves underneath.
+  - `expandedHeight = topPadding + 260` (down from 320 of the photo iteration — without a photo we don't need the extra respiro).
+  - `collapsedHeight = topPadding + 80` (unchanged).
+- **Remove** asset-allocation breakdown table: `_AllocationSlice`, `_allocationModels`, `_buildAllocationBreakdown` helper, and the `_AllocationTable` widget.
+- **Remove** legacy asset `assets/images/strategy_hero.webp`.
+- **Remove** `flutter/services.dart` import (no longer needed without `SystemUiOverlayStyle`).
+- Brand rows, hairline separator, and opportunities section unchanged.
+
+**Why this supersedes ADR-7 + refines ADR-14 for Strategy:**
+- ADR-7 (navy hero differentiation): no longer needed — the notification bell + bottom-nav dot already mark ESTRATEGIA as the private financial zone, and the patrimonio total itself is the loudest signal on screen. Visual differentiation doesn't require a distinct colour slab.
+- ADR-14 (sequential fade for collapsing heroes): **still applies here** — the mechanic survives, just on beige. The screen remains part of the family of collapsing heroes with sequential fade (Brand investments, project/news detail, etc.).
+
+**Trade-offs:**
+- (+) Keeps the scroll-collapse orientation cue (patrimonio total always visible in the chrome band) that the client relies on while scanning the ledger.
+- (+) Removes the editorial photo weight + dark overlays — the screen now feels closer to a wealth-report page (Pictet / Julius Bär) than to an Openhouse editorial.
+- (+) Removing the allocation table tightens the hierarchy: patrimonio → per-brand holdings → opportunities.
+- (-) The collapse is less dramatic without the photo fade underneath — acceptable; the title fade + cifra interpolation still carry the motion.
+- (-) Logo+bell have to be drawn manually in the delegate (can't reuse `LhotseShellHeader`) because their Z-order relative to the sliding cifra matters. Same trade-off as every previous iteration of this screen.
