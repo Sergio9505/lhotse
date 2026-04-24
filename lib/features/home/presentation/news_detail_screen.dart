@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/news_provider.dart';
 import '../../../core/domain/news_item_data.dart';
@@ -13,6 +12,7 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 import 'widgets/feed_video_player.dart';
+import 'widgets/fullscreen_video_player.dart';
 
 class NewsDetailScreen extends ConsumerStatefulWidget {
   const NewsDetailScreen({
@@ -368,10 +368,6 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
   }
 }
 
-// ===========================================================================
-// Fullscreen video player (placeholder until real URLs are connected)
-// ===========================================================================
-
 void _openVideoPlayer(BuildContext context, NewsItemData news) {
   Navigator.of(context).push(
     PageRouteBuilder(
@@ -383,132 +379,12 @@ void _openVideoPlayer(BuildContext context, NewsItemData news) {
             opacity: animation.value,
             child: child,
           ),
-          child: _VideoPlayerScreen(news: news),
+          child: FullscreenVideoPlayer(
+            videoUrl: news.videoUrl!,
+            posterUrl: news.imageUrl,
+          ),
         );
       },
     ),
   );
-}
-
-class _VideoPlayerScreen extends StatelessWidget {
-  const _VideoPlayerScreen({required this.news});
-
-  final NewsItemData news;
-
-  @override
-  Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: AppColors.primary,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Background image (placeholder for video)
-            LhotseImage(news.imageUrl),
-
-            // Dark overlay
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                color: Color(0x99000000),
-              ),
-            ),
-
-            // Center content
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Play icon
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow_rounded,
-                      color: Colors.white,
-                      size: 36,
-                    ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Title
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-                    child: Text(
-                      news.title.toUpperCase(),
-                      style: AppTypography.headingLarge.copyWith(
-                        color: AppColors.textOnDark,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.sm),
-
-                  // Subtitle (duration info)
-                  Text(
-                    ((news.subtitle ?? '')).toUpperCase(),
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textOnDark.withValues(alpha: 0.6),
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.xxl),
-
-                  // "Coming soon" label
-                  Text(
-                    'PRÓXIMAMENTE',
-                    style: AppTypography.labelLarge.copyWith(
-                      color: AppColors.textOnDark.withValues(alpha: 0.4),
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Close button
-            Positioned(
-              top: topPadding + AppSpacing.md,
-              right: AppSpacing.lg,
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  color: Colors.white.withValues(alpha: 0.1),
-                  child: const PhosphorIcon(
-                    PhosphorIconsThin.x,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-
-            // Bottom safe area spacer
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: SizedBox(height: bottomPadding),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

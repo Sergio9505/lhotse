@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../../../core/theme/app_theme.dart';
-
 /// Autoplay-muted video for feed cards. Starts only when the host card is at
-/// least [playThreshold] visible, pauses otherwise, and exposes a tiny
-/// mute/unmute toggle. The [posterUrl] is shown while the video downloads.
+/// least visible (via [isActive]) and pauses otherwise. Thumbnails always
+/// play silent — the fullscreen player is where audio lives.
 class FeedVideoPlayer extends StatefulWidget {
   const FeedVideoPlayer({
     super.key,
@@ -29,7 +26,6 @@ class FeedVideoPlayer extends StatefulWidget {
 class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   VideoPlayerController? _controller;
   bool _ready = false;
-  bool _muted = true;
 
   @override
   void initState() {
@@ -75,13 +71,6 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     super.dispose();
   }
 
-  void _toggleMute() {
-    final c = _controller;
-    if (c == null) return;
-    setState(() => _muted = !_muted);
-    c.setVolume(_muted ? 0 : 1);
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = _controller;
@@ -90,54 +79,13 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     // shuttle in FeedCard still draws the poster image during the transition
     // so the visual is covered during navigation. Once the controller is
     // ready, the video widget appears — no cross-fade from a static poster.
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        if (c != null && _ready)
-          FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: c.value.size.width,
-              height: c.value.size.height,
-              child: VideoPlayer(c),
-            ),
-          ),
-        if (_ready)
-          Positioned(
-            right: AppSpacing.md,
-            bottom: AppSpacing.md,
-            child: _MuteToggle(muted: _muted, onTap: _toggleMute),
-          ),
-      ],
-    );
-  }
-}
-
-class _MuteToggle extends StatelessWidget {
-  const _MuteToggle({required this.muted, required this.onTap});
-  final bool muted;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 32,
-        height: 32,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.35),
-          shape: BoxShape.circle,
-        ),
-        child: PhosphorIcon(
-          muted
-              ? PhosphorIconsThin.speakerSlash
-              : PhosphorIconsThin.speakerHigh,
-          size: 16,
-          color: AppColors.textOnDark,
-        ),
+    if (c == null || !_ready) return const SizedBox.shrink();
+    return FittedBox(
+      fit: BoxFit.cover,
+      child: SizedBox(
+        width: c.value.size.width,
+        height: c.value.size.height,
+        child: VideoPlayer(c),
       ),
     );
   }
