@@ -188,19 +188,15 @@ class _CoinversionDetailScreenState
                     children: [
                       Text(
                         '${_eurFormat.format(inv.amount)}€',
-                        style: AppTypography.headingSmall.copyWith(
+                        style: AppTypography.figureAmount.copyWith(
                           color: AppColors.textPrimary,
-                          fontFeatures: const [
-                            FontFeature.tabularFigures()
-                          ],
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         inv.projectName.toUpperCase(),
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.accentMuted,
-                          letterSpacing: 1.2,
                         ),
                       ),
                     ],
@@ -243,8 +239,8 @@ class _CoinversionDetailScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        inv.projectName.toUpperCase(),
-                        style: AppTypography.headingLarge.copyWith(
+                        inv.projectName,
+                        style: AppTypography.editorialTitle.copyWith(
                           color: AppColors.textPrimary,
                         ),
                       ),
@@ -253,9 +249,8 @@ class _CoinversionDetailScreenState
                         children: [
                           Text(
                             brandName.toUpperCase(),
-                            style: AppTypography.caption.copyWith(
+                            style: AppTypography.labelUppercaseSm.copyWith(
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w500,
                               letterSpacing: 1.8,
                             ),
                           ),
@@ -265,7 +260,7 @@ class _CoinversionDetailScreenState
                                   horizontal: 8),
                               child: Text(
                                 '•',
-                                style: AppTypography.caption.copyWith(
+                                style: AppTypography.labelUppercaseSm.copyWith(
                                   color: AppColors.textPrimary
                                       .withValues(alpha: 0.4),
                                 ),
@@ -274,7 +269,7 @@ class _CoinversionDetailScreenState
                             Flexible(
                               child: Text(
                                 projectLocation.toUpperCase(),
-                                style: AppTypography.caption.copyWith(
+                                style: AppTypography.labelUppercaseSm.copyWith(
                                   color: AppColors.accentMuted,
                                   letterSpacing: 1.35,
                                 ),
@@ -287,17 +282,15 @@ class _CoinversionDetailScreenState
                       const SizedBox(height: AppSpacing.md),
                       Text(
                         '${_eurFormat.format(inv.amount)}€',
-                        style: AppTypography.displayLarge.copyWith(
+                        style: AppTypography.figureAmount.copyWith(
                           color: AppColors.textPrimary,
-                          fontFeatures: const [
-                            FontFeature.tabularFigures()
-                          ],
+                          fontSize: 40,
                         ),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         'MI PARTICIPACIÓN',
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.accentMuted,
                           letterSpacing: 2.0,
                         ),
@@ -502,7 +495,7 @@ class _AvanceTab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Text(
             'NOTICIAS DEL PROYECTO',
-            style: AppTypography.labelLarge.copyWith(
+            style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.accentMuted,
               letterSpacing: 1.8,
             ),
@@ -644,7 +637,7 @@ class _GallerySectionHeader extends StatelessWidget {
         children: [
           Text(
             label,
-            style: AppTypography.labelLarge.copyWith(
+            style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.accentMuted,
               letterSpacing: 1.8,
             ),
@@ -890,11 +883,10 @@ class _ScenarioPanel extends StatelessWidget {
                       child: Center(
                         child: Text(
                           s.label,
-                          style: AppTypography.labelLarge.copyWith(
+                          style: AppTypography.labelUppercaseMd.copyWith(
                             color: isSelected
                                 ? AppColors.textOnDark
                                 : AppColors.accentMuted,
-                            letterSpacing: 1.5,
                           ),
                         ),
                       ),
@@ -1002,15 +994,14 @@ class _ScenarioMetric extends StatelessWidget {
       children: [
         Text(
           value,
-          style: AppTypography.headingSmall.copyWith(
+          style: AppTypography.figureAmount.copyWith(
             color: AppColors.textPrimary,
-            fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: AppTypography.bodySmall.copyWith(
+          style: AppTypography.annotation.copyWith(
             color: AppColors.accentMuted,
           ),
         ),
@@ -1093,7 +1084,7 @@ class _InvestmentTimeline extends StatelessWidget {
                     Text(
                       phase.name.toUpperCase(),
                       textAlign: TextAlign.center,
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: isCurrent
                             ? AppColors.textPrimary
                             : isPast
@@ -1111,7 +1102,7 @@ class _InvestmentTimeline extends StatelessWidget {
                       Text(
                         phase.title!,
                         textAlign: TextAlign.center,
-                        style: AppTypography.bodySmall.copyWith(
+                        style: AppTypography.annotation.copyWith(
                           color: AppColors.accentMuted,
                         ),
                         maxLines: 1,
@@ -1122,7 +1113,7 @@ class _InvestmentTimeline extends StatelessWidget {
                     Text(
                       month,
                       textAlign: TextAlign.center,
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: isCurrent
                             ? AppColors.accentMuted
                             : AppColors.textPrimary
@@ -1290,12 +1281,10 @@ class _ChipTab extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppTypography.caption.copyWith(
+          style: AppTypography.labelUppercaseSm.copyWith(
             color: isActive
                 ? AppColors.textOnDark
                 : AppColors.accentMuted,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 1.2,
           ),
         ),
       ),
@@ -1394,7 +1383,7 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
               child: Row(
                 children: [
                   Text(widget.label,
-                      style: AppTypography.labelLarge.copyWith(
+                      style: AppTypography.labelUppercaseMd.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 1.8,
                       )),
@@ -1440,15 +1429,14 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                                 Flexible(
                                     child: Text(e.label,
                                         style: AppTypography
-                                            .bodySmall
+                                            .annotation
                                             .copyWith(
                                           color: AppColors
                                               .accentMuted,
-                                          fontWeight: FontWeight.w400,
                                         ))),
                                 Text(e.value,
                                     style: AppTypography
-                                        .bodyMedium
+                                        .bodyReading
                                         .copyWith(
                                       color: AppColors
                                           .textPrimary,

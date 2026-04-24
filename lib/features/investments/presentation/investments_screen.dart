@@ -153,9 +153,8 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
               opacity: titleOpacity,
               child: Text(
                 'Mi estrategia\npatrimonial',
-                style: AppTypography.displayLarge.copyWith(
+                style: AppTypography.editorialHero.copyWith(
                   color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w300,
                   height: 1.0,
                 ),
               ),
@@ -328,9 +327,9 @@ class _BrandRowState extends State<_BrandRow> {
                                 .split(' ')
                                 .map((w) => w[0])
                                 .join(),
-                            style: AppTypography.bodySmall.copyWith(
+                            style: AppTypography.labelUppercaseSm.copyWith(
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -346,9 +345,9 @@ class _BrandRowState extends State<_BrandRow> {
                   children: [
                     Text(
                       summary.brandName.toUpperCase(),
-                      style: AppTypography.bodySmall.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -370,17 +369,13 @@ class _BrandRowState extends State<_BrandRow> {
                                   text: _eurFormat
                                       .format(summary.totalAmount)
                                       .replaceAll('.', ' '),
-                                  style: AppTypography.headingSmall.copyWith(
+                                  style: AppTypography.figureAmount.copyWith(
                                     color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w400,
-                                    fontFeatures: const [
-                                      FontFeature.tabularFigures()
-                                    ],
                                   ),
                                 ),
                                 TextSpan(
                                   text: ' €',
-                                  style: AppTypography.bodySmall.copyWith(
+                                  style: AppTypography.annotation.copyWith(
                                     color: AppColors.accentMuted,
                                   ),
                                 ),
@@ -394,17 +389,17 @@ class _BrandRowState extends State<_BrandRow> {
                             children: [
                               TextSpan(
                                 text: '${avgReturn.toStringAsFixed(1)}%',
-                                style: AppTypography.bodySmall.copyWith(
+                                style: AppTypography.annotation.copyWith(
                                   color: AppColors.accentMuted,
                                 ),
                               ),
                               if (widget.isEstimated)
                                 TextSpan(
                                   text: ' est.',
-                                  style: AppTypography.captionSmall.copyWith(
+                                  style: AppTypography.annotation.copyWith(
                                     color: AppColors.accentMuted,
                                     fontStyle: FontStyle.italic,
-                                    letterSpacing: 0.3,
+                                    fontSize: 10,
                                   ),
                                 ),
                             ],

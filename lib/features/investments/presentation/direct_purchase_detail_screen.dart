@@ -182,17 +182,15 @@ class _DirectPurchaseDetailContentState
                   children: [
                     Text(
                       '$purchaseFormatted€',
-                      style: AppTypography.headingSmall.copyWith(
+                      style: AppTypography.figureAmount.copyWith(
                         color: AppColors.textPrimary,
-                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       projectName.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.2,
                       ),
                     ),
                   ],
@@ -223,8 +221,8 @@ class _DirectPurchaseDetailContentState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      projectName.toUpperCase(),
-                      style: AppTypography.headingLarge
+                      projectName,
+                      style: AppTypography.editorialTitle
                           .copyWith(color: AppColors.textPrimary),
                     ),
                     const SizedBox(height: AppSpacing.xs),
@@ -232,9 +230,8 @@ class _DirectPurchaseDetailContentState
                       children: [
                         Text(
                           brandName.toUpperCase(),
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.labelUppercaseSm.copyWith(
                             color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w500,
                             letterSpacing: 1.8,
                           ),
                         ),
@@ -244,7 +241,7 @@ class _DirectPurchaseDetailContentState
                                 const EdgeInsets.symmetric(horizontal: 8),
                             child: Text(
                               '•',
-                              style: AppTypography.caption.copyWith(
+                              style: AppTypography.labelUppercaseSm.copyWith(
                                 color: AppColors.textPrimary
                                     .withValues(alpha: 0.4),
                               ),
@@ -253,7 +250,7 @@ class _DirectPurchaseDetailContentState
                           Flexible(
                             child: Text(
                               c.assetLocation!.toUpperCase(),
-                              style: AppTypography.caption.copyWith(
+                              style: AppTypography.labelUppercaseSm.copyWith(
                                 color: AppColors.accentMuted,
                                 letterSpacing: 1.35,
                               ),
@@ -266,15 +263,15 @@ class _DirectPurchaseDetailContentState
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       '$purchaseFormatted€',
-                      style: AppTypography.displayLarge.copyWith(
+                      style: AppTypography.figureAmount.copyWith(
                         color: AppColors.textPrimary,
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                        fontSize: 40,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       'VALOR DE COMPRA',
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 2.0,
                       ),
@@ -290,13 +287,15 @@ class _DirectPurchaseDetailContentState
                               c.monthlyRent != null
                                   ? '${_eurFormat.format(c.monthlyRent)}€'
                                   : '—',
-                              style: AppTypography.headingLarge
-                                  .copyWith(color: AppColors.textPrimary),
+                              style: AppTypography.figureAmount.copyWith(
+                                color: AppColors.textPrimary,
+                                fontSize: 24,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'ALQUILER',
-                              style: AppTypography.caption.copyWith(
+                              style: AppTypography.labelUppercaseSm.copyWith(
                                 color: AppColors.accentMuted,
                                 letterSpacing: 0.8,
                               ),
@@ -310,13 +309,15 @@ class _DirectPurchaseDetailContentState
                               c.rentalYieldPct != null
                                   ? '${c.rentalYieldPct!.toStringAsFixed(1)}%'
                                   : '—',
-                              style: AppTypography.headingLarge
-                                  .copyWith(color: AppColors.textPrimary),
+                              style: AppTypography.figureAmount.copyWith(
+                                color: AppColors.textPrimary,
+                                fontSize: 24,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'YIELD',
-                              style: AppTypography.caption.copyWith(
+                              style: AppTypography.labelUppercaseSm.copyWith(
                                 color: AppColors.accentMuted,
                                 letterSpacing: 0.8,
                               ),
@@ -330,13 +331,15 @@ class _DirectPurchaseDetailContentState
                               c.assetRevaluationPct != null
                                   ? '${c.assetRevaluationPct!.toStringAsFixed(1)}%'
                                   : '—',
-                              style: AppTypography.headingLarge
-                                  .copyWith(color: AppColors.textPrimary),
+                              style: AppTypography.figureAmount.copyWith(
+                                color: AppColors.textPrimary,
+                                fontSize: 24,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'REVALORIZACIÓN',
-                              style: AppTypography.caption.copyWith(
+                              style: AppTypography.labelUppercaseSm.copyWith(
                                 color: AppColors.accentMuted,
                                 letterSpacing: 0.8,
                               ),
@@ -483,7 +486,7 @@ class _AssetTab extends StatelessWidget {
               children: [
                 Text(
                   'GALERÍA',
-                  style: AppTypography.labelLarge.copyWith(
+                  style: AppTypography.labelUppercaseMd.copyWith(
                     color: AppColors.accentMuted,
                     letterSpacing: 1.8,
                   ),

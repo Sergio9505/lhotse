@@ -143,17 +143,15 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                   children: [
                     Text(
                       '${_eurFormat.format(returnAmount)}€',
-                      style: AppTypography.headingSmall.copyWith(
+                      style: AppTypography.figureAmount.copyWith(
                         color: AppColors.textPrimary,
-                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       d.projectName.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.2,
                       ),
                     ),
                   ],
@@ -186,32 +184,31 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      d.projectName.toUpperCase(),
-                      style: AppTypography.headingLarge.copyWith(
+                      d.projectName,
+                      style: AppTypography.editorialTitle.copyWith(
                         color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       d.brandName.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.8,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       '${_eurFormat.format(returnAmount)}€',
-                      style: AppTypography.displayLarge.copyWith(
+                      style: AppTypography.figureAmount.copyWith(
                         color: AppColors.textPrimary,
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                        fontSize: 40,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       'RETORNO TOTAL',
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 2.0,
                       ),
@@ -342,7 +339,7 @@ class _ActivoTab extends StatelessWidget {
               children: [
                 Text(
                   'GALERÍA',
-                  style: AppTypography.labelLarge.copyWith(
+                  style: AppTypography.labelUppercaseMd.copyWith(
                     color: AppColors.accentMuted,
                     letterSpacing: 1.8,
                   ),

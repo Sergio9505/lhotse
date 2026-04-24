@@ -114,9 +114,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
             ? (activePurchase.isEmpty ? 0.0 : activePurchase.map((c) => c.rentalYieldPct ?? 0).reduce((a, b) => a + b) / activePurchase.length)
             : (activeCoinvest.isEmpty ? 0.0 : activeCoinvest.map((c) => c.estimatedReturnPct ?? 0).reduce((a, b) => a + b) / activeCoinvest.length);
 
-    final heroTitle = isRentaFija
-        ? 'MIS INVERSIONES\nA RENTA FIJA'
-        : 'MIS INVERSIONES\nEN ${brandName.toUpperCase()}';
+    final heroTitle = isRentaFija ? 'Renta Fija' : brandName;
     final sectionLabel = isCompraDirecta ? 'MIS ACTIVOS' : 'ACTIVAS';
     final topPadding = MediaQuery.of(context).padding.top;
     final totalFormatted = _eurFormat.format(totalAmount);
@@ -164,7 +162,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   sectionLabel,
-                  style: AppTypography.labelLarge.copyWith(
+                  style: AppTypography.labelUppercaseMd.copyWith(
                     color: AppColors.accentMuted,
                     letterSpacing: 1.8,
                   ),
@@ -236,8 +234,9 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                     left: AppSpacing.lg, top: AppSpacing.md),
                 child: Text(
                   '* Rentabilidad y duración estimadas',
-                  style: AppTypography.caption.copyWith(
+                  style: AppTypography.annotation.copyWith(
                     color: AppColors.accentMuted,
+                    fontSize: 10,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -263,7 +262,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                         horizontal: AppSpacing.lg),
                     child: Text(
                       'FINALIZADAS',
-                      style: AppTypography.labelLarge.copyWith(
+                      style: AppTypography.labelUppercaseMd.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 1.8,
                       ),
@@ -284,10 +283,8 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                               TextSpan(
                                 text:
                                     '+${c.actualRoi!.toStringAsFixed(1)}%',
-                                style: AppTypography.caption.copyWith(
+                                style: AppTypography.labelUppercaseSm.copyWith(
                                   color: const Color(0xFF2D6A4F),
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1.2,
                                 ),
                               ),
                             ]
@@ -319,10 +316,8 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                     ...completedCoinvest.indexed.map((e) {
                       final c = e.$2;
                       final hasResults = c.actualRoi != null;
-                      final greenStyle = AppTypography.caption.copyWith(
+                      final greenStyle = AppTypography.labelUppercaseSm.copyWith(
                         color: const Color(0xFF2D6A4F),
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 1.2,
                       );
                       final returnLabelSpans = hasResults
                           ? [
@@ -469,13 +464,10 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
             child: IgnorePointer(
               child: Opacity(
                 opacity: expandedOpacity,
-                child: SizedBox(
-                  width: 200,
-                  child: Text(
-                    heroTitle,
-                    style: AppTypography.headingLarge.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
+                child: Text(
+                  heroTitle,
+                  style: AppTypography.editorialTitle.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -495,7 +487,7 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                       style: TextStyle(
                         fontFamily: 'Campton',
                         fontSize: amountSize,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                         color: AppColors.textPrimary,
                         letterSpacing: -1.0,
                         height: 1.0,
@@ -526,9 +518,8 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
               child: Text(
                 brandName.toUpperCase(),
                 textAlign: TextAlign.center,
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.labelUppercaseSm.copyWith(
                   color: AppColors.accentMuted,
-                  letterSpacing: 1.2,
                 ),
               ),
             ),
@@ -549,14 +540,14 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                         children: [
                           TextSpan(
                             text: '${averageReturn.toStringAsFixed(1)}%',
-                            style: AppTypography.bodyLarge.copyWith(
+                            style: AppTypography.figureAmount.copyWith(
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
                             ),
                           ),
                           TextSpan(
                             text: '  rentabilidad',
-                            style: AppTypography.bodySmall.copyWith(
+                            style: AppTypography.annotation.copyWith(
                               color: AppColors.accentMuted,
                             ),
                           ),
@@ -566,7 +557,7 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       '$activeCount activas${completedCount > 0 ? '  ·  $completedCount finalizadas' : ''}',
-                      style: AppTypography.bodySmall
+                      style: AppTypography.annotation
                           .copyWith(color: AppColors.accentMuted),
                     ),
                   ],
@@ -681,9 +672,9 @@ class _AssetRowState extends State<_AssetRow> {
                     if (widget.projectName.isNotEmpty)
                       Text(
                         widget.projectName.toUpperCase(),
-                        style: AppTypography.bodySmall.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
                           letterSpacing: 0.8,
                         ),
                       ),
@@ -692,8 +683,9 @@ class _AssetRowState extends State<_AssetRow> {
                         const SizedBox(height: 2),
                       Text(
                         widget.location!.toUpperCase(),
-                        style: AppTypography.bodySmall.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.accentMuted,
+                          fontSize: 12,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -704,16 +696,13 @@ class _AssetRowState extends State<_AssetRow> {
                         children: [
                           TextSpan(
                             text: _eurFormat.format(widget.amount),
-                            style: AppTypography.headingSmall.copyWith(
+                            style: AppTypography.figureAmount.copyWith(
                               color: AppColors.textPrimary,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures()
-                              ],
                             ),
                           ),
                           TextSpan(
                             text: '€',
-                            style: AppTypography.bodySmall.copyWith(
+                            style: AppTypography.annotation.copyWith(
                               color: AppColors.textPrimary,
                             ),
                           ),
@@ -724,9 +713,8 @@ class _AssetRowState extends State<_AssetRow> {
                       const SizedBox(height: 3),
                       RichText(
                         text: TextSpan(
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.labelUppercaseSm.copyWith(
                             color: AppColors.accentMuted,
-                            letterSpacing: 1.2,
                           ),
                           children: widget.returnLabelSpans,
                         ),
@@ -735,9 +723,8 @@ class _AssetRowState extends State<_AssetRow> {
                       const SizedBox(height: 3),
                       Text(
                         widget.returnLabel!.toUpperCase(),
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.accentMuted,
-                          letterSpacing: 1.2,
                         ),
                       ),
                     ],
@@ -792,10 +779,8 @@ class _RentaFijaRow extends StatelessWidget {
     final mainAmount = c.amount;
     final badgeDate = c.startDate;
     final hasDocs = c.hasDocuments;
-    final greenStyle = AppTypography.caption.copyWith(
+    final greenStyle = AppTypography.labelUppercaseSm.copyWith(
       color: const Color(0xFF2D6A4F),
-      fontWeight: FontWeight.w500,
-      letterSpacing: 1.2,
     );
 
     return Container(
@@ -825,9 +810,8 @@ class _RentaFijaRow extends StatelessWidget {
                     children: [
                       Text(
                         _kMonths[badgeDate.month - 1],
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.textOnDark,
-                          fontWeight: FontWeight.w500,
                           letterSpacing: 0.5,
                           height: 1.0,
                         ),
@@ -835,9 +819,9 @@ class _RentaFijaRow extends StatelessWidget {
                       const SizedBox(height: 1),
                       Text(
                         '${badgeDate.year % 100}',
-                        style: AppTypography.bodyLarge.copyWith(
+                        style: AppTypography.figureAmount.copyWith(
                           color: AppColors.textOnDark,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
                           height: 1.0,
                         ),
                       ),
@@ -845,9 +829,9 @@ class _RentaFijaRow extends StatelessWidget {
                   )
                 : Text(
                     '${index ?? 0}',
-                    style: AppTypography.bodyLarge.copyWith(
+                    style: AppTypography.figureAmount.copyWith(
                       color: AppColors.textOnDark,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
                     ),
                   ),
           ),
@@ -861,14 +845,13 @@ class _RentaFijaRow extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: _eurFormat.format(mainAmount),
-                        style: AppTypography.headingSmall.copyWith(
+                        style: AppTypography.figureAmount.copyWith(
                           color: AppColors.textPrimary,
-                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                       TextSpan(
                         text: '€',
-                        style: AppTypography.bodySmall.copyWith(
+                        style: AppTypography.annotation.copyWith(
                           color: AppColors.textPrimary,
                         ),
                       ),
@@ -879,9 +862,8 @@ class _RentaFijaRow extends StatelessWidget {
                 if (isCompleted)
                   RichText(
                     text: TextSpan(
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.2,
                       ),
                       children: [
                         TextSpan(
@@ -897,9 +879,8 @@ class _RentaFijaRow extends StatelessWidget {
                 else
                   RichText(
                     text: TextSpan(
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.2,
                       ),
                       children: [
                         TextSpan(
@@ -1084,7 +1065,7 @@ class _EmptyState extends StatelessWidget {
                     Text(
                       'SIN INVERSIONES',
                       textAlign: TextAlign.center,
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 2.0,
                       ),
@@ -1093,8 +1074,9 @@ class _EmptyState extends StatelessWidget {
                     Text(
                       'Todavía no tienes inversiones en esta firma.',
                       textAlign: TextAlign.center,
-                      style: AppTypography.bodyLarge.copyWith(
+                      style: AppTypography.bodyReading.copyWith(
                         color: AppColors.textPrimary,
+                        fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -1112,10 +1094,9 @@ class _EmptyState extends StatelessWidget {
                         ),
                         child: Text(
                           'VER LA FIRMA',
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.labelUppercaseMd.copyWith(
                             color: AppColors.textPrimary,
                             letterSpacing: 2.0,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
