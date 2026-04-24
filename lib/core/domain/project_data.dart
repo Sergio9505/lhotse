@@ -148,25 +148,4 @@ class ProjectData {
       assetId: row['asset_id'] as String?,
     );
   }
-
-  /// Maps a row from the `user_opportunities` view.
-  factory ProjectData.fromOpportunityRow(Map<String, dynamic> row) {
-    return ProjectData(
-      id: row['id'] as String,
-      name: row['name'] as String,
-      brand: row['brand_name'] as String? ?? '',
-      brandLogoAsset: row['logo_asset'] as String?,
-      brandId: row['brand_id'] as String?,
-      architect: '',
-      city: row['city'] as String? ?? '',
-      country: row['country'] as String? ?? '',
-      imageUrl: row['image_url'] as String,
-      videoUrl: row['video_url'] as String?,
-      tagline: '',
-      description: '',
-      isVip: row['is_vip'] as bool? ?? false,
-      isFundraisingOpen: row['is_fundraising_open'] as bool? ?? true,
-      phase: ProjectPhase.fromDb(row['phase'] as String?),
-    );
-  }
 }

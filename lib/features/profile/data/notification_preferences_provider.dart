@@ -5,7 +5,6 @@ import '../../../core/data/supabase_provider.dart';
 class NotificationPreferences {
   const NotificationPreferences({
     this.investmentUpdates = true,
-    this.newOpportunities = true,
     this.documents = false,
     this.groupNews = true,
     this.events = false,
@@ -14,7 +13,6 @@ class NotificationPreferences {
   });
 
   final bool investmentUpdates;
-  final bool newOpportunities;
   final bool documents;
   final bool groupNews;
   final bool events;
@@ -24,7 +22,6 @@ class NotificationPreferences {
   factory NotificationPreferences.fromJson(Map<String, dynamic> json) =>
       NotificationPreferences(
         investmentUpdates: json['investment_updates'] as bool? ?? true,
-        newOpportunities: json['new_opportunities'] as bool? ?? true,
         documents: json['documents'] as bool? ?? false,
         groupNews: json['group_news'] as bool? ?? true,
         events: json['events'] as bool? ?? false,
@@ -34,7 +31,6 @@ class NotificationPreferences {
 
   NotificationPreferences copyWith({
     bool? investmentUpdates,
-    bool? newOpportunities,
     bool? documents,
     bool? groupNews,
     bool? events,
@@ -43,7 +39,6 @@ class NotificationPreferences {
   }) =>
       NotificationPreferences(
         investmentUpdates: investmentUpdates ?? this.investmentUpdates,
-        newOpportunities: newOpportunities ?? this.newOpportunities,
         documents: documents ?? this.documents,
         groupNews: groupNews ?? this.groupNews,
         events: events ?? this.events,
@@ -53,7 +48,6 @@ class NotificationPreferences {
 
   Map<String, dynamic> toUpdateMap() => {
         'investment_updates': investmentUpdates,
-        'new_opportunities': newOpportunities,
         'documents': documents,
         'group_news': groupNews,
         'events': events,

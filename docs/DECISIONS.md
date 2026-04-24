@@ -1570,3 +1570,34 @@ Removed:
 - (+) `FullscreenVideoPlayer` es widget público reutilizable — project detail podrá adoptarlo cuando se añada play button ahí.
 - (+) Menos superficie de UI en thumbnail (elimina botón circular + timer de dismissal + state).
 - (-) Un usuario en contexto público sin auriculares tiene que reaccionar rápido al speaker toggle para silenciar. Mitigado por el hardware mute switch de iOS, que es el mecanismo que ese usuario ya usa por norma.
+
+---
+
+## ADR-55: Home feed server-side curated, polymorphic, roleless — supersedes ADR-52
+
+**Date:** 2026-04-24
+**Status:** Accepted
+
+**Context:** The Home feed was hybrid: `featured_projects` (curated, role-scoped, projects-only) + client-side composition that layered in news, brands, and computed opportunities. Two friction points: (1) the recently-added `logo_on_dark_media` flag lived on three different tables because the feed had no table of its own; (2) opportunities were a shrinking feature — investor-only, computed per user, and the client UI kept shedding surface area (ADR-10 killed the Strategy section, ADR-52 killed the dedicated screen). Both problems were symptoms of the same thing: the feed had no first-class representation server-side.
+
+**Decision:**
+- Introduce a single polymorphic curation table `home_feed_items (source_type ∈ {project,news,brand,asset}, source_id, sort_order, logo_on_dark_media)`. `homeFeedProvider` reads it ordered by `sort_order` and batch-fetches the four source types in parallel.
+- Drop `featured_projects` (role-scoped, projects-only — obsolete).
+- Drop `user_opportunities` view, `opportunitiesProvider`, `ProjectData.fromOpportunityRow`, `FeedOpportunityItem`, `OpportunitiesScreen`, and the `new_opportunities` notification preference. **Opportunities as a feature are removed entirely.**
+- The feed is identical for every role (viewer, investor, investor_vip). VIP gating stays per-project through the existing `showVipLockSheet` bottom sheet when a viewer taps a VIP card.
+- Add `FeedAssetItem` as a new content type — an `assets` row surfaced editorially (address, city, thumbnail_image). Tap target for its detail is TBD (tracked in ROADMAP).
+- `logo_on_dark_media` lives **only** in `home_feed_items`, keyed per slot. Removed from `projects`, `news`, and `brands` — the property is about "how the Lhotse mark reads on this slot," not an attribute of the content itself.
+- Polymorphic integrity via a trigger that validates `source_id` against the right source table. Integrity on source-row deletes is best-effort: the provider filters orphan rows (`whereType<FeedItem>`).
+
+**Rejected alternatives:**
+- Extend `featured_projects` to accept other types. Would need to drop `role` and add `source_type`, a DROP/CREATE either way — no saving.
+- Leave `logo_on_dark_media` on the source tables. Keeps the flag duplicated across three tables for a property that only matters in the Home feed slot.
+- Keep opportunities as computed client-side without a screen. Dead code path — the entity no longer exists in the product.
+
+**Trade-offs:**
+- (+) Single source of curation; admin edits one table.
+- (+) Single feed for every role — simpler mental model; no per-role divergence to reason about.
+- (+) `logoOnDarkMedia` lives where it's consumed — no cross-table duplication.
+- (+) Mass removal of dead opportunities code (~12 files touched, 1 view dropped, 1 column dropped).
+- (-) Polymorphic FK via trigger instead of referential constraints. Acceptable: the only writer is the admin via dashboard.
+- (-) Asset detail route is not yet defined — tap on `FeedAssetItem` is a no-op. Tracked.

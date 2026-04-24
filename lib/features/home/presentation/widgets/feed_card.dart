@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../../core/domain/asset_data.dart';
 import '../../../../core/domain/brand_data.dart';
 import '../../../../core/domain/news_item_data.dart';
 import '../../../../core/domain/project_data.dart';
@@ -133,10 +134,11 @@ class _FeedCardState extends State<FeedCard> {
   String? _heroTagFor(FeedItem item) {
     switch (item) {
       case FeedProjectItem(:final project):
-      case FeedOpportunityItem(:final project):
         return 'project-hero-${project.id}';
       case FeedNewsItem(:final news):
         return 'news-hero-${news.id}';
+      case FeedAssetItem(:final asset):
+        return 'asset-hero-${asset.id}';
       case FeedBrandItem():
         // Brand detail does not define a matching Hero yet; leaving null
         // skips the shared-element transition for that variant.
@@ -148,12 +150,12 @@ class _FeedCardState extends State<FeedCard> {
     switch (item) {
       case FeedProjectItem(:final project):
         return _FeedContent.fromProject(project, cta: 'VER PROYECTO');
-      case FeedOpportunityItem(:final project):
-        return _FeedContent.fromProject(project, cta: 'VER OPORTUNIDAD');
       case FeedNewsItem(:final news):
         return _FeedContent.fromNews(news);
       case FeedBrandItem(:final brand):
         return _FeedContent.fromBrand(brand);
+      case FeedAssetItem(:final asset):
+        return _FeedContent.fromAsset(asset);
     }
   }
 
@@ -166,12 +168,14 @@ class _FeedCardState extends State<FeedCard> {
     switch (item) {
       case FeedProjectItem(:final project):
         context.push('/projects/${project.id}', extra: project);
-      case FeedOpportunityItem(:final project):
-        context.push('/projects/${project.id}', extra: project);
       case FeedNewsItem(:final news):
         context.push('/news/${news.id}', extra: news);
       case FeedBrandItem(:final brand):
         context.push('/brands/${brand.id}', extra: brand);
+      case FeedAssetItem():
+        // Asset-detail route not defined yet (see ROADMAP). Tap is a no-op
+        // until the screen exists; the feed card still renders fine.
+        break;
     }
   }
 }
@@ -369,6 +373,20 @@ class _FeedContent {
       imageUrl: b.coverImageUrl,
       videoUrl: null,
       metaParts: [b.name, b.businessModel.displayName],
+      cta: 'EXPLORAR',
+    );
+  }
+
+  factory _FeedContent.fromAsset(AssetData a) {
+    final title = (a.address?.isNotEmpty ?? false) ? a.address! : a.location;
+    return _FeedContent(
+      title: title,
+      imageUrl: a.thumbnailImage ?? '',
+      videoUrl: null,
+      metaParts: [
+        if (a.city?.isNotEmpty ?? false) a.city!,
+        if (a.country?.isNotEmpty ?? false) a.country!,
+      ],
       cta: 'EXPLORAR',
     );
   }

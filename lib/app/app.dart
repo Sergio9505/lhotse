@@ -76,14 +76,11 @@ class _LhotseAppState extends ConsumerState<LhotseApp>
     }
 
     // ≥ 1 hour: catalog + slow-moving metadata (physical asset info,
-    //   project renders/economics, scenarios, phases, doc categories,
-    //   opportunity listings).
+    //   project renders/economics, scenarios, phases, doc categories).
     if (elapsed >= const Duration(hours: 1)) {
       ref.invalidate(brandsProvider);
       ref.invalidate(projectsProvider);
       ref.invalidate(assetsProvider);
-      ref.invalidate(featuredProjectsProvider);
-      ref.invalidate(opportunitiesProvider);
       ref.invalidate(purchaseAssetDetailProvider);
       ref.invalidate(coinvestmentProjectDetailProvider);
       ref.invalidate(projectScenariosProvider);

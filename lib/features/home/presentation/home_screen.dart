@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/data/assets_provider.dart';
 import '../../../core/data/brands_provider.dart';
 import '../../../core/data/news_provider.dart';
 import '../../../core/data/projects_provider.dart';
@@ -54,11 +55,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _refresh() async {
-    ref.invalidate(featuredProjectsProvider);
-    ref.invalidate(newsProvider);
     ref.invalidate(projectsProvider);
+    ref.invalidate(newsProvider);
     ref.invalidate(brandsProvider);
-    ref.invalidate(opportunitiesProvider);
+    ref.invalidate(assetsProvider);
     ref.invalidate(homeFeedProvider);
     await ref.read(homeFeedProvider.future);
   }
@@ -67,6 +67,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final feedAsync = ref.watch(homeFeedProvider);
     final mq = MediaQuery.of(context);
+
+    // Lhotse mark color follows the active feed item. Default (loading,
+    // error, empty) is white — the scaffold background is black. Flip to
+    // black only when the active media's top-left region is explicitly
+    // tagged as light.
+    final items = feedAsync.valueOrNull;
+    final activeItem = (items != null && items.isNotEmpty)
+        ? items[_activePage.clamp(0, items.length - 1)]
+        : null;
+    final markColor = (activeItem?.logoOnDarkMedia ?? true)
+        ? AppColors.textOnDark
+        : AppColors.primary;
 
     return Scaffold(
       backgroundColor: AppColors.primary,
@@ -91,21 +103,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           // Floating Lhotse mark — branding anchor on the immersive feed.
           // Positioned outside the PageView so it stays put while cards swap.
-          // Wrapped in a 44pt-tall band (matching `LhotseShellHeader`'s
-          // SizedBox) and centered vertically so the optical Y of the mark
-          // matches exactly between Home and the other shells. Left padding,
-          // top offset and the 20pt height all mirror the shell header —
-          // only color and shadow differ because this mark sits over media.
+          // 44pt-tall band matches `LhotseShellHeader`'s height so the
+          // optical Y of the mark aligns with the other shells. Color
+          // animates with a 220ms cross-fade when the active page changes
+          // (onPageChanged fires at snap, so the transition follows the
+          // settle, not the drag — good enough, and free of per-frame cost).
           Positioned(
             top: mq.padding.top + 16,
             left: AppSpacing.lg,
-            child: const SizedBox(
+            child: SizedBox(
               height: 44,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: LhotseMark(
-                  color: AppColors.textOnDark,
-                  hasShadow: true,
+                child: TweenAnimationBuilder<Color?>(
+                  tween: ColorTween(end: markColor),
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  builder: (context, color, _) =>
+                      LhotseMark(color: color ?? markColor),
                 ),
               ),
             ),

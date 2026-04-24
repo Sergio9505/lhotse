@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/project_data.dart';
-import '../domain/user_role.dart';
 import 'supabase_provider.dart';
 
 final projectsProvider = FutureProvider<List<ProjectData>>((ref) async {
@@ -23,50 +22,4 @@ final projectByIdProvider =
       .eq('id', id)
       .maybeSingle();
   return data != null ? ProjectData.fromSupabaseRow(data) : null;
-});
-
-/// Featured projects carousel — curated per role, ordered by sort_order.
-/// Each role has its own independent list (viewer / investor / investor_vip).
-final featuredProjectsProvider =
-    FutureProvider.family<List<ProjectData>, UserRole>((ref, role) async {
-  final roleStr = switch (role) {
-    UserRole.viewer => 'viewer',
-    UserRole.investor => 'investor',
-    UserRole.investorVip => 'investor_vip',
-  };
-
-  final data = await ref
-      .watch(supabaseClientProvider)
-      .from('featured_projects')
-      .select('sort_order, projects(*, brands(name, logo_asset), assets(city, country, address, surface_m2, bedrooms, bathrooms, floor, year_built, year_renovated, terrace_m2, parking_spots, storage_room, orientation, views, plot_m2, has_pool, floor_plan_url))')
-      .eq('role', roleStr)
-      .order('sort_order', ascending: true);
-
-  return (data as List<dynamic>).map((e) {
-    final row =
-        (e as Map<String, dynamic>)['projects'] as Map<String, dynamic>;
-    return ProjectData.fromSupabaseRow(row);
-  }).toList();
-});
-
-/// Opportunities: projects the current user is NOT invested in.
-/// Reads from the `user_opportunities` view (auth.uid() resolves inside).
-final opportunitiesProvider =
-    FutureProvider.family<List<ProjectData>, Map<String, String?>>(
-        (ref, params) async {
-  final userId = ref.watch(currentUserIdProvider).valueOrNull;
-  if (userId == null) return [];
-  var query = ref.watch(supabaseClientProvider).from('user_opportunities').select();
-  final model = params['model'];
-  if (model != null) {
-    query = query.eq('business_model', model);
-  }
-  final location = params['location'];
-  if (location != null) {
-    query = query.or('city.ilike.%$location%,country.ilike.%$location%');
-  }
-  final data = await query.order('created_at', ascending: false);
-  return (data as List<dynamic>)
-      .map((e) => ProjectData.fromOpportunityRow(e as Map<String, dynamic>))
-      .toList();
 });

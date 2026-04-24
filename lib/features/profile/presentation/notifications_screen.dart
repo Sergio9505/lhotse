@@ -56,11 +56,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               onChanged: (v) => _toggle(p.copyWith(investmentUpdates: v)),
             ),
             _ToggleRow(
-              label: 'Nuevas oportunidades',
-              value: p.newOpportunities,
-              onChanged: (v) => _toggle(p.copyWith(newOpportunities: v)),
-            ),
-            _ToggleRow(
               label: 'Documentos disponibles',
               value: p.documents,
               onChanged: (v) => _toggle(p.copyWith(documents: v)),

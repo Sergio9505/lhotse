@@ -66,8 +66,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Future<void> _warmUpAndNavigate() async {
     final authed = Supabase.instance.client.auth.currentUser != null;
 
-    // featuredProjectsProvider is family by UserRole — fetched lazily by
-    // the home screen once the user profile resolves. Not warmed here.
+    // homeFeedProvider is not warmed here — home screen fetches it on first
+    // paint; the 4 source providers below are what it joins on.
     final futures = <Future<void>>[
       _safe(ref.read(brandsProvider.future)),
       _safe(ref.read(projectsProvider.future)),

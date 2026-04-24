@@ -78,7 +78,7 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - **Renta Fija**: inline in InvestmentDetailScreen — contract metrics, no L3 detail
 - **Completed detail**: CompletedContractData adapter (maps from either purchase or coinvest)
 - **Alquiler**: rental_contracts + rental_payments. Rental income shown in purchase contract detail (rental_yield_pct derived in view). No separate screen yet.
-- **Opportunities** (discovery): live only in the Home feed as `FeedOpportunityItem` (investor-only). No dedicated screen, no RPC-filtered results page — that was removed (ADR-10 → superseded by ADR-52).
+- **Opportunities**: removed as a feature (ADR-55 supersedes ADR-52 which superseded ADR-10). No dedicated screen, no `FeedOpportunityItem`, no `user_opportunities` view, no `newOpportunities` preference. Discovery lives inside the curated Home feed alongside projects, news, brands, and assets — the admin picks what goes in `home_feed_items`.
 
 ### Profile (Mi Perfil)
 - User info (name, email, photo)

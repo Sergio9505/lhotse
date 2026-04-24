@@ -3,8 +3,8 @@ import '../domain/brand_data.dart';
 import 'supabase_provider.dart';
 
 /// Public brand catalog. Only visible brands. Consumers (Firmas list, search,
-/// opportunity + news + project filter chips) must not expose brands the
-/// admin has toggled off.
+/// news + project filter chips) must not expose brands the admin has toggled
+/// off.
 ///
 /// `brandByIdProvider` deliberately does NOT filter — investors with
 /// contracts in a hidden brand must still see its name in L3 screens.
