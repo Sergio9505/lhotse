@@ -43,26 +43,6 @@ class InvestmentsScreen extends ConsumerWidget {
             ),
           ),
 
-
-          // Hairline separator — closes the allocation block and marks
-          // the transition to the holdings detail (brand rows). Pictet
-          // / Julius Bär reporting convention between allocation summary
-          // and holdings list.
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.sm,
-                AppSpacing.lg,
-                AppSpacing.md,
-              ),
-              child: Container(
-                height: 0.5,
-                color: AppColors.textPrimary.withValues(alpha: 0.15),
-              ),
-            ),
-          ),
-
           // Brand rows
           if (summaries.isEmpty && summariesAsync.isLoading)
             const SliverToBoxAdapter(
@@ -130,8 +110,19 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    final expandRatio =
-        (1 - shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
+    // Remap collapse range to actual available scroll so the animation
+    // always completes — otherwise, when the list is short, the hero
+    // freezes mid-collapse (maxScrollExtent < maxExtent-minExtent).
+    final collapseRange = maxExtent - minExtent;
+    final position = Scrollable.maybeOf(context)?.position;
+    final maxScroll = (position != null && position.hasContentDimensions)
+        ? position.maxScrollExtent
+        : collapseRange;
+    final effectiveRange =
+        maxScroll < collapseRange ? maxScroll : collapseRange;
+    final expandRatio = effectiveRange <= 0
+        ? 1.0
+        : (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0);
     final amountSize = 28 + (20 * expandRatio);
     final euroSize = 13 + (9 * expandRatio);
     // Title fades out gently across the first 60% of the collapse so the
@@ -362,56 +353,64 @@ class _BrandRowState extends State<_BrandRow> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            // European luxury format: space separators +
-                            // Campton w400 Book (not bold) so the list
-                            // matches the hero's tipography family —
-                            // Pictet / Julius Bär / Lombard Odier reports.
-                            text: _eurFormat
-                                .format(summary.totalAmount)
-                                .replaceAll('.', ' '),
-                            style: AppTypography.headingSmall.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w400,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures()
+                    // Tabular layout: amount column with fixed width
+                    // (left-aligned so the first digit anchors with the
+                    // brand name above) and % starting at the same X
+                    // across all rows.
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        SizedBox(
+                          width: 140,
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: _eurFormat
+                                      .format(summary.totalAmount)
+                                      .replaceAll('.', ' '),
+                                  style: AppTypography.headingSmall.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w400,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures()
+                                    ],
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' €',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.accentMuted,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          TextSpan(
-                            // € subordinate: muted color + non-breaking
-                            // space before, same treatment as the hero.
-                            text: ' €',
-                            style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.accentMuted,
-                            ),
-                          ),
-                          TextSpan(
-                            text:
-                                '   ·   ${avgReturn.toStringAsFixed(1)}%',
-                            style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.accentMuted,
-                            ),
-                          ),
-                          if (widget.isEstimated)
-                            TextSpan(
-                              // "est." inline replaces the cryptic "*".
-                              // Auto-explanatory for a financial reader;
-                              // lets us drop the footnote entirely. Italic
-                              // + smaller + muted so it reads as an
-                              // editorial annotation, not extra data.
-                              text: ' est.',
-                              style: AppTypography.captionSmall.copyWith(
-                                color: AppColors.accentMuted,
-                                fontStyle: FontStyle.italic,
-                                letterSpacing: 0.3,
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${avgReturn.toStringAsFixed(1)}%',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.accentMuted,
+                                ),
                               ),
-                            ),
-                        ],
-                      ),
+                              if (widget.isEstimated)
+                                TextSpan(
+                                  text: ' est.',
+                                  style: AppTypography.captionSmall.copyWith(
+                                    color: AppColors.accentMuted,
+                                    fontStyle: FontStyle.italic,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
