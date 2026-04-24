@@ -8,11 +8,11 @@
 ## Naming
 - Files: `snake_case.dart`
 - Classes: `PascalCase`
-- Variables/functions: `camelCase`
-- DB columns (future): `snake_case`
+- Variables / functions: `camelCase`
 - Providers: `{name}Provider` (e.g. `projectsProvider`)
 - Repositories: `{Name}Repository` (e.g. `ProjectRepository`)
 - Controllers: `{Name}Controller` extends `StateNotifier`
+- **DB ↔ Dart boundary**: DB uses `snake_case` (tables, columns, views — see § Database below); Dart uses `camelCase`. Mapping happens in `fromJson` / model factories, never in the UI.
 
 ## State Management (Riverpod)
 - `ref.watch()` for reactive data, `ref.read()` for one-off actions (callbacks)
@@ -46,6 +46,8 @@
 - Foreign keys: `{referenced_table_singular}_id` (`brand_id`, `user_id`, `project_id`)
 
 ### Views — mandatory rules
+> Canonical principles in `ARCHITECTURE.md § Security model` + `§ Architectural patterns`. The list below is the operational checklist.
+
 1. **Always** `ALTER VIEW {name} SET (security_invoker = true)` — ensures RLS applies to the calling user, not the view owner
 2. **Always** `NOTIFY pgrst, 'reload schema'` after creating/altering views — flushes PostgREST cache
 3. No `v_` or `_` prefix — views are first-class API endpoints
@@ -120,52 +122,14 @@
 
 ---
 
-## Data Layer — Mock-First Pattern
+## Data Layer
 
-### Repository Interface
-Every feature defines an abstract repository:
-```dart
-abstract class ProjectRepository {
-  Future<List<Project>> getProjects();
-  Future<Project> getProjectById(String id);
-}
-```
+Supabase is fully connected. Providers read through `Supabase.instance.client` directly from `lib/core/data/` and map raw rows to Freezed domain models inside the provider / repository (never in the UI). The `lib/core/data/mock/` directory is a historical artefact of the mock-first phase (ADR-2, now **Superseded**); it is empty — do not reintroduce mocks.
 
-### Mock Implementation
-```dart
-class MockProjectRepository implements ProjectRepository {
-  @override
-  Future<List<Project>> getProjects() async {
-    await Future.delayed(const Duration(milliseconds: 300)); // simulate network
-    return MockData.projects;
-  }
-}
-```
-
-### Mock Data
-All mock data lives in `lib/core/data/mock/`:
-- One file per domain: `mock_projects.dart`, `mock_brands.dart`, etc.
-- Uses realistic data matching Figma designs
-- Simulates network delay (300ms) to test loading states
-
-### Provider Registration
-```dart
-final projectRepositoryProvider = Provider<ProjectRepository>((ref) {
-  return MockProjectRepository(); // → SupabaseProjectRepository() later
-});
-```
-
-### Transition to Supabase
-When connecting Supabase:
-1. Create `SupabaseProjectRepository implements ProjectRepository`
-2. Swap the provider implementation — screens don't change
-3. Delete mock files
-
-### Rules
-- **Never** import mock data directly in screens — always go through repository
-- **Never** hardcode data in widgets — always receive via constructor or provider
-- Keep mock data in dedicated files, not scattered across features
-- Repository methods return domain models, not raw maps/JSON
+Provider conventions:
+- One provider file per domain (`projects_provider.dart`, `news_provider.dart`, …).
+- Per-user providers watch `currentUserIdProvider` (`.distinct()`) — see **Auth Flow** below — to force a fresh fetch on auth change. Never read `supabaseAuthProvider.currentUser` directly for cache keys.
+- Mutations call `ref.invalidate(provider)` to force re-fetch; UI reconciles via `AsyncValue`.
 
 ## Navigation (GoRouter)
 - Named routes with path params: `/brands/:id`
@@ -221,3 +185,37 @@ DefaultTabController(
 - **Never use `AnimatedSwitcher` for tab content** — it destroys and rebuilds widgets, losing state. Use `TabBarView` or `IndexedStack`.
 - **Never put tabs in SliverAppBar `bottom` AND identity data in a separate sliver** — this creates duplicate-info states during scroll. Keep everything that collapses inside `flexibleSpace`.
 - If a change requires hacking scroll offsets or managing multiple boolean flags (`_heroGone`, `_identityGone`), the architecture is wrong — restructure.
+
+## Auth Flow
+
+Supabase Auth via `AuthRepository` (`lib/features/auth/data/auth_repository.dart`). No public registration — only admins create accounts through the Supabase dashboard.
+
+### Screens
+- `WelcomeScreen` — fullscreen video loop via `video_player` with a Ken Burns static-image fallback while the video loads (`AnimationController` 12s, scale 1.0 → 1.08, repeat). Velvet multi-stop gradient over 65% height, 44px logo, tagline 13px w400 white 75% letterSpacing 2.0, single outline CTA "INICIAR SESIÓN" (0.5px border).
+- `LoginScreen` — beige background, header + `LhotseAuthField` for email/password + forgot-password link.
+- `LhotseAuthField` — underline-only border (0.5px inactive → 1px focused), Campton 18px w400, caption label above (accentMuted uppercase letterSpacing 1.8), optional eye toggle (PhosphorIconsThin 20px), error text below (danger).
+
+### Router guard
+GoRouter `redirect` sends unauthenticated users to `/welcome` and authenticated ones away from `/welcome` / `/login` toward `/home`. Role-based guards (e.g. blocking viewers from `/investments`) use the same mechanism.
+
+### Per-user cache — `currentUserIdProvider.distinct()`
+**Critical gotcha.** Riverpod's `FutureProvider`s keyed to the current user must watch `currentUserIdProvider` with `.distinct()`, not `supabaseAuthProvider.currentUser`.
+
+Reason: Supabase reuses the same `User` object reference across a session; reading `currentUser` inside a provider returns the same identity even after `signOut() + signIn(otherUser)`, so Riverpod does not detect the change and serves stale data to the new user.
+
+Pattern:
+```dart
+final currentUserIdProvider = StreamProvider<String?>((ref) {
+  return Supabase.instance.client.auth.onAuthStateChange
+      .map((state) => state.session?.user.id)
+      .distinct(); // <- mandatory
+});
+
+final myInvestmentsProvider = FutureProvider.autoDispose((ref) async {
+  final userId = ref.watch(currentUserIdProvider).value;
+  if (userId == null) return const <InvestmentData>[];
+  // query here — cache is now keyed off a primitive that actually changes
+});
+```
+
+`currentUserProfileProvider` exposes name / role / memberSince from `user_profiles`, wired the same way. `ProfileScreen` calls `AuthRepository.signOut()` on logout — the router guard takes it from there.

@@ -81,12 +81,12 @@ To be extracted from Figma as screens are built:
   - **Compact** (`.compact()`): 260×160 with beige overlay on image (surface 75%), single-line uppercase title + brand·subtitle meta. Used in horizontal carousels inside news detail + coinversion detail
 - [x] Project carousel — `ProjectCarousel` in `home/presentation/widgets/project_carousel.dart`. PageView with 5s auto-scroll + progress bar
 - [x] Search field — `LhotseSearchField` in `core/widgets/lhotse_search_field.dart`
-- [x] Brand filter row — `LhotseBrandFilterRow` in `core/widgets/lhotse_brand_filter_row.dart`. Horizontal scroll of SVG logos/initials (32px) with multi-select (opacity-based). Used in AllProjects, Opportunities, AllNews
+- [x] Brand filter row — `LhotseBrandFilterRow` in `core/widgets/lhotse_brand_filter_row.dart`. Horizontal scroll of SVG logos/initials (32px) with multi-select (opacity-based). Used in AllProjects + AllNews (Opportunities dedicated screen was removed — ADR-52)
 - [x] Filter bar — `_FilterBar` in `all_projects_screen.dart`. Status filters + brand/search tool icons after separator
 - [x] Scroll-aware filter bar — `ScrollAwareFilterBar` in `core/widgets/scroll_aware_filter_bar.dart`. Premium reading-app UX (Apple Stocks / NYT): hides itself completely while the user actively scrolls down (threshold 6pt), restores itself after 2s of scroll idleness. No collapsed pill — the primary navigation tabs (FIRMAS/PROYECTOS/NOTICIAS) above already communicate the active section, so a textual placeholder would be redundant. Uses `AnimatedSize` (250ms easeOutCubic) + `AnimatedSwitcher` (200ms fade) for the transition. Host screen owns a `ScrollController` passed in; `expanded` slot receives the screen-specific filter layout. Used in AllProjects + AllNews + both Archive bodies
 - [x] Back button — `LhotseBackButton` in `core/widgets/lhotse_back_button.dart`. Two variants: `.onImage()` (frosted glass circle, backdrop blur, white arrow) and `.onSurface()` (minimal navy arrow, opacity feedback). 44px touch target, 20px icon. Defaults to `context.pop()`
 - [x] Ledger row — `LhotseLedgerRow` in `core/widgets/lhotse_ledger_row.dart`. Leading widget + title/subtitle + amount/return. isLast (no border), muted (for completed). Used in brand investments. Strategy screen uses custom `_BrandRow` with cross layout
-- [x] App header — `LhotseAppHeader` in `core/widgets/lhotse_app_header.dart`. Back button + centered title + optional subtitle + Lhotse logo. 44px balanced sides
+- [x] App header — `LhotseAppHeader` in `core/widgets/lhotse_app_header.dart`. Back button + centered title + optional subtitle. 44px balanced sides. Shell headers (Home / Brands / Search / Profile) use `LhotseShellHeader` instead (title + notification bell — the Lhotse logo was removed from every shell header when the bell replaced it)
 - [x] Bottom sheet — `showLhotseBottomSheet` in `core/widgets/lhotse_bottom_sheet.dart`. Drag handle + title + scrollable list. Fixed height adapted to content (clamp 0.3–0.8), cannot expand (maxChildSize = initialSize), drag down to dismiss. Optional `listPadding` for items with own padding
 - [x] Metric block — `LhotseMetricBlock` in `core/widgets/lhotse_metric_block.dart`. Value (headingSmall 18px) + label (bodySmall 12px). Used in 2x2 grids across all investment detail variants
 - [x] Section label — `LhotseSectionLabel` in `core/widgets/lhotse_section_label.dart`. Uppercase text (labelLarge 11px/700, letterSpacing 1.8, accentMuted). Used across all detail screens
@@ -134,3 +134,36 @@ To be extracted from Figma as screens are built:
 - Percentages: one decimal (12,5%), colored by positive/negative
 - **Green (#2D6A4F) = realized returns only** — completed investments, confirmed gains. Active/estimated returns stay accentMuted. Green signals "money earned", not "money expected"
 - **Asterisk pattern** — estimated values get `*` suffix with footnote "* Rentabilidad estimada". RF excluded (contractual rate). Consistent across L1 (Strategy) and L2 (Brand investments)
+
+## Home Feed (SNKRS-inspired)
+- **One content unit per viewport** (100vh). Media top ~65% + beige caption ~35%. Title `displayLarge` Campton Light w300 40pt (tight line-height 1.0) — one step below archive's `displayHero` 48pt to keep Home louder than archive while sharing the Campton Light family. Meta (brand · city · date) bodySmall accentMuted letterSpacing 1.2 inline with right-aligned textual CTA (VER PROYECTO / LEER / VER OPORTUNIDAD / EXPLORAR) in labelLarge + arrow icon.
+- **Media** — `LhotseImage` or `FeedVideoPlayer` (muted autoplay) wrapped in `Hero(tag: 'project-hero-{id}' | 'news-hero-{id}')` for the shared-element transition into the detail. Hero tags match the ones used by `ProjectShowcaseCard` and `LhotseNewsCard` — so the user can enter detail from Home or from Archive with the same animation.
+- **Item types** — `FeedProjectItem`, `FeedNewsItem`, `FeedOpportunityItem` (investor-only), `FeedBrandItem` (1 rotating daily). Curation composed client-side in `homeFeedProvider`.
+- **Scroll state** — tab scroll + page position preserved natively by `StatefulNavigationShell` (IndexedStack). No ad-hoc provider. Tap on the currently-active tab → `goBranch(i, initialLocation: true)` pops the branch's stack to its root (Instagram / Apple pattern).
+- **Pull-to-refresh** invalidates every feed provider used by the composition.
+
+## Archive Browsing
+- Catálogo (AllProjects) + Noticias (NewsArchiveBody) live inside Search idle state as two tabs (**CATÁLOGO · NOTICIAS**). Search absorbs what used to be sub-screens of Home. Legacy routes `/projects` and `/news` stay alive solely for deeplinks — they are not shell entry points any more.
+- Both tabs use `ScrollAwareFilterBar` (see above) and share the 1:1 captioned-photograph language — `ProjectShowcaseCard` for catálogo, `LhotseNewsCard` default for noticias.
+
+## Project + News Detail Heros (ADR-49 coherence)
+- `expandedHeight = screen * 0.55` (up from the legacy 200px) with a warm sepia gradient bottom (`AppColors.overlayWarm`).
+- **Identity block** — kicker above a mixed-case `displayMedium` title + deck (`news.subtitle` / `project.tagline`) + byline (`POR BRAND · DATE` for news, location for project). Collapsed app-bar titles remain UPPERCASE.
+- News detail: the lateral type-badge row is absorbed by the kicker — do not reintroduce a separate chip.
+- When `videoUrl` is present the hero renders `FeedVideoPlayer` (muted fijo). News: tap on the hero opens `FullscreenVideoPlayer` if `news.hasPlayButton == true`. Project detail does not yet expose a fullscreen trigger (intentional — phase chip + VIP chip already compete for the image space).
+
+## Video System (ADR-54)
+Regla del sistema — el contexto de reproducción determina el tratamiento del audio:
+- **Thumbnails** (`FeedVideoPlayer`, `lib/features/home/presentation/widgets/feed_video_player.dart`) — always muted. `setVolume(0)` on init, autoplay only while `isActive`, pause off-screen. **No UI toggle** — the thumbnail never offers to unmute. Used in Home feed + Project detail hero + News detail hero.
+- **Fullscreen** (`FullscreenVideoPlayer`, `.../widgets/fullscreen_video_player.dart`) — unmuted. `setVolume(1)` on init. Controls auto-hide 3s after load / last interaction. Tap anywhere on the video toggles controls; pausing or reaching the end pins them visible. Controls: `X` close top-left, speaker toggle top-right, 72×72 play/pause in the center, scrubber + `current / total` bottom. All buttons are the shared `_ChromeButton` chassis (44×44 hit target, black 35% circle, Phosphor thin icon, `textOnDark`). Respects iOS hardware mute switch natively through AVPlayer.
+- Failure path — if `initialize()` throws, the player renders the poster + dark overlay + copy `Vídeo no disponible` + X. No retry, no spinner.
+
+## Notifications UI
+- `LhotseNotificationBell` in shell headers (Home / Brands / Search / Profile via `LhotseShellHeader`; Strategy via `Positioned` inside its `_HeroDelegate` so it paints on top of the collapsing hero at the right Z-order).
+- `LhotseNotificationBadge` — 6px red dot, explicit exception to the sharp-edges rule. Also renders over the `ESTRATEGIA` tab when there are investment-related notifications pending.
+- Opened via `showNotificationsSheet()` (`features/notifications/presentation/notifications_sheet.dart`) — bottom sheet grouped HOY / ESTA SEMANA / ANTERIORES with type icons and read/unread state. No filter chips (per feedback: notification centers must stay simple, action labels self-explanatory).
+
+## VIP Projects
+- `PRIVATE` chip top-right of the hero image — **fill black** (`AppColors.primary`), white caption w500 letterSpacing 1.5. Coexists with the outline phase chip top-left; the fill/outline contrast creates automatic hierarchy.
+- Tap on a locked VIP card → `showVipLockSheet()` — beige bottom sheet with a lock icon, hairline separator, and a monochromatic CTA.
+- `gold` (`#DAAC03`) is reserved **exclusively** for the investor-VIP role badge. Do not use it anywhere else — the mono-luxury palette depends on the exception staying narrow.

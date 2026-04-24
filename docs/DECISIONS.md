@@ -21,7 +21,7 @@
 ## ADR-2: Mock-First Architecture
 
 **Date:** 2026-03-27
-**Status:** Accepted
+**Status:** Superseded (2026-04-24 — Supabase fully connected, all repositories live, `lib/core/data/mock/` emptied)
 
 **Context:** Need to show a working prototype quickly before connecting to Supabase. Business wants to see the design implemented with realistic data.
 
@@ -1545,3 +1545,28 @@ Removed:
 - (-) `cached_network_image` transitively brings `sqflite` + `path_provider` — slightly heavier build, irrelevant at runtime.
 - (-) Very first view of any image (fresh install) still shows the beige placeholder for a beat while the network fetches. Acceptable; the fade turns "flicker" into a deliberate-looking load transition.
 
+---
+
+## ADR-54: Video audio — thumbnails muted fijo, fullscreen unmuted con controles
+
+**Date:** 2026-04-24
+
+**Context:** El app tiene dos contextos de reproducción de video y la gestión de audio estaba mal en ambos:
+1. **Thumbnails** (`FeedVideoPlayer` en home feed + project/news detail heros): autoplay muted correcto, pero con un botón `_MuteToggle` que permitía desilenciar. En reproducción pasiva (scroll sobre el feed, entrar al detalle) cualquier audio es invasivo — el control no aportaba valor y ensuciaba el layout editorial.
+2. **Fullscreen** (tap en hero de noticia con `hasPlayButton`): `_VideoPlayerScreen` era un placeholder estático (imagen + "PRÓXIMAMENTE") sin reproductor real.
+
+**Decision:** Establecer una regla del sistema — el contexto de reproducción determina la gestión de audio:
+
+- **Thumbnail → muted fijo, sin toggle.** `setVolume(0)` permanente. Reproducción pasiva, el usuario no pidió ver el video, inyectar audio sería hostil. Elimina `_muted`, `_toggleMute`, `_MuteToggle` de `FeedVideoPlayer`.
+- **Fullscreen → unmuted, con controles para silenciar.** `setVolume(1)` al arrancar — el usuario tapeó play explícitamente, la acción implica "quiero ver esto completo". `FullscreenVideoPlayer` (nuevo widget público) con controles auto-hide (X cerrar top-left, speaker toggle top-right, play/pause central 72×72, scrubber + duración bottom). Visibles al arrancar + 3s, tap en video los toggle, pausa/fin los pinnea visibles. Respeta hardware mute switch de iOS por defecto vía AVPlayer del paquete `video_player`.
+
+**Rejected alternatives:**
+- **Fullscreen muted con badge "TAP PARA SONIDO"**: más conservador pero frustrante — el usuario ya hizo la acción explícita de play y tiene que hacer una segunda para oír. Los navegadores bloquean autoplay con sonido por policy, pero en native app (iOS/Android) no hay tal restricción y el hardware mute switch cubre el caso del contexto público.
+- **Mantener toggle en thumbnail "por si acaso"**: contradice el patrón premium editorial (NYT, Apple Newsroom, Dior) donde el thumbnail es siempre silent y la decisión de audio pasa al fullscreen.
+- **Fullscreen con controles siempre visibles**: ensucia el contenido, rompe el tono Apple TV / Netflix.
+
+**Trade-offs:**
+- (+) Regla clara y coherente del sistema — predecible para el usuario y fácil de aplicar a futuros videos.
+- (+) `FullscreenVideoPlayer` es widget público reutilizable — project detail podrá adoptarlo cuando se añada play button ahí.
+- (+) Menos superficie de UI en thumbnail (elimina botón circular + timer de dismissal + state).
+- (-) Un usuario en contexto público sin auriculares tiene que reaccionar rápido al speaker toggle para silenciar. Mitigado por el hardware mute switch de iOS, que es el mecanismo que ese usuario ya usa por norma.

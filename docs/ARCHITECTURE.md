@@ -71,10 +71,11 @@ User-scoped views do NOT expose `user_id` as a column. Client code does NOT filt
 ## Anti-patterns (do NOT do)
 
 - **JSONB for typed attributes** — use real columns (see ADR-33).
-- **FLOAT/DOUBLE for money** — use `NUMERIC(14,2)`.
 - **Denormalization beyond principles 1a/1b** — if you can't cite the principle, don't duplicate.
 - **Orphan views** — no view without a documented Flutter consumer. Dropping them is cheaper than keeping them.
 - **Renaming columns via REPLACE VIEW** — Postgres rejects this silently. Always `DROP VIEW + CREATE VIEW`.
+
+Operational column-type rules (money as `NUMERIC(14,2)`, timestamps as `TIMESTAMPTZ`, enum-likes as `TEXT CHECK (...)`, etc.) are the implementer's checklist — see `CONVENTIONS.md § Column types` rather than duplicating them here.
 
 ## Extension protocol
 
