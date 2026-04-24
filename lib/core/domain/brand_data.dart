@@ -2,7 +2,7 @@ enum BusinessModel { directPurchase, coinvestment, fixedIncome }
 
 extension BusinessModelLabel on BusinessModel {
   String get displayName => switch (this) {
-        BusinessModel.directPurchase => 'Compra Directa',
+        BusinessModel.directPurchase => 'Adquisición',
         BusinessModel.coinvestment => 'Coinversión',
         BusinessModel.fixedIncome => 'Renta Fija',
       };

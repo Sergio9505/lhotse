@@ -1601,3 +1601,14 @@ Removed:
 - (+) Mass removal of dead opportunities code (~12 files touched, 1 view dropped, 1 column dropped).
 - (-) Polymorphic FK via trigger instead of referential constraints. Acceptable: the only writer is the admin via dashboard.
 - (-) Asset detail route is not yet defined — tap on `FeedAssetItem` is a no-op. Tracked.
+## ADR: Rename "Compra Directa" → "Adquisición" (2026-04-24)
+
+**Decision**: the UI label for the `direct_purchase` business model changes from "Compra Directa" to "Adquisición" across app and admin.
+
+**Motivation**: "Compra Directa" broke register parity with "Coinversión" and "Renta Fija" — sounded like a retail transaction rather than a financial product. "Adquisición" is a single word with a private-banking tone; within Lhotse's real-estate context there's no ambiguity with other meanings (M&A, procurement).
+
+**Impact**: visible label only. The following identifiers stay intact:
+- DB value `direct_purchase` (table `purchase_contracts`, view `user_direct_purchases`, routes, bucket paths).
+- Dart `BusinessModel.directPurchase` enum and the `'direct_purchase'` JSON serialization.
+- Internal variable names like `isCompraDirecta` in `brand_investments_screen.dart` and file names (`direct_purchase_detail_screen.dart`). An identifier refactor is out of scope.
+- Historical ADRs mentioning "CompraDirecta" or "compra directa" (historical record — not rewritten).

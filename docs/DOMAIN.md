@@ -9,8 +9,8 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 | Lhotse Group | Parent holding company |
 | Brand / Firma | A company within the Lhotse Group (Myttas, Lacomb & Bos, Vellte, NUVE, Domorato, Andhy, Ciclo, Renta Fija, Llabe…). Model: `BrandData` (id, name, logoAsset?, coverImageUrl) — logos served from Supabase Storage (brand-assets/logos/) |
 | Project | A specific real estate investment project managed by a brand. Model: `ProjectData` (id, name, brand, architect, location, imageUrl, tagline, description, galleryImages, isVip, isFundraisingOpen, phase, constructionCompletedAt). **Lifecycle state lives on two orthogonal axes (ADR-47)**: commercial (`isFundraisingOpen` — accepting new investors) and physical (`phase`: `preConstruction` / `construction` / `exited`). Typed economic columns on `projects`: purchase_price, built_sqm, agency_commission, itp_amount, purchase_expenses_amount, renovation_cost, furniture_cost, other_costs, total_cost (GENERATED), target_capital (ADR-42). Deal terms (estimated_return_pct, estimated_duration_months, expected_exit_date, projected_roi, is_delayed) stored here since they're shared by all coinversores (ADR-43). |
-| Asset | A physical property unit (address, surface, bedrooms, bathrooms, floor_plan_url, current_value). Source of truth for compra directa. Linked via `projects.asset_id` (coinversión uses the project's asset — ADR-41) and `purchase_contracts.asset_id` (compra directa owns a specific asset directly). |
-| Compra Directa | User owns a physical asset purchased through a brand. Model: `PurchaseContractData` — linked to asset + selling brand (e.g. Myttas, Andhy). Rental income tracked separately via rental_contracts. |
+| Asset | A physical property unit (address, surface, bedrooms, bathrooms, floor_plan_url, current_value). Source of truth for adquisición. Linked via `projects.asset_id` (coinversión uses the project's asset — ADR-41) and `purchase_contracts.asset_id` (adquisición owns a specific asset directly). |
+| Adquisición | User owns a physical asset purchased through a brand (DB value `direct_purchase`). Model: `PurchaseContractData` — linked to asset + selling brand (e.g. Myttas, Andhy). Rental income tracked separately via rental_contracts. |
 | Coinversión | User participates in a real estate development project. Model: `CoinvestmentContractData` — linked to project (brand via project). **Contract stores only per-investor fields**: amount, start_date, actual_roi/actual_tir/total_return/completion_date, is_completed. Deal terms + profit scenarios + phases live on the project and related tables (ADR-43). |
 | Renta Fija | User subscribes to a fixed-income offering from a brand. Model: `FixedIncomeContractData` — offerings catalog + user contracts + payments ledger. |
 | Alquiler | Rental management of an owned asset, managed by a brand (e.g. Llabe). Independent domain: rental_contracts → rental_payments. Linked to asset, not to purchase_contract. |
@@ -114,7 +114,7 @@ App Shell (BottomNav: 5 tabs)
 ### Enum values are English
 - DB CHECK constraints use English snake_case (`direct_purchase`, `in_development`, `fixed_income`, `project`, `press`).
 - Flutter enums use English camelCase (`directPurchase`, `inDevelopment`, `fixedIncome`, `project`, `press`) with `@JsonValue(...)` for serialization.
-- Spanish display strings live in Flutter extension getters (e.g. `BusinessModel.directPurchase.displayName → "Compra Directa"`).
+- Spanish display strings live in Flutter extension getters (e.g. `BusinessModel.directPurchase.displayName → "Adquisición"`).
 
 ### Brand assets
 - `brands.logo_asset` — wordmark SVG in `brand-assets/logos/`. Used on the Firmas grid, project cards byline, and archive brand stamps.

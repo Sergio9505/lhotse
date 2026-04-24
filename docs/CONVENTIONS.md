@@ -64,7 +64,7 @@
 ### Enum values — always English
 - DB values use English snake_case: `direct_purchase`, `in_development`, `fixed_income`
 - Flutter enum values use English camelCase: `directPurchase`, `inDevelopment`, `fixedIncome`
-- Spanish display names go in Flutter extensions: `BusinessModel.directPurchase.displayName` → `"Compra Directa"`
+- Spanish display names go in Flutter extensions: `BusinessModel.directPurchase.displayName` → `"Adquisición"`
 - `@JsonValue('direct_purchase')` on Flutter enums for automatic serialization
 
 ### Triggers
