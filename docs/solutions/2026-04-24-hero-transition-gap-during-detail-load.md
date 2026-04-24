@@ -101,6 +101,10 @@ The canonical Flutter pattern is to pass the list-row snapshot forward as naviga
 
 Related: ADR-53 (shell UX polish, Hero transition fix history).
 
+## Refinement — video Hero shuttle
+
+A follow-up tweak: the `flightShuttleBuilder` in `feed_card.dart` used to always render `LhotseImage(posterUrl)` during the flight. Once `FeedVideoPlayer` stopped painting a static poster underneath the video (to kill the brief image-to-video flash on Home), the shuttle's still image became a visible artefact during the flight from a video card — "se ve momentáneamente la imagen". Fix: if the source card has a `videoUrl`, the shuttle now returns a solid `Container(color: AppColors.primary)` matching the Home scaffold background. Image-only cards keep `LhotseImage`. We still can't mount `FeedVideoPlayer` inside the shuttle (it would re-instantiate a `VideoPlayerController` mid-flight → AVFoundation `naturalSize` synchronous access → main-thread jank).
+
 ## How to avoid next time
 
 - Rule of thumb: **if a screen has a `Hero`, it must not gate that Hero behind an async loading state.** Either (a) render the Hero-bearing tree on the first frame with a snapshot fallback, or (b) accept that the transition will be a fade, not a shared-element flight, and remove the Hero entirely.

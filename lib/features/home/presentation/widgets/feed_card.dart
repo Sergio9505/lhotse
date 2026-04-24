@@ -107,16 +107,27 @@ class _FeedCardState extends State<FeedCard> {
     BuildContext fromHeroContext,
     BuildContext toHeroContext,
   ) {
-    // Render a still poster during the flight. Instantiating FeedVideoPlayer
-    // here would build a new VideoPlayerController mid-flight → AVFoundation
-    // hits naturalSize synchronously → main thread jank + Xcode warning. The
-    // source and destination video widgets stay alive in their own screens
-    // (HomeScreen preserved by IndexedStack, detail mounts on landing); the
-    // overlay just needs a matching still frame during the Hero transition.
-    // The poster URL is already precached by _HomeScreenState._precacheFeed,
-    // so the image resolves instantly.
-    final posterUrl = _contentFor(widget.item).imageUrl;
-    return LhotseImage(posterUrl);
+    final content = _contentFor(widget.item);
+    final hasVideo =
+        content.videoUrl != null && content.videoUrl!.isNotEmpty;
+    // Video cards: the resting state (both in feed and detail) is either the
+    // playing video or — during VideoPlayerController init — a plain dark
+    // frame. Rendering the still poster as the Hero shuttle would flash an
+    // image the user never otherwise sees on that card ("se ve
+    // momentáneamente la imagen"), breaking the video↔video continuity.
+    // Match the Home scaffold background instead.
+    //
+    // Image cards: the still poster IS the resting state, so LhotseImage as
+    // shuttle is coherent. It's also precached by HomeScreen._precacheFeed
+    // so resolution is instant.
+    //
+    // We can't mount FeedVideoPlayer inside the shuttle — Flutter would
+    // create a new VideoPlayerController mid-flight and AVFoundation would
+    // hit naturalSize synchronously, blocking the main thread.
+    if (hasVideo) {
+      return Container(color: AppColors.primary);
+    }
+    return LhotseImage(content.imageUrl);
   }
 
   String? _heroTagFor(FeedItem item) {

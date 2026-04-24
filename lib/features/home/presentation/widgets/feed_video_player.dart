@@ -3,7 +3,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/lhotse_image.dart';
 
 /// Autoplay-muted video for feed cards. Starts only when the host card is at
 /// least [playThreshold] visible, pauses otherwise, and exposes a tiny
@@ -86,23 +85,21 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     final c = _controller;
+    // While the VideoPlayerController is initializing we render nothing on
+    // top of the parent (black in Home, beige in detail). The Hero flight
+    // shuttle in FeedCard still draws the poster image during the transition
+    // so the visual is covered during navigation. Once the controller is
+    // ready, the video widget appears — no cross-fade from a static poster.
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Poster always present — covers the brief window while the video
-        // initializes and any subsequent network stalls.
-        LhotseImage(widget.posterUrl),
-        if (c != null)
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            opacity: _ready ? 1 : 0,
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: c.value.size.width,
-                height: c.value.size.height,
-                child: VideoPlayer(c),
-              ),
+        if (c != null && _ready)
+          FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: c.value.size.width,
+              height: c.value.size.height,
+              child: VideoPlayer(c),
             ),
           ),
         if (_ready)
