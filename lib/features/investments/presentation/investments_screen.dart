@@ -5,13 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_mark.dart';
 import '../../../core/widgets/lhotse_notification_bell.dart';
 import '../data/investments_provider.dart';
-import '../../../core/data/projects_provider.dart';
 import '../domain/portfolio_entry.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
@@ -23,12 +20,9 @@ class InvestmentsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final topPadding = MediaQuery.of(context).padding.top;
     final summariesAsync = ref.watch(userPortfolioProvider);
-    final opportunitiesAsync =
-        ref.watch(opportunitiesProvider(const {}));
 
     final summaries = summariesAsync.valueOrNull ?? const [];
     final total = summaries.fold<double>(0, (acc, s) => acc + s.totalAmount);
-    final opportunities = opportunitiesAsync.valueOrNull ?? const [];
 
     final totalFormatted =
         _eurFormat.format(total).replaceAll('.', ' ');
@@ -99,55 +93,6 @@ class InvestmentsScreen extends ConsumerWidget {
                   );
                 },
                 childCount: summaries.length,
-              ),
-            ),
-
-          // Opportunities
-          if (opportunities.isNotEmpty)
-            SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: AppSpacing.xxl),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg),
-                    child: GestureDetector(
-                      onTap: () =>
-                          context.push('/investments/opportunities'),
-                      child: Row(
-                        children: [
-                          Text(
-                            'NUEVAS OPORTUNIDADES',
-                            style: AppTypography.headingLarge.copyWith(
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          const PhosphorIcon(
-                            PhosphorIconsThin.arrowUpRight,
-                            size: 18,
-                            color: AppColors.textPrimary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  SizedBox(
-                    height: 160,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg),
-                      itemCount: opportunities.length.clamp(0, 4),
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(width: AppSpacing.sm),
-                      itemBuilder: (context, i) =>
-                          _OpportunityCard(project: opportunities[i]),
-                    ),
-                  ),
-                ],
               ),
             ),
 
@@ -313,13 +258,13 @@ class _BrandRow extends StatefulWidget {
 class _BrandRowState extends State<_BrandRow> {
   bool _pressed = false;
 
-  static const _svgFilter =
+  static const _iconFilter =
       ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn);
 
   @override
   Widget build(BuildContext context) {
     final summary = widget.summary;
-    final logo = summary.brandLogoAsset;
+    final icon = summary.brandIconAsset;
     final avgReturn = summary.avgReturnPct ?? 0.0;
 
     return GestureDetector(
@@ -357,18 +302,27 @@ class _BrandRowState extends State<_BrandRow> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Logo
+              // Brand marker — compact square 32×32 centered in a 48×32 slot.
+              // Prefers the explicit `icon_asset` SVG when present (monochrome
+              // `srcIn` so every brand tones to `textPrimary` regardless of
+              // source colours), falls back to a thin-border initials monogram
+              // when the brand has no icon yet (private-banker holdings-report
+              // convention — every position gets a consistent marker).
               SizedBox(
                 width: 48,
                 height: 32,
-                child: logo != null
-                    ? (logo.startsWith('http')
-                        ? SvgPicture.network(logo,
-                            fit: BoxFit.contain, colorFilter: _svgFilter)
-                        : SvgPicture.asset(logo,
-                            fit: BoxFit.contain, colorFilter: _svgFilter))
-                    : Center(
-                        child: Container(
+                child: Center(
+                  child: icon != null
+                      ? SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: SvgPicture.network(
+                            icon,
+                            fit: BoxFit.contain,
+                            colorFilter: _iconFilter,
+                          ),
+                        )
+                      : Container(
                           width: 32,
                           height: 32,
                           alignment: Alignment.center,
@@ -379,7 +333,10 @@ class _BrandRowState extends State<_BrandRow> {
                             ),
                           ),
                           child: Text(
-                            summary.brandName.split(' ').map((w) => w[0]).join(),
+                            summary.brandName
+                                .split(' ')
+                                .map((w) => w[0])
+                                .join(),
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w500,
@@ -387,7 +344,7 @@ class _BrandRowState extends State<_BrandRow> {
                             ),
                           ),
                         ),
-                      ),
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
 
@@ -470,100 +427,6 @@ class _BrandRowState extends State<_BrandRow> {
               ],
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Opportunity card ──────────────────────────────────────────────────────────
-
-class _OpportunityCard extends StatelessWidget {
-  const _OpportunityCard({required this.project});
-
-  final ProjectData project;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/projects/${project.id}'),
-      child: SizedBox(
-        width: 180,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            LhotseImage(project.imageUrl),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                color: AppColors.surface.withValues(alpha: 0.75),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            project.name.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.headingSmall.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Row(
-                            children: [
-                              Text(
-                                project.brand.toUpperCase(),
-                                style: AppTypography.captionSmall.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                child: Text(
-                                  '•',
-                                  style: AppTypography.captionSmall.copyWith(
-                                    color: AppColors.textPrimary
-                                        .withValues(alpha: 0.4),
-                                  ),
-                                ),
-                              ),
-                              Flexible(
-                                child: Text(
-                                  project.location.toUpperCase(),
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.captionSmall.copyWith(
-                                    color: AppColors.accentMuted,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    PhosphorIcon(
-                      PhosphorIconsThin.arrowUpRight,
-                      size: 14,
-                      color: AppColors.textPrimary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

@@ -125,7 +125,7 @@ class _BrandCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasCover = brand.coverImageUrl.isNotEmpty;
     return GestureDetector(
-      onTap: () => context.push('/brands/${brand.id}'),
+      onTap: () => context.push('/brands/${brand.id}', extra: brand),
       behavior: HitTestBehavior.opaque,
       child: Container(
         decoration: BoxDecoration(

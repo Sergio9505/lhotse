@@ -12,11 +12,21 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
+import 'widgets/feed_video_player.dart';
 
 class NewsDetailScreen extends ConsumerStatefulWidget {
-  const NewsDetailScreen({super.key, required this.newsId});
+  const NewsDetailScreen({
+    super.key,
+    required this.newsId,
+    this.initialNews,
+  });
 
   final String newsId;
+
+  /// Pre-loaded snapshot from the caller (e.g. Home feed) so the Hero tag is
+  /// in the widget tree on the first frame. See `ProjectDetailScreen` for the
+  /// full rationale.
+  final NewsItemData? initialNews;
 
   @override
   ConsumerState<NewsDetailScreen> createState() => _NewsDetailScreenState();
@@ -58,8 +68,10 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final newsAsync = ref.watch(newsByIdProvider(widget.newsId));
+    // Prefer the caller-supplied snapshot on the first frame so the Hero
+    // tag exists when Flutter starts the flight.
     final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
-    final news = newsAsync.valueOrNull;
+    final news = newsAsync.valueOrNull ?? widget.initialNews;
 
     if (news == null) {
       return Scaffold(
@@ -143,7 +155,14 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                     children: [
                       Hero(
                         tag: 'news-hero-${news.id}',
-                        child: LhotseImage(news.imageUrl),
+                        child: (news.videoUrl != null &&
+                                news.videoUrl!.isNotEmpty)
+                            ? FeedVideoPlayer(
+                                videoUrl: news.videoUrl!,
+                                posterUrl: news.imageUrl,
+                                isActive: true,
+                              )
+                            : LhotseImage(news.imageUrl),
                       ),
                       const DecoratedBox(
                         decoration: BoxDecoration(

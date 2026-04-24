@@ -11,6 +11,11 @@ sealed class FeedItem {
 
   /// Stable key for Flutter's list diffing.
   String get feedKey;
+
+  /// URL/asset of the hero image rendered in the feed card. Exposed on the
+  /// base class so the screen can precache everything at feed-data-arrival
+  /// time (Instagram/Pinterest pattern — decode ahead of tap).
+  String get imageUrl;
 }
 
 enum FeedMediaType { image, video }
@@ -21,6 +26,9 @@ class FeedProjectItem extends FeedItem {
 
   @override
   String get feedKey => 'project_${project.id}';
+
+  @override
+  String get imageUrl => project.imageUrl;
 }
 
 class FeedOpportunityItem extends FeedItem {
@@ -29,6 +37,9 @@ class FeedOpportunityItem extends FeedItem {
 
   @override
   String get feedKey => 'opportunity_${project.id}';
+
+  @override
+  String get imageUrl => project.imageUrl;
 }
 
 class FeedNewsItem extends FeedItem {
@@ -37,6 +48,9 @@ class FeedNewsItem extends FeedItem {
 
   @override
   String get feedKey => 'news_${news.id}';
+
+  @override
+  String get imageUrl => news.imageUrl;
 }
 
 class FeedBrandItem extends FeedItem {
@@ -45,4 +59,7 @@ class FeedBrandItem extends FeedItem {
 
   @override
   String get feedKey => 'brand_${brand.id}';
+
+  @override
+  String get imageUrl => brand.coverImageUrl;
 }

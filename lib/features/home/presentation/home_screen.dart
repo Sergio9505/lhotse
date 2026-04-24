@@ -5,9 +5,9 @@ import '../../../core/data/brands_provider.dart';
 import '../../../core/data/news_provider.dart';
 import '../../../core/data/projects_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_mark.dart';
 import '../data/home_feed_provider.dart';
-import '../data/home_scroll_offset_provider.dart';
 import '../domain/feed_item.dart';
 import 'widgets/feed_card.dart';
 
@@ -26,31 +26,31 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  late final PageController _pager;
+  final PageController _pager = PageController();
   int _activePage = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pager = PageController();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final snapshot = ref.read(homeFeedPositionProvider);
-      if (isHomeFeedPositionFresh(snapshot) && _pager.hasClients) {
-        _pager.jumpToPage(snapshot!.pageIndex);
-        setState(() => _activePage = snapshot.pageIndex);
-      }
-    });
-  }
+  final Set<String> _precachedUrls = {};
 
   @override
   void dispose() {
-    ref.read(homeFeedPositionProvider.notifier).state = HomeFeedPosition(
-      pageIndex: _activePage,
-      savedAt: DateTime.now(),
-    );
     _pager.dispose();
     super.dispose();
+  }
+
+  /// Fires `precacheImage` for every feed image the first time we see it.
+  /// Scheduled post-frame so `context` has a valid RenderObject. By the time
+  /// the user taps any card, the decoded bytes are already in Flutter's
+  /// `ImageCache` and the Hero flight lands on a warm image — no flicker.
+  /// This is the Instagram / Pinterest pattern: precache ahead of intent.
+  void _precacheFeed(List<FeedItem> items) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final item in items) {
+        final url = item.imageUrl;
+        if (url.isEmpty || _precachedUrls.contains(url)) continue;
+        _precachedUrls.add(url);
+        LhotseImage.precache(url, context);
+      }
+    });
   }
 
   Future<void> _refresh() async {
@@ -74,14 +74,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           Positioned.fill(
             child: feedAsync.when(
-              data: (items) => _FeedPager(
-                controller: _pager,
-                items: items,
-                cardHeight: mq.size.height,
-                activePage: _activePage,
-                onPageChanged: (i) => setState(() => _activePage = i),
-                onRefresh: _refresh,
-              ),
+              data: (items) {
+                _precacheFeed(items);
+                return _FeedPager(
+                  controller: _pager,
+                  items: items,
+                  cardHeight: mq.size.height,
+                  activePage: _activePage,
+                  onPageChanged: (i) => setState(() => _activePage = i),
+                  onRefresh: _refresh,
+                );
+              },
               loading: () => const _FeedLoading(),
               error: (_, _) => _FeedError(onRetry: _refresh),
             ),

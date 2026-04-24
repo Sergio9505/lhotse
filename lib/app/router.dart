@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/data/supabase_provider.dart';
+import '../core/domain/brand_data.dart';
+import '../core/domain/news_item_data.dart';
+import '../core/domain/project_data.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
@@ -21,7 +24,6 @@ import '../features/investments/presentation/coinversion_detail_screen.dart';
 import '../features/investments/presentation/direct_purchase_detail_screen.dart';
 import '../features/investments/presentation/completed_detail_screen.dart';
 import '../features/investments/presentation/investments_screen.dart';
-import '../features/investments/presentation/opportunities_screen.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
 import '../features/profile/presentation/kyc_screen.dart';
 import '../features/profile/presentation/legal_text_screen.dart';
@@ -70,7 +72,6 @@ abstract final class AppRoutes {
   static const coinvestmentDetail = '/investments/detail/coinvestment/:id';
   static const completedPurchaseDetail = '/investments/detail/completed/purchase/:id';
   static const completedCoinvestmentDetail = '/investments/detail/completed/coinvestment/:id';
-  static const opportunities = '/investments/opportunities';
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
   static const profileKyc = '/profile/kyc';
@@ -165,9 +166,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.newsDetail,
               pageBuilder: (context, state) {
                 final id = state.pathParameters['id']!;
+                final initialNews = state.extra is NewsItemData
+                    ? state.extra as NewsItemData
+                    : null;
                 return _fadePage(
                   key: state.pageKey,
-                  child: NewsDetailScreen(newsId: id),
+                  child: NewsDetailScreen(
+                    newsId: id,
+                    initialNews: initialNews,
+                  ),
                 );
               },
             ),
@@ -181,9 +188,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.projectDetail,
               pageBuilder: (context, state) {
                 final id = state.pathParameters['id']!;
+                final initialProject = state.extra is ProjectData
+                    ? state.extra as ProjectData
+                    : null;
                 return _fadePage(
                   key: state.pageKey,
-                  child: ProjectDetailScreen(projectId: id),
+                  child: ProjectDetailScreen(
+                    projectId: id,
+                    initialProject: initialProject,
+                  ),
                 );
               },
             ),
@@ -199,9 +212,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.brandDetail,
               pageBuilder: (context, state) {
                 final id = state.pathParameters['id']!;
+                final initialBrand = state.extra is BrandData
+                    ? state.extra as BrandData
+                    : null;
                 return _fadePage(
                   key: state.pageKey,
-                  child: BrandDetailScreen(brandId: id),
+                  child: BrandDetailScreen(
+                    brandId: id,
+                    initialBrand: initialBrand,
+                  ),
                 );
               },
             ),
@@ -235,13 +254,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                 );
               },
-            ),
-            GoRoute(
-              path: AppRoutes.opportunities,
-              pageBuilder: (context, state) => _fadePage(
-                key: state.pageKey,
-                child: const OpportunitiesScreen(),
-              ),
             ),
             GoRoute(
               path: AppRoutes.purchaseDetail,

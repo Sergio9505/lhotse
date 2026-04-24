@@ -261,7 +261,8 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                       type: item.type == NewsType.press ? 'PRENSA' : 'PROYECTO',
                       hasPlayButton: item.hasPlayButton,
                       isLeadStory: i == 0,
-                      onTap: () => context.push('/news/${item.id}'),
+                      onTap: () =>
+                          context.push('/news/${item.id}', extra: item),
                     );
                   },
                 ),

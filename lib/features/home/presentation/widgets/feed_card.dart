@@ -16,7 +16,13 @@ import 'feed_video_player.dart';
 ///
 ///   • media  ~65% — image or video, full-bleed, no overlay.
 ///   • caption ~35% — beige surface with title, meta row, and a textual CTA.
-class FeedCard extends StatelessWidget {
+///
+/// Stateful so we can precache the image in `didChangeDependencies` the first
+/// time the card is built — PageView.builder constructs the active card and
+/// its ±1 neighbours, so by the time the user swipes + taps, the decoded
+/// bytes are already in `ImageCache`. That's what keeps the Hero flight
+/// butter-smooth (Instagram / Pinterest / Unsplash pattern).
+class FeedCard extends StatefulWidget {
   const FeedCard({
     super.key,
     required this.item,
@@ -32,35 +38,59 @@ class FeedCard extends StatelessWidget {
   final bool isActive;
 
   @override
+  State<FeedCard> createState() => _FeedCardState();
+}
+
+class _FeedCardState extends State<FeedCard> {
+  bool _precached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_precached) {
+      _precached = true;
+      final content = _contentFor(widget.item);
+      // Fire-and-forget; if it fails the widget still renders via
+      // CachedNetworkImage's own error path.
+      LhotseImage.precache(content.imageUrl, context);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final content = _contentFor(item);
-    final heroTag = _heroTagFor(item);
+    final content = _contentFor(widget.item);
+    final heroTag = _heroTagFor(widget.item);
     return GestureDetector(
-      onTap: () => _navigate(context, item),
+      onTap: () => _navigate(context, widget.item),
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        height: height,
+        height: widget.height,
         child: Column(
           children: [
             // Media takes all remaining space — caption hugs its content so
             // the image dominates the viewport without a wall of empty beige.
             // Hero tag matches the archive cards so tapping a feed item
             // animates the image into the detail hero with shared-element
-            // continuity (project-hero-{id}, news-hero-{id}).
+            // continuity (project-hero-{id}, news-hero-{id}). The explicit
+            // flightShuttleBuilder renders the source's already-loaded media
+            // during the flight so the destination screen never has a chance
+            // to flash an empty placeholder if its own image subscription
+            // hasn't produced a frame yet.
             Expanded(
               child: heroTag != null
                   ? Hero(
                       tag: heroTag,
+                      flightShuttleBuilder: _flightShuttleBuilder,
                       child: _Media(
                         imageUrl: content.imageUrl,
                         videoUrl: content.videoUrl,
-                        isActive: isActive,
+                        isActive: widget.isActive,
                       ),
                     )
                   : _Media(
                       imageUrl: content.imageUrl,
                       videoUrl: content.videoUrl,
-                      isActive: isActive,
+                      isActive: widget.isActive,
                     ),
             ),
             _Caption(content: content),
@@ -70,7 +100,26 @@ class FeedCard extends StatelessWidget {
     );
   }
 
-  static String? _heroTagFor(FeedItem item) {
+  Widget _flightShuttleBuilder(
+    BuildContext flightContext,
+    Animation<double> animation,
+    HeroFlightDirection direction,
+    BuildContext fromHeroContext,
+    BuildContext toHeroContext,
+  ) {
+    // Render a still poster during the flight. Instantiating FeedVideoPlayer
+    // here would build a new VideoPlayerController mid-flight → AVFoundation
+    // hits naturalSize synchronously → main thread jank + Xcode warning. The
+    // source and destination video widgets stay alive in their own screens
+    // (HomeScreen preserved by IndexedStack, detail mounts on landing); the
+    // overlay just needs a matching still frame during the Hero transition.
+    // The poster URL is already precached by _HomeScreenState._precacheFeed,
+    // so the image resolves instantly.
+    final posterUrl = _contentFor(widget.item).imageUrl;
+    return LhotseImage(posterUrl);
+  }
+
+  String? _heroTagFor(FeedItem item) {
     switch (item) {
       case FeedProjectItem(:final project):
       case FeedOpportunityItem(:final project):
@@ -84,7 +133,7 @@ class FeedCard extends StatelessWidget {
     }
   }
 
-  static _FeedContent _contentFor(FeedItem item) {
+  _FeedContent _contentFor(FeedItem item) {
     switch (item) {
       case FeedProjectItem(:final project):
         return _FeedContent.fromProject(project, cta: 'VER PROYECTO');
@@ -97,16 +146,21 @@ class FeedCard extends StatelessWidget {
     }
   }
 
-  static void _navigate(BuildContext context, FeedItem item) {
+  void _navigate(BuildContext context, FeedItem item) {
+    // Pass the already-loaded domain object as `extra` so the detail screen
+    // can render its Hero widget on the first frame — without waiting on the
+    // remote provider to resolve. This is what keeps the shared-element
+    // transition continuous (instead of: tap → spinner → land on final
+    // position with no flight). See ADR-53 / ProjectDetailScreen docstring.
     switch (item) {
       case FeedProjectItem(:final project):
-        context.push('/projects/${project.id}');
+        context.push('/projects/${project.id}', extra: project);
       case FeedOpportunityItem(:final project):
-        context.push('/projects/${project.id}');
+        context.push('/projects/${project.id}', extra: project);
       case FeedNewsItem(:final news):
-        context.push('/news/${news.id}');
+        context.push('/news/${news.id}', extra: news);
       case FeedBrandItem(:final brand):
-        context.push('/brands/${brand.id}');
+        context.push('/brands/${brand.id}', extra: brand);
     }
   }
 }

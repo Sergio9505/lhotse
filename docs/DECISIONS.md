@@ -168,7 +168,7 @@ Both: 44px touch target, 20px icon, defaults to `context.pop()`.
 ## ADR-10: Opportunities in Strategy Screen
 
 **Date:** 2026-03-30
-**Status:** Accepted
+**Status:** Superseded by ADR-52 (2026-04-24) — opportunities section removed from Strategy; discovery now lives exclusively in the Home feed.
 
 **Context:** Debated whether "Nuevas oportunidades" belongs in the portfolio screen. Revolut keeps portfolio pure. But Lhotse investors actively seek new investments — "where do I put my next half million?" is an active question, not casual discovery. Home shows projects to all users (viewers + investors); Search is for targeted queries. Neither serves the investor scanning for their next opportunity.
 
@@ -470,7 +470,7 @@ Plusvalía removed — derivable from hero (totalReturn) minus invested. Duratio
 ## ADR-23: Opportunities Filter Hierarchy — Business Model Primary
 
 **Date:** 2026-04-14
-**Status:** Accepted
+**Status:** Superseded by ADR-52 (2026-04-24) — OpportunitiesScreen and its filter bar deleted. Opportunities now surface only as `FeedOpportunityItem` cards interleaved in the Home feed (no filters on that entry point).
 
 **Context:** Opportunities screen had three equal-weight text tabs (FIRMA/UBICACIÓN/BUSCAR) — same flat hierarchy antipattern as the original AllNews. No primary axis for content classification. For investors evaluating opportunities, the business model (compra directa vs coinversión vs renta fija) is the most important filter — it determines risk profile, return structure, and investment mechanics.
 
@@ -1487,3 +1487,61 @@ Client review: the editorial photo hero felt too heavy for a wealth-report scree
 - (+) Removing the allocation table tightens the hierarchy: patrimonio → per-brand holdings → opportunities.
 - (-) The collapse is less dramatic without the photo fade underneath — acceptable; the title fade + cifra interpolation still carry the motion.
 - (-) Logo+bell have to be drawn manually in the delegate (can't reuse `LhotseShellHeader`) because their Z-order relative to the sliding cifra matters. Same trade-off as every previous iteration of this screen.
+
+---
+
+## ADR-52: Opportunities moved to Home-only (supersedes ADR-10 + ADR-23)
+
+**Date:** 2026-04-24
+
+**Context:** ADR-10 kept "NUEVAS OPORTUNIDADES" as a section at the bottom of the Strategy screen plus a full `OpportunitiesScreen` reachable through it, with business-model tabs + location filter (ADR-23). Since the SNKRS-style Home feed (ADR-48) shipped, opportunities already interleave naturally as `FeedOpportunityItem` cards for investors/VIPs, with the same imagery and the editorial typography the feed uses. The Strategy section duplicated that discovery job in a smaller, less premium format, and pulled the investor away from the patrimonio read. The dedicated Opportunities listing added filters that investors rarely reach — by the time they're evaluating a specific model they're in the project detail, not a filtered list.
+
+**Decision:** Remove the opportunities section from the Strategy screen and delete the dedicated `OpportunitiesScreen` + `/investments/opportunities` route. Opportunity discovery lives exclusively in the Home feed. Strategy becomes a pure wealth-report view: hero + brand ledger.
+
+Kept in place:
+- `opportunitiesProvider` and the `user_opportunities` Supabase view — still consumed by `homeFeedProvider` (investor/VIP path).
+- `ref.invalidate(opportunitiesProvider)` in `app.dart` and `home_screen.dart` — still needed for Home feed refresh.
+
+Removed:
+- Section (header "NUEVAS OPORTUNIDADES ↗" + horizontal carousel of 4 compact cards) inside `InvestmentsScreen`.
+- `_OpportunityCard` private widget (only consumer was the deleted section).
+- `lib/features/investments/presentation/opportunities_screen.dart` (`OpportunitiesScreen` + its state + `_FilterTab` widget).
+- `AppRoutes.opportunities` constant and its `GoRoute` entry in `router.dart`.
+- Import of `project_data.dart`, `lhotse_image.dart`, `projects_provider.dart` from `investments_screen.dart` (orphaned after `_OpportunityCard` + `opportunitiesProvider` removal there).
+
+**Trade-offs:**
+- (+) Strategy is tighter — one job, done well (wealth report), matching the Pictet / Julius Bär reference frame in ADR-51.
+- (+) No duplicated discovery surface; Home feed is the canonical place to encounter a new opportunity.
+- (+) Less code (one screen + a card + a route + a filter bar gone).
+- (-) Loses the "filter opportunities by business model / location" affordance — acceptable because investors who want that granularity land in Search or Home's model-specific flows, and the filter was rarely used in practice per ADR-23's own concession ("no text search on opportunities — acceptable since Search screen exists").
+- (-) Investors who memorised the Strategy → Opportunities nav path lose it. Acceptable; the Home feed entry is more discoverable.
+
+---
+
+## ADR-53: Shell UX — preserve depth + pop-to-root on active-tab re-tap + disk image cache
+
+**Date:** 2026-04-24
+
+**Context:** Three shell-level UX issues surfaced together:
+1. A custom `homeFeedPositionProvider` was re-implementing scroll memory via `ref.read` inside `dispose` — which crashes on Riverpod 3 (`ref` is invalidated before dispose runs). The crash fired on logout because that's the only path where `HomeScreen` actually gets disposed (tab switching inside `StatefulNavigationShell` only deactivates widgets).
+2. Users on a deep screen (e.g. Strategy L3 compra-directa detail) had no escape hatch to jump back to the tab's root without tapping the system back button multiple times.
+3. First-tap Hero transitions from the Home feed flashed a blank hole because `LhotseImage` used plain `Image.network` — no disk cache, so every first view of an image was a network fetch and the Hero flight ended before the decode.
+
+**Decision:**
+
+- **Preserve depth per tab as the default** — `StatefulNavigationShell` already does this natively via IndexedStack semantics. No provider needed. Deleted `homeFeedPositionProvider` + `home_scroll_offset_provider.dart` + the `initState`/`dispose` dance in `home_screen.dart`. If an investor pauses L3 to glance at Home and returns, they land back in L3 — the premium default (Apple / Instagram / Linear pattern).
+- **Escape hatch via `initialLocation: i == currentIndex`** — the shell already passes this flag to `goBranch`, so a re-tap on the active tab pops the branch's stack to its root. Confirmed working; no code change needed. Documented in CLAUDE.md so future contributors don't reinvent it.
+- **Disk image cache via `cached_network_image`** — upgraded `LhotseImage` to `CachedNetworkImage` with:
+  - 180ms `fadeInDuration`
+  - `placeholder` and `errorWidget` both set to `Container(color: AppColors.surface)` so no code path flashes a white hole.
+  - Asset path branch (`Image.asset`) preserved unchanged.
+- Rejected alternative: **pass `ImageProvider` through navigation `extra`**. Local fix, adds nav coupling, doesn't cover deeplink / Search / notification entries into detail. `cached_network_image` covers every image in the app (brand cards, gallery, news, detail heroes) without touching call sites.
+
+**Trade-offs:**
+- (+) Less code (one provider + one dead dispose path removed).
+- (+) Every image in the app benefits — Firmas grid, project gallery, news archive, brand detail, Strategy ledger icons.
+- (+) Disk cache survives app restarts, so second-cold-start is instant for previously-viewed content.
+- (+) Standard Flutter ecosystem dependency (~300KB, stable).
+- (-) `cached_network_image` transitively brings `sqflite` + `path_provider` — slightly heavier build, irrelevant at runtime.
+- (-) Very first view of any image (fresh install) still shows the beige placeholder for a beat while the network fetches. Acceptable; the fade turns "flicker" into a deliberate-looking load transition.
+

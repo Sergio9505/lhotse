@@ -526,7 +526,7 @@ class _FeaturedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/projects/${project.id}'),
+      onTap: () => context.push('/projects/${project.id}', extra: project),
       behavior: HitTestBehavior.opaque,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -779,7 +779,7 @@ class _BrandResultItem extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         onTap?.call();
-        context.push('/brands/${brand.id}');
+        context.push('/brands/${brand.id}', extra: brand);
       },
       behavior: HitTestBehavior.opaque,
       child: Padding(
@@ -841,7 +841,7 @@ class _ProjectResultItem extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         onTap?.call();
-        context.push('/projects/${project.id}');
+        context.push('/projects/${project.id}', extra: project);
       },
       behavior: HitTestBehavior.opaque,
       child: Padding(

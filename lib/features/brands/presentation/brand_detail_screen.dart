@@ -10,9 +10,19 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
 
 class BrandDetailScreen extends ConsumerStatefulWidget {
-  const BrandDetailScreen({super.key, required this.brandId});
+  const BrandDetailScreen({
+    super.key,
+    required this.brandId,
+    this.initialBrand,
+  });
 
   final String brandId;
+
+  /// Pre-loaded snapshot from the caller (list/grid) so the first frame has
+  /// all the data needed to render. No Hero here today, but keeping the
+  /// pattern consistent with project/news details so future shared-element
+  /// work doesn't have to retrofit.
+  final BrandData? initialBrand;
 
   @override
   ConsumerState<BrandDetailScreen> createState() => _BrandDetailScreenState();
@@ -42,7 +52,8 @@ class _BrandDetailScreenState extends ConsumerState<BrandDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brand = ref.watch(brandByIdProvider(widget.brandId)).valueOrNull;
+    final brand = ref.watch(brandByIdProvider(widget.brandId)).valueOrNull ??
+        widget.initialBrand;
     final topPadding = MediaQuery.of(context).padding.top;
 
     if (brand == null) {

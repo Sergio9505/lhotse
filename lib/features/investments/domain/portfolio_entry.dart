@@ -5,6 +5,7 @@ class PortfolioEntry {
     required this.brandId,
     required this.brandName,
     this.brandLogoAsset,
+    this.brandIconAsset,
     required this.businessModel,
     required this.totalAmount,
     this.avgReturnPct,
@@ -14,6 +15,7 @@ class PortfolioEntry {
   final String brandId;
   final String brandName;
   final String? brandLogoAsset;
+  final String? brandIconAsset;
   final String businessModel;
   final double totalAmount;
   final double? avgReturnPct;
@@ -23,6 +25,7 @@ class PortfolioEntry {
         brandId: json['brand_id'] as String,
         brandName: json['brand_name'] as String,
         brandLogoAsset: json['logo_asset'] as String?,
+        brandIconAsset: json['icon_asset'] as String?,
         businessModel: json['business_model'] as String? ?? '',
         totalAmount: (json['total_amount'] as num).toDouble(),
         avgReturnPct: (json['avg_return_pct'] as num?)?.toDouble(),

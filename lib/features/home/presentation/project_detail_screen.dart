@@ -6,19 +6,34 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/projects_provider.dart';
 import '../../../core/domain/asset_info.dart';
+import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
+import 'widgets/feed_video_player.dart';
 
 const _kMaxVisibleGallery = 5;
 
 class ProjectDetailScreen extends ConsumerStatefulWidget {
-  const ProjectDetailScreen({super.key, required this.projectId});
+  const ProjectDetailScreen({
+    super.key,
+    required this.projectId,
+    this.initialProject,
+  });
 
   final String projectId;
+
+  /// When the caller already has the project data (e.g. navigated from the
+  /// Home feed or a list), pass it here so the detail can build the Hero
+  /// widget on the very first frame. Without this, the screen would show a
+  /// loading spinner while `projectByIdProvider` fetches, and Flutter would
+  /// have nothing to match the Hero tag against — no flight animation. The
+  /// provider still refreshes in the background to pick up any server-side
+  /// changes the feed snapshot might have missed.
+  final ProjectData? initialProject;
 
   @override
   ConsumerState<ProjectDetailScreen> createState() =>
@@ -61,7 +76,11 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final projectAsync = ref.watch(projectByIdProvider(widget.projectId));
-    final project = projectAsync.valueOrNull;
+    // Fall back to the caller-supplied snapshot so the Hero tag is always
+    // present on the first frame. Once the provider resolves, Riverpod swaps
+    // in the authoritative copy without flicker (same URL → same ImageCache
+    // entry).
+    final project = projectAsync.valueOrNull ?? widget.initialProject;
 
     if (project == null) {
       return Scaffold(
@@ -166,7 +185,14 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                   children: [
                     Hero(
                       tag: 'project-hero-${project.id}',
-                      child: LhotseImage(project.imageUrl),
+                      child: (project.videoUrl != null &&
+                              project.videoUrl!.isNotEmpty)
+                          ? FeedVideoPlayer(
+                              videoUrl: project.videoUrl!,
+                              posterUrl: project.imageUrl,
+                              isActive: true,
+                            )
+                          : LhotseImage(project.imageUrl),
                     ),
                     const DecoratedBox(
                       decoration: BoxDecoration(

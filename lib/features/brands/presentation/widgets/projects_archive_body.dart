@@ -179,8 +179,10 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
                       isLocked: filtered[i].isVip &&
                           ref.read(currentUserRoleProvider) !=
                               UserRole.investorVip,
-                      onTap: () =>
-                          context.push('/projects/${filtered[i].id}'),
+                      onTap: () => context.push(
+                        '/projects/${filtered[i].id}',
+                        extra: filtered[i],
+                      ),
                     );
                   },
                 ),
