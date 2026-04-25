@@ -295,7 +295,7 @@ class _DirectPurchaseDetailContentState
                             const SizedBox(height: 2),
                             Text(
                               'ALQUILER',
-                              style: AppTypography.labelUppercaseSm.copyWith(
+                              style: AppTypography.labelUppercaseMd.copyWith(
                                 color: AppColors.accentMuted,
                                 letterSpacing: 0.8,
                               ),
@@ -317,7 +317,7 @@ class _DirectPurchaseDetailContentState
                             const SizedBox(height: 2),
                             Text(
                               'YIELD',
-                              style: AppTypography.labelUppercaseSm.copyWith(
+                              style: AppTypography.labelUppercaseMd.copyWith(
                                 color: AppColors.accentMuted,
                                 letterSpacing: 0.8,
                               ),
@@ -339,7 +339,7 @@ class _DirectPurchaseDetailContentState
                             const SizedBox(height: 2),
                             Text(
                               'REVALORIZACIÓN',
-                              style: AppTypography.labelUppercaseSm.copyWith(
+                              style: AppTypography.labelUppercaseMd.copyWith(
                                 color: AppColors.accentMuted,
                                 letterSpacing: 0.8,
                               ),
