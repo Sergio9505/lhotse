@@ -645,7 +645,7 @@ class _AssetRowState extends State<_AssetRow> {
         opacity: _pressed ? 0.5 : 1.0,
         child: Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+              horizontal: AppSpacing.lg, vertical: 24),
           decoration: widget.isLast
               ? null
               : BoxDecoration(
@@ -701,14 +701,15 @@ class _AssetRowState extends State<_AssetRow> {
                             text: _eurFormat.format(widget.amount),
                             style: AppTypography.figureAmount.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 30,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           TextSpan(
                             text: '€',
                             style: AppTypography.annotation.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 18,
+                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -790,7 +791,7 @@ class _RentaFijaRow extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: 20),
+          horizontal: AppSpacing.lg, vertical: 24),
       decoration: isLast
           ? null
           : BoxDecoration(
@@ -853,14 +854,15 @@ class _RentaFijaRow extends StatelessWidget {
                         text: _eurFormat.format(mainAmount),
                         style: AppTypography.figureAmount.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 30,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       TextSpan(
                         text: '€',
                         style: AppTypography.annotation.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 18,
+                          fontSize: 14,
                         ),
                       ),
                     ],
