@@ -123,9 +123,8 @@ class _BrandDetailScreenState extends ConsumerState<BrandDetailScreen> {
                               horizontal: AppSpacing.lg),
                           child: Text(
                             brand.tagline!,
-                            style: AppTypography.headingLarge.copyWith(
+                            style: AppTypography.editorialSubtitle.copyWith(
                               color: AppColors.textPrimary,
-                              height: 1.3,
                             ),
                           ),
                         ),
@@ -192,7 +191,7 @@ class _BrandLogoHeader extends StatelessWidget {
     }
     return Text(
       brand.name.toUpperCase(),
-      style: AppTypography.headingSmall.copyWith(color: AppColors.textPrimary),
+      style: AppTypography.titleUppercase.copyWith(color: AppColors.textPrimary),
     );
   }
 }
@@ -221,7 +220,7 @@ class _BrandLogo extends StatelessWidget {
     }
     return Text(
       brand.name.toUpperCase(),
-      style: AppTypography.headingSmall.copyWith(color: AppColors.textPrimary),
+      style: AppTypography.titleUppercase.copyWith(color: AppColors.textPrimary),
     );
   }
 }
@@ -259,9 +258,8 @@ class _BrandDescription extends StatelessWidget {
     if (parts.length == 1) {
       return Text(
         text,
-        style: AppTypography.bodyMedium.copyWith(
+        style: AppTypography.bodyReading.copyWith(
           color: AppColors.textSecondary,
-          height: 1.6,
         ),
       );
     }
@@ -281,9 +279,8 @@ class _BrandDescription extends StatelessWidget {
 
     return RichText(
       text: TextSpan(
-        style: AppTypography.bodyMedium.copyWith(
+        style: AppTypography.bodyReading.copyWith(
           color: AppColors.textSecondary,
-          height: 1.6,
         ),
         children: spans,
       ),
@@ -316,7 +313,7 @@ class _WebCta extends StatelessWidget {
         child: Center(
           child: Text(
             'VISITAR WEB',
-            style: AppTypography.labelLarge.copyWith(
+            style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.textOnDark,
               letterSpacing: 1.8,
             ),

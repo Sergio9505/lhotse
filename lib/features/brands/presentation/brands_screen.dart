@@ -159,7 +159,7 @@ class _BrandCard extends StatelessWidget {
     if (brand.logoAsset == null) {
       return Text(
         brand.name.toUpperCase(),
-        style: AppTypography.headingSmall.copyWith(
+        style: AppTypography.titleUppercase.copyWith(
           color: AppColors.textPrimary,
         ),
       );
