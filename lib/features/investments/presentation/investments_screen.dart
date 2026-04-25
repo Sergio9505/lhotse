@@ -277,7 +277,7 @@ class _BrandRowState extends State<_BrandRow> {
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
-            vertical: 20,
+            vertical: 24,
           ),
           decoration: widget.isLast
               ? null
@@ -292,20 +292,19 @@ class _BrandRowState extends State<_BrandRow> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Brand marker — compact square 32×32 centered in a 48×32 slot.
-              // Prefers the explicit `icon_asset` SVG when present (monochrome
-              // `srcIn` so every brand tones to `textPrimary` regardless of
-              // source colours), falls back to a thin-border initials monogram
-              // when the brand has no icon yet (private-banker holdings-report
-              // convention — every position gets a consistent marker).
+              // Brand marker — 48×48 stamp/mark, presence editorial luxury
+              // (T Magazine / Openhouse). Prefers the explicit `icon_asset`
+              // SVG when present (monochrome `srcIn` so every brand tones to
+              // `textPrimary` regardless of source colours), falls back to a
+              // thin-border initials monogram when the brand has no icon yet.
               SizedBox(
                 width: 48,
-                height: 32,
+                height: 48,
                 child: Center(
                   child: icon != null
                       ? SizedBox(
-                          width: 32,
-                          height: 32,
+                          width: 48,
+                          height: 48,
                           child: SvgPicture.network(
                             icon,
                             fit: BoxFit.contain,
@@ -313,8 +312,8 @@ class _BrandRowState extends State<_BrandRow> {
                           ),
                         )
                       : Container(
-                          width: 32,
-                          height: 32,
+                          width: 48,
+                          height: 48,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             border: Border.all(
@@ -329,7 +328,7 @@ class _BrandRowState extends State<_BrandRow> {
                                 .join(),
                             style: AppTypography.labelUppercaseSm.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 12,
+                              fontSize: 14,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -345,12 +344,13 @@ class _BrandRowState extends State<_BrandRow> {
                   children: [
                     Text(
                       summary.brandName.toUpperCase(),
-                      style: AppTypography.titleUppercase.copyWith(
+                      style: AppTypography.labelUppercaseMd.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.0,
+                        fontSize: 14,
+                        letterSpacing: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     // Tabular layout: amount column with fixed width
                     // (left-aligned so the first digit anchors with the
                     // brand name above) and % starting at the same X
@@ -360,7 +360,7 @@ class _BrandRowState extends State<_BrandRow> {
                       textBaseline: TextBaseline.alphabetic,
                       children: [
                         SizedBox(
-                          width: 140,
+                          width: 180,
                           child: RichText(
                             text: TextSpan(
                               children: [
@@ -370,12 +370,15 @@ class _BrandRowState extends State<_BrandRow> {
                                       .replaceAll('.', ' '),
                                   style: AppTypography.figureAmount.copyWith(
                                     color: AppColors.textPrimary,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 TextSpan(
                                   text: ' €',
                                   style: AppTypography.annotation.copyWith(
                                     color: AppColors.accentMuted,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
@@ -390,6 +393,7 @@ class _BrandRowState extends State<_BrandRow> {
                                 text: '${avgReturn.toStringAsFixed(1)}%',
                                 style: AppTypography.annotation.copyWith(
                                   color: AppColors.accentMuted,
+                                  fontSize: 14,
                                 ),
                               ),
                               if (widget.isEstimated)
