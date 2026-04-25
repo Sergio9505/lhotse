@@ -880,48 +880,52 @@ class _RentaFijaRow extends StatelessWidget {
                     ),
                   )
                 else ...[
-                  // L2 — términos del producto: rate + frecuencia de cupón
-                  Text(
-                    '${c.guaranteedRate.toStringAsFixed(1)}% ANUAL  ·  '
-                    '${_kFrequencyLabels[c.paymentFrequency] ?? 'MENSUAL'}',
-                    style: AppTypography.labelUppercaseSm.copyWith(
-                      color: AppColors.accentMuted,
-                      fontSize: 12,
-                    ),
-                  ),
-                  if (c.maturityDate != null) ...[
-                    const SizedBox(height: 2),
-                    // L3 — situación temporal: vencimiento + ganancia acumulada
-                    RichText(
-                      text: TextSpan(
-                        style: AppTypography.labelUppercaseSm.copyWith(
-                          color: AppColors.accentMuted,
-                          fontSize: 12,
+                  // L2 — términos contractuales: rate + vencimiento
+                  RichText(
+                    text: TextSpan(
+                      style: AppTypography.labelUppercaseSm.copyWith(
+                        color: AppColors.accentMuted,
+                        fontSize: 12,
+                      ),
+                      children: [
+                        TextSpan(
+                          text:
+                              '${c.guaranteedRate.toStringAsFixed(1)}% ANUAL',
                         ),
-                        children: [
+                        if (c.maturityDate != null) ...[
+                          const TextSpan(text: '  ·  '),
                           TextSpan(
                             text:
                                 'VENCE ${DateFormat(_kMaturityMonthFormat).format(c.maturityDate!)}',
                           ),
-                          if (c.interestPaidToDate > 0) ...[
-                            const TextSpan(text: '  ·  '),
-                            TextSpan(
-                              text:
-                                  '+${_eurFormat.format(c.interestPaidToDate)}€',
-                              style: greenStyle,
-                            ),
-                          ],
                         ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  // L3 — flujo de pagos: frecuencia + intereses cobrados
+                  RichText(
+                    text: TextSpan(
+                      style: AppTypography.labelUppercaseSm.copyWith(
+                        color: AppColors.accentMuted,
+                        fontSize: 12,
                       ),
+                      children: [
+                        TextSpan(
+                          text:
+                              'PAGO ${_kFrequencyLabels[c.paymentFrequency] ?? 'MENSUAL'}',
+                        ),
+                        if (c.interestPaidToDate > 0) ...[
+                          const TextSpan(text: '  ·  '),
+                          TextSpan(
+                            text:
+                                '+${_eurFormat.format(c.interestPaidToDate)}€',
+                            style: greenStyle,
+                          ),
+                        ],
+                      ],
                     ),
-                  ] else if (c.interestPaidToDate > 0) ...[
-                    const SizedBox(height: 2),
-                    // No maturity but we have accrued interest — show it solo.
-                    Text(
-                      '+${_eurFormat.format(c.interestPaidToDate)}€',
-                      style: greenStyle,
-                    ),
-                  ],
+                  ),
                 ],
               ],
             ),
