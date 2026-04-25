@@ -144,7 +144,7 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
               Center(
                 child: Text(
                   'Vídeo no disponible',
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.bodyReading.copyWith(
                     color: AppColors.textOnDark,
                   ),
                 ),
@@ -318,13 +318,13 @@ class _ProgressStrip extends StatelessWidget {
               children: [
                 Text(
                   _format(value.position),
-                  style: AppTypography.bodySmall.copyWith(
+                  style: AppTypography.annotation.copyWith(
                     color: AppColors.textOnDark,
                   ),
                 ),
                 Text(
                   _format(value.duration),
-                  style: AppTypography.bodySmall.copyWith(
+                  style: AppTypography.annotation.copyWith(
                     color: AppColors.textOnDark
                         .withValues(alpha: 0.7),
                   ),

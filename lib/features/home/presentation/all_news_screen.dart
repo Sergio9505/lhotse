@@ -234,9 +234,8 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
                 ? Center(
                     child: Text(
                       allNews.isEmpty ? '' : 'SIN RESULTADOS',
-                      style: AppTypography.labelLarge.copyWith(
+                      style: AppTypography.labelUppercaseMd.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.5,
                       ),
                     ),
                   )
@@ -376,7 +375,7 @@ class _RegionFilterRow extends StatelessWidget {
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           region.toUpperCase(),
-                          style: AppTypography.captionSmall.copyWith(
+                          style: AppTypography.labelUppercaseSm.copyWith(
                             color: AppColors.textPrimary,
                             letterSpacing: 1.0,
                           ),
@@ -404,7 +403,7 @@ class _RegionFilterRow extends StatelessWidget {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       'LIMPIAR',
-                      style: AppTypography.captionSmall.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
                         letterSpacing: 1.0,
                       ),

@@ -56,7 +56,7 @@ class _VipLockSheet extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               'Lhotse Private',
-              style: AppTypography.headingLarge.copyWith(
+              style: AppTypography.editorialSubtitle.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),
@@ -68,7 +68,7 @@ class _VipLockSheet extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               'Este proyecto es de acceso exclusivo para Inversores VIP. Sigue invirtiendo con nosotros para desbloquear oportunidades privadas.',
-              style: AppTypography.bodySmall.copyWith(
+              style: AppTypography.annotation.copyWith(
                 color: AppColors.accentMuted,
               ),
             ),
@@ -89,9 +89,8 @@ class _VipLockSheet extends StatelessWidget {
               children: [
                 Text(
                   'SOLICITAR INVITACIÓN',
-                  style: AppTypography.labelLarge.copyWith(
+                  style: AppTypography.labelUppercaseMd.copyWith(
                     color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w500,
                     letterSpacing: 1.2,
                   ),
                 ),

@@ -78,9 +78,8 @@ class ProjectShowcaseCard extends StatelessWidget {
                     ),
                     child: Text(
                       project.phase.label,
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.5,
                       ),
                     ),
@@ -96,9 +95,8 @@ class ProjectShowcaseCard extends StatelessWidget {
                           horizontal: 8, vertical: 5),
                       child: Text(
                         'PRIVATE',
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.textOnDark,
-                          fontWeight: FontWeight.w500,
                           letterSpacing: 1.5,
                         ),
                       ),
@@ -117,7 +115,7 @@ class ProjectShowcaseCard extends StatelessWidget {
                 // Title — Campton Light 48pt, mixed case, tight line-height.
                 Text(
                   project.name,
-                  style: AppTypography.displayHero.copyWith(
+                  style: AppTypography.editorialHero.copyWith(
                     color: AppColors.textPrimary,
                   ),
                   maxLines: 2,
@@ -129,7 +127,7 @@ class ProjectShowcaseCard extends StatelessWidget {
                 // luxury and screenshot-universal.
                 Text(
                   project.city,
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.bodyReading.copyWith(
                     color: AppColors.accentMuted,
                   ),
                   maxLines: 1,
@@ -141,7 +139,7 @@ class ProjectShowcaseCard extends StatelessWidget {
                   // captions / pull quotes.
                   Text(
                     project.tagline,
-                    style: AppTypography.bodyMedium.copyWith(
+                    style: AppTypography.annotation.copyWith(
                       color: AppColors.accentMuted,
                       height: 1.6,
                       fontStyle: FontStyle.italic,
@@ -184,7 +182,7 @@ class _BrandStamp extends StatelessWidget {
     if (!hasLogo) {
       return Text(
         project.brand.toUpperCase(),
-        style: AppTypography.caption.copyWith(
+        style: AppTypography.labelUppercaseSm.copyWith(
           color: AppColors.textPrimary,
           letterSpacing: 1.5,
         ),

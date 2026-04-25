@@ -234,10 +234,8 @@ class _Caption extends StatelessWidget {
           // tipografía with the rest of the system.
           Text(
             content.title,
-            style: AppTypography.displayLarge.copyWith(
+            style: AppTypography.editorialHero.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w300,
-              height: 1.0,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -278,9 +276,8 @@ class _MetaWithCta extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             text: TextSpan(
-              style: AppTypography.bodySmall.copyWith(
+              style: AppTypography.annotation.copyWith(
                 color: AppColors.accentMuted,
-                letterSpacing: 0.2,
               ),
               children: [
                 for (int i = 0; i < parts.length; i++) ...[
@@ -300,9 +297,8 @@ class _MetaWithCta extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Text(
           cta,
-          style: AppTypography.bodySmall.copyWith(
+          style: AppTypography.labelUppercaseSm.copyWith(
             color: AppColors.textPrimary,
-            letterSpacing: 1.2,
           ),
         ),
         const SizedBox(width: 4),

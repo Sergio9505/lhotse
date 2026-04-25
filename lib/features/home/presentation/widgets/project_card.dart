@@ -41,9 +41,8 @@ class ProjectCard extends StatelessWidget {
                           horizontal: 8, vertical: 5),
                       child: Text(
                         'PRIVATE',
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.textOnDark,
-                          fontWeight: FontWeight.w500,
                           letterSpacing: 1.5,
                         ),
                       ),
@@ -63,7 +62,7 @@ class ProjectCard extends StatelessWidget {
                   project.name.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.headingLarge.copyWith(
+                  style: AppTypography.titleUppercaseLg.copyWith(
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -72,7 +71,7 @@ class ProjectCard extends StatelessWidget {
                   children: [
                     Text(
                       project.brand.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.textPrimary,
                         letterSpacing: 1.8,
                       ),
@@ -81,7 +80,7 @@ class ProjectCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
                         '•',
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.textPrimary.withValues(alpha: 0.4),
                         ),
                       ),
@@ -89,7 +88,7 @@ class ProjectCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         project.location.toUpperCase(),
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.accentMuted,
                           letterSpacing: 1.35,
                         ),

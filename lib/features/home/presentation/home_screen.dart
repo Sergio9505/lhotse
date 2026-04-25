@@ -154,7 +154,7 @@ class _FeedPager extends StatelessWidget {
       return const Center(
         child: Text(
           'SIN CONTENIDO',
-          style: AppTypography.labelLarge,
+          style: AppTypography.labelUppercaseMd,
         ),
       );
     }
@@ -211,9 +211,8 @@ class _FeedError extends StatelessWidget {
         children: [
           Text(
             'NO SE PUDO CARGAR EL FEED',
-            style: AppTypography.labelLarge.copyWith(
+            style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.textOnDark.withValues(alpha: 0.7),
-              letterSpacing: 1.5,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -221,7 +220,7 @@ class _FeedError extends StatelessWidget {
             onTap: onRetry,
             child: Text(
               'REINTENTAR',
-              style: AppTypography.labelLarge.copyWith(
+              style: AppTypography.labelUppercaseMd.copyWith(
                 color: AppColors.textOnDark,
                 letterSpacing: 1.8,
                 decoration: TextDecoration.underline,

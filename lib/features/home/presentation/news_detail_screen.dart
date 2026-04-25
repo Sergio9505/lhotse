@@ -128,7 +128,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                   children: [
                     Text(
                       news.title.toUpperCase(),
-                      style: AppTypography.headingSmall.copyWith(
+                      style: AppTypography.titleUppercase.copyWith(
                         color: AppColors.textPrimary,
                       ),
                       maxLines: 1,
@@ -137,9 +137,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                     const SizedBox(height: 2),
                     Text(
                       ((news.brand ?? '')).toUpperCase(),
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.2,
                       ),
                     ),
                   ],
@@ -232,16 +231,15 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                   children: [
                     Text(
                       news.type == NewsType.project ? 'PROYECTO' : 'PRENSA',
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        fontWeight: FontWeight.w500,
                         letterSpacing: 2.0,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       news.title,
-                      style: AppTypography.displayHero.copyWith(
+                      style: AppTypography.editorialHero.copyWith(
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -249,7 +247,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       Text(
                         news.subtitle!,
-                        style: AppTypography.bodyMedium.copyWith(
+                        style: AppTypography.annotation.copyWith(
                           color: AppColors.accentMuted,
                           height: 1.6,
                           fontStyle: FontStyle.italic,
@@ -277,9 +275,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                   ),
                   child: Text(
                     news.body!,
-                    style: AppTypography.bodyMedium.copyWith(
+                    style: AppTypography.bodyReading.copyWith(
                       color: AppColors.textSecondary,
-                      height: 1.6,
                     ),
                   ),
                 ),
@@ -361,7 +358,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     ));
     return RichText(
       text: TextSpan(
-        style: AppTypography.caption.copyWith(letterSpacing: 1.5),
+        style: AppTypography.labelUppercaseSm.copyWith(letterSpacing: 1.5),
         children: children,
       ),
     );

@@ -164,16 +164,15 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                   children: [
                     Text(
                       project.name.toUpperCase(),
-                      style: AppTypography.headingSmall.copyWith(
+                      style: AppTypography.titleUppercase.copyWith(
                         color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       project.brand.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.2,
                       ),
                     ),
                   ],
@@ -236,16 +235,15 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                   children: [
                     Text(
                       '${project.brand.toUpperCase()}  ·  ${project.phase.label}',
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        fontWeight: FontWeight.w500,
                         letterSpacing: 2.0,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       project.name,
-                      style: AppTypography.displayHero.copyWith(
+                      style: AppTypography.editorialHero.copyWith(
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -253,7 +251,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       Text(
                         project.tagline,
-                        style: AppTypography.bodyMedium.copyWith(
+                        style: AppTypography.annotation.copyWith(
                           color: AppColors.accentMuted,
                           height: 1.6,
                           fontStyle: FontStyle.italic,
@@ -263,7 +261,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                     const SizedBox(height: 12),
                     Text(
                       project.location.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.textPrimary,
                         letterSpacing: 1.5,
                       ),
@@ -282,9 +280,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Text(
                   project.description.replaceAll('**', ''),
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.bodyReading.copyWith(
                     color: AppColors.textSecondary,
-                    height: 1.6,
                   ),
                 ),
               ),
@@ -370,7 +367,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                         children: [
                           Text(
                             'GALERÍA',
-                            style: AppTypography.labelLarge.copyWith(
+                            style: AppTypography.labelUppercaseMd.copyWith(
                               color: AppColors.accentMuted,
                               fontWeight: FontWeight.w400,
                               letterSpacing: 1.8,
@@ -451,7 +448,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                     child: Center(
                       child: Text(
                         'DESCARGAR FOLLETO',
-                        style: AppTypography.labelLarge.copyWith(
+                        style: AppTypography.labelUppercaseMd.copyWith(
                           color: AppColors.textOnDark,
                           letterSpacing: 1.8,
                         ),
