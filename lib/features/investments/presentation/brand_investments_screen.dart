@@ -152,22 +152,17 @@ class BrandInvestmentsScreen extends ConsumerWidget {
             ),
           ),
 
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _StickyLabelDelegate(
-              child: Container(
-                color: AppColors.background,
-                padding: const EdgeInsets.only(
-                    top: AppSpacing.md,
-                    left: AppSpacing.lg,
-                    bottom: AppSpacing.sm),
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  sectionLabel,
-                  style: AppTypography.labelUppercaseMd.copyWith(
-                    color: AppColors.accentMuted,
-                    letterSpacing: 1.8,
-                  ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                  top: AppSpacing.xl,
+                  left: AppSpacing.lg,
+                  bottom: AppSpacing.md),
+              child: Text(
+                sectionLabel,
+                style: AppTypography.labelUppercaseMd.copyWith(
+                  color: AppColors.accentMuted,
+                  letterSpacing: 1.8,
                 ),
               ),
             ),
@@ -270,7 +265,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.md),
                   if (isCompraDirecta)
                     ...completedPurchase.indexed.map((e) {
                       final c = e.$2;
@@ -577,23 +572,6 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(covariant _BrandHeroDelegate oldDelegate) =>
       expandedHeight != oldDelegate.expandedHeight ||
       totalFormatted != oldDelegate.totalFormatted;
-}
-
-class _StickyLabelDelegate extends SliverPersistentHeaderDelegate {
-  const _StickyLabelDelegate({required this.child});
-  final Widget child;
-
-  @override
-  double get minExtent => 74;
-  @override
-  double get maxExtent => 74;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
-      child;
-
-  @override
-  bool shouldRebuild(covariant _StickyLabelDelegate oldDelegate) => false;
 }
 
 // ── Asset row ─────────────────────────────────────────────────────────────────
