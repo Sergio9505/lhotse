@@ -277,7 +277,7 @@ class _BrandRowState extends State<_BrandRow> {
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
-            vertical: 24,
+            vertical: 28,
           ),
           decoration: widget.isLast
               ? null
@@ -346,8 +346,6 @@ class _BrandRowState extends State<_BrandRow> {
                       summary.brandName.toUpperCase(),
                       style: AppTypography.labelUppercaseMd.copyWith(
                         color: AppColors.accentMuted,
-                        fontSize: 14,
-                        letterSpacing: 1.5,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -369,7 +367,7 @@ class _BrandRowState extends State<_BrandRow> {
                                       .replaceAll('.', ' '),
                                   style: AppTypography.figureAmount.copyWith(
                                     color: AppColors.textPrimary,
-                                    fontSize: 20,
+                                    fontSize: 18,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
