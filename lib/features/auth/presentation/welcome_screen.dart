@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../app/router.dart';
 
@@ -201,14 +202,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Column(
+                          Column(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'LHOTSE',
                                 style: TextStyle(
-                                  fontFamily: 'Campton',
+                                  fontFamily: AppTypography.fontFamily,
                                   fontSize: 24,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
@@ -224,7 +225,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               Text(
                                 'GROUP',
                                 style: TextStyle(
-                                  fontFamily: 'Campton',
+                                  fontFamily: AppTypography.fontFamily,
                                   fontSize: 24,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
@@ -249,10 +250,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     Text(
                       'Lhotse Group, a holding company specialized in redefining wealth management and creation through strategic investments in real estate assets.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Campton',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
+                      style: AppTypography.annotation.copyWith(
                         color: Colors.white.withValues(alpha: 0.75),
                         letterSpacing: 0.3,
                         height: 1.5,
@@ -348,10 +346,7 @@ class _AuthButtonState extends State<_AuthButton> {
           ),
           child: Text(
             widget.label,
-            style: const TextStyle(
-              fontFamily: 'Campton',
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+            style: AppTypography.labelUppercaseMd.copyWith(
               color: Colors.white,
               letterSpacing: 1.2,
             ),

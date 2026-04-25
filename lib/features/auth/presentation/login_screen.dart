@@ -105,7 +105,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     'INICIAR SESIÓN',
-                    style: AppTypography.headingLarge.copyWith(
+                    style: AppTypography.titleUppercaseLg.copyWith(
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -155,10 +155,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Text(
                           'OLVIDÉ MI CONTRASEÑA',
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.labelUppercaseSm.copyWith(
                             color: AppColors.textSecondary,
                             letterSpacing: 1.5,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -171,7 +170,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   if (_errorMessage != null) ...[
                     Text(
                       _errorMessage!,
-                      style: AppTypography.bodySmall.copyWith(
+                      style: AppTypography.annotation.copyWith(
                         color: AppColors.danger,
                       ),
                     ),
@@ -249,10 +248,7 @@ class _SubmitButtonState extends State<_SubmitButton> {
                 )
               : Text(
                   widget.label,
-                  style: const TextStyle(
-                    fontFamily: 'Campton',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                  style: AppTypography.labelUppercaseMd.copyWith(
                     color: Colors.white,
                     letterSpacing: 1.2,
                   ),

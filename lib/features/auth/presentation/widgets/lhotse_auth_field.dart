@@ -54,7 +54,7 @@ class _LhotseAuthFieldState extends State<LhotseAuthField> {
         // Label
         Text(
           widget.label.toUpperCase(),
-          style: AppTypography.caption.copyWith(
+          style: AppTypography.labelUppercaseSm.copyWith(
             color: AppColors.accentMuted,
             letterSpacing: 1.8,
             fontWeight: FontWeight.w400,
@@ -71,9 +71,8 @@ class _LhotseAuthFieldState extends State<LhotseAuthField> {
           textInputAction: widget.textInputAction,
           autofocus: widget.autofocus,
           onSubmitted: widget.onSubmitted,
-          style: AppTypography.headingSmall.copyWith(
+          style: AppTypography.bodyInput.copyWith(
             color: AppColors.textPrimary,
-            fontWeight: FontWeight.w400,
           ),
           decoration: InputDecoration(
             isDense: true,
@@ -120,7 +119,7 @@ class _LhotseAuthFieldState extends State<LhotseAuthField> {
           const SizedBox(height: 6),
           Text(
             widget.errorText!,
-            style: AppTypography.caption.copyWith(
+            style: AppTypography.annotation.copyWith(
               color: AppColors.danger,
             ),
           ),
