@@ -356,11 +356,10 @@ class _BrandRowState extends State<_BrandRow> {
                     // brand name above) and % starting at the same X
                     // across all rows.
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         SizedBox(
-                          width: 180,
+                          width: 160,
                           child: RichText(
                             text: TextSpan(
                               children: [
@@ -370,7 +369,7 @@ class _BrandRowState extends State<_BrandRow> {
                                       .replaceAll('.', ' '),
                                   style: AppTypography.figureAmount.copyWith(
                                     color: AppColors.textPrimary,
-                                    fontSize: 24,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -378,7 +377,7 @@ class _BrandRowState extends State<_BrandRow> {
                                   text: ' €',
                                   style: AppTypography.annotation.copyWith(
                                     color: AppColors.accentMuted,
-                                    fontSize: 14,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ],
@@ -393,7 +392,7 @@ class _BrandRowState extends State<_BrandRow> {
                                 text: '${avgReturn.toStringAsFixed(1)}%',
                                 style: AppTypography.annotation.copyWith(
                                   color: AppColors.accentMuted,
-                                  fontSize: 14,
+                                  fontSize: 12,
                                 ),
                               ),
                               if (widget.isEstimated)
