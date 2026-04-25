@@ -345,9 +345,8 @@ class _BrandRowState extends State<_BrandRow> {
                   children: [
                     Text(
                       summary.brandName.toUpperCase(),
-                      style: AppTypography.labelUppercaseSm.copyWith(
+                      style: AppTypography.titleUppercase.copyWith(
                         color: AppColors.accentMuted,
-                        fontSize: 12,
                         letterSpacing: 1.0,
                       ),
                     ),

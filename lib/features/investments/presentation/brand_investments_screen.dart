@@ -676,7 +676,7 @@ class _AssetRowState extends State<_AssetRow> {
                         widget.projectName,
                         style: AppTypography.bodyEmphasis.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 22,
+                          fontSize: 18,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
