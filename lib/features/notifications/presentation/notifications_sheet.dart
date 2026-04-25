@@ -104,7 +104,7 @@ class _NotificationsSheetContent extends ConsumerWidget {
               children: [
                 Text(
                   'NOTIFICACIONES',
-                  style: AppTypography.headingLarge.copyWith(
+                  style: AppTypography.titleUppercaseLg.copyWith(
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -143,9 +143,8 @@ class _NotificationsSheetContent extends ConsumerWidget {
                 ? Center(
                     child: Text(
                       'SIN NOTIFICACIONES',
-                      style: AppTypography.labelLarge.copyWith(
+                      style: AppTypography.labelUppercaseMd.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.5,
                       ),
                     ),
                   )
@@ -274,7 +273,7 @@ class _NotificationRowState extends State<_NotificationRow> {
                   children: [
                     Text(
                       n.title,
-                      style: AppTypography.bodyMedium.copyWith(
+                      style: AppTypography.bodyReading.copyWith(
                         color: titleColor,
                         fontWeight: titleWeight,
                       ),
@@ -284,7 +283,7 @@ class _NotificationRowState extends State<_NotificationRow> {
                     const SizedBox(height: 3),
                     Text(
                       meta,
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: metaColor,
                         letterSpacing: 1.0,
                       ),

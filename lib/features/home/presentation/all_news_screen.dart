@@ -330,55 +330,48 @@ class _RegionFilterRow extends StatelessWidget {
   final ValueChanged<String> onTap;
   final VoidCallback onClear;
 
-  static const _regionFlags = {
-    'España': '🇪🇸',
-    'México': '🇲🇽',
-    'EE.UU.': '🇺🇸',
-    'Portugal': '🇵🇹',
-    'EAU': '🇦🇪',
-  };
-
   @override
   Widget build(BuildContext context) {
     final hasSelection = selectedRegions.isNotEmpty;
 
     return SizedBox(
-      height: 72,
+      height: 52,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Row(
           children: [
             ...regions.map((region) {
               final isSelected = selectedRegions.contains(region);
-              final double opacity =
-                  hasSelection ? (isSelected ? 1.0 : 0.35) : 0.6;
-
               return Expanded(
                 child: GestureDetector(
                   onTap: () => onTap(region),
                   behavior: HitTestBehavior.opaque,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: opacity,
+                  child: Center(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(
-                          height: 32,
-                          child: Center(
-                            child: Text(
-                              _regionFlags[region] ?? '📍',
-                              style: const TextStyle(fontSize: 22),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
                         Text(
                           region.toUpperCase(),
-                          style: AppTypography.labelUppercaseSm.copyWith(
-                            color: AppColors.textPrimary,
+                          textAlign: TextAlign.center,
+                          style: AppTypography.labelUppercaseMd.copyWith(
+                            color: isSelected
+                                ? AppColors.textPrimary
+                                : AppColors.accentMuted,
+                            fontWeight: isSelected
+                                ? FontWeight.w500
+                                : FontWeight.w400,
                             letterSpacing: 1.0,
                           ),
+                        ),
+                        const SizedBox(height: 5),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          height: 1.5,
+                          width: 18,
+                          color: isSelected
+                              ? AppColors.textPrimary
+                              : Colors.transparent,
                         ),
                       ],
                     ),
@@ -389,26 +382,14 @@ class _RegionFilterRow extends StatelessWidget {
             if (hasSelection)
               GestureDetector(
                 onTap: onClear,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(
-                      height: 32,
-                      child: PhosphorIcon(
-                        PhosphorIconsThin.x,
-                        size: 16,
-                        color: AppColors.accentMuted,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'LIMPIAR',
-                      style: AppTypography.labelUppercaseSm.copyWith(
-                        color: AppColors.accentMuted,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ],
+                behavior: HitTestBehavior.opaque,
+                child: const Padding(
+                  padding: EdgeInsets.only(left: AppSpacing.sm),
+                  child: PhosphorIcon(
+                    PhosphorIconsThin.x,
+                    size: 16,
+                    color: AppColors.accentMuted,
+                  ),
                 ),
               ),
           ],

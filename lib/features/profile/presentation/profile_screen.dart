@@ -194,11 +194,9 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
       child: Center(
         child: Text(
           initials,
-          style: const TextStyle(
-            fontFamily: 'Campton',
-            fontSize: 36,
-            fontWeight: FontWeight.w500,
+          style: AppTypography.editorialTitle.copyWith(
             color: AppColors.textPrimary,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
