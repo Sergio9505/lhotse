@@ -81,8 +81,9 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               ? const CircularProgressIndicator(strokeWidth: 1.5)
               : Text(
                   'Noticia no encontrada',
-                  style: AppTypography.bodyLarge.copyWith(
+                  style: AppTypography.bodyReading.copyWith(
                     color: AppColors.textSecondary,
+                    fontSize: 16,
                   ),
                 ),
         ),

@@ -38,24 +38,26 @@ These rules apply to ALL UI built in the app. Check before every screen/widget i
 
 ### Typography (`app_typography.dart`) — Campton only
 
-Tokens are semantic (role-based, not shape). Reach for one by its role; allow `copyWith` for color, `fontStyle: italic`, or puntual size/letterSpacing residual when justified.
+12 semantic tokens, role-based (not shape). Reach for one by its role; allow `copyWith` for color, `fontStyle: italic`, or puntual size/letterSpacing residual when justified.
 
 | Token | Size | Weight | Role |
 |-------|------|--------|------|
 | editorialHero | 48 | Light (300) | Top-level covers. L1 Estrategia, archive showcase cards, project_detail + news_detail heroes, feed_card title. h0.98 / ls −0.5 |
-| editorialTitle | 36 | Light (300) | Interior covers (one level down). L2/L3 Estrategia heros, profile_screen display name. h1.0 / ls −0.4 |
+| editorialTitle | 36 | Light (300) | Interior covers (one level down). L2/L3 Estrategia heros, profile_screen display name + avatar initials fallback. h1.0 / ls −0.4 |
 | editorialSubtitle | 24 | Medium (500) | Mixed-case taglines / second-level statements. brand_detail tagline, profile private banner title, search empty state |
-| titleUppercaseLg | 24 | Medium (500) | Large uppercase titles. project_card title (home feed), large card heros. ls −0.2 |
-| titleUppercase | 18 | Medium (500) | Uppercase headers. Collapsed AppBar titles, asset rows in L2, search result project/asset cards, brand fallback wordmarks, profile/settings screen headers |
-| figureAmount | 18 | Book (400) | Row-level financial figures with `tabularFigures` for column-stable alignment. Color set per screen |
-| labelUppercaseMd | 12 | Medium (500) | Section labels, sticky headers, CTAs (DESCARGAR FOLLETO / VISITAR WEB / GUARDAR), tab markers, menu rows in profile. ls 1.5 nativa (override hasta 1.8 cuando se quiere expresividad editorial) |
-| labelUppercaseSm | 10 | Medium (500) | Brand names, phase chips, location bylines, PRIVATE/VIP, kicker above hero, region flag labels, status chips (con `fontSize: 9` residual cuando son micro). ls 1.2 nativa |
-| bodyReading | 14 | Book (400) | Description paragraphs (project/news/brand body), legal text, profile read-only field values. h1.6 nativo |
-| annotation | 12 | Book (400) | Italic taglines (con `fontStyle: italic` override), "est." labels, error messages, fine print, footer notes. h1.5 |
+| titleUppercaseLg | 24 | Medium (500) | Large uppercase titles. project_card title (home feed), large card heros, app_header title, login header, bottom_sheet title, AppBar default. ls −0.2 |
+| titleUppercase | 18 | Medium (500) | Uppercase headers. Collapsed AppBar titles, asset rows in L2, search result project/asset cards, brand fallback wordmarks, profile/settings screen headers, brand filter row fallback initial (con `fontSize: 20` residual). ls −0.2 |
+| figureAmount | 18 | Book (400) | Row-level financial figures with `tabularFigures` for column-stable alignment. metric block values. Color set per screen |
+| bodyInput | 18 | Book (400) | Mixed-case text inputs (search field, auth fields). Hint con `fontWeight: w300` override. h1.2 |
+| bodyEmphasis | 16 | Medium (500) | Ledger row title + amount (con `tabularFigures` override), emphasized body where the value is the read target. h1.4 |
+| bodyReading | 14 | Book (400) | Description paragraphs (project/news/brand body), legal text, profile read-only field values, doc row name, key-value list values, notification row titles. h1.6 nativo |
+| labelUppercaseMd | 12 | Medium (500) | Section labels, sticky headers, CTAs (DESCARGAR FOLLETO / VISITAR WEB / GUARDAR), tab markers (LhotseFilterTab), menu rows in profile, region filter active/inactive. ls 1.5 nativa (override hasta 1.8 para expresividad editorial) |
+| labelUppercaseSm | 10 | Medium (500) | Brand names, phase chips, location bylines, PRIVATE/VIP, kicker above hero, status chips (con `fontSize: 9` residual cuando son micro), notification badge count (con `fontSize: 8` residual), filter chips. ls 1.2 nativa |
+| annotation | 12 | Book (400) | Italic taglines (con `fontStyle: italic` override), "est." labels, error messages (con `color: danger`), fine print, footer notes, news card italic deck. h1.5 |
 
-**Pre-semantic tokens** (`displayLarge`, `headingLarge`, `headingSmall`, `bodyMedium`, `bodySmall`, `labelLarge`, `caption`, `captionSmall`, `displayHero`) están `@Deprecated`. Aún viven temporalmente para `lib/features/auth/`, `lib/features/notifications/` y `lib/core/widgets/` que migrarán en una segunda pasada. **No usar en código nuevo.**
+**Constante exportada:** `AppTypography.fontFamily` (`'Campton'`) — única ocurrencia legítima del literal en `lib/`. Los pocos casos inline justificados (welcome wordmark con strut, cifras hero animadas en Strategy con tamaño interpolado en scroll) referencian esta constante.
 
-**Jerarquía editorial**: L1 (top-level cover) 48pt → L2/L3 (interior cover) 36pt → cards uppercase 24pt → headers/collapsed 18pt → labels 12pt → micro labels 10pt. Pesos: w300 editorial (heros mixed case), w500 values/CTAs, w400 reading/annotations.
+**Jerarquía editorial**: L1 (top-level cover) 48pt → L2/L3 (interior cover) 36pt → cards uppercase 24pt → headers 18pt / inputs 18pt → bodyEmphasis 16pt → bodyReading 14pt → labels 12pt → micro labels 10pt. Pesos: w300 editorial (heros mixed case), w500 values/emphasis/CTAs, w400 reading/inputs/annotations.
 
 Note: Figma uses Outfit, Cormorant Garamond, Menlo as placeholders — the brand standard is **Campton exclusively**.
 

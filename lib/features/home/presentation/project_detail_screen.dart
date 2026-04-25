@@ -90,8 +90,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
               ? const CircularProgressIndicator(strokeWidth: 1.5)
               : Text(
                   'Proyecto no encontrado',
-                  style: AppTypography.bodyLarge.copyWith(
+                  style: AppTypography.bodyReading.copyWith(
                     color: AppColors.textSecondary,
+                    fontSize: 16,
                   ),
                 ),
         ),
