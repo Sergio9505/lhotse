@@ -114,7 +114,9 @@ class BrandInvestmentsScreen extends ConsumerWidget {
             ? (activePurchase.isEmpty ? 0.0 : activePurchase.map((c) => c.rentalYieldPct ?? 0).reduce((a, b) => a + b) / activePurchase.length)
             : (activeCoinvest.isEmpty ? 0.0 : activeCoinvest.map((c) => c.estimatedReturnPct ?? 0).reduce((a, b) => a + b) / activeCoinvest.length);
 
-    final heroTitle = isRentaFija ? 'Renta Fija' : brandName;
+    final heroTitle = isRentaFija
+        ? 'Mis inversiones\na Renta Fija'
+        : 'Mis inversiones\nen $brandName';
     final sectionLabel = isCompraDirecta ? 'MIS ACTIVOS' : 'ACTIVAS';
     final topPadding = MediaQuery.of(context).padding.top;
     final totalFormatted = _eurFormat.format(totalAmount);
