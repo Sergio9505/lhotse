@@ -18,9 +18,11 @@ import '../../../home/presentation/widgets/project_showcase_card.dart';
 
 enum _ActiveTool { none, brands, search }
 
-/// Status filter for the projects catalog. `null` = default view (construction
-/// + exited). Pre-construction projects live in Strategy → Oportunidades.
-enum _StatusFilter { construction, exited }
+/// Status filter for the projects catalog. `inDevelopment` matches both
+/// `preConstruction` (any fundraising state) and `construction`, collapsing
+/// the two phases into a single user-facing state. `null` shows everything
+/// (TODOS).
+enum _StatusFilter { inDevelopment, exited }
 
 /// Reusable projects catalog body (filter bar + card list). Hosted today by
 /// `AllProjectsScreen` (route `/projects`) and by the Search tab's idle state
@@ -49,12 +51,12 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
   }
 
   List<ProjectData> _applyFilters(List<ProjectData> projects) {
-    var result = projects
-        .where((p) => p.phase != ProjectPhase.preConstruction)
-        .toList();
+    var result = projects.toList();
     if (_selectedStatus != null) {
       result = result.where((p) => switch (_selectedStatus!) {
-            _StatusFilter.construction => p.phase == ProjectPhase.construction,
+            _StatusFilter.inDevelopment =>
+              p.phase == ProjectPhase.preConstruction ||
+                  p.phase == ProjectPhase.construction,
             _StatusFilter.exited => p.phase == ProjectPhase.exited,
           }).toList();
     }
@@ -225,8 +227,8 @@ class _FilterBar extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           LhotseFilterChip(
             label: 'EN DESARROLLO',
-            isActive: selectedStatus == _StatusFilter.construction,
-            onTap: () => onStatusTap(_StatusFilter.construction),
+            isActive: selectedStatus == _StatusFilter.inDevelopment,
+            onTap: () => onStatusTap(_StatusFilter.inDevelopment),
           ),
           const SizedBox(width: AppSpacing.sm),
           LhotseFilterChip(

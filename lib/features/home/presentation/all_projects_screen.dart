@@ -25,13 +25,12 @@ class AllProjectsScreen extends ConsumerStatefulWidget {
 
 enum _ActiveTool { none, brands, search }
 
-/// Single-select status filter. Null = default catalog view (construction +
-/// exited). Projects still in `pre_construction` (open fundraising, work not
-/// started) are not shown here — they live in Strategy → Oportunidades so the
-/// two screens have distinct intents: this one is the portfolio catalog,
-/// Strategy surfaces deals the user can join.
+/// Single-select status filter for the projects catalog. `inDevelopment`
+/// matches both `preConstruction` (any fundraising state) and `construction`,
+/// collapsing the two phases into a single user-facing state. `null` shows
+/// everything (TODOS).
 enum _StatusFilter {
-  construction, // phase = construction
+  inDevelopment, // phase = preConstruction OR construction
   exited, // phase = exited
 }
 
@@ -51,14 +50,12 @@ class _AllProjectsScreenState extends ConsumerState<AllProjectsScreen> {
   }
 
   List<ProjectData> _applyFilters(List<ProjectData> projects) {
-    // Hide pre_construction projects; they surface only in Strategy →
-    // Oportunidades. This screen is the portfolio catalog.
-    var result = projects
-        .where((p) => p.phase != ProjectPhase.preConstruction)
-        .toList();
+    var result = projects.toList();
     if (_selectedStatus != null) {
       result = result.where((p) => switch (_selectedStatus!) {
-            _StatusFilter.construction => p.phase == ProjectPhase.construction,
+            _StatusFilter.inDevelopment =>
+              p.phase == ProjectPhase.preConstruction ||
+                  p.phase == ProjectPhase.construction,
             _StatusFilter.exited => p.phase == ProjectPhase.exited,
           }).toList();
     }
@@ -209,7 +206,7 @@ class _FilterBar extends StatelessWidget {
   final VoidCallback onSearchTap;
 
   static const _statusFilters = [
-    (status: _StatusFilter.construction, label: 'EN DESARROLLO'),
+    (status: _StatusFilter.inDevelopment, label: 'EN DESARROLLO'),
     (status: _StatusFilter.exited, label: 'FINALIZADOS'),
   ];
 
