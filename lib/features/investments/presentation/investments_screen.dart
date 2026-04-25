@@ -123,8 +123,8 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
     final expandRatio = effectiveRange <= 0
         ? 1.0
         : (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0);
-    final amountSize = 28 + (20 * expandRatio);
-    final euroSize = 13 + (9 * expandRatio);
+    final amountSize = 28 + (18 * expandRatio);
+    final euroSize = 13 + (8 * expandRatio);
     // Title fades out gently across the first 60% of the collapse so the
     // chrome band reads clean before the slab finishes collapsing.
     final titleOpacity = ((expandRatio - 0.4) / 0.6).clamp(0.0, 1.0);
@@ -136,9 +136,9 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
     final amountTopCollapsed = topPadding + 28;
     final amountTop = amountTopCollapsed +
         (amountTopExpanded - amountTopCollapsed) * expandRatio;
-    // Title sits ~96pt above the amount expanded so the two lines have
-    // room and the pair reads as a grouped editorial block.
-    final titleTop = amountTop - 96 - 20;
+    // Title is 2 lines × 44pt × line-height 1.0 = 88pt tall; sits 20pt
+    // above the amount so the pair reads as a grouped editorial block.
+    final titleTop = amountTop - 88 - 20;
 
     return Container(
       color: AppColors.background,
@@ -155,6 +155,7 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
                 'Mi estrategia\npatrimonial',
                 style: AppTypography.editorialHero.copyWith(
                   color: AppColors.textPrimary,
+                  fontSize: 44,
                   height: 1.0,
                 ),
               ),
