@@ -121,7 +121,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
     final topPadding = MediaQuery.of(context).padding.top;
     final totalFormatted = _eurFormat.format(totalAmount);
     final collapsedHeight = topPadding + 64.0;
-    final expandedHeight = topPadding + 210.0;
+    final expandedHeight = topPadding + 230.0;
 
     // Sort RF by soonest maturity
     if (isRentaFija) {
@@ -428,8 +428,8 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
     final amountSize = 24.0 + (18.0 * expandRatio);
     final euroSize = 16.0 + (12.0 * expandRatio);
 
-    const expandedAmountY = 150.0;
-    const collapsedAmountY = 16.0;
+    const expandedAmountY = 170.0;
+    const collapsedAmountY = 20.0;
     final amountTop = topPadding +
         collapsedAmountY +
         ((expandedAmountY - collapsedAmountY) * expandRatio);
