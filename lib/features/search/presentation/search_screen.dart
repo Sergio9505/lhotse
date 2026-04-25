@@ -435,7 +435,7 @@ class _TagSection extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AppTypography.labelLarge.copyWith(
+            style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.textPrimary,
               letterSpacing: 1.8,
             ),
@@ -477,7 +477,7 @@ class _TrendingChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppTypography.bodySmall.copyWith(
+          style: AppTypography.annotation.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w500,
           ),
@@ -502,7 +502,7 @@ class _FeaturedSection extends StatelessWidget {
         children: [
           Text(
             'DESTACADOS',
-            style: AppTypography.labelLarge.copyWith(
+            style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.textPrimary,
               letterSpacing: 1.8,
             ),
@@ -539,7 +539,7 @@ class _FeaturedCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             project.name.toUpperCase(),
-            style: AppTypography.headingSmall.copyWith(
+            style: AppTypography.titleUppercase.copyWith(
               color: AppColors.textPrimary,
             ),
           ),
@@ -548,9 +548,8 @@ class _FeaturedCard extends StatelessWidget {
             children: [
               Text(
                 project.brand.toUpperCase(),
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.labelUppercaseSm.copyWith(
                   color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w500,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -558,7 +557,7 @@ class _FeaturedCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Text(
                   '·',
-                  style: AppTypography.caption.copyWith(
+                  style: AppTypography.labelUppercaseSm.copyWith(
                     color: AppColors.textPrimary.withValues(alpha: 0.4),
                   ),
                 ),
@@ -566,9 +565,8 @@ class _FeaturedCard extends StatelessWidget {
               Flexible(
                 child: Text(
                   project.location.toUpperCase(),
-                  style: AppTypography.caption.copyWith(
+                  style: AppTypography.labelUppercaseSm.copyWith(
                     color: AppColors.accentMuted,
-                    letterSpacing: 1.2,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -691,7 +689,7 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Text(
         label,
-        style: AppTypography.labelLarge.copyWith(
+        style: AppTypography.labelUppercaseMd.copyWith(
           color: AppColors.textPrimary,
           letterSpacing: 1.8,
         ),
@@ -738,9 +736,9 @@ class _AssetResultItem extends StatelessWidget {
               children: [
                 Text(
                   primary.toUpperCase(),
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.titleUppercase.copyWith(
                     color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -749,7 +747,7 @@ class _AssetResultItem extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     secondary,
-                    style: AppTypography.caption.copyWith(
+                    style: AppTypography.labelUppercaseSm.copyWith(
                       color: AppColors.accentMuted,
                       letterSpacing: 1.0,
                     ),
@@ -801,7 +799,7 @@ class _BrandResultItem extends StatelessWidget {
                   : Center(
                       child: Text(
                         brand.name.split(' ').map((w) => w[0]).join(),
-                        style: AppTypography.bodySmall.copyWith(
+                        style: AppTypography.annotation.copyWith(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w500,
                         ),
@@ -812,7 +810,7 @@ class _BrandResultItem extends StatelessWidget {
             Expanded(
               child: Text(
                 brand.tagline ?? brand.name.toUpperCase(),
-                style: AppTypography.bodySmall
+                style: AppTypography.annotation
                     .copyWith(color: AppColors.accentMuted),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -861,9 +859,8 @@ class _ProjectResultItem extends StatelessWidget {
                 children: [
                   Text(
                     project.name.toUpperCase(),
-                    style: AppTypography.headingSmall.copyWith(
+                    style: AppTypography.titleUppercase.copyWith(
                       color: AppColors.textPrimary,
-                      letterSpacing: -0.2,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -871,9 +868,8 @@ class _ProjectResultItem extends StatelessWidget {
                     children: [
                       Text(
                         project.brand.toUpperCase(),
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
                           letterSpacing: 1.5,
                         ),
                       ),
@@ -881,7 +877,7 @@ class _ProjectResultItem extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         child: Text(
                           '·',
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.labelUppercaseSm.copyWith(
                             color:
                                 AppColors.textPrimary.withValues(alpha: 0.4),
                           ),
@@ -890,9 +886,8 @@ class _ProjectResultItem extends StatelessWidget {
                       Flexible(
                         child: Text(
                           project.location.toUpperCase(),
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.labelUppercaseSm.copyWith(
                             color: AppColors.accentMuted,
-                            letterSpacing: 1.2,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -927,14 +922,15 @@ class _EmptyResults extends StatelessWidget {
         children: [
           Text(
             'Sin resultados para "$query"',
-            style: AppTypography.headingSmall.copyWith(
+            style: AppTypography.editorialSubtitle.copyWith(
               color: AppColors.textPrimary,
+              fontSize: 18,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Prueba con otro término de búsqueda',
-            style: AppTypography.bodyMedium.copyWith(
+            style: AppTypography.bodyReading.copyWith(
               color: AppColors.accentMuted,
             ),
           ),
