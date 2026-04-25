@@ -27,7 +27,7 @@ class InvestmentsScreen extends ConsumerWidget {
     final totalFormatted =
         _eurFormat.format(total).replaceAll('.', ' ');
     final collapsedHeight = topPadding + 80.0;
-    final expandedHeight = topPadding + 260.0;
+    final expandedHeight = topPadding + 290.0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
