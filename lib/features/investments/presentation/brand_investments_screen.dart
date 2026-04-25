@@ -287,6 +287,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                                     '+${c.actualRoi!.toStringAsFixed(1)}%',
                                 style: AppTypography.labelUppercaseSm.copyWith(
                                   color: const Color(0xFF2D6A4F),
+                                  fontSize: 12,
                                 ),
                               ),
                             ]
@@ -320,6 +321,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                       final hasResults = c.actualRoi != null;
                       final greenStyle = AppTypography.labelUppercaseSm.copyWith(
                         color: const Color(0xFF2D6A4F),
+                        fontSize: 12,
                       );
                       final returnLabelSpans = hasResults
                           ? [
@@ -721,6 +723,7 @@ class _AssetRowState extends State<_AssetRow> {
                         text: TextSpan(
                           style: AppTypography.labelUppercaseSm.copyWith(
                             color: AppColors.accentMuted,
+                            fontSize: 12,
                           ),
                           children: widget.returnLabelSpans,
                         ),
@@ -731,6 +734,7 @@ class _AssetRowState extends State<_AssetRow> {
                         widget.returnLabel!.toUpperCase(),
                         style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.accentMuted,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -787,6 +791,7 @@ class _RentaFijaRow extends StatelessWidget {
     final hasDocs = c.hasDocuments;
     final greenStyle = AppTypography.labelUppercaseSm.copyWith(
       color: const Color(0xFF2D6A4F),
+      fontSize: 12,
     );
 
     return Container(
@@ -806,8 +811,8 @@ class _RentaFijaRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 88,
-            height: 88,
+            width: 64,
+            height: 64,
             color: AppColors.primary,
             alignment: Alignment.center,
             child: badgeDate != null
@@ -818,17 +823,17 @@ class _RentaFijaRow extends StatelessWidget {
                         _kMonths[badgeDate.month - 1],
                         style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.textOnDark,
-                          fontSize: 14,
+                          fontSize: 12,
                           letterSpacing: 0.5,
                           height: 1.0,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         '${badgeDate.year % 100}',
                         style: AppTypography.figureAmount.copyWith(
                           color: AppColors.textOnDark,
-                          fontSize: 22,
+                          fontSize: 18,
                           height: 1.0,
                         ),
                       ),
@@ -838,7 +843,7 @@ class _RentaFijaRow extends StatelessWidget {
                     '${index ?? 0}',
                     style: AppTypography.figureAmount.copyWith(
                       color: AppColors.textOnDark,
-                      fontSize: 28,
+                      fontSize: 22,
                     ),
                   ),
           ),
@@ -874,6 +879,7 @@ class _RentaFijaRow extends StatelessWidget {
                     text: TextSpan(
                       style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
+                        fontSize: 12,
                       ),
                       children: [
                         TextSpan(
@@ -891,6 +897,7 @@ class _RentaFijaRow extends StatelessWidget {
                     text: TextSpan(
                       style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
+                        fontSize: 12,
                       ),
                       children: [
                         TextSpan(
