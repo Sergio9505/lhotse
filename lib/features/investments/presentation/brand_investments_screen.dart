@@ -23,7 +23,7 @@ import '../domain/purchase_contract_data.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
-class BrandInvestmentsScreen extends ConsumerStatefulWidget {
+class BrandInvestmentsScreen extends ConsumerWidget {
   const BrandInvestmentsScreen({
     super.key,
     required this.brandId,
@@ -38,50 +38,7 @@ class BrandInvestmentsScreen extends ConsumerStatefulWidget {
   final ({String brandName, String businessModel})? heroContext;
 
   @override
-  ConsumerState<BrandInvestmentsScreen> createState() =>
-      _BrandInvestmentsScreenState();
-}
-
-class _BrandInvestmentsScreenState
-    extends ConsumerState<BrandInvestmentsScreen> {
-  final _scrollController = ScrollController();
-  bool _isSnapping = false;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  /// Snap-to-end for the collapsing hero (same pattern as L1 Strategy).
-  bool _onScrollEnd(ScrollEndNotification n, double collapseRange) {
-    if (_isSnapping) return false;
-    if (n.metrics.axis != Axis.vertical) return false;
-    final maxScroll = n.metrics.maxScrollExtent;
-    final effectiveRange = maxScroll < collapseRange
-        ? maxScroll
-        : collapseRange;
-    if (effectiveRange <= 0) return false;
-    final ratio = (1 - n.metrics.pixels / effectiveRange).clamp(0.0, 1.0);
-    if (ratio < 0.05 || ratio > 0.95) return false;
-    final target = ratio > 0.5 ? 0.0 : effectiveRange;
-    _isSnapping = true;
-    _scrollController
-        .animateTo(
-          target,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOutCubic,
-        )
-        .whenComplete(() => _isSnapping = false);
-    return false;
-  }
-
-  String get brandId => widget.brandId;
-  ({String brandName, String businessModel})? get heroContext =>
-      widget.heroContext;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Common path: heroContext is passed via router extra from Strategy.
     // Deep-link fallback: resolve from user_portfolio — the L2 is
     // semantically "my investments in brand X", so if the user has no entry
@@ -100,9 +57,7 @@ class _BrandInvestmentsScreenState
 
     if (businessModel == null) {
       // Deep-link still resolving, or user has no investments in this brand.
-      if (heroContext == null &&
-          fallbackAsync.hasValue &&
-          fallbackEntry == null) {
+      if (heroContext == null && fallbackAsync.hasValue && fallbackEntry == null) {
         return _EmptyState(brandId: brandId);
       }
       return const Scaffold(
@@ -114,15 +69,15 @@ class _BrandInvestmentsScreenState
     // Only fetch the contract view for this brand's business model.
     final allPurchase = businessModel == BusinessModel.directPurchase
         ? (ref.watch(brandPurchaseContractsProvider(brandId)).valueOrNull ??
-              const <PurchaseContractData>[])
+            const <PurchaseContractData>[])
         : const <PurchaseContractData>[];
     final allCoinvest = businessModel == BusinessModel.coinvestment
         ? (ref.watch(brandCoinvestmentContractsProvider(brandId)).valueOrNull ??
-              const <CoinvestmentContractData>[])
+            const <CoinvestmentContractData>[])
         : const <CoinvestmentContractData>[];
     final allRf = businessModel == BusinessModel.fixedIncome
         ? (ref.watch(brandFixedIncomeContractsProvider(brandId)).valueOrNull ??
-              const <FixedIncomeContractData>[])
+            const <FixedIncomeContractData>[])
         : const <FixedIncomeContractData>[];
 
     final isCompraDirecta = businessModel == BusinessModel.directPurchase;
@@ -138,39 +93,26 @@ class _BrandInvestmentsScreenState
     final activeCount = isCompraDirecta
         ? activePurchase.length
         : isRentaFija
-        ? activeRf.length
-        : activeCoinvest.length;
+            ? activeRf.length
+            : activeCoinvest.length;
     final completedCount = isCompraDirecta
         ? completedPurchase.length
         : isRentaFija
-        ? completedRf.length
-        : completedCoinvest.length;
+            ? completedRf.length
+            : completedCoinvest.length;
 
     // Total = active capital (matches L1 user_portfolio aggregation).
     final totalAmount = isCompraDirecta
         ? activePurchase.fold(0.0, (s, c) => s + c.purchaseValue)
         : isRentaFija
-        ? activeRf.fold(0.0, (s, c) => s + c.amount)
-        : activeCoinvest.fold(0.0, (s, c) => s + c.amount);
+            ? activeRf.fold(0.0, (s, c) => s + c.amount)
+            : activeCoinvest.fold(0.0, (s, c) => s + c.amount);
 
     final avgReturn = isRentaFija
-        ? (activeRf.isEmpty
-              ? 0.0
-              : activeRf.map((c) => c.guaranteedRate).reduce((a, b) => a + b) /
-                    activeRf.length)
+        ? (activeRf.isEmpty ? 0.0 : activeRf.map((c) => c.guaranteedRate).reduce((a, b) => a + b) / activeRf.length)
         : isCompraDirecta
-        ? (activePurchase.isEmpty
-              ? 0.0
-              : activePurchase
-                        .map((c) => c.rentalYieldPct ?? 0)
-                        .reduce((a, b) => a + b) /
-                    activePurchase.length)
-        : (activeCoinvest.isEmpty
-              ? 0.0
-              : activeCoinvest
-                        .map((c) => c.estimatedReturnPct ?? 0)
-                        .reduce((a, b) => a + b) /
-                    activeCoinvest.length);
+            ? (activePurchase.isEmpty ? 0.0 : activePurchase.map((c) => c.rentalYieldPct ?? 0).reduce((a, b) => a + b) / activePurchase.length)
+            : (activeCoinvest.isEmpty ? 0.0 : activeCoinvest.map((c) => c.estimatedReturnPct ?? 0).reduce((a, b) => a + b) / activeCoinvest.length);
 
     final heroTitle = isRentaFija
         ? 'Mis inversiones\na Renta Fija'
@@ -180,79 +122,73 @@ class _BrandInvestmentsScreenState
     final totalFormatted = _eurFormat.format(totalAmount);
     final collapsedHeight = topPadding + 64.0;
     final expandedHeight = topPadding + 230.0;
-    final collapseRange = expandedHeight - collapsedHeight;
 
     // Sort RF by soonest maturity
     if (isRentaFija) {
-      activeRf.sort(
-        (a, b) => (a.maturityDate ?? DateTime(2099)).compareTo(
-          b.maturityDate ?? DateTime(2099),
-        ),
-      );
+      activeRf.sort((a, b) =>
+          (a.maturityDate ?? DateTime(2099))
+              .compareTo(b.maturityDate ?? DateTime(2099)));
     }
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: NotificationListener<ScrollEndNotification>(
-        onNotification: (n) => _onScrollEnd(n, collapseRange),
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _BrandHeroDelegate(
-                expandedHeight: expandedHeight,
-                collapsedHeight: collapsedHeight,
-                topPadding: topPadding,
-                brandName: brandName,
-                totalFormatted: totalFormatted,
-                averageReturn: avgReturn,
-                activeCount: activeCount,
-                completedCount: completedCount,
-                isCompraDirecta: isCompraDirecta,
-                isRentaFija: isRentaFija,
-                heroTitle: heroTitle,
-                onBack: () => context.pop(),
-              ),
+      body: CustomScrollView(
+        slivers: [
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _BrandHeroDelegate(
+              expandedHeight: expandedHeight,
+              collapsedHeight: collapsedHeight,
+              topPadding: topPadding,
+              brandName: brandName,
+              totalFormatted: totalFormatted,
+              averageReturn: avgReturn,
+              activeCount: activeCount,
+              completedCount: completedCount,
+              isCompraDirecta: isCompraDirecta,
+              isRentaFija: isRentaFija,
+              heroTitle: heroTitle,
+              onBack: () => context.pop(),
             ),
+          ),
 
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _StickyLabelDelegate(
-                child: Container(
-                  color: AppColors.background,
-                  padding: const EdgeInsets.only(
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _StickyLabelDelegate(
+              child: Container(
+                color: AppColors.background,
+                padding: const EdgeInsets.only(
                     top: AppSpacing.md,
                     left: AppSpacing.lg,
-                    bottom: AppSpacing.sm,
-                  ),
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    sectionLabel,
-                    style: AppTypography.labelUppercaseMd.copyWith(
-                      color: AppColors.accentMuted,
-                      letterSpacing: 1.8,
-                    ),
+                    bottom: AppSpacing.sm),
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  sectionLabel,
+                  style: AppTypography.labelUppercaseMd.copyWith(
+                    color: AppColors.accentMuted,
+                    letterSpacing: 1.8,
                   ),
                 ),
               ),
             ),
+          ),
 
-            // Active investment rows
-            if (isRentaFija)
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) => _RentaFijaRow(
-                    contract: activeRf[i],
-                    index: i + 1,
-                    isLast: i == activeRf.length - 1,
-                  ),
-                  childCount: activeRf.length,
+          // Active investment rows
+          if (isRentaFija)
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) => _RentaFijaRow(
+                  contract: activeRf[i],
+                  index: i + 1,
+                  isLast: i == activeRf.length - 1,
                 ),
-              )
-            else if (isCompraDirecta)
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, i) {
+                childCount: activeRf.length,
+              ),
+            )
+          else if (isCompraDirecta)
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
                   final c = activePurchase[i];
                   return _AssetRow(
                     projectName: c.assetName ?? '',
@@ -265,11 +201,14 @@ class _BrandInvestmentsScreenState
                       extra: (brandName: brandName, contract: c),
                     ),
                   );
-                }, childCount: activePurchase.length),
-              )
-            else
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, i) {
+                },
+                childCount: activePurchase.length,
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
                   final c = activeCoinvest[i];
                   final months = c.estimatedDurationMonths ?? 0;
                   final pct = c.estimatedReturnPct?.toStringAsFixed(1) ?? '–';
@@ -284,161 +223,150 @@ class _BrandInvestmentsScreenState
                       extra: (contract: c, brandName: brandName),
                     ),
                   );
-                }, childCount: activeCoinvest.length),
+                },
+                childCount: activeCoinvest.length,
               ),
+            ),
 
-            // Footnote
-            if (!isCompraDirecta && !isRentaFija)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: AppSpacing.lg,
-                    top: AppSpacing.md,
-                  ),
-                  child: Text(
-                    '* Rentabilidad y duración estimadas',
-                    style: AppTypography.annotation.copyWith(
-                      color: AppColors.accentMuted,
-                      fontSize: 10,
-                      letterSpacing: 0.5,
-                    ),
+          // Footnote
+          if (!isCompraDirecta && !isRentaFija)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                    left: AppSpacing.lg, top: AppSpacing.md),
+                child: Text(
+                  '* Rentabilidad y duración estimadas',
+                  style: AppTypography.annotation.copyWith(
+                    color: AppColors.accentMuted,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
+            ),
 
-            // Completed section (all business models)
-            SliverToBoxAdapter(
-              child: Builder(
-                builder: (context) {
-                  final completed = isCompraDirecta
-                      ? completedPurchase
-                      : isRentaFija
+          // Completed section (all business models)
+          SliverToBoxAdapter(
+            child: Builder(builder: (context) {
+              final completed = isCompraDirecta
+                  ? completedPurchase
+                  : isRentaFija
                       ? completedRf
                       : completedCoinvest;
-                  if (completed.isEmpty) return const SizedBox.shrink();
+              if (completed.isEmpty) return const SizedBox.shrink();
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: AppSpacing.xl),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                        ),
-                        child: Text(
-                          'FINALIZADAS',
-                          style: AppTypography.labelUppercaseMd.copyWith(
-                            color: AppColors.accentMuted,
-                            letterSpacing: 1.8,
-                          ),
-                        ),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.xl),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg),
+                    child: Text(
+                      'FINALIZADAS',
+                      style: AppTypography.labelUppercaseMd.copyWith(
+                        color: AppColors.accentMuted,
+                        letterSpacing: 1.8,
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      if (isCompraDirecta)
-                        ...completedPurchase.indexed.map((e) {
-                          final c = e.$2;
-                          final hasResults = c.actualRoi != null;
-                          final duration = c.actualDuration ?? 0;
-                          final returnLabelSpans = hasResults
-                              ? [
-                                  TextSpan(
-                                    text:
-                                        '${_eurFormat.format(c.purchaseValue)}€  ·  $duration MESES  ·  ',
-                                  ),
-                                  TextSpan(
-                                    text:
-                                        '+${c.actualRoi!.toStringAsFixed(1)}%',
-                                    style: AppTypography.labelUppercaseSm
-                                        .copyWith(
-                                          color: const Color(0xFF2D6A4F),
-                                        ),
-                                  ),
-                                ]
-                              : null;
-                          return _AssetRow(
-                            projectName: c.assetName ?? '',
-                            location: c.assetLocation,
-                            imageUrl: c.assetImageUrl,
-                            amount: c.totalReturn ?? c.purchaseValue,
-                            returnLabel: hasResults ? null : '–',
-                            returnLabelSpans: returnLabelSpans,
-                            isLast: e.$1 == completedPurchase.length - 1,
-                            onTap: () => context.push(
-                              '/investments/detail/completed/purchase/${c.id}',
-                              extra: CompletedContractData.fromPurchase(
-                                c,
-                                brandName: brandName,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  if (isCompraDirecta)
+                    ...completedPurchase.indexed.map((e) {
+                      final c = e.$2;
+                      final hasResults = c.actualRoi != null;
+                      final duration = c.actualDuration ?? 0;
+                      final returnLabelSpans = hasResults
+                          ? [
+                              TextSpan(
+                                text:
+                                    '${_eurFormat.format(c.purchaseValue)}€  ·  $duration MESES  ·  ',
                               ),
-                            ),
-                          );
-                        })
-                      else if (isRentaFija)
-                        ...completedRf.indexed.map(
-                          (e) => _RentaFijaRow(
-                            contract: e.$2,
-                            isCompleted: true,
-                            isLast: e.$1 == completedRf.length - 1,
+                              TextSpan(
+                                text:
+                                    '+${c.actualRoi!.toStringAsFixed(1)}%',
+                                style: AppTypography.labelUppercaseSm.copyWith(
+                                  color: const Color(0xFF2D6A4F),
+                                ),
+                              ),
+                            ]
+                          : null;
+                      return _AssetRow(
+                        projectName: c.assetName ?? '',
+                        location: c.assetLocation,
+                        imageUrl: c.assetImageUrl,
+                        amount: c.totalReturn ?? c.purchaseValue,
+                        returnLabel: hasResults ? null : '–',
+                        returnLabelSpans: returnLabelSpans,
+                        isLast: e.$1 == completedPurchase.length - 1,
+                        onTap: () => context.push(
+                          '/investments/detail/completed/purchase/${c.id}',
+                          extra: CompletedContractData.fromPurchase(
+                            c,
+                            brandName: brandName,
                           ),
-                        )
-                      else
-                        ...completedCoinvest.indexed.map((e) {
-                          final c = e.$2;
-                          final hasResults = c.actualRoi != null;
-                          final greenStyle = AppTypography.labelUppercaseSm
-                              .copyWith(color: const Color(0xFF2D6A4F));
-                          final returnLabelSpans = hasResults
-                              ? [
-                                  TextSpan(
-                                    text:
-                                        '${_eurFormat.format(c.amount)}€  ·  ',
-                                  ),
-                                  TextSpan(
-                                    text:
-                                        '+${c.actualRoi!.toStringAsFixed(1)}%',
-                                    style: greenStyle,
-                                  ),
-                                  const TextSpan(text: '  ·  '),
-                                  TextSpan(
-                                    text:
-                                        '+${c.actualTir?.toStringAsFixed(1) ?? '–'}%',
-                                    style: greenStyle,
-                                  ),
-                                ]
-                              : null;
-                          return _AssetRow(
-                            projectName: c.projectName,
-                            imageUrl: c.projectImageUrl,
-                            amount: c.totalReturn ?? c.amount,
-                            returnLabel: hasResults ? null : '–',
-                            returnLabelSpans: returnLabelSpans,
-                            isLast: e.$1 == completedCoinvest.length - 1,
-                            onTap: () => context.push(
-                              '/investments/detail/completed/coinvestment/${c.id}',
-                              extra: CompletedContractData.fromCoinvestment(
-                                c,
-                                brandName: brandName,
+                        ),
+                      );
+                    })
+                  else if (isRentaFija)
+                    ...completedRf.indexed.map((e) => _RentaFijaRow(
+                          contract: e.$2,
+                          isCompleted: true,
+                          isLast: e.$1 == completedRf.length - 1,
+                        ))
+                  else
+                    ...completedCoinvest.indexed.map((e) {
+                      final c = e.$2;
+                      final hasResults = c.actualRoi != null;
+                      final greenStyle = AppTypography.labelUppercaseSm.copyWith(
+                        color: const Color(0xFF2D6A4F),
+                      );
+                      final returnLabelSpans = hasResults
+                          ? [
+                              TextSpan(
+                                  text:
+                                      '${_eurFormat.format(c.amount)}€  ·  '),
+                              TextSpan(
+                                text:
+                                    '+${c.actualRoi!.toStringAsFixed(1)}%',
+                                style: greenStyle,
                               ),
-                            ),
-                          );
-                        }),
-                    ],
-                  );
-                },
-              ),
-            ),
+                              const TextSpan(text: '  ·  '),
+                              TextSpan(
+                                text:
+                                    '+${c.actualTir?.toStringAsFixed(1) ?? '–'}%',
+                                style: greenStyle,
+                              ),
+                            ]
+                          : null;
+                      return _AssetRow(
+                        projectName: c.projectName,
+                        imageUrl: c.projectImageUrl,
+                        amount: c.totalReturn ?? c.amount,
+                        returnLabel: hasResults ? null : '–',
+                        returnLabelSpans: returnLabelSpans,
+                        isLast: e.$1 == completedCoinvest.length - 1,
+                        onTap: () => context.push(
+                          '/investments/detail/completed/coinvestment/${c.id}',
+                          extra: CompletedContractData.fromCoinvestment(
+                            c,
+                            brandName: brandName,
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              );
+            }),
+          ),
 
-            // Snap spacer — guarantees maxScroll >= collapseRange so the hero
-            // always has room to collapse fully even with very few rows.
-            SliverToBoxAdapter(child: SizedBox(height: collapseRange)),
-
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: SizedBox(
-                height: MediaQuery.of(context).padding.bottom + AppSpacing.xl,
-              ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: SizedBox(
+              height: MediaQuery.of(context).padding.bottom + AppSpacing.xl,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -482,10 +410,7 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     final collapseRange = maxExtent - minExtent;
     final position = Scrollable.maybeOf(context)?.position;
     final maxScroll = position != null && position.hasContentDimensions
@@ -493,9 +418,10 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
         : null;
     final effectiveRange =
         (maxScroll != null && maxScroll > 0 && maxScroll < collapseRange)
-        ? maxScroll
-        : collapseRange;
-    final expandRatio = (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0);
+            ? maxScroll
+            : collapseRange;
+    final expandRatio =
+        (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0);
 
     final expandedOpacity = ((expandRatio - 0.5) / 0.5).clamp(0.0, 1.0);
     final collapsedOpacity = ((0.5 - expandRatio) / 0.5).clamp(0.0, 1.0);
@@ -504,12 +430,10 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
 
     const expandedAmountY = 170.0;
     const collapsedAmountY = 20.0;
-    final amountTop =
-        topPadding +
+    final amountTop = topPadding +
         collapsedAmountY +
         ((expandedAmountY - collapsedAmountY) * expandRatio);
-    final amountLeft =
-        AppSpacing.lg +
+    final amountLeft = AppSpacing.lg +
         ((44 + AppSpacing.sm - AppSpacing.lg) * (1 - expandRatio));
     final amountRight = AppSpacing.lg + (44.0 * (1 - expandRatio));
 
@@ -532,8 +456,7 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
           Positioned(
-            top:
-                topPadding +
+            top: topPadding +
                 AppSpacing.md +
                 44 +
                 AppSpacing.md -
@@ -636,9 +559,8 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       '$activeCount activas${completedCount > 0 ? '  ·  $completedCount finalizadas' : ''}',
-                      style: AppTypography.annotation.copyWith(
-                        color: AppColors.accentMuted,
-                      ),
+                      style: AppTypography.annotation
+                          .copyWith(color: AppColors.accentMuted),
                     ),
                   ],
                 ),
@@ -665,11 +587,8 @@ class _StickyLabelDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => 74;
 
   @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) => child;
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      child;
 
   @override
   bool shouldRebuild(covariant _StickyLabelDelegate oldDelegate) => false;
@@ -726,9 +645,7 @@ class _AssetRowState extends State<_AssetRow> {
         opacity: _pressed ? 0.5 : 1.0,
         child: Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
+              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
           decoration: widget.isLast
               ? null
               : BoxDecoration(
@@ -849,18 +766,8 @@ class _RentaFijaRow extends StatelessWidget {
   final bool isLast;
 
   static const _kMonths = [
-    'ENE',
-    'FEB',
-    'MAR',
-    'ABR',
-    'MAY',
-    'JUN',
-    'JUL',
-    'AGO',
-    'SEP',
-    'OCT',
-    'NOV',
-    'DIC',
+    'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN',
+    'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC',
   ];
 
   static const _kMaturityMonthFormat = 'MM/yy';
@@ -880,9 +787,7 @@ class _RentaFijaRow extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: 20,
-      ),
+          horizontal: AppSpacing.lg, vertical: 20),
       decoration: isLast
           ? null
           : BoxDecoration(
@@ -963,7 +868,9 @@ class _RentaFijaRow extends StatelessWidget {
                         color: AppColors.accentMuted,
                       ),
                       children: [
-                        TextSpan(text: 'duración ${c.termMonths ?? '–'}m  ·  '),
+                        TextSpan(
+                            text:
+                                'duración ${c.termMonths ?? '–'}m  ·  '),
                         TextSpan(
                           text: '+${_eurFormat.format(c.totalInterestEarned)}€',
                           style: greenStyle,
@@ -979,13 +886,12 @@ class _RentaFijaRow extends StatelessWidget {
                       ),
                       children: [
                         TextSpan(
-                          text: '${c.guaranteedRate.toStringAsFixed(1)}% anual',
-                        ),
+                            text:
+                                '${c.guaranteedRate.toStringAsFixed(1)}% anual'),
                         if (c.maturityDate != null)
                           TextSpan(
-                            text:
-                                '  ·  vence ${DateFormat(_kMaturityMonthFormat).format(c.maturityDate!)}',
-                          ),
+                              text:
+                                  '  ·  vence ${DateFormat(_kMaturityMonthFormat).format(c.maturityDate!)}'),
                         if (c.interestPaidToDate > 0) ...[
                           const TextSpan(text: '  ·  '),
                           TextSpan(
@@ -1006,9 +912,7 @@ class _RentaFijaRow extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               child: const Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
+                    horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                 child: PhosphorIcon(
                   PhosphorIconsThin.fileText,
                   size: 18,
@@ -1059,20 +963,16 @@ class _RentaFijaDocsSheetState extends ConsumerState<_RentaFijaDocsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final rawDocs =
-        ref
-            .watch(
-              documentsProvider((type: 'fixed_income', id: widget.contractId)),
-            )
+    final rawDocs = ref
+            .watch(documentsProvider(
+                (type: 'fixed_income', id: widget.contractId)))
             .valueOrNull ??
         const [];
     final allCategories =
         ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
     final iconMap = {for (final c in allCategories) c.id: c.iconName};
-    final filterCategories = categoriesForIds(
-      rawDocs.map((d) => d.categoryId),
-      allCategories,
-    );
+    final filterCategories =
+        categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
     final docs = _activeFilters.isEmpty
         ? rawDocs
         : rawDocs.where((d) => _activeFilters.contains(d.categoryId)).toList();
@@ -1086,34 +986,26 @@ class _RentaFijaDocsSheetState extends ConsumerState<_RentaFijaDocsSheet> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  0,
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                ),
+                    AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
                 child: Row(
                   children: [
-                    ...filterCategories.map(
-                      (cat) => Padding(
-                        padding: const EdgeInsets.only(right: AppSpacing.sm),
-                        child: LhotseFilterChip(
-                          label: cat.label,
-                          isActive: _activeFilters.contains(cat.id),
-                          onTap: () => _toggleFilter(cat.id),
-                        ),
-                      ),
-                    ),
+                    ...filterCategories.map((cat) => Padding(
+                          padding:
+                              const EdgeInsets.only(right: AppSpacing.sm),
+                          child: LhotseFilterChip(
+                            label: cat.label,
+                            isActive: _activeFilters.contains(cat.id),
+                            onTap: () => _toggleFilter(cat.id),
+                          ),
+                        )),
                     if (_activeFilters.isNotEmpty)
                       GestureDetector(
                         onTap: () => setState(() => _activeFilters.clear()),
                         behavior: HitTestBehavior.opaque,
                         child: const Padding(
                           padding: EdgeInsets.all(6),
-                          child: PhosphorIcon(
-                            PhosphorIconsThin.x,
-                            size: 14,
-                            color: AppColors.accentMuted,
-                          ),
+                          child: PhosphorIcon(PhosphorIconsThin.x,
+                              size: 14, color: AppColors.accentMuted),
                         ),
                       ),
                   ],
@@ -1123,11 +1015,7 @@ class _RentaFijaDocsSheetState extends ConsumerState<_RentaFijaDocsSheet> {
       bodyBuilder: (bottomPadding) => ListView.separated(
         shrinkWrap: true,
         padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          0,
-          AppSpacing.lg,
-          bottomPadding + AppSpacing.md,
-        ),
+            AppSpacing.lg, 0, AppSpacing.lg, bottomPadding + AppSpacing.md),
         itemCount: docs.length,
         separatorBuilder: (_, _) => Container(
           height: 0.5,
@@ -1165,7 +1053,9 @@ class _EmptyState extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.all(AppSpacing.md),
-              child: Row(children: [LhotseBackButton.onSurface()]),
+              child: Row(
+                children: [LhotseBackButton.onSurface()],
+              ),
             ),
             Expanded(
               child: Padding(
@@ -1197,8 +1087,7 @@ class _EmptyState extends StatelessWidget {
                       child: Container(
                         alignment: Alignment.center,
                         padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
+                            vertical: AppSpacing.md),
                         decoration: BoxDecoration(
                           border: Border.all(
                             color: AppColors.textPrimary,

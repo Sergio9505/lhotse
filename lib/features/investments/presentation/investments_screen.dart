@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -15,92 +13,50 @@ import '../domain/portfolio_entry.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
-class InvestmentsScreen extends ConsumerStatefulWidget {
+class InvestmentsScreen extends ConsumerWidget {
   const InvestmentsScreen({super.key});
 
   @override
-  ConsumerState<InvestmentsScreen> createState() => _InvestmentsScreenState();
-}
-
-class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
-  final _scrollController = ScrollController();
-  bool _isSnapping = false;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  /// Snap-to-end for the collapsing hero: when the user lets go
-  /// mid-transition, animate to the nearest end-state. Apple HIG-style
-  /// 280ms easeOutCubic. Dead zones at the edges avoid micro-snaps.
-  bool _onScrollEnd(ScrollEndNotification n, double collapseRange) {
-    if (_isSnapping) return false;
-    if (n.metrics.axis != Axis.vertical) return false;
-    final maxScroll = n.metrics.maxScrollExtent;
-    final effectiveRange = maxScroll < collapseRange
-        ? maxScroll
-        : collapseRange;
-    if (effectiveRange <= 0) return false;
-    final ratio = (1 - n.metrics.pixels / effectiveRange).clamp(0.0, 1.0);
-    if (ratio < 0.05 || ratio > 0.95) return false;
-    final target = ratio > 0.5 ? 0.0 : effectiveRange;
-    _isSnapping = true;
-    _scrollController
-        .animateTo(
-          target,
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOutCubic,
-        )
-        .whenComplete(() => _isSnapping = false);
-    return false;
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final topPadding = MediaQuery.of(context).padding.top;
     final summariesAsync = ref.watch(userPortfolioProvider);
 
     final summaries = summariesAsync.valueOrNull ?? const [];
     final total = summaries.fold<double>(0, (acc, s) => acc + s.totalAmount);
 
-    final totalFormatted = _eurFormat.format(total).replaceAll('.', ' ');
+    final totalFormatted =
+        _eurFormat.format(total).replaceAll('.', ' ');
     final collapsedHeight = topPadding + 80.0;
-    final expandedHeight = topPadding + 290.0;
-    final collapseRange = expandedHeight - collapsedHeight;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final expandedHeight = topPadding + 260.0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: NotificationListener<ScrollEndNotification>(
-        onNotification: (n) => _onScrollEnd(n, collapseRange),
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _HeroDelegate(
-                expandedHeight: expandedHeight,
-                collapsedHeight: collapsedHeight,
-                topPadding: topPadding,
-                totalFormatted: totalFormatted,
-              ),
+      body: CustomScrollView(
+        slivers: [
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _HeroDelegate(
+              expandedHeight: expandedHeight,
+              collapsedHeight: collapsedHeight,
+              topPadding: topPadding,
+              totalFormatted: totalFormatted,
             ),
+          ),
 
-            // Brand rows
-            if (summaries.isEmpty && summariesAsync.isLoading)
-              const SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(AppSpacing.xl),
-                    child: CircularProgressIndicator(strokeWidth: 1.5),
-                  ),
+          // Brand rows
+          if (summaries.isEmpty && summariesAsync.isLoading)
+            const SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.xl),
+                  child: CircularProgressIndicator(strokeWidth: 1.5),
                 ),
-              )
-            else
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, i) {
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
                   final summary = summaries[i];
                   final isEstimated = summary.businessModel != 'fixed_income';
                   return _BrandRow(
@@ -115,18 +71,16 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                       ),
                     ),
                   );
-                }, childCount: summaries.length),
-              ),
-
-            // Bottom spacer — at least collapseRange so the hero can always
-            // collapse fully even with very few rows. Premium snap pattern.
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: math.max(bottomPadding + AppSpacing.xl, collapseRange),
+                },
+                childCount: summaries.length,
               ),
             ),
-          ],
-        ),
+
+          SliverToBoxAdapter(
+            child: SizedBox(
+                height: MediaQuery.of(context).padding.bottom + AppSpacing.xl),
+          ),
+        ],
       ),
     );
   }
@@ -155,10 +109,7 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     // Remap collapse range to actual available scroll so the animation
     // always completes — otherwise, when the list is short, the hero
     // freezes mid-collapse (maxScrollExtent < maxExtent-minExtent).
@@ -167,9 +118,8 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
     final maxScroll = (position != null && position.hasContentDimensions)
         ? position.maxScrollExtent
         : collapseRange;
-    final effectiveRange = maxScroll < collapseRange
-        ? maxScroll
-        : collapseRange;
+    final effectiveRange =
+        maxScroll < collapseRange ? maxScroll : collapseRange;
     final expandRatio = effectiveRange <= 0
         ? 1.0
         : (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0);
@@ -184,8 +134,7 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
     // optically centred between logo and bell.
     final amountTopExpanded = expandedHeight - AppSpacing.lg - 56;
     final amountTopCollapsed = topPadding + 28;
-    final amountTop =
-        amountTopCollapsed +
+    final amountTop = amountTopCollapsed +
         (amountTopExpanded - amountTopCollapsed) * expandRatio;
     // Title sits ~96pt above the amount expanded so the two lines have
     // room and the pair reads as a grouped editorial block.
@@ -261,7 +210,9 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
           Positioned(
             top: topPadding + 16,
             right: AppSpacing.md,
-            child: const LhotseNotificationBell(color: AppColors.textPrimary),
+            child: const LhotseNotificationBell(
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),
@@ -297,10 +248,8 @@ class _BrandRow extends StatefulWidget {
 class _BrandRowState extends State<_BrandRow> {
   bool _pressed = false;
 
-  static const _iconFilter = ColorFilter.mode(
-    AppColors.textPrimary,
-    BlendMode.srcIn,
-  );
+  static const _iconFilter =
+      ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn);
 
   @override
   Widget build(BuildContext context) {
