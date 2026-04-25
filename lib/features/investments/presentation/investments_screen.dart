@@ -298,13 +298,13 @@ class _BrandRowState extends State<_BrandRow> {
               // `textPrimary` regardless of source colours), falls back to a
               // thin-border initials monogram when the brand has no icon yet.
               SizedBox(
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 child: Center(
                   child: icon != null
                       ? SizedBox(
-                          width: 48,
-                          height: 48,
+                          width: 44,
+                          height: 44,
                           child: SvgPicture.network(
                             icon,
                             fit: BoxFit.contain,
@@ -312,8 +312,8 @@ class _BrandRowState extends State<_BrandRow> {
                           ),
                         )
                       : Container(
-                          width: 48,
-                          height: 48,
+                          width: 44,
+                          height: 44,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             border: Border.all(
@@ -415,7 +415,7 @@ class _BrandRowState extends State<_BrandRow> {
                 const SizedBox(width: AppSpacing.sm),
                 PhosphorIcon(
                   PhosphorIconsThin.caretRight,
-                  size: 12,
+                  size: 18,
                   color: AppColors.accentMuted,
                 ),
               ],
