@@ -138,7 +138,7 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
         (amountTopExpanded - amountTopCollapsed) * expandRatio;
     // Title sits ~96pt above the amount expanded so the two lines have
     // room and the pair reads as a grouped editorial block.
-    final titleTop = amountTop - 96;
+    final titleTop = amountTop - 96 - 20;
 
     return Container(
       color: AppColors.background,
@@ -172,7 +172,7 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
                     TextSpan(
                       text: totalFormatted,
                       style: TextStyle(
-                        fontFamily: 'Campton',
+                        fontFamily: AppTypography.fontFamily,
                         fontSize: amountSize,
                         fontWeight: FontWeight.w400,
                         color: AppColors.textPrimary,
@@ -184,7 +184,7 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
                     TextSpan(
                       text: ' €',
                       style: TextStyle(
-                        fontFamily: 'Campton',
+                        fontFamily: AppTypography.fontFamily,
                         fontSize: euroSize,
                         fontWeight: FontWeight.w300,
                         color: AppColors.textPrimary.withValues(alpha: 0.55),

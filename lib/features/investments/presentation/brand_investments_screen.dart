@@ -485,7 +485,7 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                     TextSpan(
                       text: totalFormatted,
                       style: TextStyle(
-                        fontFamily: 'Campton',
+                        fontFamily: AppTypography.fontFamily,
                         fontSize: amountSize,
                         fontWeight: FontWeight.w400,
                         color: AppColors.textPrimary,
@@ -497,7 +497,7 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
                     TextSpan(
                       text: '€',
                       style: TextStyle(
-                        fontFamily: 'Campton',
+                        fontFamily: AppTypography.fontFamily,
                         fontSize: euroSize,
                         fontWeight: FontWeight.w400,
                         color: AppColors.textPrimary,
