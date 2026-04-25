@@ -155,7 +155,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(
-                  top: AppSpacing.xl,
+                  top: 40,
                   left: AppSpacing.lg,
                   bottom: AppSpacing.md),
               child: Text(
