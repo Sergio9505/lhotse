@@ -660,8 +660,8 @@ class _AssetRowState extends State<_AssetRow> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
-                width: 80,
-                height: 60,
+                width: 110,
+                height: 88,
                 child: widget.imageUrl != null
                     ? LhotseImage(widget.imageUrl!)
                     : Container(color: AppColors.surface),
@@ -676,6 +676,7 @@ class _AssetRowState extends State<_AssetRow> {
                         widget.projectName,
                         style: AppTypography.bodyEmphasis.copyWith(
                           color: AppColors.textPrimary,
+                          fontSize: 22,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -700,14 +701,14 @@ class _AssetRowState extends State<_AssetRow> {
                             text: _eurFormat.format(widget.amount),
                             style: AppTypography.figureAmount.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 22,
+                              fontSize: 30,
                             ),
                           ),
                           TextSpan(
                             text: '€',
                             style: AppTypography.annotation.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 14,
+                              fontSize: 18,
                             ),
                           ),
                         ],
@@ -804,8 +805,8 @@ class _RentaFijaRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 88,
+            height: 88,
             color: AppColors.primary,
             alignment: Alignment.center,
             child: badgeDate != null
@@ -816,16 +817,17 @@ class _RentaFijaRow extends StatelessWidget {
                         _kMonths[badgeDate.month - 1],
                         style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.textOnDark,
+                          fontSize: 14,
                           letterSpacing: 0.5,
                           height: 1.0,
                         ),
                       ),
-                      const SizedBox(height: 1),
+                      const SizedBox(height: 4),
                       Text(
                         '${badgeDate.year % 100}',
                         style: AppTypography.figureAmount.copyWith(
                           color: AppColors.textOnDark,
-                          fontSize: 16,
+                          fontSize: 22,
                           height: 1.0,
                         ),
                       ),
@@ -835,7 +837,7 @@ class _RentaFijaRow extends StatelessWidget {
                     '${index ?? 0}',
                     style: AppTypography.figureAmount.copyWith(
                       color: AppColors.textOnDark,
-                      fontSize: 16,
+                      fontSize: 28,
                     ),
                   ),
           ),
@@ -851,14 +853,14 @@ class _RentaFijaRow extends StatelessWidget {
                         text: _eurFormat.format(mainAmount),
                         style: AppTypography.figureAmount.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 22,
+                          fontSize: 30,
                         ),
                       ),
                       TextSpan(
                         text: '€',
                         style: AppTypography.annotation.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 14,
+                          fontSize: 18,
                         ),
                       ),
                     ],
