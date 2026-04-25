@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 
-/// Typography tokens — Campton only.
+/// Typography tokens — Campton only, role-based naming.
 ///
-/// The `// Semantic` section below is the canonical set for
-/// home/investments/brands/search. Reach for a semantic token by its
-/// role (editorialHero, figureAmount, labelUppercaseSm…); residual
-/// copyWith is restricted to color / fontStyle / maxLines-driven
-/// overrides. Pre-semantic tokens (displayLarge, headingLarge, etc.)
-/// are `@Deprecated` — migrate callers over time.
+/// 12 semantic tokens covering the entire app's editorial system
+/// (luxury wealth management). Reach for a token by its role
+/// (editorialHero, figureAmount, bodyEmphasis…); residual copyWith is
+/// restricted to color / fontStyle / fontSize-residual / letterSpacing
+/// when justified by callers.
+///
+/// Hierarchy: editorialHero 48 → editorialTitle 36 → editorialSubtitle
+/// 24 / titleUppercaseLg 24 → titleUppercase 18 / figureAmount 18 /
+/// bodyInput 18 → bodyEmphasis 16 → bodyReading 14 → labelUppercaseMd
+/// 12 / annotation 12 → labelUppercaseSm 10.
 abstract final class AppTypography {
-  static const _fontFamily = 'Campton';
+  /// Public so non-token callers (welcome wordmark with strut, animated
+  /// hero figures with interpolated fontSize) reference the family
+  /// without re-stringing 'Campton'.
+  static const fontFamily = 'Campton';
 
   // ── Semantic ───────────────────────────────────────────────────────────
   // Roles, not shapes. Prefer these for all new code.
@@ -18,7 +25,7 @@ abstract final class AppTypography {
   /// L1 Estrategia, archive covers (ProjectShowcaseCard), project_detail
   /// + news_detail hero, feed_card title.
   static const editorialHero = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 48,
     fontWeight: FontWeight.w300,
     height: 0.98,
@@ -28,7 +35,7 @@ abstract final class AppTypography {
   /// Editorial title — interior covers (one level down). 36pt Light mixed.
   /// L2 Estrategia (brand hero), L3 Estrategia (asset/contract hero).
   static const editorialTitle = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 36,
     fontWeight: FontWeight.w300,
     height: 1.0,
@@ -38,7 +45,7 @@ abstract final class AppTypography {
   /// Editorial subtitle / tagline — 24pt Medium mixed case.
   /// brand_detail tagline, second-level statements.
   static const editorialSubtitle = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 24,
     fontWeight: FontWeight.w500,
     height: 1.3,
@@ -48,7 +55,7 @@ abstract final class AppTypography {
   /// Uppercase title, large — 24pt Medium. project_card (home feed),
   /// large card heros.
   static const titleUppercaseLg = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 24,
     fontWeight: FontWeight.w500,
     height: 1.2,
@@ -58,7 +65,7 @@ abstract final class AppTypography {
   /// Uppercase title — 18pt Medium. Collapsed AppBars, asset rows in L2,
   /// search result cards, brand fallback wordmarks.
   static const titleUppercase = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 18,
     fontWeight: FontWeight.w500,
     height: 1.2,
@@ -68,7 +75,7 @@ abstract final class AppTypography {
   /// Financial figure — row-level amounts. 18pt w400 + tabularFigures
   /// for column-stable alignment. Color set per screen.
   static const figureAmount = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 18,
     fontWeight: FontWeight.w400,
     height: 1.2,
@@ -80,7 +87,7 @@ abstract final class AppTypography {
   /// sticky headers, CTAs ("DESCARGAR FOLLETO", "VISITAR WEB"),
   /// tab markers.
   static const labelUppercaseMd = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.4,
@@ -90,17 +97,40 @@ abstract final class AppTypography {
   /// Uppercase label, small — 10pt w500 tracked. Brand names, phase chips,
   /// location byline, "PRIVATE", kicker above hero, flag row labels.
   static const labelUppercaseSm = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 10,
     fontWeight: FontWeight.w500,
     height: 1.4,
     letterSpacing: 1.2,
   );
 
+  /// Body input — 18pt Regular. Mixed-case text inputs (search field,
+  /// auth fields) one step above bodyReading for primary input prominence.
+  /// Drop hint weight to w300 via copyWith.
+  static const bodyInput = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 18,
+    fontWeight: FontWeight.w400,
+    height: 1.2,
+    letterSpacing: -0.1,
+  );
+
+  /// Body emphasis — 16pt Medium. Ledger row title + amount, doc row
+  /// names, key-value emphasized values. Heavier than bodyReading for
+  /// rows where the value is the read target. Apply tabularFigures via
+  /// copyWith for column-stable amounts.
+  static const bodyEmphasis = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.4,
+    letterSpacing: -0.1,
+  );
+
   /// Body reading — 14pt Regular, line-height 1.6. Description paragraphs
   /// (project_detail, brand_detail, news body). Color via copyWith.
   static const bodyReading = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.6,
@@ -109,7 +139,7 @@ abstract final class AppTypography {
   /// Annotation — 12pt w400. Taglines, italic annotations, "est." labels.
   /// Apply italic via copyWith(fontStyle) when needed.
   static const annotation = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.5,
@@ -125,14 +155,14 @@ abstract final class AppTypography {
 
   @Deprecated('Use editorialHero (w300 48pt) or editorialTitle (w300 36pt) instead')
   static const displayLarge = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 40,
     fontWeight: FontWeight.w600,
     height: 1.1,
   );
 
   static const displayMedium = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 28,
     fontWeight: FontWeight.w500,
     height: 1.15,
@@ -140,7 +170,7 @@ abstract final class AppTypography {
 
   @Deprecated('Use titleUppercaseLg (24pt caps) or editorialSubtitle (24pt mixed) instead')
   static const headingLarge = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 24,
     fontWeight: FontWeight.w500,
     height: 1.2,
@@ -148,7 +178,7 @@ abstract final class AppTypography {
   );
 
   static const headingMedium = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 20,
     fontWeight: FontWeight.w500,
     height: 1.25,
@@ -156,14 +186,14 @@ abstract final class AppTypography {
 
   @Deprecated('Use titleUppercase (18pt caps) or figureAmount (18pt w400 tabular) instead')
   static const headingSmall = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 18,
     fontWeight: FontWeight.w500,
     height: 1.3,
   );
 
   static const bodyLarge = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.5,
@@ -171,7 +201,7 @@ abstract final class AppTypography {
 
   @Deprecated('Use bodyReading instead')
   static const bodyMedium = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.5,
@@ -179,7 +209,7 @@ abstract final class AppTypography {
 
   @Deprecated('Use annotation instead')
   static const bodySmall = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.36,
@@ -187,7 +217,7 @@ abstract final class AppTypography {
 
   @Deprecated('Use labelUppercaseMd instead')
   static const labelLarge = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.4,
@@ -195,7 +225,7 @@ abstract final class AppTypography {
   );
 
   static const labelSmall = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 10,
     fontWeight: FontWeight.w400,
     height: 1.5,
@@ -203,7 +233,7 @@ abstract final class AppTypography {
 
   @Deprecated('Use labelUppercaseSm (caps) or annotation (mixed) instead')
   static const caption = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 10,
     fontWeight: FontWeight.w400,
     height: 1.5,
@@ -211,7 +241,7 @@ abstract final class AppTypography {
 
   @Deprecated('Use labelUppercaseSm instead')
   static const captionSmall = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: fontFamily,
     fontSize: 8,
     fontWeight: FontWeight.w400,
     height: 1.5,

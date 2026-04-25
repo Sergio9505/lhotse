@@ -13,7 +13,7 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      fontFamily: 'Campton',
+      fontFamily: AppTypography.fontFamily,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         onPrimary: AppColors.textOnDark,
@@ -29,7 +29,7 @@ abstract final class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: AppTypography.headingLarge.copyWith(
+        titleTextStyle: AppTypography.titleUppercaseLg.copyWith(
           color: AppColors.textPrimary,
         ),
         systemOverlayStyle: const SystemUiOverlayStyle(
