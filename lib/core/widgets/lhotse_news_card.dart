@@ -102,9 +102,8 @@ class LhotseNewsCard extends StatelessWidget {
                 ),
                 child: Text(
                   type!.toUpperCase(),
-                  style: AppTypography.caption.copyWith(
+                  style: AppTypography.labelUppercaseSm.copyWith(
                     color: Colors.white,
-                    fontWeight: FontWeight.w500,
                     letterSpacing: 1.5,
                   ),
                 ),
@@ -131,7 +130,7 @@ class LhotseNewsCard extends StatelessWidget {
                 // Title — Campton Light 48pt, mixed case, tight line-height.
                 Text(
                   title,
-                  style: AppTypography.displayHero.copyWith(
+                  style: AppTypography.editorialHero.copyWith(
                     color: AppColors.textPrimary,
                   ),
                   maxLines: 3,
@@ -142,7 +141,7 @@ class LhotseNewsCard extends StatelessWidget {
                   // Deck in italic — magazine pull-quote treatment.
                   Text(
                     subtitle!,
-                    style: AppTypography.bodyMedium.copyWith(
+                    style: AppTypography.annotation.copyWith(
                       color: AppColors.accentMuted,
                       height: 1.6,
                       fontStyle: FontStyle.italic,
@@ -198,7 +197,7 @@ class LhotseNewsCard extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       text: TextSpan(
-        style: AppTypography.caption.copyWith(letterSpacing: 1.5),
+        style: AppTypography.labelUppercaseSm.copyWith(letterSpacing: 1.5),
         children: children,
       ),
     );
@@ -231,9 +230,9 @@ class LhotseNewsCard extends StatelessWidget {
                   children: [
                     Text(
                       title.toUpperCase(),
-                      style: AppTypography.bodySmall.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -251,7 +250,7 @@ class LhotseNewsCard extends StatelessWidget {
   }
 
   Widget _compactSubtitle() {
-    final style = AppTypography.captionSmall;
+    final style = AppTypography.labelUppercaseSm.copyWith(fontSize: 8);
     return Row(
       children: [
         if (brand != null) ...[
@@ -267,7 +266,7 @@ class LhotseNewsCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Text(
                 '·',
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.labelUppercaseSm.copyWith(
                   color: AppColors.textPrimary.withValues(alpha: 0.4),
                 ),
               ),

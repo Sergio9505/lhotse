@@ -44,17 +44,12 @@ class LhotseSearchField extends StatelessWidget {
               controller: controller,
               autofocus: autofocus,
               onChanged: onChanged,
-              style: const TextStyle(
-                fontFamily: 'Campton',
-                fontSize: 18,
-                fontWeight: FontWeight.w400,
+              style: AppTypography.bodyInput.copyWith(
                 color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: TextStyle(
-                  fontFamily: 'Campton',
-                  fontSize: 18,
+                hintStyle: AppTypography.bodyInput.copyWith(
                   fontWeight: FontWeight.w300,
                   color: AppColors.textPrimary.withValues(alpha: 0.41),
                 ),

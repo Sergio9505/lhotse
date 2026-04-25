@@ -87,9 +87,8 @@ class _LhotseLedgerRowState extends State<LhotseLedgerRow> {
                   children: [
                     Text(
                       widget.title,
-                      style: AppTypography.bodyLarge.copyWith(
+                      style: AppTypography.bodyEmphasis.copyWith(
                         color: textColor,
-                        fontWeight: FontWeight.w500,
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -97,7 +96,7 @@ class _LhotseLedgerRowState extends State<LhotseLedgerRow> {
                       const SizedBox(height: 3),
                       Text(
                         widget.subtitle!,
-                        style: AppTypography.bodySmall.copyWith(
+                        style: AppTypography.annotation.copyWith(
                           color: AppColors.accentMuted,
                         ),
                       ),
@@ -115,15 +114,14 @@ class _LhotseLedgerRowState extends State<LhotseLedgerRow> {
                       children: [
                         TextSpan(
                           text: _eurFormat.format(widget.amount),
-                          style: AppTypography.bodyLarge.copyWith(
+                          style: AppTypography.bodyEmphasis.copyWith(
                             color: textColor,
-                            fontWeight: FontWeight.w500,
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                         TextSpan(
                           text: '€',
-                          style: AppTypography.bodySmall.copyWith(
+                          style: AppTypography.annotation.copyWith(
                             color: textColor,
                             ),
                         ),
@@ -134,7 +132,7 @@ class _LhotseLedgerRowState extends State<LhotseLedgerRow> {
                     const SizedBox(height: 3),
                     Text(
                       widget.returnLabel!,
-                      style: AppTypography.bodySmall.copyWith(
+                      style: AppTypography.annotation.copyWith(
                         color: AppColors.accentMuted,
                       ),
                     ),

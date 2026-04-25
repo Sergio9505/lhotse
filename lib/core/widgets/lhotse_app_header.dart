@@ -36,7 +36,7 @@ class LhotseAppHeader extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: AppTypography.headingLarge.copyWith(
+                    style: AppTypography.titleUppercaseLg.copyWith(
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -44,9 +44,8 @@ class LhotseAppHeader extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle!,
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.2,
                       ),
                     ),
                   ],

@@ -34,9 +34,8 @@ class LhotseFilterChip extends StatelessWidget {
         ),
         child: Text(
           label.toUpperCase(),
-          style: AppTypography.caption.copyWith(
+          style: AppTypography.labelUppercaseSm.copyWith(
             color: isActive ? AppColors.textOnDark : AppColors.accentMuted,
-            fontWeight: FontWeight.w500,
             letterSpacing: 1.0,
             height: 1.0,
           ),

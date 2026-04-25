@@ -46,7 +46,7 @@ class LhotseBottomSheetBody extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 title,
-                style: AppTypography.headingLarge.copyWith(
+                style: AppTypography.titleUppercaseLg.copyWith(
                   color: AppColors.textPrimary,
                 ),
               ),

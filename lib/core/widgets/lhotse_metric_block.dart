@@ -21,15 +21,14 @@ class LhotseMetricBlock extends StatelessWidget {
       children: [
         Text(
           value,
-          style: AppTypography.headingSmall.copyWith(
+          style: AppTypography.figureAmount.copyWith(
             color: valueColor ?? AppColors.textPrimary,
-            fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
         const SizedBox(height: 3),
         Text(
           label,
-          style: AppTypography.bodySmall.copyWith(
+          style: AppTypography.annotation.copyWith(
             color: AppColors.accentMuted,
           ),
         ),

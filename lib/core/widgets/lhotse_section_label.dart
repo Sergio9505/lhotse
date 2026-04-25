@@ -13,7 +13,7 @@ class LhotseSectionLabel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Text(
         label,
-        style: AppTypography.labelLarge.copyWith(
+        style: AppTypography.labelUppercaseMd.copyWith(
           color: AppColors.accentMuted,
           fontWeight: FontWeight.w400,
           letterSpacing: 1.8,

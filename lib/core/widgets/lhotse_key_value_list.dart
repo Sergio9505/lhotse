@@ -47,7 +47,7 @@ class LhotseKeyValueList extends StatelessWidget {
                     Flexible(
                       child: Text(
                         e.label,
-                        style: AppTypography.bodySmall.copyWith(
+                        style: AppTypography.annotation.copyWith(
                           color: AppColors.accentMuted,
                           fontWeight:
                               isBold ? FontWeight.w600 : FontWeight.w400,
@@ -72,7 +72,7 @@ class LhotseKeyValueList extends StatelessWidget {
                           children: [
                             Text(
                               e.value,
-                              style: AppTypography.bodyMedium.copyWith(
+                              style: AppTypography.bodyReading.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: isBold
                                     ? FontWeight.w600
@@ -94,7 +94,7 @@ class LhotseKeyValueList extends StatelessWidget {
                     else
                       Text(
                         e.value,
-                        style: AppTypography.bodyMedium.copyWith(
+                        style: AppTypography.bodyReading.copyWith(
                           color: AppColors.textPrimary,
                           fontWeight:
                               isBold ? FontWeight.w600 : FontWeight.w500,

@@ -61,7 +61,7 @@ class _LhotseDocRowState extends State<LhotseDocRow> {
                   children: [
                     Text(
                       widget.name,
-                      style: AppTypography.bodyMedium.copyWith(
+                      style: AppTypography.bodyReading.copyWith(
                         color: AppColors.textPrimary,
                       ),
                       maxLines: 1,
@@ -73,7 +73,7 @@ class _LhotseDocRowState extends State<LhotseDocRow> {
                         _hasSubtitle
                             ? '${widget.subtitle} · ${widget.date}'
                             : widget.date,
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.accentMuted,
                           letterSpacing: 0.8,
                         ),

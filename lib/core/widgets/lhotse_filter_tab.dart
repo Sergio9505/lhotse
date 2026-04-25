@@ -48,13 +48,12 @@ class LhotseFilterTab extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: AppTypography.labelLarge.copyWith(
+                style: AppTypography.labelUppercaseMd.copyWith(
                   color: highlighted
                       ? AppColors.textPrimary
                       : AppColors.accentMuted,
                   fontWeight:
                       highlighted ? FontWeight.w500 : FontWeight.w400,
-                  letterSpacing: 1.5,
                 ),
               ),
               if (hasSelection && !isActive) ...[

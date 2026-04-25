@@ -103,7 +103,7 @@ class LhotseDocumentsSection extends StatelessWidget {
               ),
               child: Text(
                 'Ver todos (${documents.length})',
-                style: AppTypography.bodySmall.copyWith(
+                style: AppTypography.annotation.copyWith(
                   color: AppColors.accentMuted,
                 ),
               ),
