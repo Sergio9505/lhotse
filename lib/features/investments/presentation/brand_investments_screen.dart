@@ -820,8 +820,8 @@ class _RentaFijaRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 56,
+            height: 56,
             color: AppColors.primary,
             alignment: Alignment.center,
             child: badgeDate != null
@@ -957,7 +957,7 @@ class _RentaFijaRow extends StatelessWidget {
                     horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                 child: PhosphorIcon(
                   PhosphorIconsThin.fileText,
-                  size: 18,
+                  size: 22,
                   color: AppColors.textPrimary,
                 ),
               ),
