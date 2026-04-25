@@ -114,7 +114,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             if (_versionLabel.isNotEmpty)
               Text(
                 _versionLabel,
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.labelUppercaseSm.copyWith(
                   color: AppColors.accentMuted,
                 ),
               ),
@@ -292,10 +292,8 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
                   color: role.badgeColor,
                   child: Text(
                     role.label,
-                    style: AppTypography.caption.copyWith(
+                    style: AppTypography.labelUppercaseSm.copyWith(
                       color: AppColors.textOnDark,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 1.2,
                       fontSize: 9,
                     ),
                   ),
@@ -314,7 +312,7 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 displayName,
-                style: AppTypography.displayMedium.copyWith(
+                style: AppTypography.editorialTitle.copyWith(
                   color: AppColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
@@ -328,9 +326,8 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
                   if (memberSince != null)
                     Text(
                       'MIEMBRO DESDE ${memberSince.year}',
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 0.8,
                       ),
                     ),
                   if (memberSince != null &&
@@ -351,9 +348,8 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
                   if (city != null || country != null)
                     Text(
                       [?city, ?country].join(', ').toUpperCase(),
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 0.8,
                       ),
                     ),
                 ],
@@ -383,7 +379,7 @@ class _SectionLabel extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AppTypography.labelLarge.copyWith(
+            style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.accentMuted,
               fontWeight: FontWeight.w400,
               letterSpacing: 1.8,
@@ -453,7 +449,7 @@ class _MenuItemState extends State<_MenuItem> {
               Expanded(
                 child: Text(
                   widget.label.toUpperCase(),
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.labelUppercaseMd.copyWith(
                     color: AppColors.textPrimary,
                     letterSpacing: 0.8,
                   ),
@@ -494,7 +490,7 @@ class _PrivateBanner extends StatelessWidget {
         children: [
           Text(
             'Lhotse Private',
-            style: AppTypography.headingLarge.copyWith(
+            style: AppTypography.editorialSubtitle.copyWith(
               color: AppColors.textOnDark,
             ),
           ),
@@ -503,7 +499,7 @@ class _PrivateBanner extends StatelessWidget {
 
           Text(
             'Acceso exclusivo a rondas Pre-Seed y eventos de networking de alto nivel.',
-            style: AppTypography.bodySmall.copyWith(
+            style: AppTypography.annotation.copyWith(
               color: AppColors.textOnDark.withValues(alpha: 0.75),
             ),
           ),
@@ -515,9 +511,8 @@ class _PrivateBanner extends StatelessWidget {
             children: [
               Text(
                 'SOLICITAR INVITACIÓN',
-                style: AppTypography.labelLarge.copyWith(
+                style: AppTypography.labelUppercaseMd.copyWith(
                   color: AppColors.textOnDark,
-                  fontWeight: FontWeight.w500,
                   letterSpacing: 1.2,
                 ),
               ),
@@ -560,9 +555,8 @@ class _LogoutButton extends ConsumerWidget {
             const SizedBox(width: AppSpacing.sm),
             Text(
               'CERRAR SESIÓN',
-              style: AppTypography.bodySmall.copyWith(
+              style: AppTypography.labelUppercaseMd.copyWith(
                 color: AppColors.accentMuted,
-                fontWeight: FontWeight.w500,
                 letterSpacing: 0.8,
               ),
             ),

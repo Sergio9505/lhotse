@@ -34,9 +34,8 @@ class LegalTextScreen extends StatelessWidget {
               ),
               child: Text(
                 body,
-                style: AppTypography.bodyMedium.copyWith(
+                style: AppTypography.bodyReading.copyWith(
                   color: AppColors.textPrimary,
-                  height: 1.6,
                 ),
               ),
             ),
@@ -75,7 +74,7 @@ class _Header extends StatelessWidget {
             Flexible(
               child: Text(
                 title,
-                style: AppTypography.headingLarge.copyWith(
+                style: AppTypography.titleUppercase.copyWith(
                   color: AppColors.textPrimary,
                 ),
                 overflow: TextOverflow.ellipsis,

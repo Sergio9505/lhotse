@@ -113,7 +113,7 @@ class _Header extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Text(
               'NOTIFICACIONES',
-              style: AppTypography.headingLarge.copyWith(
+              style: AppTypography.titleUppercase.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),
@@ -138,7 +138,7 @@ class _SectionLabel extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AppTypography.labelLarge.copyWith(
+            style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.accentMuted,
               fontWeight: FontWeight.w400,
               letterSpacing: 1.8,
@@ -183,7 +183,7 @@ class _ToggleRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label.toUpperCase(),
-                style: AppTypography.bodyMedium.copyWith(
+                style: AppTypography.labelUppercaseMd.copyWith(
                   color: AppColors.textPrimary,
                   letterSpacing: 0.8,
                 ),

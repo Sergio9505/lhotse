@@ -42,7 +42,7 @@ class KycScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               'Estado de tu documentación para operar como inversor.',
-              style: AppTypography.bodyMedium.copyWith(
+              style: AppTypography.bodyReading.copyWith(
                 color: AppColors.accentMuted,
               ),
             ),
@@ -68,7 +68,7 @@ class KycScreen extends ConsumerWidget {
             error: (e, _) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Text('$e',
-                  style: AppTypography.bodySmall
+                  style: AppTypography.annotation
                       .copyWith(color: AppColors.danger)),
             ),
           ),
@@ -79,7 +79,7 @@ class KycScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               'Si necesitas ayuda con la documentación, contacta con nuestro equipo de soporte.',
-              style: AppTypography.bodySmall.copyWith(
+              style: AppTypography.annotation.copyWith(
                 color: AppColors.accentMuted,
               ),
             ),
@@ -110,7 +110,7 @@ class _Header extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Text(
               'DOCUMENTACIÓN LEGAL',
-              style: AppTypography.headingLarge.copyWith(
+              style: AppTypography.titleUppercase.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),
@@ -166,7 +166,7 @@ class _DocumentRow extends StatelessWidget {
           Expanded(
             child: Text(
               label.toUpperCase(),
-              style: AppTypography.bodyMedium.copyWith(
+              style: AppTypography.labelUppercaseMd.copyWith(
                 color: AppColors.textPrimary,
                 letterSpacing: 0.8,
               ),
@@ -177,11 +177,10 @@ class _DocumentRow extends StatelessWidget {
             color: status.color.withValues(alpha: 0.1),
             child: Text(
               status.label,
-              style: AppTypography.caption.copyWith(
+              style: AppTypography.labelUppercaseSm.copyWith(
                 color: status.color,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.8,
                 fontSize: 9,
+                letterSpacing: 0.8,
               ),
             ),
           ),

@@ -136,7 +136,7 @@ class _Header extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Text(
               'DATOS PERSONALES',
-              style: AppTypography.headingLarge.copyWith(
+              style: AppTypography.titleUppercase.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),
@@ -174,7 +174,7 @@ class _ReadOnlyField extends StatelessWidget {
             width: 100,
             child: Text(
               label,
-              style: AppTypography.caption.copyWith(
+              style: AppTypography.labelUppercaseSm.copyWith(
                 color: AppColors.accentMuted,
                 letterSpacing: 1.0,
               ),
@@ -183,7 +183,7 @@ class _ReadOnlyField extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: AppTypography.bodyMedium.copyWith(
+              style: AppTypography.bodyReading.copyWith(
                 color: AppColors.accentMuted,
               ),
               textAlign: TextAlign.right,
@@ -242,7 +242,7 @@ class _EditableField extends StatelessWidget {
             width: 100,
             child: Text(
               label,
-              style: AppTypography.caption.copyWith(
+              style: AppTypography.labelUppercaseSm.copyWith(
                 color: AppColors.accentMuted,
                 letterSpacing: 1.0,
               ),
@@ -253,7 +253,7 @@ class _EditableField extends StatelessWidget {
               controller: controller,
               keyboardType: keyboardType,
               textAlign: TextAlign.right,
-              style: AppTypography.bodyMedium.copyWith(
+              style: AppTypography.bodyReading.copyWith(
                 color: AppColors.textPrimary,
               ),
               decoration: const InputDecoration(
@@ -314,9 +314,8 @@ class _SaveButtonState extends State<_SaveButton> {
                   )
                 : Text(
                     'GUARDAR',
-                    style: AppTypography.labelLarge.copyWith(
+                    style: AppTypography.labelUppercaseMd.copyWith(
                       color: AppColors.textOnDark,
-                      letterSpacing: 1.5,
                     ),
                   ),
           ),

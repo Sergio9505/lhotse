@@ -25,7 +25,7 @@ class SupportScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               'Nuestro equipo está disponible para ayudarte con cualquier consulta.',
-              style: AppTypography.bodyMedium.copyWith(
+              style: AppTypography.bodyReading.copyWith(
                 color: AppColors.accentMuted,
               ),
             ),
@@ -60,7 +60,7 @@ class SupportScreen extends StatelessWidget {
               children: [
                 Text(
                   'HORARIO DE ATENCIÓN',
-                  style: AppTypography.labelLarge.copyWith(
+                  style: AppTypography.labelUppercaseMd.copyWith(
                     color: AppColors.accentMuted,
                     fontWeight: FontWeight.w400,
                     letterSpacing: 1.8,
@@ -69,14 +69,14 @@ class SupportScreen extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'Lunes a viernes: 9:00 — 18:00 (CET)',
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.bodyReading.copyWith(
                     color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Tiempo medio de respuesta: 24h',
-                  style: AppTypography.bodySmall.copyWith(
+                  style: AppTypography.annotation.copyWith(
                     color: AppColors.accentMuted,
                   ),
                 ),
@@ -91,7 +91,7 @@ class SupportScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               'Para cuestiones urgentes relacionadas con inversiones, contacta directamente por teléfono.',
-              style: AppTypography.bodySmall.copyWith(
+              style: AppTypography.annotation.copyWith(
                 color: AppColors.accentMuted,
               ),
             ),
@@ -130,7 +130,7 @@ class _Header extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Text(
               'CONTACTO Y SOPORTE',
-              style: AppTypography.headingLarge.copyWith(
+              style: AppTypography.titleUppercase.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),
@@ -176,7 +176,7 @@ class _ContactRow extends StatelessWidget {
             children: [
               Text(
                 label.toUpperCase(),
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.labelUppercaseSm.copyWith(
                   color: AppColors.accentMuted,
                   letterSpacing: 1.0,
                 ),
@@ -184,7 +184,7 @@ class _ContactRow extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 value,
-                style: AppTypography.bodyMedium.copyWith(
+                style: AppTypography.bodyReading.copyWith(
                   color: AppColors.textPrimary,
                 ),
               ),

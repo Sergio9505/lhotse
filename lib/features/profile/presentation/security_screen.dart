@@ -48,11 +48,10 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             label: 'Verificación en dos pasos',
             trailing: Text(
               'ACTIVADA',
-              style: AppTypography.caption.copyWith(
+              style: AppTypography.labelUppercaseSm.copyWith(
                 color: const Color(0xFF2D6A4F),
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.8,
                 fontSize: 9,
+                letterSpacing: 0.8,
               ),
             ),
             onTap: () {},
@@ -107,7 +106,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                       AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
                   child: Text(
                     'CAMBIAR CONTRASEÑA',
-                    style: AppTypography.headingLarge.copyWith(
+                    style: AppTypography.titleUppercase.copyWith(
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -138,7 +137,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                         AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
                     child: Text(
                       error!,
-                      style: AppTypography.bodySmall.copyWith(
+                      style: AppTypography.annotation.copyWith(
                         color: AppColors.danger,
                       ),
                     ),
@@ -198,9 +197,8 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                               )
                             : Text(
                                 'GUARDAR',
-                                style: AppTypography.labelLarge.copyWith(
+                                style: AppTypography.labelUppercaseMd.copyWith(
                                   color: AppColors.textOnDark,
-                                  letterSpacing: 1.5,
                                 ),
                               ),
                       ),
@@ -242,7 +240,7 @@ class _Header extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Text(
               'SEGURIDAD',
-              style: AppTypography.headingLarge.copyWith(
+              style: AppTypography.titleUppercase.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),
@@ -306,7 +304,7 @@ class _ActionRowState extends State<_ActionRow> {
               Expanded(
                 child: Text(
                   widget.label.toUpperCase(),
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.labelUppercaseMd.copyWith(
                     color: AppColors.textPrimary,
                     letterSpacing: 0.8,
                   ),
@@ -362,7 +360,7 @@ class _ToggleRow extends StatelessWidget {
           Expanded(
             child: Text(
               label.toUpperCase(),
-              style: AppTypography.bodyMedium.copyWith(
+              style: AppTypography.labelUppercaseMd.copyWith(
                 color: AppColors.textPrimary,
                 letterSpacing: 0.8,
               ),
