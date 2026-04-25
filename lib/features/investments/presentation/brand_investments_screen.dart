@@ -780,6 +780,15 @@ class _RentaFijaRow extends StatelessWidget {
 
   static const _kMaturityMonthFormat = 'MM/yy';
 
+  /// Maps DB payment_frequency values to user-facing uppercase labels.
+  /// Falls back to MENSUAL defensively (matches model default).
+  static const _kFrequencyLabels = {
+    'monthly': 'MENSUAL',
+    'quarterly': 'TRIMESTRAL',
+    'semi_annual': 'SEMESTRAL',
+    'annual': 'ANUAL',
+  };
+
   @override
   Widget build(BuildContext context) {
     final c = contract;
@@ -892,32 +901,50 @@ class _RentaFijaRow extends StatelessWidget {
                       ],
                     ),
                   )
-                else
-                  RichText(
-                    text: TextSpan(
-                      style: AppTypography.labelUppercaseSm.copyWith(
-                        color: AppColors.accentMuted,
-                        fontSize: 12,
-                      ),
-                      children: [
-                        TextSpan(
-                            text:
-                                '${c.guaranteedRate.toStringAsFixed(1)}% anual'),
-                        if (c.maturityDate != null)
-                          TextSpan(
-                              text:
-                                  '  ·  vence ${DateFormat(_kMaturityMonthFormat).format(c.maturityDate!)}'),
-                        if (c.interestPaidToDate > 0) ...[
-                          const TextSpan(text: '  ·  '),
-                          TextSpan(
-                            text:
-                                '+${_eurFormat.format(c.interestPaidToDate)}€',
-                            style: greenStyle,
-                          ),
-                        ],
-                      ],
+                else ...[
+                  // L2 — términos del producto: rate + frecuencia de cupón
+                  Text(
+                    '${c.guaranteedRate.toStringAsFixed(1)}% ANUAL  ·  '
+                    '${_kFrequencyLabels[c.paymentFrequency] ?? 'MENSUAL'}',
+                    style: AppTypography.labelUppercaseSm.copyWith(
+                      color: AppColors.accentMuted,
+                      fontSize: 12,
                     ),
                   ),
+                  if (c.maturityDate != null) ...[
+                    const SizedBox(height: 2),
+                    // L3 — situación temporal: vencimiento + ganancia acumulada
+                    RichText(
+                      text: TextSpan(
+                        style: AppTypography.labelUppercaseSm.copyWith(
+                          color: AppColors.accentMuted,
+                          fontSize: 12,
+                        ),
+                        children: [
+                          TextSpan(
+                            text:
+                                'VENCE ${DateFormat(_kMaturityMonthFormat).format(c.maturityDate!)}',
+                          ),
+                          if (c.interestPaidToDate > 0) ...[
+                            const TextSpan(text: '  ·  '),
+                            TextSpan(
+                              text:
+                                  '+${_eurFormat.format(c.interestPaidToDate)}€',
+                              style: greenStyle,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ] else if (c.interestPaidToDate > 0) ...[
+                    const SizedBox(height: 2),
+                    // No maturity but we have accrued interest — show it solo.
+                    Text(
+                      '+${_eurFormat.format(c.interestPaidToDate)}€',
+                      style: greenStyle,
+                    ),
+                  ],
+                ],
               ],
             ),
           ),
