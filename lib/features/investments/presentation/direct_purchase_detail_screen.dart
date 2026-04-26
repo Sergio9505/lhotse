@@ -233,11 +233,17 @@ class _DirectPurchaseDetailContentState
                     const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
+                        // Brand stays UPPERCASE tracked across the whole app
+                        // (wordmark convention — Hermès / Louis Vuitton / Prada
+                        // editorial style). Same `labelUppercaseSm` token used
+                        // in L1 brand row, L2 collapsed hero, brands list,
+                        // brand detail, search, etc. Hierarchy vs the city is
+                        // by color (textPrimary brand, accentMuted city).
                         Text(
-                          brandName,
-                          style: AppTypography.bodyReading.copyWith(
-                            color: AppColors.accentMuted,
-                            fontSize: 14,
+                          brandName.toUpperCase(),
+                          style: AppTypography.labelUppercaseSm.copyWith(
+                            color: AppColors.textPrimary,
+                            letterSpacing: 1.8,
                           ),
                         ),
                         if (c.assetLocation != null) ...[
@@ -246,18 +252,18 @@ class _DirectPurchaseDetailContentState
                                 const EdgeInsets.symmetric(horizontal: 8),
                             child: Text(
                               '·',
-                              style: AppTypography.bodyReading.copyWith(
-                                color: AppColors.accentMuted,
-                                fontSize: 14,
+                              style: AppTypography.labelUppercaseSm.copyWith(
+                                color: AppColors.textPrimary
+                                    .withValues(alpha: 0.4),
                               ),
                             ),
                           ),
                           Flexible(
                             child: Text(
-                              _stripIsoSuffix(c.assetLocation!),
-                              style: AppTypography.bodyReading.copyWith(
+                              _stripIsoSuffix(c.assetLocation!).toUpperCase(),
+                              style: AppTypography.labelUppercaseSm.copyWith(
                                 color: AppColors.accentMuted,
-                                fontSize: 14,
+                                letterSpacing: 1.35,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
