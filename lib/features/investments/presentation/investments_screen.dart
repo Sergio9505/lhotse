@@ -111,27 +111,34 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    // Hero collapse logic. We deliberately freeze the hero in expanded state
-    // (`expandRatio = 1.0`) when the list content fits within the viewport.
-    // Reason: on iOS, BouncingScrollPhysics produces a non-zero `shrinkOffset`
-    // during overscroll bounce even when there's nothing to scroll to, which
-    // would otherwise visually collapse the hero for no good reason. We only
-    // honour `shrinkOffset` when the underlying content actually overflows
-    // the viewport (`maxScrollExtent > 0`). When there IS scroll, remap the
-    // collapse range to the actual available scroll so the animation always
-    // completes (otherwise, with short-but-overflowing lists, the hero would
-    // freeze mid-collapse).
+    // Hero collapse logic. Two protections:
+    //
+    // 1. Lock to expanded (`expandRatio = 1.0`) when there's no scrollable
+    //    content. iOS `BouncingScrollPhysics` produces a non-zero
+    //    `shrinkOffset` during overscroll bounce even when there's nothing
+    //    to scroll to — without this lock, bounce would visually collapse
+    //    the hero for no good reason.
+    //
+    // 2. When scroll exists, interpolate `expandRatio` against the **full**
+    //    `collapseRange` (not against `maxScrollExtent`). Pre-existing code
+    //    used to remap `effectiveRange = min(maxScroll, collapseRange)` so
+    //    the animation always "completed" — that was an anti-pattern. The
+    //    sliver's physical extent is dictated by Flutter and only shrinks
+    //    by `min(scroll, collapseRange)`; remapping the visuals to complete
+    //    in less scroll desynchronizes them from the physical state, which
+    //    on lists that barely overflow renders a hero that's physically
+    //    big but visually empty (title invisible, amount minimal). UIKit
+    //    `prefersLargeTitles` and `SliverAppBar` (Flutter's built-in)
+    //    interpolate proportionally to actual collapse — same as we do
+    //    here without remap.
     final collapseRange = maxExtent - minExtent;
     final position = Scrollable.maybeOf(context)?.position;
     final maxScroll = position != null && position.hasContentDimensions
         ? position.maxScrollExtent
         : null;
     final hasScrollableContent = maxScroll != null && maxScroll > 0;
-    final effectiveRange = hasScrollableContent && maxScroll < collapseRange
-        ? maxScroll
-        : collapseRange;
     final expandRatio = hasScrollableContent
-        ? (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0)
+        ? (1 - shrinkOffset / collapseRange).clamp(0.0, 1.0)
         : 1.0;
     final amountSize = 28 + (18 * expandRatio);
     final euroSize = 13 + (8 * expandRatio);
