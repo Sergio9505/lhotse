@@ -111,19 +111,28 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    // Remap collapse range to actual available scroll so the animation
-    // always completes — otherwise, when the list is short, the hero
-    // freezes mid-collapse (maxScrollExtent < maxExtent-minExtent).
+    // Hero collapse logic. We deliberately freeze the hero in expanded state
+    // (`expandRatio = 1.0`) when the list content fits within the viewport.
+    // Reason: on iOS, BouncingScrollPhysics produces a non-zero `shrinkOffset`
+    // during overscroll bounce even when there's nothing to scroll to, which
+    // would otherwise visually collapse the hero for no good reason. We only
+    // honour `shrinkOffset` when the underlying content actually overflows
+    // the viewport (`maxScrollExtent > 0`). When there IS scroll, remap the
+    // collapse range to the actual available scroll so the animation always
+    // completes (otherwise, with short-but-overflowing lists, the hero would
+    // freeze mid-collapse).
     final collapseRange = maxExtent - minExtent;
     final position = Scrollable.maybeOf(context)?.position;
-    final maxScroll = (position != null && position.hasContentDimensions)
+    final maxScroll = position != null && position.hasContentDimensions
         ? position.maxScrollExtent
+        : null;
+    final hasScrollableContent = maxScroll != null && maxScroll > 0;
+    final effectiveRange = hasScrollableContent && maxScroll < collapseRange
+        ? maxScroll
         : collapseRange;
-    final effectiveRange =
-        maxScroll < collapseRange ? maxScroll : collapseRange;
-    final expandRatio = effectiveRange <= 0
-        ? 1.0
-        : (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0);
+    final expandRatio = hasScrollableContent
+        ? (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0)
+        : 1.0;
     final amountSize = 28 + (18 * expandRatio);
     final euroSize = 13 + (8 * expandRatio);
     // Title fades out gently across the first 60% of the collapse so the

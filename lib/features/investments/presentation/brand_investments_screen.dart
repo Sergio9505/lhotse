@@ -90,29 +90,12 @@ class BrandInvestmentsScreen extends ConsumerWidget {
     final activeRf = allRf.where((c) => c.isActive).toList();
     final completedRf = allRf.where((c) => c.isCompleted).toList();
 
-    final activeCount = isCompraDirecta
-        ? activePurchase.length
-        : isRentaFija
-            ? activeRf.length
-            : activeCoinvest.length;
-    final completedCount = isCompraDirecta
-        ? completedPurchase.length
-        : isRentaFija
-            ? completedRf.length
-            : completedCoinvest.length;
-
     // Total = active capital (matches L1 user_portfolio aggregation).
     final totalAmount = isCompraDirecta
         ? activePurchase.fold(0.0, (s, c) => s + c.purchaseValue)
         : isRentaFija
             ? activeRf.fold(0.0, (s, c) => s + c.amount)
             : activeCoinvest.fold(0.0, (s, c) => s + c.amount);
-
-    final avgReturn = isRentaFija
-        ? (activeRf.isEmpty ? 0.0 : activeRf.map((c) => c.guaranteedRate).reduce((a, b) => a + b) / activeRf.length)
-        : isCompraDirecta
-            ? (activePurchase.isEmpty ? 0.0 : activePurchase.map((c) => c.rentalYieldPct ?? 0).reduce((a, b) => a + b) / activePurchase.length)
-            : (activeCoinvest.isEmpty ? 0.0 : activeCoinvest.map((c) => c.estimatedReturnPct ?? 0).reduce((a, b) => a + b) / activeCoinvest.length);
 
     final heroTitle = isRentaFija
         ? 'Mis inversiones\na Renta Fija'
@@ -143,11 +126,6 @@ class BrandInvestmentsScreen extends ConsumerWidget {
               topPadding: topPadding,
               brandName: brandName,
               totalFormatted: totalFormatted,
-              averageReturn: avgReturn,
-              activeCount: activeCount,
-              completedCount: completedCount,
-              isCompraDirecta: isCompraDirecta,
-              isRentaFija: isRentaFija,
               heroTitle: heroTitle,
               onBack: () => context.pop(),
             ),
@@ -380,11 +358,6 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
     required this.topPadding,
     required this.brandName,
     required this.totalFormatted,
-    required this.averageReturn,
-    required this.activeCount,
-    required this.completedCount,
-    required this.isCompraDirecta,
-    required this.isRentaFija,
     required this.heroTitle,
     required this.onBack,
   });
@@ -394,11 +367,6 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
   final double topPadding;
   final String brandName;
   final String totalFormatted;
-  final double averageReturn;
-  final int activeCount;
-  final int completedCount;
-  final bool isCompraDirecta;
-  final bool isRentaFija;
   final String heroTitle;
   final VoidCallback onBack;
 
@@ -410,17 +378,25 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
+    // Hero collapse logic. We deliberately freeze the hero in expanded state
+    // (`expandRatio = 1.0`) when the list content fits within the viewport.
+    // Reason: on iOS, BouncingScrollPhysics produces a non-zero `shrinkOffset`
+    // during overscroll bounce even when there's nothing to scroll to, which
+    // would otherwise visually collapse the hero for no good reason. We only
+    // honour `shrinkOffset` when the underlying content actually overflows
+    // the viewport (`maxScrollExtent > 0`).
     final collapseRange = maxExtent - minExtent;
     final position = Scrollable.maybeOf(context)?.position;
     final maxScroll = position != null && position.hasContentDimensions
         ? position.maxScrollExtent
         : null;
-    final effectiveRange =
-        (maxScroll != null && maxScroll > 0 && maxScroll < collapseRange)
-            ? maxScroll
-            : collapseRange;
-    final expandRatio =
-        (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0);
+    final hasScrollableContent = maxScroll != null && maxScroll > 0;
+    final effectiveRange = hasScrollableContent && maxScroll < collapseRange
+        ? maxScroll
+        : collapseRange;
+    final expandRatio = hasScrollableContent
+        ? (1 - shrinkOffset / effectiveRange).clamp(0.0, 1.0)
+        : 1.0;
 
     final expandedOpacity = ((expandRatio - 0.5) / 0.5).clamp(0.0, 1.0);
     final collapsedOpacity = ((0.5 - expandRatio) / 0.5).clamp(0.0, 1.0);
@@ -531,46 +507,6 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
               ),
             ),
           ),
-          if (!isCompraDirecta && !isRentaFija)
-            Positioned(
-              top: topPadding + expandedAmountY + 42 + AppSpacing.md,
-              left: AppSpacing.lg,
-              right: AppSpacing.lg,
-              child: Opacity(
-                opacity: expandedOpacity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '${averageReturn.toStringAsFixed(1)}%',
-                            style: AppTypography.figureAmount.copyWith(
-                              color: AppColors.textPrimary,
-                              fontSize: 16,
-                            ),
-                          ),
-                          TextSpan(
-                            text: '  rentabilidad',
-                            style: AppTypography.annotation.copyWith(
-                              color: AppColors.accentMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      '$activeCount activas${completedCount > 0 ? '  ·  $completedCount finalizadas' : ''}',
-                      style: AppTypography.annotation
-                          .copyWith(color: AppColors.accentMuted),
-                    ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
     );
