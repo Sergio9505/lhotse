@@ -186,11 +186,8 @@ class BrandInvestmentsScreen extends ConsumerWidget {
               delegate: SliverChildBuilderDelegate(
                 (context, i) {
                   final c = activePurchase[i];
-                  return _AssetRow(
-                    projectName: c.assetName ?? '',
-                    location: c.assetLocation,
-                    imageUrl: c.assetImageUrl,
-                    amount: c.purchaseValue,
+                  return _PurchaseRow(
+                    contract: c,
                     isLast: i == activePurchase.length - 1,
                     onTap: () => context.push(
                       '/investments/detail/purchase/${c.id}',
@@ -251,6 +248,32 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                       : completedCoinvest;
               if (completed.isEmpty) return const SizedBox.shrink();
 
+              // Subhead realizado: count + verbo de cierre + ganancia en
+              // verde (gain only, no capital recuperado — convención
+              // "green = money earned").
+              final completedCount = completed.length;
+              final isPlural = completedCount != 1;
+              final (subheadNoun, subheadVerb) = isCompraDirecta
+                  ? ('propiedad', 'vendida')
+                  : isRentaFija
+                      ? ('contrato', 'vencido')
+                      : ('proyecto', 'cerrado');
+              final pluralS = isPlural ? 's' : '';
+              final countLabel =
+                  '$completedCount $subheadNoun$pluralS $subheadVerb$pluralS';
+              final realizedGain = isCompraDirecta
+                  ? completedPurchase.fold<double>(
+                      0,
+                      (s, c) =>
+                          s + ((c.totalReturn ?? c.purchaseValue) - c.purchaseValue))
+                  : isRentaFija
+                      ? completedRf.fold<double>(
+                          0, (s, c) => s + c.totalInterestEarned)
+                      : completedCoinvest.fold<double>(
+                          0,
+                          (s, c) =>
+                              s + ((c.totalReturn ?? c.amount) - c.amount));
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -258,12 +281,41 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg),
-                    child: Text(
-                      'FINALIZADAS',
-                      style: AppTypography.labelUppercaseMd.copyWith(
-                        color: AppColors.accentMuted,
-                        letterSpacing: 1.8,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'FINALIZADAS',
+                          style: AppTypography.labelUppercaseMd.copyWith(
+                            color: AppColors.accentMuted,
+                            letterSpacing: 1.8,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        RichText(
+                          text: TextSpan(
+                            style: AppTypography.bodyReading.copyWith(
+                              color: AppColors.accentMuted,
+                              fontSize: 14,
+                            ),
+                            children: [
+                              TextSpan(text: countLabel),
+                              if (realizedGain > 0) ...[
+                                const TextSpan(text: '  ·  '),
+                                TextSpan(
+                                  text:
+                                      '+${_eurFormat.format(realizedGain)}€',
+                                  style: AppTypography.figureAmount.copyWith(
+                                    color: const Color(0xFF2D6A4F),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -977,6 +1029,178 @@ class _RentaFijaRow extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Active Compra Directa row. Mirrors `_RentaFijaRow` structure (capital →
+/// identidad → meta) using the property image as visual anchor instead of
+/// the date-block. Image 96×72 (4:3, natural for architectural photography).
+/// Address standalone on its own line (no city — brand context covers the
+/// region; full address lives in L3 detail). Meta line uses bare yield
+/// (`% anual` dropped by RF parallel — yield of a rental property is annual
+/// by convention) and labeled `±X% revalorización` to disambiguate.
+/// Color treatment: yield stays grey muted (it's a rate, not a delta);
+/// revalorización gets directional color — green for positive (latent
+/// appreciation), muted red for negative (latent depreciation), grey for
+/// zero. The wealth-voice convention reserves green/red for **directional
+/// deltas** (realized cash + asset value changes), not for rates.
+class _PurchaseRow extends StatefulWidget {
+  const _PurchaseRow({
+    required this.contract,
+    this.isLast = false,
+    this.onTap,
+  });
+
+  final PurchaseContractData contract;
+  final bool isLast;
+  final VoidCallback? onTap;
+
+  @override
+  State<_PurchaseRow> createState() => _PurchaseRowState();
+}
+
+class _PurchaseRowState extends State<_PurchaseRow> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.contract;
+    final address = c.assetName ?? '';
+    final yieldLabel = c.rentalYieldPct != null
+        ? '${c.rentalYieldPct!.toStringAsFixed(1)}%'
+        : null;
+    final revalPct = c.assetRevaluationPct;
+    final revalLabel = revalPct != null
+        ? '${revalPct > 0 ? '+' : ''}${revalPct.toStringAsFixed(1)}% revalorización'
+        : null;
+    // Directional color: green for positive appreciation, muted red for
+    // depreciation, grey for zero/null. Matches RF `greenStyle` (#2D6A4F)
+    // for the positive case; uses the docs-spec wealth red (#7F1D1D, NOT
+    // the brighter `AppColors.danger #E53E3E` used for form errors).
+    final revalColor = revalPct == null || revalPct == 0
+        ? AppColors.accentMuted
+        : revalPct > 0
+            ? const Color(0xFF2D6A4F)
+            : const Color(0xFF7F1D1D);
+
+    return GestureDetector(
+      onTapDown: widget.onTap != null
+          ? (_) => setState(() => _pressed = true)
+          : null,
+      onTapUp: widget.onTap != null
+          ? (_) {
+              setState(() => _pressed = false);
+              widget.onTap!();
+            }
+          : null,
+      onTapCancel: widget.onTap != null
+          ? () => setState(() => _pressed = false)
+          : null,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: 24),
+          decoration: widget.isLast
+              ? null
+              : BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.textPrimary.withValues(alpha: 0.08),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 96,
+                height: 72,
+                child: c.assetImageUrl != null
+                    ? LhotseImage(c.assetImageUrl!)
+                    : Container(color: AppColors.surface),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // L1 — capital
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: _eurFormat.format(c.purchaseValue),
+                            style: AppTypography.figureAmount.copyWith(
+                              color: AppColors.textPrimary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '€',
+                            style: AppTypography.annotation.copyWith(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (address.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        address,
+                        style: AppTypography.bodyReading.copyWith(
+                          color: AppColors.accentMuted,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (yieldLabel != null || revalLabel != null) ...[
+                      const SizedBox(height: 2),
+                      RichText(
+                        text: TextSpan(
+                          style: AppTypography.labelUppercaseSm.copyWith(
+                            color: AppColors.accentMuted,
+                            fontSize: 12,
+                            letterSpacing: 0,
+                          ),
+                          children: [
+                            if (yieldLabel != null) TextSpan(text: yieldLabel),
+                            if (yieldLabel != null && revalLabel != null)
+                              const TextSpan(text: '  ·  '),
+                            if (revalLabel != null)
+                              TextSpan(
+                                text: revalLabel,
+                                style: TextStyle(color: revalColor),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (widget.onTap != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: AppSpacing.sm),
+                  child: PhosphorIcon(
+                    PhosphorIconsThin.caretRight,
+                    size: 16,
+                    color: AppColors.accentMuted,
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
