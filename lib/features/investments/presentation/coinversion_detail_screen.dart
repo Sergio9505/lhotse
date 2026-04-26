@@ -15,6 +15,7 @@ import '../../../core/domain/profit_scenario.dart';
 import '../../../core/domain/project_phase.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/strip_iso_suffix.dart';
+import '../../../core/widgets/sticky_filter_chips_delegate.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
@@ -353,15 +354,13 @@ class _CoinversionDetailScreenState
                   ),
                   bottomPadding: bottomPadding,
                 ),
-                _TabScrollWrapper(
-                  child: _DocumentosTab(
-                    modelType: 'coinvestment',
-                    modelId: c.id,
-                    activeFilters: _activeDocFilters,
-                    onToggleFilter: _toggleDocFilter,
-                    onClearFilters: () =>
-                        setState(() => _activeDocFilters.clear()),
-                  ),
+                _DocumentosTab(
+                  modelType: 'coinvestment',
+                  modelId: c.id,
+                  activeFilters: _activeDocFilters,
+                  onToggleFilter: _toggleDocFilter,
+                  onClearFilters: () =>
+                      setState(() => _activeDocFilters.clear()),
                   bottomPadding: bottomPadding,
                 ),
               ],
@@ -649,7 +648,7 @@ class _GallerySectionHeader extends StatelessWidget {
               onTap: () => showAllGallery(context, title, images),
               child: const PhosphorIcon(
                 PhosphorIconsThin.arrowUpRight,
-                size: 14,
+                size: 16,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -743,6 +742,7 @@ class _DocumentosTab extends ConsumerWidget {
     required this.activeFilters,
     required this.onToggleFilter,
     required this.onClearFilters,
+    required this.bottomPadding,
   });
 
   final String modelType;
@@ -750,6 +750,7 @@ class _DocumentosTab extends ConsumerWidget {
   final Set<String> activeFilters;
   final void Function(String) onToggleFilter;
   final VoidCallback onClearFilters;
+  final double bottomPadding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -770,50 +771,48 @@ class _DocumentosTab extends ConsumerWidget {
     final filterCategories =
         categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: AppSpacing.md),
-        Container(
-          color: AppColors.background,
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                ...filterCategories.map((cat) => Padding(
-                      padding: const EdgeInsets.only(right: AppSpacing.sm),
-                      child: LhotseFilterChip(
-                        label: cat.label,
-                        isActive: activeFilters.contains(cat.id),
-                        onTap: () => onToggleFilter(cat.id),
-                      ),
-                    )),
-                if (activeFilters.isNotEmpty)
-                  GestureDetector(
-                    onTap: onClearFilters,
-                    behavior: HitTestBehavior.opaque,
-                    child: const Padding(
-                      padding: EdgeInsets.all(6),
-                      child: PhosphorIcon(
-                        PhosphorIconsThin.x,
-                        size: 14,
-                        color: AppColors.accentMuted,
-                      ),
-                    ),
-                  ),
-              ],
+    final chipsRow = SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Row(
+        children: [
+          ...filterCategories.map((cat) => Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.sm),
+                child: LhotseFilterChip(
+                  label: cat.label,
+                  isActive: activeFilters.contains(cat.id),
+                  onTap: () => onToggleFilter(cat.id),
+                ),
+              )),
+          if (activeFilters.isNotEmpty)
+            GestureDetector(
+              onTap: onClearFilters,
+              behavior: HitTestBehavior.opaque,
+              child: const Padding(
+                padding: EdgeInsets.all(6),
+                child: PhosphorIcon(
+                  PhosphorIconsThin.x,
+                  size: 14,
+                  color: AppColors.accentMuted,
+                ),
+              ),
             ),
-          ),
+        ],
+      ),
+    );
+
+    return CustomScrollView(
+      slivers: [
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: StickyFilterChipsDelegate(child: Center(child: chipsRow)),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        Padding(
+        SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Column(
-            children: documents.indexed.map((entry) {
-              final i = entry.$1;
-              final doc = entry.$2;
+          sliver: SliverList.builder(
+            itemCount: documents.length,
+            itemBuilder: (context, i) {
+              final doc = documents[i];
               return Column(
                 children: [
                   if (i > 0)
@@ -828,8 +827,11 @@ class _DocumentosTab extends ConsumerWidget {
                   ),
                 ],
               );
-            }).toList(),
+            },
           ),
+        ),
+        SliverToBoxAdapter(
+          child: SizedBox(height: bottomPadding + AppSpacing.lg),
         ),
       ],
     );

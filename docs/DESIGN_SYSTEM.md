@@ -57,6 +57,18 @@ These rules apply to ALL UI built in the app. Check before every screen/widget i
 
 **Constante exportada:** `AppTypography.fontFamily` (`'Campton'`) — única ocurrencia legítima del literal en `lib/`. Los pocos casos inline justificados (welcome wordmark con strut, cifras hero animadas en Strategy con tamaño interpolado en scroll) referencian esta constante.
 
+### Icon scale (Phosphor Thin)
+
+Tier guideline para iconos. No es un set rígido (los call-sites siguen pasando size inline) pero sirve como referencia de coherencia visual:
+
+| Tier | Size | Cuándo usar |
+|---|---|---|
+| Inline tag | 14pt | Close button dentro de un chip pequeño, micro indicators |
+| Row metadata | 16pt | Chevrons, secondary actions in row, gallery "ver más" link |
+| Row primary action | 18pt | Doc category icon (visual identity), list inline icons con presencia |
+| Row affordance / launcher | 22pt | RF row doc-icon (gates the doc preview), gallery launcher |
+| Modal close / fullscreen close | 24pt | Fullscreen viewer dismiss (floor plan, gallery), modal close buttons |
+
 **Jerarquía editorial**: editorial covers 48pt (`editorialHero` base) → editorialTitle 36pt → cards uppercase 24pt → headers 18pt / inputs 18pt → bodyEmphasis 16pt → bodyReading 14pt → labels 12pt → micro labels 10pt. Pesos: w300 editorial (heros mixed case), w500 values/emphasis/CTAs, w400 reading/inputs/annotations.
 
 **Strategy/Investments hero — reglas en `HeroLayout` (`lib/core/theme/app_layout.dart`)**: tokens compartidos por L1 (`InvestmentsScreen`) y L2 (`BrandInvestmentsScreen`). La regla central: `expandedHeight` se DERIVA de la tipografía vía `HeroLayout.expandedHeight(titleHeight, amountMax)` — hardcodear `maxExtent` con un valor que no encaje con el tamaño del título y del amount produce huecos vacíos dentro del hero (bug). Tokens: `chromeTopInset = 16` (status bar buffer), `chromeRowHeight = 44`, `aboveTitle = 42`, `titleAmountGap = 20`, `belowAmount = 34`, `collapsedHeight = 80` (minExtent), `collapsedAmountY = 28`. Resultados: L1 con titleHeight=88 (44pt × 2 líneas) + amountMax=46 → expandedHeight = **290**. L2 con titleHeight=72 (36pt × 2 líneas) + amountMax=42 → expandedHeight = **270**. La jerarquía L1 > L2 vive en la **tipografía** (editorialHero 44pt vs editorialTitle 36pt, amount 28→46 vs 24→42), no en hardcodear alturas. Para detail screens (project/news/coinversion) sigue aplicando `editorialHero` 48pt como cover de su propia jerarquía editorial.
