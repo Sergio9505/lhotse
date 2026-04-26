@@ -203,13 +203,8 @@ class BrandInvestmentsScreen extends ConsumerWidget {
               delegate: SliverChildBuilderDelegate(
                 (context, i) {
                   final c = activeCoinvest[i];
-                  final months = c.estimatedDurationMonths ?? 0;
-                  final pct = c.estimatedReturnPct?.toStringAsFixed(1) ?? '–';
-                  return _AssetRow(
-                    projectName: c.projectName,
-                    imageUrl: c.projectImageUrl,
-                    amount: c.amount,
-                    returnLabel: '$months MESES  ·  $pct%*',
+                  return _CoinvestmentRow(
+                    contract: c,
                     isLast: i == activeCoinvest.length - 1,
                     onTap: () => context.push(
                       '/investments/detail/coinvestment/${c.id}',
@@ -218,23 +213,6 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                   );
                 },
                 childCount: activeCoinvest.length,
-              ),
-            ),
-
-          // Footnote
-          if (!isCompraDirecta && !isRentaFija)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                    left: AppSpacing.lg, top: AppSpacing.md),
-                child: Text(
-                  '* Rentabilidad y duración estimadas',
-                  style: AppTypography.annotation.copyWith(
-                    color: AppColors.accentMuted,
-                    fontSize: 10,
-                    letterSpacing: 0.5,
-                  ),
-                ),
               ),
             ),
 
@@ -301,7 +279,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                             children: [
                               TextSpan(text: countLabel),
                               if (realizedGain > 0) ...[
-                                const TextSpan(text: '  ·  '),
+                                const TextSpan(text: '  ·  Ganancia '),
                                 TextSpan(
                                   text:
                                       '+${_eurFormat.format(realizedGain)}€',
@@ -364,47 +342,18 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                           isLast: e.$1 == completedRf.length - 1,
                         ))
                   else
-                    ...completedCoinvest.indexed.map((e) {
-                      final c = e.$2;
-                      final hasResults = c.actualRoi != null;
-                      final greenStyle = AppTypography.labelUppercaseSm.copyWith(
-                        color: const Color(0xFF2D6A4F),
-                        fontSize: 12,
-                      );
-                      final returnLabelSpans = hasResults
-                          ? [
-                              TextSpan(
-                                  text:
-                                      '${_eurFormat.format(c.amount)}€  ·  '),
-                              TextSpan(
-                                text:
-                                    '+${c.actualRoi!.toStringAsFixed(1)}%',
-                                style: greenStyle,
-                              ),
-                              const TextSpan(text: '  ·  '),
-                              TextSpan(
-                                text:
-                                    '+${c.actualTir?.toStringAsFixed(1) ?? '–'}%',
-                                style: greenStyle,
-                              ),
-                            ]
-                          : null;
-                      return _AssetRow(
-                        projectName: c.projectName,
-                        imageUrl: c.projectImageUrl,
-                        amount: c.totalReturn ?? c.amount,
-                        returnLabel: hasResults ? null : '–',
-                        returnLabelSpans: returnLabelSpans,
-                        isLast: e.$1 == completedCoinvest.length - 1,
-                        onTap: () => context.push(
-                          '/investments/detail/completed/coinvestment/${c.id}',
-                          extra: CompletedContractData.fromCoinvestment(
-                            c,
-                            brandName: brandName,
+                    ...completedCoinvest.indexed.map((e) => _CoinvestmentRow(
+                          contract: e.$2,
+                          isCompleted: true,
+                          isLast: e.$1 == completedCoinvest.length - 1,
+                          onTap: () => context.push(
+                            '/investments/detail/completed/coinvestment/${e.$2.id}',
+                            extra: CompletedContractData.fromCoinvestment(
+                              e.$2,
+                              brandName: brandName,
+                            ),
                           ),
-                        ),
-                      );
-                    }),
+                        )),
                 ],
               );
             }),
@@ -945,7 +894,13 @@ class _RentaFijaRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  // L3 — resultado: total recibido a lo largo del contrato
+                  // L3 — resultado: ganancia neta del contrato (capital ya
+                  // volvió a la cuenta del inversor; esta cifra es solo el
+                  // gain). Activo usa "Recibido" porque el cash llega
+                  // gradualmente y el capital sigue en el bono; completado
+                  // usa "Ganancia" para evitar la ambigüedad de "Recibido"
+                  // en un estado donde el total cobrado sería capital +
+                  // intereses.
                   RichText(
                     text: TextSpan(
                       style: AppTypography.labelUppercaseSm.copyWith(
@@ -954,7 +909,7 @@ class _RentaFijaRow extends StatelessWidget {
                         letterSpacing: 0,
                       ),
                       children: [
-                        const TextSpan(text: 'Recibido '),
+                        const TextSpan(text: 'Ganancia '),
                         TextSpan(
                           text: '+${_eurFormat.format(c.totalInterestEarned)}€',
                           style: greenStyle,
@@ -1182,6 +1137,196 @@ class _PurchaseRowState extends State<_PurchaseRow> {
                                 text: revalLabel,
                                 style: TextStyle(color: revalColor),
                               ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (widget.onTap != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: AppSpacing.sm),
+                  child: PhosphorIcon(
+                    PhosphorIconsThin.caretRight,
+                    size: 16,
+                    color: AppColors.accentMuted,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Active or completed Coinversión row. Mirrors `_RentaFijaRow` and
+/// `_PurchaseRow` structure (capital → identidad → meta), with the project
+/// image as visual anchor (96×72 4:3, same as Compra Directa). Active rows
+/// disclose forward-looking estimates inline with `Est.` italic prefix
+/// (replacing the legacy `*` + footnote pattern). Completed rows show the
+/// realized gain as `Ganancia +€` (green on the cash) — `Ganancia` instead
+/// of `Recibido` because in completed state the capital already returned to
+/// the investor; the L3 figure is gain neto, not total received.
+class _CoinvestmentRow extends StatefulWidget {
+  const _CoinvestmentRow({
+    required this.contract,
+    this.isCompleted = false,
+    this.isLast = false,
+    this.onTap,
+  });
+
+  final CoinvestmentContractData contract;
+  final bool isCompleted;
+  final bool isLast;
+  final VoidCallback? onTap;
+
+  @override
+  State<_CoinvestmentRow> createState() => _CoinvestmentRowState();
+}
+
+class _CoinvestmentRowState extends State<_CoinvestmentRow> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.contract;
+    final greenStyle = AppTypography.labelUppercaseSm.copyWith(
+      color: const Color(0xFF2D6A4F),
+      fontSize: 12,
+      letterSpacing: 0,
+    );
+
+    // Active: forward-looking estimates (prefix `Est.` italic).
+    // Completed: realized gain (prefix `Ganancia ` + `+€` green).
+    final pct = c.estimatedReturnPct;
+    final months = c.estimatedDurationMonths;
+    final hasEstimates = !widget.isCompleted && (pct != null || months != null);
+    final realizedGain = widget.isCompleted &&
+            c.totalReturn != null &&
+            c.totalReturn! > c.amount
+        ? c.totalReturn! - c.amount
+        : null;
+
+    return GestureDetector(
+      onTapDown: widget.onTap != null
+          ? (_) => setState(() => _pressed = true)
+          : null,
+      onTapUp: widget.onTap != null
+          ? (_) {
+              setState(() => _pressed = false);
+              widget.onTap!();
+            }
+          : null,
+      onTapCancel: widget.onTap != null
+          ? () => setState(() => _pressed = false)
+          : null,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: 24),
+          decoration: widget.isLast
+              ? null
+              : BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.textPrimary.withValues(alpha: 0.08),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 96,
+                height: 72,
+                child: c.projectImageUrl.isNotEmpty
+                    ? LhotseImage(c.projectImageUrl)
+                    : Container(color: AppColors.surface),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // L1 — capital invertido
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: _eurFormat.format(c.amount),
+                            style: AppTypography.figureAmount.copyWith(
+                              color: AppColors.textPrimary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '€',
+                            style: AppTypography.annotation.copyWith(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (c.projectName.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        c.projectName,
+                        style: AppTypography.bodyReading.copyWith(
+                          color: AppColors.accentMuted,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    // L3 — meta line: estimates (active) or Ganancia (completed)
+                    if (hasEstimates) ...[
+                      const SizedBox(height: 2),
+                      RichText(
+                        text: TextSpan(
+                          style: AppTypography.labelUppercaseSm.copyWith(
+                            color: AppColors.accentMuted,
+                            fontSize: 12,
+                            letterSpacing: 0,
+                          ),
+                          children: [
+                            const TextSpan(
+                              text: 'Est. ',
+                              style: TextStyle(fontStyle: FontStyle.italic),
+                            ),
+                            if (pct != null)
+                              TextSpan(text: '${pct.toStringAsFixed(1)}%'),
+                            if (pct != null && months != null)
+                              const TextSpan(text: '  ·  '),
+                            if (months != null)
+                              TextSpan(text: '$months meses'),
+                          ],
+                        ),
+                      ),
+                    ] else if (realizedGain != null) ...[
+                      const SizedBox(height: 2),
+                      RichText(
+                        text: TextSpan(
+                          style: AppTypography.labelUppercaseSm.copyWith(
+                            color: AppColors.accentMuted,
+                            fontSize: 12,
+                            letterSpacing: 0,
+                          ),
+                          children: [
+                            const TextSpan(text: 'Ganancia '),
+                            TextSpan(
+                              text: '+${_eurFormat.format(realizedGain)}€',
+                              style: greenStyle,
+                            ),
                           ],
                         ),
                       ),
