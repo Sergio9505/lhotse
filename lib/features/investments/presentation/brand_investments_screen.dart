@@ -120,8 +120,9 @@ class BrandInvestmentsScreen extends ConsumerWidget {
     final sectionLabel = isCompraDirecta ? 'MIS ACTIVOS' : 'ACTIVAS';
     final topPadding = MediaQuery.of(context).padding.top;
     final totalFormatted = _eurFormat.format(totalAmount);
-    final collapsedHeight = topPadding + 64.0;
-    final expandedHeight = topPadding + 254.0;
+    final collapsedHeight = topPadding + HeroLayout.collapsedHeight;
+    final expandedHeight = topPadding +
+        HeroLayout.expandedHeight(titleHeight: 72, amountMax: 42);
 
     // Sort RF by soonest maturity
     if (isRentaFija) {
@@ -425,8 +426,14 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
     final amountSize = 24.0 + (18.0 * expandRatio);
     final euroSize = 16.0 + (12.0 * expandRatio);
 
-    const expandedAmountY = 194.0;
-    const collapsedAmountY = 20.0;
+    // L2 deriva sus dimensiones del helper HeroLayout (single source of
+    // truth con L1). Tipografía L2: title 36pt × 2 líneas = 72pt height,
+    // amount máx 42pt. La altura resultante (270pt) es la calibrada al
+    // tamaño tipográfico — la jerarquía L1 > L2 vive en la tipografía,
+    // no en hardcodear maxExtent.
+    final expandedAmountY =
+        HeroLayout.expandedAmountY(titleHeight: 72, amountMax: 42);
+    const collapsedAmountY = HeroLayout.collapsedAmountY;
     final amountTop = topPadding +
         collapsedAmountY +
         ((expandedAmountY - collapsedAmountY) * expandRatio);
@@ -454,9 +461,9 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
           ),
           Positioned(
             top: topPadding +
-                AppSpacing.md +
-                44 +
-                40 -
+                HeroLayout.chromeTopInset +
+                HeroLayout.chromeRowHeight +
+                HeroLayout.aboveTitle -
                 (shrinkOffset * 0.3),
             left: AppSpacing.lg,
             right: AppSpacing.lg,
@@ -758,13 +765,13 @@ class _RentaFijaRow extends StatelessWidget {
 
   static const _kMaturityMonthFormat = 'MM/yy';
 
-  /// Maps DB payment_frequency values to user-facing uppercase labels.
-  /// Falls back to MENSUAL defensively (matches model default).
+  /// Maps DB payment_frequency values to user-facing sentence-case labels.
+  /// Rendered as `Pago {label}` — labels stay lowercase to compose naturally.
   static const _kFrequencyLabels = {
-    'monthly': 'MENSUAL',
-    'quarterly': 'TRIMESTRAL',
-    'semi_annual': 'SEMESTRAL',
-    'annual': 'ANUAL',
+    'monthly': 'mensual',
+    'quarterly': 'trimestral',
+    'semi_annual': 'semestral',
+    'annual': 'anual',
   };
 
   @override
@@ -779,6 +786,7 @@ class _RentaFijaRow extends StatelessWidget {
     final greenStyle = AppTypography.labelUppercaseSm.copyWith(
       color: const Color(0xFF2D6A4F),
       fontSize: 12,
+      letterSpacing: 0,
     );
 
     return Container(
@@ -861,62 +869,86 @@ class _RentaFijaRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                if (isCompleted)
+                if (isCompleted) ...[
+                  // L2 — términos del contrato finalizado: rate + cuándo venció
                   RichText(
                     text: TextSpan(
                       style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
                         fontSize: 12,
+                        letterSpacing: 0,
                       ),
                       children: [
                         TextSpan(
-                            text:
-                                'duración ${c.termMonths ?? '–'}m  ·  '),
-                        TextSpan(
-                          text: '+${_eurFormat.format(c.totalInterestEarned)}€',
-                          style: greenStyle,
-                        ),
-                      ],
-                    ),
-                  )
-                else ...[
-                  // L2 — términos contractuales: rate + vencimiento
-                  RichText(
-                    text: TextSpan(
-                      style: AppTypography.labelUppercaseSm.copyWith(
-                        color: AppColors.accentMuted,
-                        fontSize: 12,
-                      ),
-                      children: [
-                        TextSpan(
-                          text:
-                              '${c.guaranteedRate.toStringAsFixed(1)}% ANUAL',
+                          text: '${c.guaranteedRate.toStringAsFixed(1)}%',
                         ),
                         if (c.maturityDate != null) ...[
                           const TextSpan(text: '  ·  '),
                           TextSpan(
                             text:
-                                'VENCE ${DateFormat(_kMaturityMonthFormat).format(c.maturityDate!)}',
+                                'Vencido ${DateFormat(_kMaturityMonthFormat).format(c.maturityDate!)}',
                           ),
                         ],
                       ],
                     ),
                   ),
                   const SizedBox(height: 2),
-                  // L3 — flujo de pagos: frecuencia + intereses cobrados
+                  // L3 — resultado: total recibido a lo largo del contrato
                   RichText(
                     text: TextSpan(
                       style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
                         fontSize: 12,
+                        letterSpacing: 0,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Recibido '),
+                        TextSpan(
+                          text: '+${_eurFormat.format(c.totalInterestEarned)}€',
+                          style: greenStyle,
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  // L2 — términos contractuales: rate + vencimiento
+                  RichText(
+                    text: TextSpan(
+                      style: AppTypography.labelUppercaseSm.copyWith(
+                        color: AppColors.accentMuted,
+                        fontSize: 12,
+                        letterSpacing: 0,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: '${c.guaranteedRate.toStringAsFixed(1)}%',
+                        ),
+                        if (c.maturityDate != null) ...[
+                          const TextSpan(text: '  ·  '),
+                          TextSpan(
+                            text:
+                                'Vence ${DateFormat(_kMaturityMonthFormat).format(c.maturityDate!)}',
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  // L3 — flujo de pagos: frecuencia + intereses cobrados acumulados
+                  RichText(
+                    text: TextSpan(
+                      style: AppTypography.labelUppercaseSm.copyWith(
+                        color: AppColors.accentMuted,
+                        fontSize: 12,
+                        letterSpacing: 0,
                       ),
                       children: [
                         TextSpan(
                           text:
-                              'PAGO ${_kFrequencyLabels[c.paymentFrequency] ?? 'MENSUAL'}',
+                              'Pago ${_kFrequencyLabels[c.paymentFrequency] ?? 'mensual'}',
                         ),
                         if (c.interestPaidToDate > 0) ...[
-                          const TextSpan(text: '  ·  '),
+                          const TextSpan(text: '  ·  Recibido '),
                           TextSpan(
                             text:
                                 '+${_eurFormat.format(c.interestPaidToDate)}€',

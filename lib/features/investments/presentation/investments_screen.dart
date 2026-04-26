@@ -26,8 +26,9 @@ class InvestmentsScreen extends ConsumerWidget {
 
     final totalFormatted =
         _eurFormat.format(total).replaceAll('.', ' ');
-    final collapsedHeight = topPadding + 80.0;
-    final expandedHeight = topPadding + 290.0;
+    final collapsedHeight = topPadding + HeroLayout.collapsedHeight;
+    final expandedHeight = topPadding +
+        HeroLayout.expandedHeight(titleHeight: 88, amountMax: 46);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -132,13 +133,15 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
     // Amount slides from bottom-left (expanded) to chrome-band center
     // (collapsed). Fixed-padding interpolation keeps the collapsed cifra
     // optically centred between logo and bell.
-    final amountTopExpanded = expandedHeight - AppSpacing.lg - 56;
-    final amountTopCollapsed = topPadding + 28;
+    final amountTopExpanded = topPadding +
+        HeroLayout.expandedAmountY(titleHeight: 88, amountMax: 46);
+    final amountTopCollapsed = topPadding + HeroLayout.collapsedAmountY;
     final amountTop = amountTopCollapsed +
         (amountTopExpanded - amountTopCollapsed) * expandRatio;
-    // Title is 2 lines × 44pt × line-height 1.0 = 88pt tall; sits 20pt
-    // above the amount so the pair reads as a grouped editorial block.
-    final titleTop = amountTop - 88 - 20;
+    // Title is 2 lines × 44pt × line-height 1.0 = 88pt tall; sits one
+    // `titleAmountGap` above the amount so the pair reads as a grouped
+    // editorial block.
+    final titleTop = amountTop - 88 - HeroLayout.titleAmountGap;
 
     return Container(
       color: AppColors.background,
