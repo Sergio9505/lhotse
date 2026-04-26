@@ -253,8 +253,8 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
               delegate: LhotseTabBarDelegate(
                 controller: _tabController,
                 tabs: const [
-                  Tab(text: 'ACTIVO'),
-                  Tab(text: 'DOCS'),
+                  Tab(text: 'Activo'),
+                  Tab(text: 'Docs'),
                 ],
               ),
             ),

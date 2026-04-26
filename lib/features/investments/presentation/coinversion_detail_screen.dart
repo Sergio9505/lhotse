@@ -308,10 +308,10 @@ class _CoinversionDetailScreenState
                 delegate: LhotseTabBarDelegate(
                   controller: _tabController,
                   tabs: const [
-                    Tab(text: 'AVANCE'),
-                    Tab(text: 'ACTIVO'),
-                    Tab(text: 'FINANZAS'),
-                    Tab(text: 'DOCS'),
+                    Tab(text: 'Avance'),
+                    Tab(text: 'Activo'),
+                    Tab(text: 'Finanzas'),
+                    Tab(text: 'Docs'),
                   ],
                 ),
               ),

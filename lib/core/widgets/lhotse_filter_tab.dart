@@ -2,16 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Tab with an animated underline. Two modes driven by [fullWidth]:
+/// Tab with an animated underline. Three layers of configuration:
 ///
-/// - `fullWidth: false` (default) — **filter tab**: sizes to its label and
-///   draws a label-width underline. Use in left-aligned filter rows that
-///   cohabit with utility icons (status, type, brand, region filters).
+/// - **`fullWidth`** controls layout: when false (default), the tab sizes to
+///   its label (filter chip / editorial nav). When true, it stretches to its
+///   parent's width — wrap caller in `Expanded` for peer-equal distribution.
 ///
-/// - `fullWidth: true` — **nav tab**: stretches to its parent's width and
-///   draws a full-cell underline. Wrap the caller in `Expanded` (or equal
-///   constraint) for peer-equal distribution. Use for first-level navigation
-///   inside a screen (Firmas sub-tabs, L3 detail tabs).
+/// - **`editorial`** controls typography case + tracking:
+///   - `false` (default) — `labelUppercaseMd` 12pt with native tracking.
+///     Use for filter chips passing `UPPERCASE` strings (catalog/archive
+///     filters, brand/region selectors).
+///   - `true` — `bodyEmphasis` 14pt sentence case, no tracking. Use for
+///     navigation tabs in detail screens passing `Title Case` strings
+///     (Hermès / Sotheby's / Apple Music subnav style).
+///
+/// - **`hasSelection`** shows a dot indicator when the filter has a value
+///   selected but is not the active tab.
 class LhotseFilterTab extends StatelessWidget {
   const LhotseFilterTab({
     super.key,
@@ -20,6 +26,7 @@ class LhotseFilterTab extends StatelessWidget {
     required this.onTap,
     this.hasSelection = false,
     this.fullWidth = false,
+    this.editorial = false,
   });
 
   final String label;
@@ -34,9 +41,17 @@ class LhotseFilterTab extends StatelessWidget {
   /// matches the label width.
   final bool fullWidth;
 
+  /// When true, uses `bodyEmphasis` 14pt sentence-case typography (editorial
+  /// nav style — Hermès / Sotheby's / Apple Music). When false, uses
+  /// `labelUppercaseMd` 12pt with tracking (filter chip style).
+  final bool editorial;
+
   @override
   Widget build(BuildContext context) {
     final highlighted = isActive || hasSelection;
+    final baseStyle = editorial
+        ? AppTypography.bodyEmphasis.copyWith(fontSize: 14)
+        : AppTypography.labelUppercaseMd;
 
     final column = Column(
       mainAxisSize: MainAxisSize.min,
@@ -48,7 +63,7 @@ class LhotseFilterTab extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: AppTypography.labelUppercaseMd.copyWith(
+                style: baseStyle.copyWith(
                   color: highlighted
                       ? AppColors.textPrimary
                       : AppColors.accentMuted,

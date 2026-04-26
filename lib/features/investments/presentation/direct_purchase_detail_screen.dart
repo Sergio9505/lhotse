@@ -25,6 +25,11 @@ import '../domain/purchase_mortgage_details.dart';
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 final _dateFormat = DateFormat('MM/yyyy');
 
+/// Strips trailing ISO country code suffix (`, ES`, `, FR`...) from a
+/// location string. Mirrors the convention used in `_PurchaseRow` (L2).
+String _stripIsoSuffix(String loc) =>
+    loc.replaceFirst(RegExp(r',\s*[A-Z]{2}$'), '');
+
 const _kHeroHeight = 200.0;
 const _kMaxVisibleGallery = 5;
 
@@ -229,10 +234,10 @@ class _DirectPurchaseDetailContentState
                     Row(
                       children: [
                         Text(
-                          brandName.toUpperCase(),
-                          style: AppTypography.labelUppercaseSm.copyWith(
-                            color: AppColors.textPrimary,
-                            letterSpacing: 1.8,
+                          brandName,
+                          style: AppTypography.bodyReading.copyWith(
+                            color: AppColors.accentMuted,
+                            fontSize: 14,
                           ),
                         ),
                         if (c.assetLocation != null) ...[
@@ -240,19 +245,19 @@ class _DirectPurchaseDetailContentState
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 8),
                             child: Text(
-                              '•',
-                              style: AppTypography.labelUppercaseSm.copyWith(
-                                color: AppColors.textPrimary
-                                    .withValues(alpha: 0.4),
+                              '·',
+                              style: AppTypography.bodyReading.copyWith(
+                                color: AppColors.accentMuted,
+                                fontSize: 14,
                               ),
                             ),
                           ),
                           Flexible(
                             child: Text(
-                              c.assetLocation!.toUpperCase(),
-                              style: AppTypography.labelUppercaseSm.copyWith(
+                              _stripIsoSuffix(c.assetLocation!),
+                              style: AppTypography.bodyReading.copyWith(
                                 color: AppColors.accentMuted,
-                                letterSpacing: 1.35,
+                                fontSize: 14,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -270,81 +275,43 @@ class _DirectPurchaseDetailContentState
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'VALOR DE COMPRA',
-                      style: AppTypography.labelUppercaseSm.copyWith(
+                      'Valor de compra',
+                      style: AppTypography.bodyReading.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 2.0,
+                        fontSize: 12,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              c.monthlyRent != null
-                                  ? '${_eurFormat.format(c.monthlyRent)}€'
-                                  : '—',
-                              style: AppTypography.figureAmount.copyWith(
-                                color: AppColors.textPrimary,
-                                fontSize: 24,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'ALQUILER',
-                              style: AppTypography.labelUppercaseMd.copyWith(
-                                color: AppColors.accentMuted,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
+                        _MetricColumn(
+                          value: c.monthlyRent != null
+                              ? '${_eurFormat.format(c.monthlyRent)}€'
+                              : '—',
+                          label: 'Alquiler',
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              c.rentalYieldPct != null
-                                  ? '${c.rentalYieldPct!.toStringAsFixed(1)}%'
-                                  : '—',
-                              style: AppTypography.figureAmount.copyWith(
-                                color: AppColors.textPrimary,
-                                fontSize: 24,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'YIELD',
-                              style: AppTypography.labelUppercaseMd.copyWith(
-                                color: AppColors.accentMuted,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
+                        _MetricColumn(
+                          value: c.rentalYieldPct != null
+                              ? '${c.rentalYieldPct!.toStringAsFixed(1)}%'
+                              : '—',
+                          label: 'Yield',
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              c.assetRevaluationPct != null
-                                  ? '${c.assetRevaluationPct!.toStringAsFixed(1)}%'
-                                  : '—',
-                              style: AppTypography.figureAmount.copyWith(
-                                color: AppColors.textPrimary,
-                                fontSize: 24,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'REVALORIZACIÓN',
-                              style: AppTypography.labelUppercaseMd.copyWith(
-                                color: AppColors.accentMuted,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
+                        _MetricColumn(
+                          value: c.assetRevaluationPct != null
+                              ? '${c.assetRevaluationPct! > 0 ? '+' : ''}${c.assetRevaluationPct!.toStringAsFixed(1)}%'
+                              : '—',
+                          label: 'Revalorización',
+                          // Directional color: green positive, muted red
+                          // negative, default for zero/null. Matches
+                          // _PurchaseRow in L2 — same signal across cards
+                          // and detail.
+                          valueColor: c.assetRevaluationPct == null ||
+                                  c.assetRevaluationPct == 0
+                              ? null
+                              : c.assetRevaluationPct! > 0
+                                  ? const Color(0xFF2D6A4F)
+                                  : const Color(0xFF7F1D1D),
                         ),
                       ],
                     ),
@@ -357,9 +324,9 @@ class _DirectPurchaseDetailContentState
               delegate: LhotseTabBarDelegate(
                 controller: _tabController,
                 tabs: [
-                  const Tab(text: 'ACTIVO'),
-                  if (c.hasFinancing) const Tab(text: 'FINANCIACIÓN'),
-                  const Tab(text: 'DOCS'),
+                  const Tab(text: 'Activo'),
+                  if (c.hasFinancing) const Tab(text: 'Financiación'),
+                  const Tab(text: 'Docs'),
                 ],
               ),
             ),
@@ -405,6 +372,45 @@ class _DirectPurchaseDetailContentState
 }
 
 // ── Tab scroll wrapper ────────────────────────────────────────────────────────
+
+/// Compact metric column for the L3 hero (figure 24pt + sentence-case label
+/// 12pt accentMuted). Optional `valueColor` for directional metrics like
+/// `revalorización` (green positive / muted red negative).
+class _MetricColumn extends StatelessWidget {
+  const _MetricColumn({
+    required this.value,
+    required this.label,
+    this.valueColor,
+  });
+
+  final String value;
+  final String label;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: AppTypography.figureAmount.copyWith(
+            color: valueColor ?? AppColors.textPrimary,
+            fontSize: 24,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: AppTypography.bodyReading.copyWith(
+            color: AppColors.accentMuted,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _TabScrollWrapper extends StatelessWidget {
   const _TabScrollWrapper({required this.child, required this.bottomPadding});

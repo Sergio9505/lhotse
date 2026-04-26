@@ -6,11 +6,14 @@ import 'lhotse_filter_tab.dart';
 const _kTabBarHeight = 49.0;
 
 /// Shared pinned tab bar delegate for investment detail screens. Renders the
-/// tabs as **full-width peer-equal** `LhotseFilterTab(fullWidth: true)` cells
-/// driven by the given [TabController]. Fintech-premium pattern (Apple
-/// Wallet, Revolut, BBVA Premium) — each tab gets an equal cell and the
-/// active underline spans its full width, giving a clear "this section is
-/// active" signal.
+/// tabs as **content-width left-aligned** `LhotseFilterTab(fullWidth: false)`
+/// items driven by the given [TabController], horizontally scrollable when
+/// they overflow. Editorial-luxe pattern (Hermès, Sotheby's auction lot
+/// detail, Apple Music library subnav, Apple News): the underline matches
+/// each tab's text width, gap is consistent, and tab strings are passed in
+/// **Title Case / sentence case** by callers — uppercase tracked is reserved
+/// for section headers (`INFORMACIÓN`, `PLANO`, etc.), the only graphic
+/// anchor per section.
 class LhotseTabBarDelegate extends SliverPersistentHeaderDelegate {
   const LhotseTabBarDelegate({
     required this.controller,
@@ -32,21 +35,22 @@ class LhotseTabBarDelegate extends SliverPersistentHeaderDelegate {
       color: AppColors.background,
       child: AnimatedBuilder(
         animation: controller,
-        builder: (_, _) => Padding(
-          // Respect the content column — underlines align with the rest of
+        builder: (_, _) => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          // Respect the content column — first tab aligns with the rest of
           // the screen (title, metrics, lists all sit at lg from the edge).
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Row(
             children: [
-              for (int i = 0; i < tabs.length; i++)
-                Expanded(
-                  child: LhotseFilterTab(
-                    label: tabs[i].text ?? '',
-                    isActive: controller.index == i,
-                    onTap: () => controller.animateTo(i),
-                    fullWidth: true,
-                  ),
+              for (int i = 0; i < tabs.length; i++) ...[
+                if (i > 0) const SizedBox(width: AppSpacing.xl),
+                LhotseFilterTab(
+                  label: tabs[i].text ?? '',
+                  isActive: controller.index == i,
+                  onTap: () => controller.animateTo(i),
+                  editorial: true,
                 ),
+              ],
             ],
           ),
         ),
