@@ -9,6 +9,7 @@ import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/asset_info.dart' show AssetInfoEntry;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
@@ -24,11 +25,6 @@ import '../domain/purchase_mortgage_details.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 final _dateFormat = DateFormat('MM/yyyy');
-
-/// Strips trailing ISO country code suffix (`, ES`, `, FR`...) from a
-/// location string. Mirrors the convention used in `_PurchaseRow` (L2).
-String _stripIsoSuffix(String loc) =>
-    loc.replaceFirst(RegExp(r',\s*[A-Z]{2}$'), '');
 
 const _kHeroHeight = 200.0;
 const _kMaxVisibleGallery = 5;
@@ -260,7 +256,7 @@ class _DirectPurchaseDetailContentState
                           ),
                           Flexible(
                             child: Text(
-                              _stripIsoSuffix(c.assetLocation!).toUpperCase(),
+                              stripIsoSuffix(c.assetLocation!).toUpperCase(),
                               style: AppTypography.labelUppercaseSm.copyWith(
                                 color: AppColors.accentMuted,
                                 letterSpacing: 1.35,

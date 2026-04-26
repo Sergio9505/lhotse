@@ -14,6 +14,7 @@ class CompletedContractData {
     this.projectId,
     required this.projectName,
     required this.brandName,
+    this.location,
     this.imageUrl,
     required this.amount,
     this.totalReturn,
@@ -34,6 +35,11 @@ class CompletedContractData {
   final String? projectId;
   final String projectName;
   final String brandName;
+  /// City / location of the underlying asset or project. Mapped from
+  /// `assetLocation` (purchase) or `projectLocation` (coinvestment).
+  /// May arrive as `City, ES` from upstream — call sites should pipe
+  /// through `stripIsoSuffix` before display.
+  final String? location;
   final String? imageUrl;
   final double amount;
   final double? totalReturn;
@@ -52,6 +58,7 @@ class CompletedContractData {
         assetId: c.assetId,
         projectName: c.assetName ?? '',
         brandName: brandName,
+        location: c.assetLocation,
         imageUrl: c.assetImageUrl,
         amount: c.purchaseValue,
         totalReturn: c.totalReturn,
@@ -69,6 +76,7 @@ class CompletedContractData {
         projectId: c.projectId,
         projectName: c.projectName,
         brandName: brandName,
+        location: c.projectLocation.isEmpty ? null : c.projectLocation,
         imageUrl: c.projectImageUrl,
         amount: c.amount,
         totalReturn: c.totalReturn,

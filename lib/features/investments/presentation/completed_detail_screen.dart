@@ -8,6 +8,7 @@ import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/asset_info.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
@@ -149,7 +150,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      d.projectName.toUpperCase(),
+                      d.brandName.toUpperCase(),
                       style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
                       ),
@@ -190,12 +191,44 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      d.brandName.toUpperCase(),
-                      style: AppTypography.labelUppercaseSm.copyWith(
-                        color: AppColors.textPrimary,
-                        letterSpacing: 1.8,
-                      ),
+                    // Brand stays UPPERCASE tracked across the app (wordmark
+                    // convention). City is also UPPERCASE to share the
+                    // register; hierarchy via color (textPrimary vs
+                    // accentMuted). Location stripped of trailing ISO
+                    // country suffix per `ProjectShowcaseCard.city`.
+                    Row(
+                      children: [
+                        Text(
+                          d.brandName.toUpperCase(),
+                          style: AppTypography.labelUppercaseSm.copyWith(
+                            color: AppColors.textPrimary,
+                            letterSpacing: 1.8,
+                          ),
+                        ),
+                        if (d.location != null && d.location!.isNotEmpty) ...[
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              '·',
+                              style: AppTypography.labelUppercaseSm.copyWith(
+                                color: AppColors.textPrimary
+                                    .withValues(alpha: 0.4),
+                              ),
+                            ),
+                          ),
+                          Flexible(
+                            child: Text(
+                              stripIsoSuffix(d.location!).toUpperCase(),
+                              style: AppTypography.labelUppercaseSm.copyWith(
+                                color: AppColors.accentMuted,
+                                letterSpacing: 1.35,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
@@ -207,10 +240,10 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'RETORNO TOTAL',
-                      style: AppTypography.labelUppercaseSm.copyWith(
+                      'Retorno total',
+                      style: AppTypography.bodyReading.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 2.0,
+                        fontSize: 12,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),

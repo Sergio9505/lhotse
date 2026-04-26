@@ -14,6 +14,7 @@ import '../../../core/domain/news_item_data.dart';
 import '../../../core/domain/profit_scenario.dart';
 import '../../../core/domain/project_phase.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
@@ -268,7 +269,7 @@ class _CoinversionDetailScreenState
                             ),
                             Flexible(
                               child: Text(
-                                projectLocation.toUpperCase(),
+                                stripIsoSuffix(projectLocation).toUpperCase(),
                                 style: AppTypography.labelUppercaseSm.copyWith(
                                   color: AppColors.accentMuted,
                                   letterSpacing: 1.35,
@@ -289,10 +290,10 @@ class _CoinversionDetailScreenState
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'MI PARTICIPACIÓN',
-                        style: AppTypography.labelUppercaseSm.copyWith(
+                        'Mi participación',
+                        style: AppTypography.bodyReading.copyWith(
                           color: AppColors.accentMuted,
-                          letterSpacing: 2.0,
+                          fontSize: 12,
                         ),
                       ),
                     ],
