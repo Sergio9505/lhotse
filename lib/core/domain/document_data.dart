@@ -5,23 +5,41 @@ import '../widgets/lhotse_documents_section.dart';
 class DocumentData {
   const DocumentData({
     required this.id,
-    required this.modelType,
-    required this.modelId,
+    required this.scope,
     required this.name,
     this.date,
     this.categoryId,
     this.fileUrl,
     this.mimeType,
+    this.projectId,
+    this.assetId,
+    this.userId,
+    this.relatedProjectId,
+    this.relatedAssetId,
+    this.relatedCoinvestmentId,
+    this.relatedPurchaseId,
+    this.relatedRentalId,
+    this.relatedFixedIncomeId,
   });
 
   final String id;
-  final String modelType;
-  final String modelId;
+  final String scope; // 'project' | 'asset' | 'investor'
   final String name;
   final DateTime? date;
-  final String? categoryId; // FK to document_categories.id
+  final String? categoryId;
   final String? fileUrl;
   final String? mimeType;
+  // Primary FK (set by scope)
+  final String? projectId;
+  final String? assetId;
+  final String? userId;
+  // Investor context (optional, scope='investor' only)
+  final String? relatedProjectId;
+  final String? relatedAssetId;
+  final String? relatedCoinvestmentId;
+  final String? relatedPurchaseId;
+  final String? relatedRentalId;
+  final String? relatedFixedIncomeId;
 
   /// Converts to the UI model. Caller provides iconName from document_categories.
   LhotseDocument toLhotseDocument({String iconName = 'fileText'}) =>
@@ -38,8 +56,7 @@ class DocumentData {
 
   factory DocumentData.fromJson(Map<String, dynamic> json) => DocumentData(
         id: json['id'] as String,
-        modelType: json['model_type'] as String,
-        modelId: json['model_id'] as String,
+        scope: json['scope'] as String? ?? 'investor',
         name: json['name'] as String,
         date: json['date'] != null
             ? DateTime.tryParse(json['date'] as String)
@@ -47,5 +64,14 @@ class DocumentData {
         categoryId: json['category_id'] as String?,
         fileUrl: json['file_url'] as String?,
         mimeType: json['mime_type'] as String?,
+        projectId: json['project_id'] as String?,
+        assetId: json['asset_id'] as String?,
+        userId: json['user_id'] as String?,
+        relatedProjectId: json['related_project_id'] as String?,
+        relatedAssetId: json['related_asset_id'] as String?,
+        relatedCoinvestmentId: json['related_coinvestment_id'] as String?,
+        relatedPurchaseId: json['related_purchase_id'] as String?,
+        relatedRentalId: json['related_rental_id'] as String?,
+        relatedFixedIncomeId: json['related_fixed_income_id'] as String?,
       );
 }
