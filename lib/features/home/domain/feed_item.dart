@@ -6,10 +6,10 @@ import '../../../core/domain/project_data.dart';
 /// Unified item rendered by the Home feed. One item = one full viewport.
 ///
 /// Each variant wraps a domain model but carries feed-specific metadata
-/// (`logoOnDarkMedia`, navigation target) that comes from the
-/// `home_feed_items` table — the server-side curation source.
+/// (`useLightOverlay`, navigation target) sourced from the entity table
+/// (assets/projects/news/brands).
 sealed class FeedItem {
-  const FeedItem({required this.logoOnDarkMedia});
+  const FeedItem({required this.useLightOverlay});
 
   /// Stable key for Flutter's list diffing.
   String get feedKey;
@@ -19,16 +19,16 @@ sealed class FeedItem {
   /// time (Instagram / Pinterest pattern — decode ahead of tap).
   String get imageUrl;
 
-  /// `true` when the top-left region of the media is dark enough for a white
-  /// Lhotse mark to read well. Driven per-slot from
-  /// `home_feed_items.logo_on_dark_media`, not from the source table.
-  final bool logoOnDarkMedia;
+  /// `true` when overlaid chrome (Lhotse wordmark, back button, etc.) should
+  /// be rendered in light/white. Set via admin per source entity alongside its
+  /// thumbnail — flip to `false` when the top-left of the image is light.
+  final bool useLightOverlay;
 }
 
 enum FeedMediaType { image, video }
 
 class FeedProjectItem extends FeedItem {
-  const FeedProjectItem(this.project, {required super.logoOnDarkMedia});
+  const FeedProjectItem(this.project, {required super.useLightOverlay});
   final ProjectData project;
 
   @override
@@ -39,7 +39,7 @@ class FeedProjectItem extends FeedItem {
 }
 
 class FeedNewsItem extends FeedItem {
-  const FeedNewsItem(this.news, {required super.logoOnDarkMedia});
+  const FeedNewsItem(this.news, {required super.useLightOverlay});
   final NewsItemData news;
 
   @override
@@ -50,7 +50,7 @@ class FeedNewsItem extends FeedItem {
 }
 
 class FeedBrandItem extends FeedItem {
-  const FeedBrandItem(this.brand, {required super.logoOnDarkMedia});
+  const FeedBrandItem(this.brand, {required super.useLightOverlay});
   final BrandData brand;
 
   @override
@@ -61,7 +61,7 @@ class FeedBrandItem extends FeedItem {
 }
 
 class FeedAssetItem extends FeedItem {
-  const FeedAssetItem(this.asset, {required super.logoOnDarkMedia});
+  const FeedAssetItem(this.asset, {required super.useLightOverlay});
   final AssetData asset;
 
   @override

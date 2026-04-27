@@ -76,7 +76,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final activeItem = (items != null && items.isNotEmpty)
         ? items[_activePage.clamp(0, items.length - 1)]
         : null;
-    final markColor = (activeItem?.logoOnDarkMedia ?? true)
+    final markColor = (activeItem?.useLightOverlay ?? true)
         ? AppColors.textOnDark
         : AppColors.primary;
 
