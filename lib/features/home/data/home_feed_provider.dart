@@ -52,13 +52,29 @@ final homeFeedProvider = FutureProvider<List<FeedItem>>((ref) async {
       ? client.from('assets').select('*, use_light_overlay').inFilter('id', idsByType['asset']!)
       : Future.value(const <Map<String, dynamic>>[]);
 
-  final fetched = await Future.wait([projectsF, newsF, brandsF, assetsF]);
+  // Resolve asset → project mapping so tapping a FeedAssetItem can navigate
+  // to the owning project's detail screen. One project per asset (FK is 1:1).
+  final assetProjectsF = (idsByType['asset']?.isNotEmpty ?? false)
+      ? client
+          .from('projects')
+          .select('id, asset_id')
+          .inFilter('asset_id', idsByType['asset']!)
+      : Future.value(const <Map<String, dynamic>>[]);
+
+  final fetched = await Future.wait([projectsF, newsF, brandsF, assetsF, assetProjectsF]);
 
   // Index each source by id for O(1) lookup while preserving sort_order.
-  final rawProjects = (fetched[0] as List).cast<Map<String, dynamic>>();
-  final rawNews     = (fetched[1] as List).cast<Map<String, dynamic>>();
-  final rawBrands   = (fetched[2] as List).cast<Map<String, dynamic>>();
-  final rawAssets   = (fetched[3] as List).cast<Map<String, dynamic>>();
+  final rawProjects     = (fetched[0] as List).cast<Map<String, dynamic>>();
+  final rawNews         = (fetched[1] as List).cast<Map<String, dynamic>>();
+  final rawBrands       = (fetched[2] as List).cast<Map<String, dynamic>>();
+  final rawAssets       = (fetched[3] as List).cast<Map<String, dynamic>>();
+  final rawAssetProjects = (fetched[4] as List).cast<Map<String, dynamic>>();
+
+  // asset_id → project_id for navigation.
+  final projectIdByAssetId = <String, String>{
+    for (final r in rawAssetProjects)
+      if (r['asset_id'] != null) r['asset_id'] as String: r['id'] as String,
+  };
 
   final projectsById = <String, ProjectData>{
     for (final r in rawProjects) r['id'] as String: ProjectData.fromSupabaseRow(r)
@@ -95,7 +111,11 @@ final homeFeedProvider = FutureProvider<List<FeedItem>>((ref) async {
           ? FeedBrandItem(brandsById[id]!, useLightOverlay: lightOverlay(rawBrands, id))
           : null,
       'asset' => assetsById[id] != null
-          ? FeedAssetItem(assetsById[id]!, useLightOverlay: lightOverlay(rawAssets, id))
+          ? FeedAssetItem(
+              assetsById[id]!,
+              useLightOverlay: lightOverlay(rawAssets, id),
+              projectId: projectIdByAssetId[id],
+            )
           : null,
       _ => null,
     };

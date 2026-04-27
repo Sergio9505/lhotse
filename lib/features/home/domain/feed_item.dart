@@ -61,8 +61,16 @@ class FeedBrandItem extends FeedItem {
 }
 
 class FeedAssetItem extends FeedItem {
-  const FeedAssetItem(this.asset, {required super.useLightOverlay});
+  const FeedAssetItem(
+    this.asset, {
+    required super.useLightOverlay,
+    this.projectId,
+  });
   final AssetData asset;
+
+  /// Project that owns this asset — populated at feed-fetch time.
+  /// `null` if the asset is not linked to any project (edge case).
+  final String? projectId;
 
   @override
   String get feedKey => 'asset_${asset.id}';

@@ -172,10 +172,8 @@ class _FeedCardState extends State<FeedCard> {
         context.push('/news/${news.id}', extra: news);
       case FeedBrandItem(:final brand):
         context.push('/brands/${brand.id}', extra: brand);
-      case FeedAssetItem():
-        // Asset-detail route not defined yet (see ROADMAP). Tap is a no-op
-        // until the screen exists; the feed card still renders fine.
-        break;
+      case FeedAssetItem(:final projectId):
+        if (projectId != null) context.push('/projects/$projectId');
     }
   }
 }
