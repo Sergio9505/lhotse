@@ -218,21 +218,31 @@ class _FilterBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: List.generate(_statusFilters.length, (i) {
-              final filter = _statusFilters[i];
-              return Padding(
-                padding: EdgeInsets.only(
-                    right: i < _statusFilters.length - 1 ? AppSpacing.lg : 0),
-                child: LhotseFilterTab(
-                  label: filter.label,
-                  isActive: selectedStatus == filter.status,
-                  onTap: () => onStatusTap(filter.status),
-                ),
-              );
-            }),
+          // Horizontal scroll on the chip row absorbs the remaining width
+          // (replacing the old `Spacer`) while keeping the tools anchored
+          // right. Prevents RenderFlex overflow on narrow devices (SE / 12
+          // mini) and tolerates longer labels without further tweaks.
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(_statusFilters.length, (i) {
+                  final filter = _statusFilters[i];
+                  return Padding(
+                    padding: EdgeInsets.only(
+                        right: i < _statusFilters.length - 1
+                            ? AppSpacing.lg
+                            : 0),
+                    child: LhotseFilterTab(
+                      label: filter.label,
+                      isActive: selectedStatus == filter.status,
+                      onTap: () => onStatusTap(filter.status),
+                    ),
+                  );
+                }),
+              ),
+            ),
           ),
-          const Spacer(),
           Container(width: 1, height: 16, color: AppColors.border),
           const SizedBox(width: AppSpacing.md),
           GestureDetector(

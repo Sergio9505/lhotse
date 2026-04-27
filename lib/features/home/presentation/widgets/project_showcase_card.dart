@@ -56,8 +56,7 @@ class ProjectShowcaseCard extends StatelessWidget {
                   child: LhotseImage(project.imageUrl),
                 ),
                 // Phase chip — outline style, top-left. Subordinated to
-                // PRIVATE when both coexist; on its own still legible via
-                // soft drop shadow over varying image content.
+                // PRIVATE when both coexist.
                 Positioned(
                   top: 20,
                   left: 12,
@@ -69,12 +68,6 @@ class ProjectShowcaseCard extends StatelessWidget {
                         color: Colors.white,
                         width: 0.5,
                       ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x33000000),
-                          blurRadius: 8,
-                        ),
-                      ],
                     ),
                     child: Text(
                       project.phase.label,

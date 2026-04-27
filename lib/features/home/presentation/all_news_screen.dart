@@ -150,18 +150,26 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      LhotseFilterTab(
-                        label: 'PROYECTOS',
-                        isActive: _activeType == NewsType.project,
-                        onTap: () => _toggleType(NewsType.project),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              LhotseFilterTab(
+                                label: 'PROYECTOS',
+                                isActive: _activeType == NewsType.project,
+                                onTap: () => _toggleType(NewsType.project),
+                              ),
+                              const SizedBox(width: AppSpacing.lg),
+                              LhotseFilterTab(
+                                label: 'PRENSA',
+                                isActive: _activeType == NewsType.press,
+                                onTap: () => _toggleType(NewsType.press),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: AppSpacing.lg),
-                      LhotseFilterTab(
-                        label: 'PRENSA',
-                        isActive: _activeType == NewsType.press,
-                        onTap: () => _toggleType(NewsType.press),
-                      ),
-                      const Spacer(),
                       Container(width: 1, height: 16, color: AppColors.border),
                       const SizedBox(width: AppSpacing.md),
                       _ToolIcon(
