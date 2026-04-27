@@ -6,7 +6,7 @@ final newsProvider = FutureProvider<List<NewsItemData>>((ref) async {
   final data = await ref
       .watch(supabaseClientProvider)
       .from('news')
-      .select('*, brands(name)')
+      .select()
       .order('date', ascending: false);
   return (data as List<dynamic>)
       .map((e) => NewsItemData.fromSupabaseRow(e as Map<String, dynamic>))
@@ -18,7 +18,7 @@ final newsByIdProvider =
   final data = await ref
       .watch(supabaseClientProvider)
       .from('news')
-      .select('*, brands(name)')
+      .select()
       .eq('id', id)
       .maybeSingle();
   return data != null ? NewsItemData.fromSupabaseRow(data) : null;

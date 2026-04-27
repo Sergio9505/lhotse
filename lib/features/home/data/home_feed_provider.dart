@@ -40,7 +40,7 @@ final homeFeedProvider = FutureProvider<List<FeedItem>>((ref) async {
   final newsF = (idsByType['news']?.isNotEmpty ?? false)
       ? client
           .from('news')
-          .select('*, brands(name)')
+          .select()
           .inFilter('id', idsByType['news']!)
       : Future.value(const <Map<String, dynamic>>[]);
 

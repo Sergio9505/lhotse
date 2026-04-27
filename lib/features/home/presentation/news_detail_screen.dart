@@ -93,10 +93,23 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     _heroHeight = MediaQuery.of(context).size.height * 0.55;
 
-    final relatedNews = allNews
-        .where((n) => n.brandId == news.brandId && n.id != news.id)
-        .take(3)
-        .toList();
+    // Related news: prefer same project, then same asset, then most recent.
+    // brandId/brand/region are compat shims (always null) until the news
+    // query joins the project→brand chain — see NewsItemData docstrings.
+    final relatedNews = [
+      if (news.projectId != null)
+        ...allNews.where(
+            (n) => n.projectId == news.projectId && n.id != news.id),
+      if (news.assetId != null)
+        ...allNews.where((n) =>
+            n.assetId == news.assetId &&
+            n.projectId != news.projectId &&
+            n.id != news.id),
+      ...allNews.where((n) =>
+          n.projectId != news.projectId &&
+          n.assetId != news.assetId &&
+          n.id != news.id),
+    ].take(3).toList();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone

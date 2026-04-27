@@ -12,7 +12,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/open_supabase_doc.dart';
 import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
-import '../../../core/widgets/sticky_filter_chips_delegate.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
@@ -117,20 +116,11 @@ class _DirectPurchaseDetailContentState
       length: widget.contract.hasFinancing ? 3 : 2,
       vsync: this,
     );
-    // Rebuild headerSliverBuilder when tab changes so the docs filter
-    // chips sliver appears/disappears with the active tab.
-    _tabController.addListener(_handleTabChanged);
-  }
-
-  void _handleTabChanged() {
-    if (!_tabController.indexIsChanging) return;
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _outerController.dispose();
-    _tabController.removeListener(_handleTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -342,13 +332,6 @@ class _DirectPurchaseDetailContentState
                 ],
               ),
             ),
-            // Sub-nav: docs filter chips, pinned just below the tab bar
-            // when (and only when) the Docs tab is active. Lifting these
-            // chips out of the tab body and into the outer headerSliver
-            // makes them truly anchored to the viewport — they don't
-            // ride along with the body during outer collapse.
-            if (_tabController.index == (c.hasFinancing ? 2 : 1))
-              _buildDocsChipsSliver(c.id, 'purchase'),
           ],
           body: TabBarView(
             controller: _tabController,
@@ -375,6 +358,9 @@ class _DirectPurchaseDetailContentState
                 modelType: 'purchase',
                 modelId: c.id,
                 activeFilters: _activeDocFilters,
+                onToggleFilter: _toggleDocFilter,
+                onClearFilters: () =>
+                    setState(() => _activeDocFilters.clear()),
                 bottomPadding: bottomPadding,
               ),
             ],
@@ -384,53 +370,6 @@ class _DirectPurchaseDetailContentState
     );
   }
 
-  /// Builds the pinned chips sliver for the Docs tab. The chips need the
-  /// document categories that actually appear in the model's docs (so we
-  /// don't render filters for empty buckets) — we watch the same providers
-  /// the inner `_DocsTab` watches; Riverpod de-dupes, so this is free.
-  Widget _buildDocsChipsSliver(String modelId, String modelType) {
-    final rawDocs = ref
-            .watch(documentsProvider((type: modelType, id: modelId)))
-            .valueOrNull ??
-        const [];
-    final allCategories =
-        ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
-    final filterCategories =
-        categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
-    if (filterCategories.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-    final chipsRow = SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Row(
-        children: [
-          ...filterCategories.map((cat) => Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: LhotseFilterChip(
-                  label: cat.label,
-                  isActive: _activeDocFilters.contains(cat.id),
-                  onTap: () => _toggleDocFilter(cat.id),
-                ),
-              )),
-          if (_activeDocFilters.isNotEmpty)
-            GestureDetector(
-              onTap: () => setState(() => _activeDocFilters.clear()),
-              behavior: HitTestBehavior.opaque,
-              child: const Padding(
-                padding: EdgeInsets.all(6),
-                child: PhosphorIcon(PhosphorIconsThin.x,
-                    size: 14, color: AppColors.accentMuted),
-              ),
-            ),
-        ],
-      ),
-    );
-    return SliverPersistentHeader(
-      pinned: true,
-      delegate: StickyFilterChipsDelegate(child: chipsRow),
-    );
-  }
 }
 
 // ── Tab scroll wrapper ────────────────────────────────────────────────────────
@@ -673,12 +612,16 @@ class _DocsTab extends ConsumerWidget {
     required this.modelType,
     required this.modelId,
     required this.activeFilters,
+    required this.onToggleFilter,
+    required this.onClearFilters,
     required this.bottomPadding,
   });
 
   final String modelType;
   final String modelId;
   final Set<String> activeFilters;
+  final ValueChanged<String> onToggleFilter;
+  final VoidCallback onClearFilters;
   final double bottomPadding;
 
   @override
@@ -690,6 +633,8 @@ class _DocsTab extends ConsumerWidget {
     final allCategories =
         ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
     final iconMap = {for (var c in allCategories) c.id: c.iconName};
+    final filterCategories =
+        categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
     final allDocs = rawDocs
         .map((d) =>
             d.toLhotseDocument(iconName: iconMap[d.categoryId] ?? 'fileText'))
@@ -698,40 +643,79 @@ class _DocsTab extends ConsumerWidget {
         ? allDocs
         : allDocs.where((d) => activeFilters.contains(d.categoryId)).toList();
 
-    // Chips are rendered as a pinned outer-header sliver by the parent
-    // screen (true sticky regardless of NestedScrollView outer collapse).
-    // This widget only renders the doc rows.
+    // Filter chips render inline as the first item — they scroll with the
+    // docs (no sticky behaviour). Section tabs above already provide the
+    // pinned chrome anchor.
+    final hasChips = filterCategories.isNotEmpty;
     return ListView.builder(
       padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
         0,
-        AppSpacing.lg,
+        0,
+        0,
         bottomPadding + AppSpacing.lg,
       ),
-      itemCount: documents.length,
-      itemBuilder: (context, i) {
-        final doc = documents[i];
-        return Column(
-          children: [
-            if (i > 0)
-              Container(
-                height: 0.5,
-                color: AppColors.textPrimary.withValues(alpha: 0.08),
+      itemCount: documents.length + (hasChips ? 1 : 0),
+      itemBuilder: (context, rawIndex) {
+        if (hasChips && rawIndex == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Row(
+                children: [
+                  ...filterCategories.map((cat) => Padding(
+                        padding:
+                            const EdgeInsets.only(right: AppSpacing.sm),
+                        child: LhotseFilterChip(
+                          label: cat.label,
+                          isActive: activeFilters.contains(cat.id),
+                          onTap: () => onToggleFilter(cat.id),
+                        ),
+                      )),
+                  if (activeFilters.isNotEmpty)
+                    GestureDetector(
+                      onTap: onClearFilters,
+                      behavior: HitTestBehavior.opaque,
+                      child: const Padding(
+                        padding: EdgeInsets.all(6),
+                        child: PhosphorIcon(PhosphorIconsThin.x,
+                            size: 14, color: AppColors.accentMuted),
+                      ),
+                    ),
+                ],
               ),
-            LhotseDocRow(
-              name: doc.name,
-              date: doc.date,
-              icon: docCategoryIconByKey(doc.iconName),
-              onTap: doc.fileUrl != null
-                  ? () => openSupabaseDoc(
-                        context,
-                        fileUrl: doc.fileUrl!,
-                        fileName: doc.name,
-                        docId: doc.id,
-                      )
-                  : null,
             ),
-          ],
+          );
+        }
+        final i = hasChips ? rawIndex - 1 : rawIndex;
+        final doc = documents[i];
+        return Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Column(
+            children: [
+              if (i > 0)
+                Container(
+                  height: 0.5,
+                  color: AppColors.textPrimary.withValues(alpha: 0.08),
+                ),
+              LhotseDocRow(
+                name: doc.name,
+                date: doc.date,
+                icon: docCategoryIconByKey(doc.iconName),
+                onTap: doc.fileUrl != null
+                    ? () => openSupabaseDoc(
+                          context,
+                          fileUrl: doc.fileUrl!,
+                          fileName: doc.name,
+                          docId: doc.id,
+                        )
+                    : null,
+              ),
+            ],
+          ),
         );
       },
     );
