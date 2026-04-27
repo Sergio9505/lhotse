@@ -4,18 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/brands_provider.dart';
 import '../../../core/data/news_provider.dart';
 import '../../../core/domain/news_item_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_app_header.dart';
-import '../../../core/widgets/lhotse_brand_filter_row.dart';
 import '../../../core/widgets/lhotse_filter_tab.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
 import '../../../core/widgets/scroll_aware_filter_bar.dart';
-
-enum _ActiveTool { none, firma, region, buscar }
 
 class AllNewsScreen extends ConsumerStatefulWidget {
   const AllNewsScreen({super.key});
@@ -26,9 +22,7 @@ class AllNewsScreen extends ConsumerStatefulWidget {
 
 class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
   NewsType? _activeType;
-  _ActiveTool _activeTool = _ActiveTool.none;
-  final Set<String> _selectedBrands = {};
-  final Set<String> _selectedRegions = {};
+  bool _searchOpen = false;
   String _searchQuery = '';
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
@@ -45,23 +39,14 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
     if (_activeType != null) {
       result = result.where((n) => n.type == _activeType).toList();
     }
-    if (_selectedBrands.isNotEmpty) {
-      result = result
-          .where((n) => _selectedBrands.contains(n.brand ?? ''))
-          .toList();
-    }
-    if (_selectedRegions.isNotEmpty) {
-      result = result
-          .where((n) => _selectedRegions.contains(n.region ?? ''))
-          .toList();
-    }
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       result = result
           .where((n) =>
               n.title.toLowerCase().contains(q) ||
               (n.brand ?? '').toLowerCase().contains(q) ||
-              (n.subtitle ?? '').toLowerCase().contains(q))
+              (n.subtitle ?? '').toLowerCase().contains(q) ||
+              (n.region ?? '').toLowerCase().contains(q))
           .toList();
     }
     return result;
@@ -73,39 +58,12 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
     });
   }
 
-  void _toggleTool(_ActiveTool tool) {
+  void _toggleSearch() {
     setState(() {
-      if (_activeTool == tool) {
-        _activeTool = _ActiveTool.none;
-      } else {
-        _activeTool = tool;
-        if (tool == _ActiveTool.buscar) {
-          _selectedBrands.clear();
-          _selectedRegions.clear();
-        } else {
-          _searchQuery = '';
-          _searchController.clear();
-        }
-      }
-    });
-  }
-
-  void _toggleBrand(String brand) {
-    setState(() {
-      if (_selectedBrands.contains(brand)) {
-        _selectedBrands.remove(brand);
-      } else {
-        _selectedBrands.add(brand);
-      }
-    });
-  }
-
-  void _toggleRegion(String region) {
-    setState(() {
-      if (_selectedRegions.contains(region)) {
-        _selectedRegions.remove(region);
-      } else {
-        _selectedRegions.add(region);
+      _searchOpen = !_searchOpen;
+      if (!_searchOpen) {
+        _searchQuery = '';
+        _searchController.clear();
       }
     });
   }
@@ -113,23 +71,7 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
   @override
   Widget build(BuildContext context) {
     final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
-    final allBrands = ref.watch(brandsProvider).valueOrNull ?? const [];
     final news = _applyFilters(allNews);
-
-    // Derive unique regions and brands from loaded news
-    final regions = allNews
-        .map((n) => n.region)
-        .whereType<String>()
-        .toSet()
-        .toList()
-      ..sort();
-
-    // Brands that appear in news (matched against brand catalog for logos)
-    final newsBrandNames =
-        allNews.map((n) => n.brand).whereType<String>().toSet();
-    final newsFilterBrands = allBrands
-        .where((b) => newsBrandNames.contains(b.name))
-        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -172,28 +114,12 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
                       ),
                       Container(width: 1, height: 16, color: AppColors.border),
                       const SizedBox(width: AppSpacing.md),
-                      _ToolIcon(
-                        icon: PhosphorIconsThin.stack,
-                        isActive: _activeTool == _ActiveTool.firma ||
-                            _selectedBrands.isNotEmpty,
-                        hasDot: _selectedBrands.isNotEmpty,
-                        onTap: () => _toggleTool(_ActiveTool.firma),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      _ToolIcon(
-                        icon: PhosphorIconsThin.mapPin,
-                        isActive: _activeTool == _ActiveTool.region ||
-                            _selectedRegions.isNotEmpty,
-                        hasDot: _selectedRegions.isNotEmpty,
-                        onTap: () => _toggleTool(_ActiveTool.region),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
                       GestureDetector(
-                        onTap: () => _toggleTool(_ActiveTool.buscar),
+                        onTap: _toggleSearch,
                         child: PhosphorIcon(
                           PhosphorIconsThin.magnifyingGlass,
                           size: 18,
-                          color: _activeTool == _ActiveTool.buscar
+                          color: _searchOpen
                               ? AppColors.textPrimary
                               : AppColors.accentMuted,
                         ),
@@ -201,7 +127,7 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
                     ],
                   ),
                 ),
-                if (_activeTool == _ActiveTool.buscar)
+                if (_searchOpen)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
                         AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
@@ -210,26 +136,7 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
                       hint: 'Buscar noticias, firmas, regiones...',
                       autofocus: true,
                       onChanged: (v) => setState(() => _searchQuery = v),
-                      onClose: () => _toggleTool(_ActiveTool.buscar),
-                    ),
-                  )
-                else if (_activeTool == _ActiveTool.firma)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: LhotseBrandFilterRow(
-                      brands: newsFilterBrands,
-                      selectedBrands: _selectedBrands,
-                      onBrandTap: _toggleBrand,
-                    ),
-                  )
-                else if (_activeTool == _ActiveTool.region)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: _RegionFilterRow(
-                      regions: regions,
-                      selectedRegions: _selectedRegions,
-                      onTap: _toggleRegion,
-                      onClear: () => setState(() => _selectedRegions.clear()),
+                      onClose: _toggleSearch,
                     ),
                   ),
               ],
@@ -270,138 +177,6 @@ class _AllNewsScreenState extends ConsumerState<AllNewsScreen> {
                   ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ToolIcon extends StatelessWidget {
-  const _ToolIcon({
-    required this.icon,
-    required this.isActive,
-    required this.hasDot,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final bool isActive;
-  final bool hasDot;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 22,
-        height: 22,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Center(
-              child: PhosphorIcon(
-                icon,
-                size: 18,
-                color: isActive ? AppColors.textPrimary : AppColors.accentMuted,
-              ),
-            ),
-            if (hasDot)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: AppColors.textPrimary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RegionFilterRow extends StatelessWidget {
-  const _RegionFilterRow({
-    required this.regions,
-    required this.selectedRegions,
-    required this.onTap,
-    required this.onClear,
-  });
-
-  final List<String> regions;
-  final Set<String> selectedRegions;
-  final ValueChanged<String> onTap;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasSelection = selectedRegions.isNotEmpty;
-
-    return SizedBox(
-      height: 52,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        child: Row(
-          children: [
-            ...regions.map((region) {
-              final isSelected = selectedRegions.contains(region);
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => onTap(region),
-                  behavior: HitTestBehavior.opaque,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          region.toUpperCase(),
-                          textAlign: TextAlign.center,
-                          style: AppTypography.labelUppercaseMd.copyWith(
-                            color: isSelected
-                                ? AppColors.textPrimary
-                                : AppColors.accentMuted,
-                            fontWeight: isSelected
-                                ? FontWeight.w500
-                                : FontWeight.w400,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                          height: 1.5,
-                          width: 18,
-                          color: isSelected
-                              ? AppColors.textPrimary
-                              : Colors.transparent,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
-            if (hasSelection)
-              GestureDetector(
-                onTap: onClear,
-                behavior: HitTestBehavior.opaque,
-                child: const Padding(
-                  padding: EdgeInsets.only(left: AppSpacing.sm),
-                  child: PhosphorIcon(
-                    PhosphorIconsThin.x,
-                    size: 16,
-                    color: AppColors.accentMuted,
-                  ),
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }
