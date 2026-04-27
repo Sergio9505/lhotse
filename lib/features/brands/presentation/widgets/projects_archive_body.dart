@@ -219,24 +219,32 @@ class _FilterBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          LhotseFilterChip(
-            label: 'TODOS',
-            isActive: selectedStatus == null,
-            onTap: () => onStatusTap(null),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  LhotseFilterChip(
+                    label: 'TODOS',
+                    isActive: selectedStatus == null,
+                    onTap: () => onStatusTap(null),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  LhotseFilterChip(
+                    label: 'EN DESARROLLO',
+                    isActive: selectedStatus == _StatusFilter.inDevelopment,
+                    onTap: () => onStatusTap(_StatusFilter.inDevelopment),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  LhotseFilterChip(
+                    label: 'FINALIZADOS',
+                    isActive: selectedStatus == _StatusFilter.exited,
+                    onTap: () => onStatusTap(_StatusFilter.exited),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          LhotseFilterChip(
-            label: 'EN DESARROLLO',
-            isActive: selectedStatus == _StatusFilter.inDevelopment,
-            onTap: () => onStatusTap(_StatusFilter.inDevelopment),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          LhotseFilterChip(
-            label: 'FINALIZADOS',
-            isActive: selectedStatus == _StatusFilter.exited,
-            onTap: () => onStatusTap(_StatusFilter.exited),
-          ),
-          const Spacer(),
           Container(width: 1, height: 16, color: AppColors.border),
           const SizedBox(width: AppSpacing.md),
           GestureDetector(
