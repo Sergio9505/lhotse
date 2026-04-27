@@ -38,16 +38,23 @@ IconData docCategoryIconByKey(String iconName) =>
 /// A single document entry.
 class LhotseDocument {
   const LhotseDocument({
+    required this.id,
     required this.name,
     required this.date,
     required this.categoryId,
     required this.iconName,
+    this.fileUrl,
   });
 
+  final String id;
   final String name;
   final String date;
   final String categoryId;
   final String iconName;
+
+  /// Either a Supabase Storage path (will be converted to a signed URL by
+  /// `openSupabaseDoc`) or a fully qualified URL (used directly).
+  final String? fileUrl;
 }
 
 /// Inline documents section: shows first [maxVisible] docs + "Ver todos" link

@@ -26,12 +26,14 @@ class DocumentData {
   /// Converts to the UI model. Caller provides iconName from document_categories.
   LhotseDocument toLhotseDocument({String iconName = 'fileText'}) =>
       LhotseDocument(
+        id: id,
         name: name,
         date: date != null
             ? DateFormat('d MMM. yyyy', 'es_ES').format(date!).toUpperCase()
             : '—',
         categoryId: categoryId ?? '',
         iconName: iconName,
+        fileUrl: fileUrl,
       );
 
   factory DocumentData.fromJson(Map<String, dynamic> json) => DocumentData(

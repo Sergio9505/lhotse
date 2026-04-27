@@ -9,9 +9,9 @@ import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/asset_info.dart' show AssetInfoEntry;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/open_supabase_doc.dart';
 import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
-import '../../../core/widgets/sticky_filter_chips_delegate.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
@@ -672,15 +672,23 @@ class _DocsTab extends ConsumerWidget {
       ),
     );
 
-    return CustomScrollView(
-      slivers: [
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: StickyFilterChipsDelegate(child: Center(child: chipsRow)),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          sliver: SliverList.builder(
+    // Stack-based sticky pattern: chips Positioned at top, ListView fills
+    // the rest with `top` padding equal to the chips height so the first
+    // row doesn't sit underneath the chips. Avoids NestedScrollView /
+    // CustomScrollView coordination quirks when the outer body has its
+    // own scroll context — chips stay anchored regardless of scroll
+    // physics.
+    const chipsHeight = 48.0;
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ListView.builder(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              chipsHeight,
+              AppSpacing.lg,
+              bottomPadding + AppSpacing.lg,
+            ),
             itemCount: documents.length,
             itemBuilder: (context, i) {
               final doc = documents[i];
@@ -695,18 +703,29 @@ class _DocsTab extends ConsumerWidget {
                     name: doc.name,
                     date: doc.date,
                     icon: docCategoryIconByKey(doc.iconName),
-                    // TODO(supabase-doc-preview): wire onTap to download +
-                    // open with OpenFilex (iOS Quick Look / Android system
-                    // viewer). Tracked in ROADMAP. For now the row is
-                    // visually tap-affordable but no-op.
+                    onTap: doc.fileUrl != null
+                        ? () => openSupabaseDoc(
+                              context,
+                              fileUrl: doc.fileUrl!,
+                              fileName: doc.name,
+                              docId: doc.id,
+                            )
+                        : null,
                   ),
                 ],
               );
             },
           ),
         ),
-        SliverToBoxAdapter(
-          child: SizedBox(height: bottomPadding + AppSpacing.lg),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: chipsHeight,
+            color: AppColors.background,
+            child: chipsRow,
+          ),
         ),
       ],
     );
