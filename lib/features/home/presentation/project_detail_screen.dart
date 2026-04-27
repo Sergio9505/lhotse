@@ -5,14 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/projects_provider.dart';
-import '../../../core/domain/asset_info.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
-import '../../../core/widgets/lhotse_key_value_list.dart';
-import '../../../core/widgets/lhotse_section_label.dart';
 import 'widgets/feed_video_player.dart';
 
 const _kMaxVisibleGallery = 5;
@@ -103,37 +100,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     _heroHeight = MediaQuery.of(context).size.height * 0.55;
 
-    // Build characteristics entries from typed asset fields
-    String formatM2(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 1)} m²';
-    final characteristicEntries = <AssetInfoEntry>[
-      if (project.surfaceM2 != null)
-        AssetInfoEntry(label: 'Superficie', value: formatM2(project.surfaceM2!)),
-      if (project.plotM2 != null)
-        AssetInfoEntry(label: 'Parcela', value: formatM2(project.plotM2!)),
-      if (project.bedrooms != null)
-        AssetInfoEntry(label: 'Habitaciones', value: '${project.bedrooms}'),
-      if (project.bathrooms != null)
-        AssetInfoEntry(label: 'Baños', value: '${project.bathrooms}'),
-      if (project.floor != null)
-        AssetInfoEntry(label: 'Planta', value: project.floor!),
-      if (project.orientation != null)
-        AssetInfoEntry(label: 'Orientación', value: project.orientation!),
-      if (project.views != null)
-        AssetInfoEntry(label: 'Vistas', value: project.views!),
-      if (project.terraceM2 != null)
-        AssetInfoEntry(label: 'Terraza', value: formatM2(project.terraceM2!)),
-      if (project.hasPool == true)
-        const AssetInfoEntry(label: 'Piscina', value: 'Sí'),
-      if (project.parkingSpots != null)
-        AssetInfoEntry(label: 'Garaje', value: project.parkingSpots == 1 ? '1 plaza' : '${project.parkingSpots} plazas'),
-      if (project.storageRoom == true)
-        const AssetInfoEntry(label: 'Trastero', value: 'Incluido'),
-      if (project.yearBuilt != null)
-        AssetInfoEntry(label: 'Año construcción', value: '${project.yearBuilt}'),
-      if (project.yearRenovated != null)
-        AssetInfoEntry(label: 'Año renovación', value: '${project.yearRenovated}'),
-    ];
-
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone
           ? SystemUiOverlayStyle.dark
@@ -154,7 +120,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
               elevation: 0,
               leading: _heroGone
                   ? const LhotseBackButton.onSurface()
-                  : const LhotseBackButton.onImage(),
+                  : LhotseBackButton.overImage(
+                      useLightOverlay: project.useLightOverlay,
+                    ),
               actions: const [SizedBox(width: 44)],
               centerTitle: true,
               title: AnimatedOpacity(
@@ -221,7 +189,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
             ),
 
             // =========================================================
-            // 2. IDENTITY — lookbook producto (kicker · title · tagline · byline)
+            // 2. IDENTITY
             // =========================================================
             SliverToBoxAdapter(
               child: Padding(
@@ -234,14 +202,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${project.brand.toUpperCase()}  ·  ${project.phase.label}',
-                      style: AppTypography.labelUppercaseSm.copyWith(
-                        color: AppColors.accentMuted,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     Text(
                       project.name,
                       style: AppTypography.editorialHero.copyWith(
@@ -260,13 +220,38 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                       ),
                     ],
                     const SizedBox(height: 12),
-                    Text(
-                      project.location.toUpperCase(),
-                      style: AppTypography.labelUppercaseSm.copyWith(
-                        color: AppColors.textPrimary,
-                        letterSpacing: 1.5,
-                      ),
+                    RichText(
                       overflow: TextOverflow.ellipsis,
+                      text: TextSpan(
+                        style: AppTypography.labelUppercaseSm.copyWith(
+                          letterSpacing: 1.5,
+                        ),
+                        children: [
+                          if (project.brand.isNotEmpty) ...[
+                            TextSpan(
+                              text: project.brand.toUpperCase(),
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            if (project.city.isNotEmpty)
+                              TextSpan(
+                                text: '  ·  ',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary
+                                      .withValues(alpha: 0.4),
+                                ),
+                              ),
+                          ],
+                          if (project.city.isNotEmpty)
+                            TextSpan(
+                              text: project.city,
+                              style: AppTypography.annotation.copyWith(
+                                color: AppColors.accentMuted,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -282,78 +267,15 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 child: Text(
                   project.description.replaceAll('**', ''),
                   style: AppTypography.bodyReading.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textPrimary,
+                    height: 1.7,
                   ),
                 ),
               ),
             ),
 
             // =========================================================
-            // 4. CARACTERÍSTICAS
-            // =========================================================
-            if (characteristicEntries.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppSpacing.xxl),
-                    const LhotseSectionLabel(label: 'CARACTERÍSTICAS'),
-                    const SizedBox(height: AppSpacing.sm),
-                    LhotseKeyValueList(entries: characteristicEntries),
-                  ],
-                ),
-              ),
-
-            // =========================================================
-            // 5. PLANO
-            // =========================================================
-            if (project.floorPlanUrl != null)
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppSpacing.xxl),
-                    const LhotseSectionLabel(label: 'PLANO'),
-                    const SizedBox(height: AppSpacing.md),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg),
-                      child: GestureDetector(
-                        onTap: () =>
-                            _showFloorPlan(context, project.floorPlanUrl!),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.lg),
-                          color: AppColors.background,
-                          child: Stack(
-                            children: [
-                              Center(
-                                child: LhotseImage(
-                                  project.floorPlanUrl!,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              Positioned(
-                                right: 0,
-                                bottom: 0,
-                                child: PhosphorIcon(
-                                  PhosphorIconsThin.arrowsOut,
-                                  color: AppColors.accentMuted,
-                                  size: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            // =========================================================
-            // 6. GALERÍA
+            // 4. GALERÍA
             // =========================================================
             if (project.galleryImages.isNotEmpty)
               SliverToBoxAdapter(
@@ -427,7 +349,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
               ),
 
             // =========================================================
-            // 7. CTA — DESCARGAR FOLLETO
+            // 5. CTA — DESCARGAR FOLLETO
             // =========================================================
             if (project.brochureUrl != null)
             SliverToBoxAdapter(
@@ -464,78 +386,4 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
       ),
     );
   }
-}
-
-// ===========================================================================
-// Floor plan fullscreen
-// ===========================================================================
-
-void _showFloorPlan(BuildContext context, String url) {
-  Navigator.of(context).push(
-    PageRouteBuilder(
-      opaque: false,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        final topPadding = MediaQuery.of(context).padding.top;
-        final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-        return AnimatedBuilder(
-          animation: animation,
-          builder: (context, child) => Opacity(
-            opacity: animation.value,
-            child: child,
-          ),
-          child: Scaffold(
-            extendBodyBehindAppBar: true,
-            extendBody: true,
-            backgroundColor: AppColors.background,
-            body: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: SizedBox.expand(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: InteractiveViewer(
-                        maxScale: 4.0,
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            topPadding + kToolbarHeight,
-                            AppSpacing.lg,
-                            bottomPadding + AppSpacing.lg,
-                          ),
-                          child: Image.network(
-                            url,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: topPadding + AppSpacing.md,
-                      right: AppSpacing.lg,
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          alignment: Alignment.center,
-                          color: AppColors.textPrimary
-                              .withValues(alpha: 0.08),
-                          child: PhosphorIcon(
-                            PhosphorIconsThin.x,
-                            color: AppColors.textPrimary,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    ),
-  );
 }

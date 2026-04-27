@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/news_provider.dart';
 import '../../../core/domain/news_item_data.dart';
@@ -131,7 +132,9 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               elevation: 0,
               leading: _heroGone
                   ? const LhotseBackButton.onSurface()
-                  : const LhotseBackButton.onImage(),
+                  : LhotseBackButton.overImage(
+                      useLightOverlay: news.useLightOverlay,
+                    ),
               actions: const [SizedBox(width: 44)],
               centerTitle: true,
               title: AnimatedOpacity(
@@ -186,41 +189,32 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                           ),
                         ),
                       ),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment(0, 0.2),
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Color(0x8C1F1916),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (news.hasPlayButton)
-                        Center(
-                          child: Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.4),
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x40000000),
-                                  blurRadius: 25,
-                                ),
+                      // Bottom vignette: lighter for video (video has its own
+                      // visual weight; heavy gradient darkens the frame).
+                      if (!news.hasPlayButton)
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment(0, 0.2),
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Color(0x8C1F1916),
                               ],
                             ),
-                            child: const Icon(
-                              Icons.play_arrow_rounded,
-                              color: Colors.white,
-                              size: 28,
-                            ),
+                          ),
+                        ),
+                      // Fullscreen affordance for video — small corner icon
+                      // instead of a center play button that competes with
+                      // the already-playing muted video.
+                      if (news.hasPlayButton)
+                        Positioned(
+                          right: AppSpacing.md,
+                          bottom: AppSpacing.md,
+                          child: PhosphorIcon(
+                            PhosphorIconsThin.arrowsOut,
+                            color: Colors.white.withValues(alpha: 0.8),
+                            size: 18,
                           ),
                         ),
                     ],
@@ -290,7 +284,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                   child: Text(
                     news.body!,
                     style: AppTypography.bodyReading.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.textPrimary,
+                      height: 1.7,
                     ),
                   ),
                 ),

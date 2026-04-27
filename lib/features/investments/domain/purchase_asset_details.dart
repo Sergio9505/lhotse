@@ -24,6 +24,7 @@ class PurchaseAssetDetails {
     this.views,
     this.floorPlanUrl,
     this.galleryImages = const [],
+    this.useLightOverlay = true,
   });
 
   final String assetId;
@@ -43,6 +44,7 @@ class PurchaseAssetDetails {
   final String? views;
   final String? floorPlanUrl;
   final List<String> galleryImages;
+  final bool useLightOverlay;
 
   /// Physical description of the asset (shown on ACTIVO tab).
   List<AssetInfoEntry> get assetInfo {
@@ -101,6 +103,7 @@ class PurchaseAssetDetails {
       views: json['asset_views'] as String?,
       floorPlanUrl: json['asset_floor_plan_url'] as String?,
       galleryImages: strings(json['asset_gallery_images']),
+      useLightOverlay: json['asset_use_light_overlay'] as bool? ?? true,
     );
   }
 }

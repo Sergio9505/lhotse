@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -7,37 +5,40 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../theme/app_colors.dart';
 
 /// Back button with two variants:
-/// - [LhotseBackButton.onImage] — frosted glass circle for use over photos
-/// - [LhotseBackButton.onSurface] — minimal arrow for beige/solid backgrounds
+/// - [LhotseBackButton.overImage] — bare arrow over a hero, colour driven by
+///   `useLightOverlay` (same flag as the Lhotse wordmark on Home). No frosted
+///   container — the editorial chrome stays minimal.
+/// - [LhotseBackButton.onSurface] — minimal arrow for beige/solid backgrounds.
 class LhotseBackButton extends StatefulWidget {
-  const LhotseBackButton.onImage({
+  const LhotseBackButton.overImage({
     super.key,
+    required this.useLightOverlay,
     this.onTap,
-  }) : _variant = _Variant.onImage;
+  }) : _variant = _Variant.overImage;
 
   const LhotseBackButton.onSurface({
     super.key,
     this.onTap,
-  }) : _variant = _Variant.onSurface;
+  })  : _variant = _Variant.onSurface,
+        useLightOverlay = true;
 
   /// Custom tap handler. Defaults to `context.pop()`.
   final VoidCallback? onTap;
 
   final _Variant _variant;
 
-  /// Icon size used across both variants. Aligned with the bottom navbar
-  /// (24pt thin) so the two primary navigation affordances feel like one
-  /// system. 20pt thin read too hairline against the hero image blur.
-  static const double _iconSize = 24;
+  /// Governs arrow colour on the `overImage` variant.
+  /// `true` → white (hero is dark); `false` → black (hero is light).
+  final bool useLightOverlay;
 
-  /// Minimum touch target (Apple HIG: 44px).
+  static const double _iconSize = 24;
   static const double _hitSize = 44;
 
   @override
   State<LhotseBackButton> createState() => _LhotseBackButtonState();
 }
 
-enum _Variant { onImage, onSurface }
+enum _Variant { overImage, onSurface }
 
 class _LhotseBackButtonState extends State<LhotseBackButton> {
   bool _pressed = false;
@@ -60,39 +61,29 @@ class _LhotseBackButtonState extends State<LhotseBackButton> {
         width: LhotseBackButton._hitSize,
         height: LhotseBackButton._hitSize,
         child: Center(
-          child: widget._variant == _Variant.onImage
-              ? _buildFrosted()
+          child: widget._variant == _Variant.overImage
+              ? _buildOverImage()
               : _buildSurface(),
         ),
       ),
     );
   }
 
-  Widget _buildFrosted() {
+  Widget _buildOverImage() {
+    final targetColor = widget.useLightOverlay
+        ? AppColors.textOnDark
+        : AppColors.primary;
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 120),
       opacity: _pressed ? 0.7 : 1.0,
-      child: ClipOval(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.black.withValues(alpha: 0.3),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
-            ),
-            child: const Center(
-              child: PhosphorIcon(
-                PhosphorIconsThin.arrowLeft,
-                size: LhotseBackButton._iconSize,
-                color: Colors.white,
-              ),
-            ),
-          ),
+      child: TweenAnimationBuilder<Color?>(
+        tween: ColorTween(end: targetColor),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        builder: (context, color, _) => PhosphorIcon(
+          PhosphorIconsThin.arrowLeft,
+          size: LhotseBackButton._iconSize,
+          color: color ?? targetColor,
         ),
       ),
     );

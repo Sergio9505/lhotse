@@ -23,6 +23,7 @@ class NewsItemData {
     required this.date,
     required this.type,
     this.body,
+    this.useLightOverlay = true,
   });
 
   final String id;
@@ -51,6 +52,7 @@ class NewsItemData {
   final DateTime date;
   final NewsType type;
   final String? body;
+  final bool useLightOverlay;
 
   /// Whether to show a play-button overlay on the news media. Derived from
   /// the presence of a `video_url` rather than stored as a separate column —
@@ -84,6 +86,7 @@ class NewsItemData {
       date: DateTime.parse(row['date'] as String),
       type: NewsTypeX.fromString(row['type'] as String? ?? ''),
       body: row['body'] as String?,
+      useLightOverlay: row['use_light_overlay'] as bool? ?? true,
     );
   }
 }

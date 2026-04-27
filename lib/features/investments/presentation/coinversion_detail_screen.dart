@@ -176,7 +176,9 @@ class _CoinversionDetailScreenState
                 forceElevated: innerBoxIsScrolled,
                 leading: _heroGone
                     ? const LhotseBackButton.onSurface()
-                    : const LhotseBackButton.onImage(),
+                    : LhotseBackButton.overImage(
+                        useLightOverlay: projectDetail?.useLightOverlay ?? true,
+                      ),
                 actions: const [SizedBox(width: 44)],
                 centerTitle: true,
                 title: AnimatedOpacity(

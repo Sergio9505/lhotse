@@ -60,6 +60,7 @@ class ProjectData {
     this.floorPlanUrl,
     this.brochureUrl,
     this.assetId,
+    this.useLightOverlay = true,
   });
 
   final String id;
@@ -107,6 +108,7 @@ class ProjectData {
   final String? floorPlanUrl;
   final String? brochureUrl;
   final String? assetId;
+  final bool useLightOverlay;
 
   /// Maps a Supabase row from `projects` joined with `brands` and `assets`.
   factory ProjectData.fromSupabaseRow(Map<String, dynamic> row) {
@@ -150,6 +152,7 @@ class ProjectData {
       floorPlanUrl: assets?['floor_plan_url'] as String?,
       brochureUrl: row['brochure_url'] as String?,
       assetId: row['asset_id'] as String?,
+      useLightOverlay: row['use_light_overlay'] as bool? ?? true,
     );
   }
 }
