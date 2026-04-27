@@ -72,9 +72,12 @@ class NewsItemData {
       brandId: _projectOf(row)?['brand_id'] as String?,
       brand: (_projectOf(row)?['brand'] as Map<String, dynamic>?)?['name']
           as String?,
-      region: (_assetOf(row)?['region'] ??
+      // The legacy `news.region` column was free-form (e.g. "Málaga"); the
+      // closest field on `assets` is `city`, which is what the UI already
+      // renders as the region filter ("MÁLAGA", "DUBAI"…).
+      region: (_assetOf(row)?['city'] ??
           (_projectOf(row)?['projectAsset']
-              as Map<String, dynamic>?)?['region']) as String?,
+              as Map<String, dynamic>?)?['city']) as String?,
       subtitle: row['subtitle'] as String?,
       imageUrl: row['image_url'] as String,
       videoUrl: row['video_url'] as String?,

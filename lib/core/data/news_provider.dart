@@ -4,8 +4,8 @@ import 'supabase_provider.dart';
 
 const _newsSelect = '''
   *,
-  project:projects(brand_id, brand:brands(name), projectAsset:assets(region)),
-  asset:assets(region)
+  project:projects(brand_id, brand:brands(name), projectAsset:assets(city)),
+  asset:assets(city)
 ''';
 
 final newsProvider = FutureProvider<List<NewsItemData>>((ref) async {
