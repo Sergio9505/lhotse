@@ -10,7 +10,6 @@ class DocumentData {
     this.date,
     this.categoryId,
     this.fileUrl,
-    this.mimeType,
     this.projectId,
     this.assetId,
     this.userId,
@@ -28,7 +27,6 @@ class DocumentData {
   final DateTime? date;
   final String? categoryId;
   final String? fileUrl;
-  final String? mimeType;
   // Primary FK (set by scope)
   final String? projectId;
   final String? assetId;
@@ -63,7 +61,6 @@ class DocumentData {
             : null,
         categoryId: json['category_id'] as String?,
         fileUrl: json['file_url'] as String?,
-        mimeType: json['mime_type'] as String?,
         projectId: json['project_id'] as String?,
         assetId: json['asset_id'] as String?,
         userId: json['user_id'] as String?,

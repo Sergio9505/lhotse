@@ -25,8 +25,10 @@ class LhotseBackButton extends StatefulWidget {
 
   final _Variant _variant;
 
-  /// Icon size used across both variants.
-  static const double _iconSize = 20;
+  /// Icon size used across both variants. Aligned with the bottom navbar
+  /// (24pt thin) so the two primary navigation affordances feel like one
+  /// system. 20pt thin read too hairline against the hero image blur.
+  static const double _iconSize = 24;
 
   /// Minimum touch target (Apple HIG: 44px).
   static const double _hitSize = 44;
