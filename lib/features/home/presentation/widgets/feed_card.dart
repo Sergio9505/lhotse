@@ -241,33 +241,45 @@ class _Caption extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AppSpacing.sm),
-          _MetaWithCta(parts: content.metaParts, cta: content.cta),
+          _MetaWithCta(
+            brand: content.brand,
+            parts: content.metaParts,
+            cta: content.cta,
+          ),
         ],
       ),
     );
   }
 }
 
-/// Meta row (brand · location · date) with the CTA aligned to the right.
-/// Keeping everything on the same line packs the caption tight so the reader
-/// sees the full identity of the item at a glance without scanning.
+/// Meta row (brand · city · date) with the CTA aligned to the right.
+///
+/// Brand renders as a `labelUppercaseSm` tracked uppercase span (brand-mark
+/// role — same as byline in news_detail and archive cards). City/date keep
+/// `annotation` mixed case for consistency with ProjectShowcaseCard in the
+/// archive ("Málaga" not "MÁLAGA"). CTA uses `labelUppercaseMd` — its
+/// documented role ("DESCARGAR FOLLETO", "VISITAR WEB").
 class _MetaWithCta extends StatelessWidget {
-  const _MetaWithCta({required this.parts, required this.cta});
+  const _MetaWithCta({
+    required this.brand,
+    required this.parts,
+    required this.cta,
+  });
 
+  final String? brand;
   final List<String> parts;
   final String cta;
 
   @override
   Widget build(BuildContext context) {
-    // Meta in mixed case for data consistency with the archive views
-    // (project.city is rendered mixed case in ProjectShowcaseCard as a
-    // descriptive subtitle; "Málaga" must read the same in Home and
-    // archive, not "MÁLAGA" here and "Málaga" there).
-    //
-    // CTA keeps uppercase for UI convention consistency with the rest of
-    // the app (filter chips, detail buttons like DESCARGAR FOLLETO, etc.).
-    // The case contrast gives the CTA slightly more presence — acceptable
-    // because it's the actionable element.
+    final hasBrand = brand != null && brand!.isNotEmpty;
+    final dotStyle = AppTypography.annotation.copyWith(
+      color: AppColors.accentMuted.withValues(alpha: 0.5),
+    );
+    final metaStyle = AppTypography.annotation.copyWith(
+      color: AppColors.accentMuted,
+    );
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -276,19 +288,21 @@ class _MetaWithCta extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             text: TextSpan(
-              style: AppTypography.annotation.copyWith(
-                color: AppColors.accentMuted,
-              ),
               children: [
-                for (int i = 0; i < parts.length; i++) ...[
-                  TextSpan(text: parts[i]),
-                  if (i < parts.length - 1)
-                    TextSpan(
-                      text: '  ·  ',
-                      style: TextStyle(
-                        color: AppColors.accentMuted.withValues(alpha: 0.5),
-                      ),
+                if (hasBrand) ...[
+                  TextSpan(
+                    text: brand!.toUpperCase(),
+                    style: AppTypography.labelUppercaseSm.copyWith(
+                      color: AppColors.textPrimary,
                     ),
+                  ),
+                  if (parts.isNotEmpty)
+                    TextSpan(text: '  ·  ', style: dotStyle),
+                ],
+                for (int i = 0; i < parts.length; i++) ...[
+                  TextSpan(text: parts[i], style: metaStyle),
+                  if (i < parts.length - 1)
+                    TextSpan(text: '  ·  ', style: dotStyle),
                 ],
               ],
             ),
@@ -297,14 +311,14 @@ class _MetaWithCta extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Text(
           cta,
-          style: AppTypography.labelUppercaseSm.copyWith(
+          style: AppTypography.labelUppercaseMd.copyWith(
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         const PhosphorIcon(
           PhosphorIconsThin.arrowUpRight,
-          size: 12,
+          size: 14,
           color: AppColors.textPrimary,
         ),
       ],
@@ -321,6 +335,7 @@ class _FeedContent {
     required this.title,
     required this.imageUrl,
     required this.videoUrl,
+    required this.brand,
     required this.metaParts,
     required this.cta,
   });
@@ -328,7 +343,16 @@ class _FeedContent {
   final String title;
   final String imageUrl;
   final String? videoUrl;
+
+  /// Brand name rendered as uppercase tracked span — separate from [metaParts]
+  /// so the renderer can apply `labelUppercaseSm` only to this segment while
+  /// keeping city/date in `annotation` mixed case.
+  final String? brand;
+
+  /// Descriptive meta tokens (city, date, business model…) — mixed case,
+  /// rendered with `annotation` style and muted ink.
   final List<String> metaParts;
+
   final String cta;
 
   factory _FeedContent.fromProject(ProjectData p, {required String cta}) {
@@ -336,13 +360,11 @@ class _FeedContent {
       title: p.name,
       imageUrl: p.imageUrl,
       videoUrl: p.videoUrl,
+      brand: p.brand.isNotEmpty ? p.brand : null,
       // City only (no country code): consistent with ProjectShowcaseCard in
       // archive — "Málaga" / "Dubai" / "Miami" read cleaner and more luxury
-      // than "Málaga, ES" / "Dubai, AE". Same data, same treatment across
-      // Home and archive so the project's location string is identical in
-      // both views.
+      // than "Málaga, ES" / "Dubai, AE".
       metaParts: [
-        if (p.brand.isNotEmpty) p.brand,
         if (p.city.isNotEmpty) p.city,
       ],
       cta: cta,
@@ -355,10 +377,8 @@ class _FeedContent {
       title: n.title,
       imageUrl: n.imageUrl,
       videoUrl: n.videoUrl,
-      metaParts: [
-        if ((n.brand ?? '').isNotEmpty) n.brand!,
-        date,
-      ],
+      brand: (n.brand?.isNotEmpty ?? false) ? n.brand : null,
+      metaParts: [date],
       cta: 'LEER',
     );
   }
@@ -368,7 +388,8 @@ class _FeedContent {
       title: b.tagline ?? b.name,
       imageUrl: b.coverImageUrl,
       videoUrl: null,
-      metaParts: [b.name, b.businessModel.displayName],
+      brand: b.name,
+      metaParts: [b.businessModel.displayName],
       cta: 'EXPLORAR',
     );
   }
@@ -379,6 +400,7 @@ class _FeedContent {
       title: title,
       imageUrl: a.thumbnailImage ?? '',
       videoUrl: null,
+      brand: null,
       metaParts: [
         if (a.city?.isNotEmpty ?? false) a.city!,
         if (a.country?.isNotEmpty ?? false) a.country!,
