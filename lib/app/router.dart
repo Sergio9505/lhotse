@@ -12,10 +12,8 @@ import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
 import '../features/brands/presentation/brand_detail_screen.dart';
 import '../features/brands/presentation/brands_screen.dart';
-import '../features/home/presentation/all_news_screen.dart';
 import '../features/home/presentation/asset_detail_screen.dart';
 import '../features/home/presentation/news_detail_screen.dart';
-import '../features/home/presentation/all_projects_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/home/presentation/project_detail_screen.dart';
 import '../features/investments/domain/completed_contract_data.dart';
@@ -61,8 +59,6 @@ abstract final class AppRoutes {
   static const login = '/login';
   // Main app
   static const home = '/';
-  static const projects = '/projects';
-  static const news = '/news';
   static const newsDetail = '/news/:id';
   static const projectDetail = '/projects/:id';
   static const assetDetail = '/assets/:id';
@@ -159,13 +155,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ),
             GoRoute(
-              path: AppRoutes.news,
-              pageBuilder: (context, state) => _fadePage(
-                key: state.pageKey,
-                child: const AllNewsScreen(),
-              ),
-            ),
-            GoRoute(
               path: AppRoutes.newsDetail,
               pageBuilder: (context, state) {
                 final id = state.pathParameters['id']!;
@@ -180,12 +169,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                 );
               },
-            ),
-            GoRoute(
-              path: AppRoutes.projects,
-              pageBuilder: (context, state) => const NoTransitionPage(
-                child: AllProjectsScreen(),
-              ),
             ),
             GoRoute(
               path: AppRoutes.projectDetail,
