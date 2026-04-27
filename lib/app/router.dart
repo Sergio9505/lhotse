@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/data/supabase_provider.dart';
+import '../core/domain/asset_data.dart';
 import '../core/domain/brand_data.dart';
 import '../core/domain/news_item_data.dart';
 import '../core/domain/project_data.dart';
@@ -12,6 +13,7 @@ import '../features/auth/presentation/welcome_screen.dart';
 import '../features/brands/presentation/brand_detail_screen.dart';
 import '../features/brands/presentation/brands_screen.dart';
 import '../features/home/presentation/all_news_screen.dart';
+import '../features/home/presentation/asset_detail_screen.dart';
 import '../features/home/presentation/news_detail_screen.dart';
 import '../features/home/presentation/all_projects_screen.dart';
 import '../features/home/presentation/home_screen.dart';
@@ -63,6 +65,7 @@ abstract final class AppRoutes {
   static const news = '/news';
   static const newsDetail = '/news/:id';
   static const projectDetail = '/projects/:id';
+  static const assetDetail = '/assets/:id';
   static const brands = '/brands';
   static const brandDetail = '/brands/:id';
   static const search = '/search';
@@ -196,6 +199,22 @@ final routerProvider = Provider<GoRouter>((ref) {
                   child: ProjectDetailScreen(
                     projectId: id,
                     initialProject: initialProject,
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: AppRoutes.assetDetail,
+              pageBuilder: (context, state) {
+                final id = state.pathParameters['id']!;
+                final initialAsset = state.extra is AssetData
+                    ? state.extra as AssetData
+                    : null;
+                return _fadePage(
+                  key: state.pageKey,
+                  child: AssetDetailScreen(
+                    assetId: id,
+                    initialAsset: initialAsset,
                   ),
                 );
               },

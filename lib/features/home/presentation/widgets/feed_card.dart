@@ -172,8 +172,8 @@ class _FeedCardState extends State<FeedCard> {
         context.push('/news/${news.id}', extra: news);
       case FeedBrandItem(:final brand):
         context.push('/brands/${brand.id}', extra: brand);
-      case FeedAssetItem(:final projectId):
-        if (projectId != null) context.push('/projects/$projectId');
+      case FeedAssetItem(:final asset):
+        context.push('/assets/${asset.id}', extra: asset);
     }
   }
 }
