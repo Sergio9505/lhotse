@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_theme.dart';
 
@@ -11,9 +10,12 @@ import '../theme/app_theme.dart';
 /// trusts the OS viewer to surface secondary actions without duplicating
 /// them in the row chrome.
 ///
-/// Layout: `[category icon 18pt] · name + (subtitle)·date · [chevron 16pt]`.
-/// The chevron is a tap-affordance hint paralleling `_PurchaseRow` /
-/// `_CoinvestmentRow` row chevrons in L2.
+/// Layout: `[category icon 18pt] · name + (subtitle)·date`. No trailing
+/// affordance icon — Apple Mail attachments / Apple Books / Sotheby's lot
+/// detail rows all use this minimal pattern. Tap-affordance is conveyed by
+/// the `AnimatedOpacity` press feedback (0.5 on press) rather than a static
+/// chevron, since chevrons semantically imply navigation to a new screen
+/// and our tap opens a modal preview instead.
 class LhotseDocRow extends StatefulWidget {
   const LhotseDocRow({
     super.key,
@@ -92,15 +94,6 @@ class _LhotseDocRowState extends State<LhotseDocRow> {
                   ],
                 ),
               ),
-              if (tappable)
-                const Padding(
-                  padding: EdgeInsets.only(left: AppSpacing.sm),
-                  child: PhosphorIcon(
-                    PhosphorIconsThin.caretRight,
-                    size: 16,
-                    color: AppColors.accentMuted,
-                  ),
-                ),
             ],
           ),
         ),
