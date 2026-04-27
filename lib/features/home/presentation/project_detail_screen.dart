@@ -104,12 +104,12 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     _heroHeight = MediaQuery.of(context).size.height * 0.55;
 
     // Build characteristics entries from typed asset fields
-    String _m2(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 1)} m²';
+    String formatM2(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 1)} m²';
     final characteristicEntries = <AssetInfoEntry>[
       if (project.surfaceM2 != null)
-        AssetInfoEntry(label: 'Superficie', value: _m2(project.surfaceM2!)),
+        AssetInfoEntry(label: 'Superficie', value: formatM2(project.surfaceM2!)),
       if (project.plotM2 != null)
-        AssetInfoEntry(label: 'Parcela', value: _m2(project.plotM2!)),
+        AssetInfoEntry(label: 'Parcela', value: formatM2(project.plotM2!)),
       if (project.bedrooms != null)
         AssetInfoEntry(label: 'Habitaciones', value: '${project.bedrooms}'),
       if (project.bathrooms != null)
@@ -121,7 +121,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
       if (project.views != null)
         AssetInfoEntry(label: 'Vistas', value: project.views!),
       if (project.terraceM2 != null)
-        AssetInfoEntry(label: 'Terraza', value: _m2(project.terraceM2!)),
+        AssetInfoEntry(label: 'Terraza', value: formatM2(project.terraceM2!)),
       if (project.hasPool == true)
         const AssetInfoEntry(label: 'Piscina', value: 'Sí'),
       if (project.parkingSpots != null)
