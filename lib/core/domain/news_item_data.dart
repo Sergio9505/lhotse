@@ -36,19 +36,13 @@ class NewsItemData {
   /// (purchase / direct hold) rather than a coinversion project.
   final String? assetId;
 
-  /// Brand inferred via the linked project (`projects.brand_id`). Always
+  /// Brand inferred via the linked project (`projects.brand_id → brands.name`).
   /// `null` when the news has no `project_id` (asset-linked or standalone).
-  /// Compat shim: news no longer carries a direct brand FK after the
-  /// 2026-04 schema change — kept on the model for downstream consumers
-  /// (byline, related-news filter) until they're migrated to project-aware
-  /// equivalents. Currently always null because the query no longer joins
-  /// the brand chain.
   final String? brandId;
   final String? brand;
 
-  /// Region/city inferred via the linked project's asset or the linked asset
-  /// directly. Always `null` until queries are extended to fetch the chain.
-  /// Compat shim — see `brand`.
+  /// Region inferred from the directly linked asset or from the project's
+  /// asset chain. `null` for news not linked to any asset.
   final String? region;
 
   final String? subtitle;
@@ -63,18 +57,24 @@ class NewsItemData {
   /// "has video" is a fact about the row, not a separate flag.
   bool get hasPlayButton => videoUrl != null && videoUrl!.isNotEmpty;
 
+  static Map<String, dynamic>? _projectOf(Map<String, dynamic> row) =>
+      row['project'] as Map<String, dynamic>?;
+
+  static Map<String, dynamic>? _assetOf(Map<String, dynamic> row) =>
+      row['asset'] as Map<String, dynamic>?;
+
   factory NewsItemData.fromSupabaseRow(Map<String, dynamic> row) {
     return NewsItemData(
       id: row['id'] as String,
       title: row['title'] as String,
       projectId: row['project_id'] as String?,
       assetId: row['asset_id'] as String?,
-      // brandId / brand / region come from project + asset relations when
-      // the query joins them. Until the consumers are updated, the queries
-      // don't fetch these joins and these fields stay null.
-      brandId: null,
-      brand: null,
-      region: null,
+      brandId: _projectOf(row)?['brand_id'] as String?,
+      brand: (_projectOf(row)?['brand'] as Map<String, dynamic>?)?['name']
+          as String?,
+      region: (_assetOf(row)?['region'] ??
+          (_projectOf(row)?['projectAsset']
+              as Map<String, dynamic>?)?['region']) as String?,
       subtitle: row['subtitle'] as String?,
       imageUrl: row['image_url'] as String,
       videoUrl: row['video_url'] as String?,
