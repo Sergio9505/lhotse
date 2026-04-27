@@ -127,20 +127,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         .map((c) => c.id)
         .toSet();
     return allDocs.where((d) {
-      switch (d.modelType) {
-        case 'brand':
-          return matchedBrandIds.contains(d.modelId);
-        case 'project':
-          return matchedProjectIds.contains(d.modelId);
-        case 'purchase':
-          return purchaseIds.contains(d.modelId);
-        case 'coinvestment':
-          return coinvestIds.contains(d.modelId);
-        case 'fixed_income':
-          return fiIds.contains(d.modelId);
-        default:
-          return false;
+      if (d.scope == 'project' && d.projectId != null) {
+        return matchedProjectIds.contains(d.projectId);
       }
+      if (d.scope == 'asset' && d.assetId != null) {
+        return matchedAssetIds.contains(d.assetId);
+      }
+      if (d.scope == 'investor') {
+        if (d.relatedPurchaseId != null && purchaseIds.contains(d.relatedPurchaseId)) return true;
+        if (d.relatedCoinvestmentId != null && coinvestIds.contains(d.relatedCoinvestmentId)) return true;
+        if (d.relatedFixedIncomeId != null && fiIds.contains(d.relatedFixedIncomeId)) return true;
+      }
+      return false;
     }).toList();
   }
 
@@ -153,22 +151,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     required List<CoinvestmentContractData> coinvestmentContracts,
     required List<FixedIncomeContractData> fixedIncomeContracts,
   }) {
-    switch (doc.modelType) {
-      case 'brand':
-        return brands
-            .where((b) => b.id == doc.modelId)
-            .firstOrNull
-            ?.name
-            .toUpperCase();
-      case 'project':
-        return projects
-            .where((p) => p.id == doc.modelId)
-            .firstOrNull
-            ?.name
-            .toUpperCase();
-      case 'purchase':
-        final c =
-            purchaseContracts.where((c) => c.id == doc.modelId).firstOrNull;
+    if (doc.scope == 'project' && doc.projectId != null) {
+      return projects
+          .where((p) => p.id == doc.projectId)
+          .firstOrNull
+          ?.name
+          .toUpperCase();
+    }
+    if (doc.scope == 'asset' && doc.assetId != null) {
+      return assets
+          .where((a) => a.id == doc.assetId)
+          .firstOrNull
+          ?.address
+          ?.toUpperCase();
+    }
+    if (doc.scope == 'investor') {
+      if (doc.relatedPurchaseId != null) {
+        final c = purchaseContracts
+            .where((c) => c.id == doc.relatedPurchaseId)
+            .firstOrNull;
         final addr = c?.assetName;
         if (addr != null && addr.isNotEmpty) return addr.toUpperCase();
         if (c?.assetId != null) {
@@ -179,16 +180,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ?.toUpperCase();
         }
         return null;
-      case 'coinvestment':
-        final c = coinvestmentContracts
-            .where((c) => c.id == doc.modelId)
-            .firstOrNull;
-        return c?.projectName.toUpperCase();
-      case 'fixed_income':
-        final c = fixedIncomeContracts
-            .where((c) => c.id == doc.modelId)
-            .firstOrNull;
-        return c?.offeringName.toUpperCase();
+      }
+      if (doc.relatedCoinvestmentId != null) {
+        return coinvestmentContracts
+            .where((c) => c.id == doc.relatedCoinvestmentId)
+            .firstOrNull
+            ?.projectName
+            .toUpperCase();
+      }
+      if (doc.relatedFixedIncomeId != null) {
+        return fixedIncomeContracts
+            .where((c) => c.id == doc.relatedFixedIncomeId)
+            .firstOrNull
+            ?.offeringName
+            .toUpperCase();
+      }
     }
     return null;
   }
@@ -200,16 +206,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     required List<CoinvestmentContractData> coinvestmentContracts,
     required List<FixedIncomeContractData> fixedIncomeContracts,
   }) {
-    switch (doc.modelType) {
-      case 'brand':
-        context.push('/brands/${doc.modelId}');
-        return;
-      case 'project':
-        context.push('/projects/${doc.modelId}');
-        return;
-      case 'purchase':
+    if (doc.scope == 'project' && doc.projectId != null) {
+      context.push('/projects/${doc.projectId}');
+      return;
+    }
+    // scope='asset' has no standalone route yet (see ROADMAP)
+    if (doc.scope == 'investor') {
+      if (doc.relatedPurchaseId != null) {
         final contract = purchaseContracts
-            .where((c) => c.id == doc.modelId)
+            .where((c) => c.id == doc.relatedPurchaseId)
             .firstOrNull;
         if (contract == null) return;
         context.push(
@@ -217,9 +222,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           extra: (brandName: '', contract: contract),
         );
         return;
-      case 'coinvestment':
+      }
+      if (doc.relatedCoinvestmentId != null) {
         final contract = coinvestmentContracts
-            .where((c) => c.id == doc.modelId)
+            .where((c) => c.id == doc.relatedCoinvestmentId)
             .firstOrNull;
         if (contract == null) return;
         context.push(
@@ -227,13 +233,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           extra: (contract: contract, brandName: ''),
         );
         return;
-      case 'fixed_income':
+      }
+      if (doc.relatedFixedIncomeId != null) {
         final contract = fixedIncomeContracts
-            .where((c) => c.id == doc.modelId)
+            .where((c) => c.id == doc.relatedFixedIncomeId)
             .firstOrNull;
         if (contract == null) return;
         context.push('/investments/brand/${contract.brandId}');
         return;
+      }
     }
   }
 
