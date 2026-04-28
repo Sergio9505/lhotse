@@ -39,10 +39,8 @@ class LhotseNotificationBadge extends StatelessWidget {
                   child: Center(
                     child: Text(
                       count! > 99 ? '99+' : '$count',
-                      style: AppTypography.labelUppercaseSm.copyWith(
+                      style: AppTypography.badgeMicro.copyWith(
                         color: Colors.white,
-                        fontSize: 8,
-                        height: 1.2,
                       ),
                     ),
                   ),

@@ -217,15 +217,13 @@ class LhotseNewsCard extends StatelessWidget {
   }
 
   Widget _compactSubtitle() {
-    final style = AppTypography.labelUppercaseSm.copyWith(fontSize: 8);
     return Row(
       children: [
         if (brand != null) ...[
           Text(
             brand!.toUpperCase(),
-            style: style.copyWith(
+            style: AppTypography.badgeMicro.copyWith(
               color: AppColors.textPrimary,
-              letterSpacing: 1.5,
             ),
           ),
           if (subtitle != null)
@@ -233,7 +231,7 @@ class LhotseNewsCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Text(
                 '·',
-                style: AppTypography.labelUppercaseSm.copyWith(
+                style: AppTypography.badgeMicro.copyWith(
                   color: AppColors.textPrimary.withValues(alpha: 0.4),
                 ),
               ),
@@ -243,9 +241,8 @@ class LhotseNewsCard extends StatelessWidget {
           Flexible(
             child: Text(
               subtitle!.toUpperCase(),
-              style: style.copyWith(
+              style: AppTypography.badgeMicro.copyWith(
                 color: AppColors.accentMuted,
-                letterSpacing: 1.2,
               ),
               overflow: TextOverflow.ellipsis,
             ),

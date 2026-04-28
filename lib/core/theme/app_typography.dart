@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 
 /// Typography tokens — Campton only, role-based naming.
 ///
-/// 18 semantic tokens covering the entire app's editorial system
-/// (luxury wealth management). Reach for a token by its role;
-/// residual copyWith is restricted to color / fontStyle only.
+/// 19 semantic tokens covering the entire app's editorial system
+/// (luxury wealth management). Reach for a token by its role.
+///
+/// CONTRACT: `.copyWith` is restricted to `color` and `fontStyle` only.
+/// Any other property override (fontSize, fontWeight, letterSpacing,
+/// height) is a signal to either use an existing token or add one here.
 ///
 /// Editorial scale:   editorialHero 48 → editorialTitle 36 → editorialSubtitle 24
 /// Title scale:       titleUppercaseLg 24 → titleUppercase 18
 /// Figure scale:      figureHero 40 → figureRow 22 → figureAmount 18 → figureCurrency 14
 /// Body scale:        bodyInput 18 → bodyEmphasis 16 → bodyReading 14
 /// Label scale:       labelUppercaseMd 12 → annotation 12 → labelUppercaseSm 10
-/// Micro scale:       metaUppercase 12 → metaCaption 12 → badgePill 9
+/// Micro scale:       metaUppercase 12 → metaCaption 12 → badgePill 9 → badgeMicro 8
 abstract final class AppTypography {
   /// Public so non-token callers (welcome wordmark with strut, animated
   /// hero figures with interpolated fontSize) reference the family
@@ -209,6 +212,16 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w500,
     height: 1.2,
     letterSpacing: 0.8,
+  );
+
+  /// Badge micro — 8pt w500 uppercase. Compact card bylines
+  /// (LhotseNewsCard.compact) and notification count pills.
+  static const badgeMicro = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 8,
+    fontWeight: FontWeight.w500,
+    height: 1.2,
+    letterSpacing: 1.2,
   );
 
 }
