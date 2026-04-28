@@ -54,6 +54,7 @@ class _LhotseAuthFieldState extends State<LhotseAuthField> {
         // Label
         Text(
           widget.label.toUpperCase(),
+          // EXCEPTION: w400 — input label is subdued caption, not an active control
           style: AppTypography.labelUppercaseSm.copyWith(
             color: AppColors.accentMuted,
             fontWeight: FontWeight.w400,

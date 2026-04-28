@@ -36,6 +36,7 @@ class LhotseFilterChip extends StatelessWidget {
         ),
         child: Text(
           label.toUpperCase(),
+          // EXCEPTION: ls 1.0 + h 1.0 for chip bounds — native 1.2/1.4 spills vertically
           style: AppTypography.labelUppercaseSm.copyWith(
             color: isActive ? AppColors.textOnDark : AppColors.accentMuted,
             letterSpacing: 1.0,

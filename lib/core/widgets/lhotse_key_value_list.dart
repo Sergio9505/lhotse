@@ -47,10 +47,10 @@ class LhotseKeyValueList extends StatelessWidget {
                     Flexible(
                       child: Text(
                         e.label,
+                        // EXCEPTION: w600 for highlighted total row; w400 is annotation native
                         style: AppTypography.annotation.copyWith(
                           color: AppColors.accentMuted,
-                          fontWeight:
-                              isBold ? FontWeight.w600 : FontWeight.w400,
+                          fontWeight: isBold ? FontWeight.w600 : null,
                         ),
                       ),
                     ),
@@ -72,6 +72,7 @@ class LhotseKeyValueList extends StatelessWidget {
                           children: [
                             Text(
                               e.value,
+                              // EXCEPTION: w600/w500 for value column weight; bodyReading is w400
                               style: AppTypography.bodyReading.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: isBold

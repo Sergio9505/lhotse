@@ -90,10 +90,8 @@ class _BrandLogo extends StatelessWidget {
     if (logo == null) {
       return Text(
         brand.name[0],
-        style: AppTypography.titleUppercase.copyWith(
+        style: AppTypography.bodyInput.copyWith(
           color: AppColors.textPrimary,
-          fontSize: 20,
-          fontWeight: FontWeight.w400,
         ),
       );
     }

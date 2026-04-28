@@ -83,6 +83,7 @@ class _LhotseDocRowState extends State<LhotseDocRow> {
                         _hasSubtitle
                             ? '${widget.subtitle} · ${widget.date}'
                             : widget.date,
+                        // EXCEPTION: ls 0.8 — native 1.2 reads too wide for compact date byline
                         style: AppTypography.labelUppercaseSm.copyWith(
                           color: AppColors.accentMuted,
                           letterSpacing: 0.8,

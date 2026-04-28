@@ -89,7 +89,6 @@ class _LhotseLedgerRowState extends State<LhotseLedgerRow> {
                       widget.title,
                       style: AppTypography.bodyEmphasis.copyWith(
                         color: textColor,
-                        letterSpacing: 1.0,
                       ),
                     ),
                     if (widget.subtitle != null) ...[
@@ -114,6 +113,7 @@ class _LhotseLedgerRowState extends State<LhotseLedgerRow> {
                       children: [
                         TextSpan(
                           text: _eurFormat.format(widget.amount),
+                          // EXCEPTION: tabular figures for column-stable amount alignment
                           style: AppTypography.bodyEmphasis.copyWith(
                             color: textColor,
                             fontFeatures: const [FontFeature.tabularFigures()],
