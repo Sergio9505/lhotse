@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-/// Autoplay-muted video for feed cards. Starts only when the host card is at
-/// least visible (via [isActive]) and pauses otherwise. Thumbnails always
-/// play silent — the fullscreen player is where audio lives.
-class FeedVideoPlayer extends StatefulWidget {
-  const FeedVideoPlayer({
+/// Autoplay-muted inline video. Starts only when [isActive] is true and pauses
+/// otherwise. Feed uses this with a PageView-driven isActive flag; catalog cards
+/// pass isActive: true (ListView builds only visible items, so built == active).
+/// Audio always off — fullscreen player is where audio lives.
+class LhotseVideoPlayer extends StatefulWidget {
+  const LhotseVideoPlayer({
     super.key,
     required this.videoUrl,
     required this.posterUrl,
@@ -14,16 +15,13 @@ class FeedVideoPlayer extends StatefulWidget {
 
   final String videoUrl;
   final String posterUrl;
-
-  /// Parent tells the player whether the card is the one currently in view.
-  /// We pause when false to save battery and bandwidth.
   final bool isActive;
 
   @override
-  State<FeedVideoPlayer> createState() => _FeedVideoPlayerState();
+  State<LhotseVideoPlayer> createState() => _LhotseVideoPlayerState();
 }
 
-class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
+class _LhotseVideoPlayerState extends State<LhotseVideoPlayer> {
   VideoPlayerController? _controller;
   bool _ready = false;
 
@@ -49,12 +47,12 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
         _ready = true;
       });
     } catch (_) {
-      // Video failed — poster stays, no error shown to user.
+      // Video failed — poster stays, no error shown.
     }
   }
 
   @override
-  void didUpdateWidget(FeedVideoPlayer old) {
+  void didUpdateWidget(LhotseVideoPlayer old) {
     super.didUpdateWidget(old);
     final c = _controller;
     if (c == null || !_ready) return;
@@ -74,11 +72,6 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     final c = _controller;
-    // While the VideoPlayerController is initializing we render nothing on
-    // top of the parent (black in Home, beige in detail). The Hero flight
-    // shuttle in FeedCard still draws the poster image during the transition
-    // so the visual is covered during navigation. Once the controller is
-    // ready, the video widget appears — no cross-fade from a static poster.
     if (c == null || !_ready) return const SizedBox.shrink();
     return FittedBox(
       fit: BoxFit.cover,

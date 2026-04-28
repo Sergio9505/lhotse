@@ -184,6 +184,7 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                       brand: item.brand,
                       subtitle: _editorialDeck(item.subtitle),
                       date: DateFormat('d MMM yyyy', 'es_ES').format(item.date),
+                      videoUrl: item.videoUrl,
                       hasPlayButton: item.hasPlayButton,
                       onTap: () =>
                           context.push('/news/${item.id}', extra: item),

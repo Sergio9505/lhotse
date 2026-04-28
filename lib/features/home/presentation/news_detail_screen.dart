@@ -12,7 +12,7 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
-import 'widgets/feed_video_player.dart';
+import '../../../core/widgets/lhotse_video_player.dart';
 import 'widgets/fullscreen_video_player.dart';
 
 class NewsDetailScreen extends ConsumerStatefulWidget {
@@ -172,7 +172,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                         tag: 'news-hero-${news.id}',
                         child: (news.videoUrl != null &&
                                 news.videoUrl!.isNotEmpty)
-                            ? FeedVideoPlayer(
+                            ? LhotseVideoPlayer(
                                 videoUrl: news.videoUrl!,
                                 posterUrl: news.imageUrl,
                                 isActive: true,

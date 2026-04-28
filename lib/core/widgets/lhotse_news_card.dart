@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import 'lhotse_image.dart';
+import 'lhotse_video_player.dart';
 
 /// Reusable news card. Two variants:
 /// - **Default (full)**: catalog-grammar tile (escaparate curado). 3:2 image
@@ -20,6 +21,7 @@ class LhotseNewsCard extends StatelessWidget {
     this.subtitle,
     this.date,
     this.type,
+    this.videoUrl,
     this.hasPlayButton = false,
     this.onTap,
   })  : width = null,
@@ -38,6 +40,7 @@ class LhotseNewsCard extends StatelessWidget {
         height = 160,
         date = null,
         type = null,
+        videoUrl = null,
         heroTag = null;
 
   final String title;
@@ -47,6 +50,7 @@ class LhotseNewsCard extends StatelessWidget {
   final String? subtitle;
   final String? date;
   final String? type;
+  final String? videoUrl;
   final double? width;
   final double? height;
   final bool hasPlayButton;
@@ -60,16 +64,22 @@ class LhotseNewsCard extends StatelessWidget {
   }
 
   Widget _buildFull() {
+    final hasVideo = videoUrl != null && videoUrl!.isNotEmpty;
     final image = AspectRatio(
       aspectRatio: 3 / 2,
       child: Stack(
         fit: StackFit.expand,
         children: [
           if (heroTag != null)
-            Hero(tag: heroTag!, child: LhotseImage(imageUrl))
+            Hero(
+              tag: heroTag!,
+              flightShuttleBuilder:
+                  hasVideo ? _videoFlightShuttle : null,
+              child: _newsMedia(),
+            )
           else
-            LhotseImage(imageUrl),
-          if (hasPlayButton) _playButton(false),
+            _newsMedia(),
+          if (hasPlayButton && !hasVideo) _playButton(false),
         ],
       ),
     );
@@ -167,6 +177,26 @@ class LhotseNewsCard extends StatelessWidget {
       text: TextSpan(children: children),
     );
   }
+
+  Widget _newsMedia() {
+    if (videoUrl != null && videoUrl!.isNotEmpty) {
+      return LhotseVideoPlayer(
+        videoUrl: videoUrl!,
+        posterUrl: imageUrl,
+        isActive: true,
+      );
+    }
+    return LhotseImage(imageUrl);
+  }
+
+  static Widget _videoFlightShuttle(
+    BuildContext flightContext,
+    Animation<double> animation,
+    HeroFlightDirection direction,
+    BuildContext fromHeroContext,
+    BuildContext toHeroContext,
+  ) =>
+      Container(color: AppColors.primary);
 
   Widget _buildCompact() {
     return GestureDetector(

@@ -9,8 +9,8 @@ import '../../../../core/domain/news_item_data.dart';
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/lhotse_image.dart';
+import '../../../../core/widgets/lhotse_video_player.dart';
 import '../../domain/feed_item.dart';
-import 'feed_video_player.dart';
 
 /// Universal card for every [FeedItem] variant. Each card fills the full
 /// viewport (minus the header) and splits into:
@@ -194,7 +194,7 @@ class _Media extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (videoUrl != null && videoUrl!.isNotEmpty) {
-      return FeedVideoPlayer(
+      return LhotseVideoPlayer(
         videoUrl: videoUrl!,
         posterUrl: imageUrl,
         isActive: isActive,

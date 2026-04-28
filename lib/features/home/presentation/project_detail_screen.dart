@@ -10,7 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
-import 'widgets/feed_video_player.dart';
+import '../../../core/widgets/lhotse_video_player.dart';
 
 const _kMaxVisibleGallery = 5;
 
@@ -154,7 +154,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                       tag: 'project-hero-${project.id}',
                       child: (project.videoUrl != null &&
                               project.videoUrl!.isNotEmpty)
-                          ? FeedVideoPlayer(
+                          ? LhotseVideoPlayer(
                               videoUrl: project.videoUrl!,
                               posterUrl: project.imageUrl,
                               isActive: true,
