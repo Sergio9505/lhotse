@@ -34,23 +34,34 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _bootstrap();
+  }
+
+  /// Hold the native splash until the video controller is initialized so the
+  /// hand-off goes native PNG (= first video frame) → playing video, with no
+  /// black gap while AVFoundation/ExoPlayer warm up. Debug builds on real
+  /// devices need ~1-2 s for video init; release is much faster but the gap
+  /// still exists. A 2 s safety timeout avoids freezing the splash if
+  /// initialization fails (e.g. corrupt asset on first install).
+  Future<void> _bootstrap() async {
     _controller = VideoPlayerController.asset('assets/videos/lhotse_splash.mp4')
       ..setVolume(0)
-      ..setLooping(true)
-      ..initialize().then((_) {
-        if (mounted) {
-          setState(() {});
-          _controller.play();
-        }
-      });
+      ..setLooping(true);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Flutter has rendered its first frame — dismiss the native splash so
-      // the video becomes visible. The transition is seamless because the
-      // native splash and the first video frame share the same black visual.
-      FlutterNativeSplash.remove();
-      _warmUpAndNavigate();
-    });
+    try {
+      await _controller.initialize().timeout(const Duration(seconds: 2));
+    } catch (_) {
+      // Fall through — we'll dismiss the splash and show black/empty body
+      // until the user navigates onward. Better than a frozen native splash.
+    }
+
+    if (!mounted) return;
+    setState(() {});
+    if (_controller.value.isInitialized) {
+      _controller.play();
+    }
+    FlutterNativeSplash.remove();
+    _warmUpAndNavigate();
   }
 
   @override
