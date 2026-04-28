@@ -662,8 +662,8 @@ class _AssetResultItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    primary.toUpperCase(),
-                    style: AppTypography.titleUppercase.copyWith(
+                    primary,
+                    style: AppTypography.bodyReading.copyWith(
                       color: AppColors.textPrimary,
                     ),
                     maxLines: 1,
@@ -673,7 +673,7 @@ class _AssetResultItem extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       secondary,
-                      style: AppTypography.labelUppercaseSm.copyWith(
+                      style: AppTypography.annotation.copyWith(
                         color: AppColors.accentMuted,
                       ),
                     ),
@@ -788,10 +788,12 @@ class _ProjectResultItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    project.name.toUpperCase(),
-                    style: AppTypography.titleUppercase.copyWith(
+                    project.name,
+                    style: AppTypography.bodyReading.copyWith(
                       color: AppColors.textPrimary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Row(
@@ -806,7 +808,7 @@ class _ProjectResultItem extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         child: Text(
                           '·',
-                          style: AppTypography.labelUppercaseSm.copyWith(
+                          style: AppTypography.annotation.copyWith(
                             color:
                                 AppColors.textPrimary.withValues(alpha: 0.4),
                           ),
@@ -814,8 +816,8 @@ class _ProjectResultItem extends StatelessWidget {
                       ),
                       Flexible(
                         child: Text(
-                          project.location.toUpperCase(),
-                          style: AppTypography.labelUppercaseSm.copyWith(
+                          project.city,
+                          style: AppTypography.annotation.copyWith(
                             color: AppColors.accentMuted,
                           ),
                           overflow: TextOverflow.ellipsis,
