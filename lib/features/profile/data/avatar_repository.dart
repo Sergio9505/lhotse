@@ -19,19 +19,32 @@ import '../../../core/data/supabase_provider.dart';
 /// to every widget watching the profile.
 Future<void> uploadAvatar(WidgetRef ref, XFile file) async {
   final client = ref.read(supabaseClientProvider);
-  final uid = client.auth.currentUser?.id;
+  final session = client.auth.currentSession;
+  final uid = session?.user.id;
   if (uid == null) {
     throw StateError('Cannot upload avatar: no authenticated user');
   }
 
-  final path = '$uid/avatar.jpg';
-  final bytes = await File(file.path).readAsBytes();
+  // Defensive refresh — if the JWT is missing/expired, supabase-storage will
+  // accept the request as anon and fail the RLS policy with a misleading
+  // "row violates RLS" 403 instead of "JWT expired".
+  if (session?.isExpired ?? false) {
+    developer.log('refreshing expired session before avatar upload',
+        name: 'AvatarRepository');
+    await client.auth.refreshSession();
+  }
 
+  final refreshed = client.auth.currentSession;
   developer.log(
-    'avatar upload: path=$path bytes=${bytes.length} '
-    'session=${client.auth.currentSession != null}',
+    'avatar upload: uid=$uid '
+    'token=${refreshed?.accessToken.substring(0, 20)}… '
+    'expiresAt=${refreshed?.expiresAt} '
+    'sessionPresent=${refreshed != null}',
     name: 'AvatarRepository',
   );
+
+  final path = '$uid/avatar.jpg';
+  final bytes = await File(file.path).readAsBytes();
 
   try {
     await client.storage.from('avatars').uploadBinary(
