@@ -286,9 +286,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                         children: [
                           Text(
                             'GALERÍA',
-                            style: AppTypography.labelUppercaseMd.copyWith(
+                            style: AppTypography.sectionLabel.copyWith(
                               color: AppColors.accentMuted,
-                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           if (project.galleryImages.length >

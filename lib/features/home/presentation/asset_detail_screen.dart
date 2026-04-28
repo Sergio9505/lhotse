@@ -10,6 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/widgets/lhotse_section_label.dart';
 
 const _kMaxVisibleGallery = 5;
 
@@ -270,9 +271,8 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                         children: [
                           Text(
                             'GALERÍA',
-                            style: AppTypography.labelUppercaseMd.copyWith(
+                            style: AppTypography.sectionLabel.copyWith(
                               color: AppColors.accentMuted,
-                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           if (detail.galleryImages.length >
@@ -336,17 +336,7 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: AppSpacing.xxl),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg),
-                      child: Text(
-                        'PLANO',
-                        style: AppTypography.labelUppercaseMd.copyWith(
-                          color: AppColors.accentMuted,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
+                    const LhotseSectionLabel(label: 'PLANO'),
                     const SizedBox(height: AppSpacing.md),
                     Padding(
                       padding: const EdgeInsets.symmetric(

@@ -376,9 +376,8 @@ class _SectionLabel extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AppTypography.labelUppercaseMd.copyWith(
+            style: AppTypography.sectionLabel.copyWith(
               color: AppColors.accentMuted,
-              fontWeight: FontWeight.w400,
             ),
           ),
           const SizedBox(width: AppSpacing.md),

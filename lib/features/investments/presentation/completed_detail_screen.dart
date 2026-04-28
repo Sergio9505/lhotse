@@ -368,7 +368,7 @@ class _ActivoTab extends StatelessWidget {
               children: [
                 Text(
                   'GALERÍA',
-                  style: AppTypography.labelUppercaseMd.copyWith(
+                  style: AppTypography.sectionLabel.copyWith(
                     color: AppColors.accentMuted,
                   ),
                 ),

@@ -60,9 +60,8 @@ class SupportScreen extends StatelessWidget {
               children: [
                 Text(
                   'HORARIO DE ATENCIÓN',
-                  style: AppTypography.labelUppercaseMd.copyWith(
+                  style: AppTypography.sectionLabel.copyWith(
                     color: AppColors.accentMuted,
-                    fontWeight: FontWeight.w400,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
