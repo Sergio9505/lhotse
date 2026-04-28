@@ -166,9 +166,8 @@ class _DocumentRow extends StatelessWidget {
           Expanded(
             child: Text(
               label.toUpperCase(),
-              style: AppTypography.labelUppercaseMd.copyWith(
+              style: AppTypography.labelCompact.copyWith(
                 color: AppColors.textPrimary,
-                letterSpacing: 0.8,
               ),
             ),
           ),
@@ -179,7 +178,6 @@ class _DocumentRow extends StatelessWidget {
               status.label,
               style: AppTypography.badgePill.copyWith(
                 color: status.color,
-                letterSpacing: 0.8,
               ),
             ),
           ),

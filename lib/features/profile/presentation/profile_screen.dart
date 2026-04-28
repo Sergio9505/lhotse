@@ -194,6 +194,7 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
       child: Center(
         child: Text(
           initials,
+          // EXCEPTION: w500 for avatar initials — editorial Light (w300) reads too thin at this size
           style: AppTypography.editorialTitle.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w500,
@@ -444,9 +445,8 @@ class _MenuItemState extends State<_MenuItem> {
               Expanded(
                 child: Text(
                   widget.label.toUpperCase(),
-                  style: AppTypography.labelUppercaseMd.copyWith(
+                  style: AppTypography.labelCompact.copyWith(
                     color: AppColors.textPrimary,
-                    letterSpacing: 0.8,
                   ),
                 ),
               ),
@@ -506,7 +506,8 @@ class _PrivateBanner extends StatelessWidget {
             children: [
               Text(
                 'SOLICITAR INVITACIÓN',
-                style: AppTypography.labelUppercaseMd.copyWith(
+                // EXCEPTION: ls 1.2 — CTA on dark pill, tighter than labelUppercaseMd 1.8
+              style: AppTypography.labelUppercaseMd.copyWith(
                   color: AppColors.textOnDark,
                   letterSpacing: 1.2,
                 ),
@@ -550,9 +551,8 @@ class _LogoutButton extends ConsumerWidget {
             const SizedBox(width: AppSpacing.sm),
             Text(
               'CERRAR SESIÓN',
-              style: AppTypography.labelUppercaseMd.copyWith(
+              style: AppTypography.labelCompact.copyWith(
                 color: AppColors.accentMuted,
-                letterSpacing: 0.8,
               ),
             ),
           ],

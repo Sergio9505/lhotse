@@ -174,6 +174,7 @@ class _ReadOnlyField extends StatelessWidget {
             width: 100,
             child: Text(
               label,
+              // EXCEPTION: ls 1.0 — form field caption, native 1.2 reads too wide inline
               style: AppTypography.labelUppercaseSm.copyWith(
                 color: AppColors.accentMuted,
                 letterSpacing: 1.0,
@@ -242,6 +243,7 @@ class _EditableField extends StatelessWidget {
             width: 100,
             child: Text(
               label,
+              // EXCEPTION: ls 1.0 — form field caption, native 1.2 reads too wide inline
               style: AppTypography.labelUppercaseSm.copyWith(
                 color: AppColors.accentMuted,
                 letterSpacing: 1.0,

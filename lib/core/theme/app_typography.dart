@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Typography tokens — Campton only, role-based naming.
 ///
-/// 23 semantic tokens covering the entire app's editorial system
+/// 24 semantic tokens covering the entire app's editorial system
 /// (luxury wealth management). Reach for a token by its role.
 ///
 /// CONTRACT: `.copyWith` is restricted to `color` and `fontStyle` only.
@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 /// Title scale:       titleUppercaseLg 24 → titleUppercase 18
 /// Figure scale:      figureHero 40 → figureRow 22 → figureAmount 18 → figureCurrency 14
 /// Body scale:        bodyInput 18 → bodyEmphasis 16 → bodyRow 16 → bodyReading 14
-/// Label scale:       labelUppercaseMd 12 → sectionLabel 12 → annotation 12 → annotationParagraph 12 → labelUppercaseSm 10 → wordmarkByline 10
+/// Label scale:       labelUppercaseMd 12 → labelCompact 12 → sectionLabel 12 → annotation 12 → annotationParagraph 12 → labelUppercaseSm 10 → wordmarkByline 10
 /// Micro scale:       metaUppercase 12 → metaCaption 12 → badgePill 9 → badgeMicro 8
 abstract final class AppTypography {
   /// Public so non-token callers (welcome wordmark with strut, animated
@@ -115,6 +115,18 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w400,
     height: 1.2,
     letterSpacing: -0.1,
+  );
+
+  /// Label compact — 12pt w500 ls 0.8. Uppercase label for dense contexts:
+  /// settings/navigation list rows, KYC status rows, notification toggle labels.
+  /// Same weight as labelUppercaseMd but tighter tracking (0.8 vs 1.8) for
+  /// contexts where native 1.8 reads too open.
+  static const labelCompact = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    height: 1.4,
+    letterSpacing: 0.8,
   );
 
   /// Section label — 12pt w400 tracked. Quiet section headers that read as

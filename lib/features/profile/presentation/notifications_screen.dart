@@ -181,9 +181,8 @@ class _ToggleRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label.toUpperCase(),
-                style: AppTypography.labelUppercaseMd.copyWith(
+                style: AppTypography.labelCompact.copyWith(
                   color: AppColors.textPrimary,
-                  letterSpacing: 0.8,
                 ),
               ),
             ),

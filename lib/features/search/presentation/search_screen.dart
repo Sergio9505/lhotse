@@ -20,6 +20,7 @@ import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
+import '../../../core/widgets/lhotse_section_label.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 import '../../investments/data/investments_provider.dart';
 import '../../investments/domain/coinvestment_contract_data.dart';
@@ -436,27 +437,22 @@ class _TagSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AppTypography.labelUppercaseMd.copyWith(
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LhotseSectionLabel(label: title),
+        const SizedBox(height: AppSpacing.md),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: tags
                 .map((tag) => _TrendingChip(label: tag, onTap: () => onTap(tag)))
                 .toList(),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -484,9 +480,8 @@ class _TrendingChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppTypography.annotation.copyWith(
+          style: AppTypography.metaUppercase.copyWith(
             color: AppColors.textPrimary,
-            fontWeight: FontWeight.w500,
           ),
         ),
       ),
@@ -502,24 +497,25 @@ class _FeaturedSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (projects.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'DESTACADOS',
-            style: AppTypography.labelUppercaseMd.copyWith(
-              color: AppColors.textPrimary,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LhotseSectionLabel(label: 'DESTACADOS'),
+        const SizedBox(height: AppSpacing.md),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (int i = 0; i < projects.length; i++) ...[
+                _FeaturedCard(project: projects[i]),
+                if (i < projects.length - 1)
+                  const SizedBox(height: AppSpacing.md),
+              ],
+            ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          for (int i = 0; i < projects.length; i++) ...[
-            _FeaturedCard(project: projects[i]),
-            if (i < projects.length - 1) const SizedBox(height: AppSpacing.md),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -554,9 +550,8 @@ class _FeaturedCard extends StatelessWidget {
             children: [
               Text(
                 project.brand.toUpperCase(),
-                style: AppTypography.labelUppercaseSm.copyWith(
+                style: AppTypography.wordmarkByline.copyWith(
                   color: AppColors.textPrimary,
-                  letterSpacing: 1.5,
                 ),
               ),
               Padding(
@@ -627,28 +622,28 @@ class _SearchResults extends StatelessWidget {
       padding: EdgeInsets.zero,
       children: [
         if (brandResults.isNotEmpty) ...[
-          const _SectionLabel('FIRMAS'),
+          const LhotseSectionLabel(label: 'FIRMAS'),
           const SizedBox(height: AppSpacing.md),
           ...brandResults.map((brand) =>
               _BrandResultItem(brand: brand, onTap: onResultTap)),
           const SizedBox(height: AppSpacing.xl),
         ],
         if (projectResults.isNotEmpty) ...[
-          const _SectionLabel('PROYECTOS'),
+          const LhotseSectionLabel(label: 'PROYECTOS'),
           const SizedBox(height: AppSpacing.md),
           ...projectResults.map((project) =>
               _ProjectResultItem(project: project, onTap: onResultTap)),
           const SizedBox(height: AppSpacing.xl),
         ],
         if (assetResults.isNotEmpty) ...[
-          const _SectionLabel('ACTIVOS'),
+          const LhotseSectionLabel(label: 'ACTIVOS'),
           const SizedBox(height: AppSpacing.md),
           ...assetResults.map((asset) =>
               _AssetResultItem(asset: asset, onTap: onResultTap)),
           const SizedBox(height: AppSpacing.xl),
         ],
         if (docResults.isNotEmpty) ...[
-          const _SectionLabel('DOCUMENTOS'),
+          const LhotseSectionLabel(label: 'DOCUMENTOS'),
           const SizedBox(height: AppSpacing.sm),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -685,24 +680,6 @@ class _SearchResults extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.label);
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Text(
-        label,
-        style: AppTypography.labelUppercaseMd.copyWith(
-          color: AppColors.textPrimary,
-        ),
-      ),
-    );
-  }
-}
-
 class _AssetResultItem extends StatelessWidget {
   const _AssetResultItem({required this.asset, this.onTap});
 
@@ -713,55 +690,65 @@ class _AssetResultItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = asset.address ?? asset.location;
     final secondary = asset.address != null ? asset.location : null;
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 48,
-            height: 48,
-            child: asset.thumbnailImage != null
-                ? LhotseImage(asset.thumbnailImage!)
-                : Container(
-                    color: AppColors.textPrimary.withValues(alpha: 0.05),
-                    child: const Center(
-                      child: PhosphorIcon(
-                        PhosphorIconsThin.buildings,
-                        size: 18,
+    return GestureDetector(
+      onTap: () {
+        onTap?.call();
+        context.push('/assets/${asset.id}', extra: asset);
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: asset.thumbnailImage != null
+                  ? LhotseImage(asset.thumbnailImage!)
+                  : Container(
+                      color: AppColors.textPrimary.withValues(alpha: 0.05),
+                      child: const Center(
+                        child: PhosphorIcon(
+                          PhosphorIconsThin.buildings,
+                          size: 18,
+                          color: AppColors.accentMuted,
+                        ),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    primary.toUpperCase(),
+                    style: AppTypography.titleUppercase.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (secondary != null && secondary.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      secondary,
+                      style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.accentMuted,
                       ),
                     ),
-                  ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  primary.toUpperCase(),
-                  style: AppTypography.titleUppercase.copyWith(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (secondary != null && secondary.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    secondary,
-                    style: AppTypography.labelUppercaseSm.copyWith(
-                      color: AppColors.accentMuted,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+            const PhosphorIcon(
+              PhosphorIconsThin.arrowUpRight,
+              size: 18,
+              color: AppColors.accentMuted,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -804,9 +791,8 @@ class _BrandResultItem extends StatelessWidget {
                   : Center(
                       child: Text(
                         brand.name.split(' ').map((w) => w[0]).join(),
-                        style: AppTypography.annotation.copyWith(
+                        style: AppTypography.metaUppercase.copyWith(
                           color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -873,9 +859,8 @@ class _ProjectResultItem extends StatelessWidget {
                     children: [
                       Text(
                         project.brand.toUpperCase(),
-                        style: AppTypography.labelUppercaseSm.copyWith(
+                        style: AppTypography.wordmarkByline.copyWith(
                           color: AppColors.textPrimary,
-                          letterSpacing: 1.5,
                         ),
                       ),
                       Padding(
@@ -929,7 +914,6 @@ class _EmptyResults extends StatelessWidget {
             'Sin resultados para "$query"',
             style: AppTypography.editorialSubtitle.copyWith(
               color: AppColors.textPrimary,
-              fontSize: 18,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),

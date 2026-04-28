@@ -50,7 +50,6 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
               'ACTIVADA',
               style: AppTypography.badgePill.copyWith(
                 color: const Color(0xFF2D6A4F),
-                letterSpacing: 0.8,
               ),
             ),
             onTap: () {},
@@ -303,9 +302,8 @@ class _ActionRowState extends State<_ActionRow> {
               Expanded(
                 child: Text(
                   widget.label.toUpperCase(),
-                  style: AppTypography.labelUppercaseMd.copyWith(
+                  style: AppTypography.labelCompact.copyWith(
                     color: AppColors.textPrimary,
-                    letterSpacing: 0.8,
                   ),
                 ),
               ),
@@ -359,9 +357,8 @@ class _ToggleRow extends StatelessWidget {
           Expanded(
             child: Text(
               label.toUpperCase(),
-              style: AppTypography.labelUppercaseMd.copyWith(
+              style: AppTypography.labelCompact.copyWith(
                 color: AppColors.textPrimary,
-                letterSpacing: 0.8,
               ),
             ),
           ),
