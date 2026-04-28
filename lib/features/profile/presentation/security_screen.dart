@@ -301,8 +301,8 @@ class _ActionRowState extends State<_ActionRow> {
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(
-                  widget.label.toUpperCase(),
-                  style: AppTypography.labelCompact.copyWith(
+                  widget.label,
+                  style: AppTypography.bodyReading.copyWith(
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -356,8 +356,8 @@ class _ToggleRow extends StatelessWidget {
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
-              label.toUpperCase(),
-              style: AppTypography.labelCompact.copyWith(
+              label,
+              style: AppTypography.bodyReading.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),

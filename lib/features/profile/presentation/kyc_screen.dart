@@ -165,8 +165,8 @@ class _DocumentRow extends StatelessWidget {
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
-              label.toUpperCase(),
-              style: AppTypography.labelCompact.copyWith(
+              label,
+              style: AppTypography.bodyReading.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),

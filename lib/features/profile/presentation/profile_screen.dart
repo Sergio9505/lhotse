@@ -233,7 +233,6 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
     final displayName = rawName.isEmpty ? 'Inversor' : rawName;
     final memberSince = profile?.memberSince;
     final city = profile?.city;
-    final country = profile?.country;
 
     return Column(
       children: [
@@ -329,7 +328,8 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
                       ),
                     ),
                   if (memberSince != null &&
-                      (city != null || country != null)) ...[
+                      city != null &&
+                      city.isNotEmpty) ...[
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.sm),
@@ -343,10 +343,10 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
                       ),
                     ),
                   ],
-                  if (city != null || country != null)
+                  if (city != null && city.isNotEmpty)
                     Text(
-                      [?city, ?country].join(', ').toUpperCase(),
-                      style: AppTypography.labelUppercaseSm.copyWith(
+                      city,
+                      style: AppTypography.annotation.copyWith(
                         color: AppColors.accentMuted,
                       ),
                     ),
@@ -444,8 +444,8 @@ class _MenuItemState extends State<_MenuItem> {
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(
-                  widget.label.toUpperCase(),
-                  style: AppTypography.labelCompact.copyWith(
+                  widget.label,
+                  style: AppTypography.bodyReading.copyWith(
                     color: AppColors.textPrimary,
                   ),
                 ),
