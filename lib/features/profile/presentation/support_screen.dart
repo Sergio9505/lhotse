@@ -63,7 +63,6 @@ class SupportScreen extends StatelessWidget {
                   style: AppTypography.labelUppercaseMd.copyWith(
                     color: AppColors.accentMuted,
                     fontWeight: FontWeight.w400,
-                    letterSpacing: 1.8,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),

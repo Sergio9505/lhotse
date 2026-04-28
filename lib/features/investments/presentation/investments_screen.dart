@@ -387,7 +387,6 @@ class _BrandRowState extends State<_BrandRow> {
                                       .replaceAll('.', ' '),
                                   style: AppTypography.figureAmount.copyWith(
                                     color: AppColors.textPrimary,
-                                    fontSize: 18,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -395,7 +394,6 @@ class _BrandRowState extends State<_BrandRow> {
                                   text: ' €',
                                   style: AppTypography.annotation.copyWith(
                                     color: AppColors.accentMuted,
-                                    fontSize: 12,
                                   ),
                                 ),
                               ],
@@ -410,7 +408,6 @@ class _BrandRowState extends State<_BrandRow> {
                                 text: '${avgReturn.toStringAsFixed(1)}%',
                                 style: AppTypography.annotation.copyWith(
                                   color: AppColors.accentMuted,
-                                  fontSize: 12,
                                 ),
                               ),
                               if (widget.isEstimated)

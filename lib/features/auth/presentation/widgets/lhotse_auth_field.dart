@@ -56,7 +56,6 @@ class _LhotseAuthFieldState extends State<LhotseAuthField> {
           widget.label.toUpperCase(),
           style: AppTypography.labelUppercaseSm.copyWith(
             color: AppColors.accentMuted,
-            letterSpacing: 1.8,
             fontWeight: FontWeight.w400,
           ),
         ),

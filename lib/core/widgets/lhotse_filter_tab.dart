@@ -13,8 +13,8 @@ import '../theme/app_theme.dart';
 ///     Use for filter chips passing `UPPERCASE` strings (catalog/archive
 ///     filters, brand/region selectors).
 ///   - `true` — `bodyEmphasis` 14pt sentence case, no tracking. Use for
-///     navigation tabs in detail screens passing `Title Case` strings
-///     (Hermès / Sotheby's / Apple Music subnav style).
+///     primary navigation tabs passing `Title Case` strings — Firmas
+///     sub-tabs (Firmas / Proyectos / Noticias), detail screen sub-navs.
 ///
 /// - **`hasSelection`** shows a dot indicator when the filter has a value
 ///   selected but is not the active tab.
@@ -41,9 +41,9 @@ class LhotseFilterTab extends StatelessWidget {
   /// matches the label width.
   final bool fullWidth;
 
-  /// When true, uses `bodyEmphasis` 14pt sentence-case typography (editorial
-  /// nav style — Hermès / Sotheby's / Apple Music). When false, uses
-  /// `labelUppercaseMd` 12pt with tracking (filter chip style).
+  /// When true, uses `bodyEmphasis` 14pt sentence-case (Firmas sub-tabs,
+  /// detail screen sub-navs). When false, uses `labelUppercaseMd` 12pt
+  /// uppercase tracked (filter chip / archive selector style).
   final bool editorial;
 
   @override

@@ -48,9 +48,8 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             label: 'Verificación en dos pasos',
             trailing: Text(
               'ACTIVADA',
-              style: AppTypography.labelUppercaseSm.copyWith(
+              style: AppTypography.badgePill.copyWith(
                 color: const Color(0xFF2D6A4F),
-                fontSize: 9,
                 letterSpacing: 0.8,
               ),
             ),

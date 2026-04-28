@@ -177,9 +177,8 @@ class _DocumentRow extends StatelessWidget {
             color: status.color.withValues(alpha: 0.1),
             child: Text(
               status.label,
-              style: AppTypography.labelUppercaseSm.copyWith(
+              style: AppTypography.badgePill.copyWith(
                 color: status.color,
-                fontSize: 9,
                 letterSpacing: 0.8,
               ),
             ),

@@ -445,7 +445,6 @@ class _TagSection extends StatelessWidget {
             title,
             style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.textPrimary,
-              letterSpacing: 1.8,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -512,7 +511,6 @@ class _FeaturedSection extends StatelessWidget {
             'DESTACADOS',
             style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.textPrimary,
-              letterSpacing: 1.8,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -699,7 +697,6 @@ class _SectionLabel extends StatelessWidget {
         label,
         style: AppTypography.labelUppercaseMd.copyWith(
           color: AppColors.textPrimary,
-          letterSpacing: 1.8,
         ),
       ),
     );

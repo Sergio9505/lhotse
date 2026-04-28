@@ -87,9 +87,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
               ? const CircularProgressIndicator(strokeWidth: 1.5)
               : Text(
                   'Proyecto no encontrado',
-                  style: AppTypography.bodyReading.copyWith(
+                  style: AppTypography.bodyEmphasis.copyWith(
+                    fontWeight: FontWeight.w400,
                     color: AppColors.textSecondary,
-                    fontSize: 16,
                   ),
                 ),
         ),
@@ -293,7 +293,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                             style: AppTypography.labelUppercaseMd.copyWith(
                               color: AppColors.accentMuted,
                               fontWeight: FontWeight.w400,
-                              letterSpacing: 1.8,
                             ),
                           ),
                           if (project.galleryImages.length >
@@ -373,7 +372,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                         'DESCARGAR FOLLETO',
                         style: AppTypography.labelUppercaseMd.copyWith(
                           color: AppColors.textOnDark,
-                          letterSpacing: 1.8,
                         ),
                       ),
                     ),

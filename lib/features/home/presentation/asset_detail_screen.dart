@@ -98,9 +98,9 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
               ? const CircularProgressIndicator(strokeWidth: 1.5)
               : Text(
                   'Activo no encontrado',
-                  style: AppTypography.bodyReading.copyWith(
+                  style: AppTypography.bodyEmphasis.copyWith(
+                    fontWeight: FontWeight.w400,
                     color: AppColors.textSecondary,
-                    fontSize: 16,
                   ),
                 ),
         ),
@@ -276,7 +276,6 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                             style: AppTypography.labelUppercaseMd.copyWith(
                               color: AppColors.accentMuted,
                               fontWeight: FontWeight.w400,
-                              letterSpacing: 1.8,
                             ),
                           ),
                           if (detail.galleryImages.length >
@@ -348,7 +347,6 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                         style: AppTypography.labelUppercaseMd.copyWith(
                           color: AppColors.accentMuted,
                           fontWeight: FontWeight.w400,
-                          letterSpacing: 1.8,
                         ),
                       ),
                     ),

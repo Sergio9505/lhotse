@@ -24,9 +24,8 @@ enum _ActiveTool { none, brands, search }
 /// (TODOS).
 enum _StatusFilter { inDevelopment, exited }
 
-/// Reusable projects catalog body (filter bar + card list). Hosted today by
-/// `AllProjectsScreen` (route `/projects`) and by the Search tab's idle state
-/// as the "CATÁLOGO COMPLETO" archive.
+/// Reusable projects catalog body (filter bar + card list). Hosted by the
+/// Search tab's idle state as the "CATÁLOGO COMPLETO" archive.
 class ProjectsArchiveBody extends ConsumerStatefulWidget {
   const ProjectsArchiveBody({super.key});
 
@@ -170,14 +169,14 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
               ? const Center(child: CircularProgressIndicator(strokeWidth: 1.5))
               : ListView.separated(
                   controller: _scrollController,
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+                  padding: const EdgeInsets.only(
+                      top: AppSpacing.md, bottom: AppSpacing.xxl),
                   itemCount: filtered.length,
                   separatorBuilder: (_, _) =>
-                      const SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.lg),
                   itemBuilder: (context, i) {
                     return ProjectShowcaseCard(
                       project: filtered[i],
-                      isLeadStory: i == 0,
                       isLocked: filtered[i].isVip &&
                           ref.read(currentUserRoleProvider) !=
                               UserRole.investorVip,
@@ -225,21 +224,23 @@ class _FilterBar extends StatelessWidget {
               child: Row(
                 children: [
                   LhotseFilterChip(
-                    label: 'TODOS',
-                    isActive: selectedStatus == null,
-                    onTap: () => onStatusTap(null),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  LhotseFilterChip(
                     label: 'EN DESARROLLO',
                     isActive: selectedStatus == _StatusFilter.inDevelopment,
-                    onTap: () => onStatusTap(_StatusFilter.inDevelopment),
+                    onTap: () => onStatusTap(
+                      selectedStatus == _StatusFilter.inDevelopment
+                          ? null
+                          : _StatusFilter.inDevelopment,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   LhotseFilterChip(
                     label: 'FINALIZADOS',
                     isActive: selectedStatus == _StatusFilter.exited,
-                    onTap: () => onStatusTap(_StatusFilter.exited),
+                    onTap: () => onStatusTap(
+                      selectedStatus == _StatusFilter.exited
+                          ? null
+                          : _StatusFilter.exited,
+                    ),
                   ),
                 ],
               ),
@@ -258,7 +259,7 @@ class _FilterBar extends StatelessWidget {
                   Center(
                     child: PhosphorIcon(
                       PhosphorIconsThin.stack,
-                      size: 18,
+                      size: 20,
                       color: activeTool == _ActiveTool.brands ||
                               hasBrandSelection
                           ? AppColors.textPrimary

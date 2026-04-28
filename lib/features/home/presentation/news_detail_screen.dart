@@ -82,9 +82,9 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               ? const CircularProgressIndicator(strokeWidth: 1.5)
               : Text(
                   'Noticia no encontrada',
-                  style: AppTypography.bodyReading.copyWith(
+                  style: AppTypography.bodyEmphasis.copyWith(
+                    fontWeight: FontWeight.w400,
                     color: AppColors.textSecondary,
-                    fontSize: 16,
                   ),
                 ),
         ),
@@ -224,7 +224,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
             ),
 
             // =========================================================
-            // 2. IDENTITY — lookbook editorial (kicker · title · deck · byline)
+            // 2. IDENTITY — title · deck · byline (no kicker: type lives in
+            // the catalog filter bar, redundant once user is inside the item)
             // =========================================================
             SliverToBoxAdapter(
               child: Padding(
@@ -237,14 +238,6 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      news.type == NewsType.project ? 'PROYECTO' : 'PRENSA',
-                      style: AppTypography.labelUppercaseSm.copyWith(
-                        color: AppColors.accentMuted,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     Text(
                       news.title,
                       style: AppTypography.editorialHero.copyWith(
@@ -339,7 +332,9 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     );
   }
 
-  /// Byline: `POR {BRAND}  ·  {DATE}`. Brand keeps primary ink; date mutes.
+  /// 2-token byline `{BRAND} · {DATE}` mirroring `LhotseNewsCard` for visual
+  /// continuity across the Hero transition. Wordmark uppercase (identity);
+  /// date mixed case (descriptive meta).
   Widget _buildByline(NewsItemData news) {
     final brand = news.brand;
     final hasBrand = brand != null && brand.isNotEmpty;
@@ -347,30 +342,24 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     final children = <InlineSpan>[];
     if (hasBrand) {
       children.add(TextSpan(
-        text: 'POR ',
-        style: TextStyle(color: AppColors.accentMuted, letterSpacing: 1.5),
-      ));
-      children.add(TextSpan(
         text: brand.toUpperCase(),
-        style: TextStyle(color: AppColors.textPrimary, letterSpacing: 1.5),
+        style: AppTypography.labelUppercaseSm.copyWith(
+          color: AppColors.textPrimary,
+          letterSpacing: 1.5,
+        ),
       ));
       children.add(TextSpan(
         text: '  ·  ',
-        style: TextStyle(
+        style: AppTypography.annotation.copyWith(
           color: AppColors.textPrimary.withValues(alpha: 0.4),
         ),
       ));
     }
     children.add(TextSpan(
-      text: dateStr.toUpperCase(),
-      style: TextStyle(color: AppColors.accentMuted, letterSpacing: 1.2),
+      text: dateStr,
+      style: AppTypography.annotation.copyWith(color: AppColors.accentMuted),
     ));
-    return RichText(
-      text: TextSpan(
-        style: AppTypography.labelUppercaseSm.copyWith(letterSpacing: 1.5),
-        children: children,
-      ),
-    );
+    return RichText(text: TextSpan(children: children));
   }
 }
 

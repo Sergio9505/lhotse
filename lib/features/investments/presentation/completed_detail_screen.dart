@@ -201,7 +201,6 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                           d.brandName.toUpperCase(),
                           style: AppTypography.labelUppercaseSm.copyWith(
                             color: AppColors.textPrimary,
-                            letterSpacing: 1.8,
                           ),
                         ),
                         if (d.location != null && d.location!.isNotEmpty) ...[
@@ -232,9 +231,8 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       '${_eurFormat.format(returnAmount)}€',
-                      style: AppTypography.figureAmount.copyWith(
+                      style: AppTypography.figureHero.copyWith(
                         color: AppColors.textPrimary,
-                        fontSize: 40,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -372,7 +370,6 @@ class _ActivoTab extends StatelessWidget {
                   'GALERÍA',
                   style: AppTypography.labelUppercaseMd.copyWith(
                     color: AppColors.accentMuted,
-                    letterSpacing: 1.8,
                   ),
                 ),
                 if (galleryImages.length > _kMaxVisibleGallery) ...[

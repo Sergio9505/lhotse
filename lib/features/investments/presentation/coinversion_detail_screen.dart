@@ -252,7 +252,6 @@ class _CoinversionDetailScreenState
                             brandName.toUpperCase(),
                             style: AppTypography.labelUppercaseSm.copyWith(
                               color: AppColors.textPrimary,
-                              letterSpacing: 1.8,
                             ),
                           ),
                           if (projectLocation.isNotEmpty) ...[
@@ -283,9 +282,8 @@ class _CoinversionDetailScreenState
                       const SizedBox(height: AppSpacing.md),
                       Text(
                         '${_eurFormat.format(inv.amount)}€',
-                        style: AppTypography.figureAmount.copyWith(
+                        style: AppTypography.figureHero.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 40,
                         ),
                       ),
                       const SizedBox(height: 3),
@@ -496,7 +494,6 @@ class _AvanceTab extends StatelessWidget {
             'NOTICIAS DEL PROYECTO',
             style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.accentMuted,
-              letterSpacing: 1.8,
             ),
           ),
         ),
@@ -638,7 +635,6 @@ class _GallerySectionHeader extends StatelessWidget {
             label,
             style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.accentMuted,
-              letterSpacing: 1.8,
             ),
           ),
           if (hasMore) ...[
@@ -1400,7 +1396,6 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
                   Text(widget.label,
                       style: AppTypography.labelUppercaseMd.copyWith(
                         color: AppColors.accentMuted,
-                        letterSpacing: 1.8,
                       )),
                   const Spacer(),
                   AnimatedRotation(

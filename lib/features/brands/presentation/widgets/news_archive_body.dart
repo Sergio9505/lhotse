@@ -55,6 +55,14 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
     return result;
   }
 
+  /// Returns null when subtitle looks like "City, XX" (location+country code
+  /// placeholder) — interim guard until news.subtitle holds real editorial decks.
+  static String? _editorialDeck(String? subtitle) {
+    if (subtitle == null || subtitle.isEmpty) return null;
+    final locationPattern = RegExp(r'^[\wÁÉÍÓÚÜÑáéíóúüñ\s]+,\s[A-Z]{2}$');
+    return locationPattern.hasMatch(subtitle) ? null : subtitle;
+  }
+
   void _setType(NewsType? type) {
     setState(() => _activeType = type);
   }
@@ -93,21 +101,23 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                         child: Row(
                           children: [
                             LhotseFilterChip(
-                              label: 'TODAS',
-                              isActive: _activeType == null,
-                              onTap: () => _setType(null),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            LhotseFilterChip(
                               label: 'PROYECTOS',
                               isActive: _activeType == NewsType.project,
-                              onTap: () => _setType(NewsType.project),
+                              onTap: () => _setType(
+                                _activeType == NewsType.project
+                                    ? null
+                                    : NewsType.project,
+                              ),
                             ),
                             const SizedBox(width: AppSpacing.sm),
                             LhotseFilterChip(
                               label: 'PRENSA',
                               isActive: _activeType == NewsType.press,
-                              onTap: () => _setType(NewsType.press),
+                              onTap: () => _setType(
+                                _activeType == NewsType.press
+                                    ? null
+                                    : NewsType.press,
+                              ),
                             ),
                           ],
                         ),
@@ -119,7 +129,7 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                       onTap: _toggleSearch,
                       child: PhosphorIcon(
                         PhosphorIconsThin.magnifyingGlass,
-                        size: 18,
+                        size: 20,
                         color: _searchOpen
                             ? AppColors.textPrimary
                             : AppColors.accentMuted,
@@ -160,9 +170,11 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                 )
               : ListView.separated(
                   controller: _scrollController,
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+                  padding: const EdgeInsets.only(
+                      top: AppSpacing.md, bottom: AppSpacing.xxl),
                   itemCount: news.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 32),
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: AppSpacing.lg),
                   itemBuilder: (context, i) {
                     final item = news[i];
                     return LhotseNewsCard(
@@ -170,11 +182,9 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                       imageUrl: item.imageUrl,
                       heroTag: 'news-hero-${item.id}',
                       brand: item.brand,
-                      subtitle: item.subtitle,
+                      subtitle: _editorialDeck(item.subtitle),
                       date: DateFormat('d MMM yyyy', 'es_ES').format(item.date),
-                      type: item.type == NewsType.press ? 'PRENSA' : 'PROYECTO',
                       hasPlayButton: item.hasPlayButton,
-                      isLeadStory: i == 0,
                       onTap: () =>
                           context.push('/news/${item.id}', extra: item),
                     );

@@ -73,7 +73,6 @@ class ProjectCard extends StatelessWidget {
                       project.brand.toUpperCase(),
                       style: AppTypography.labelUppercaseSm.copyWith(
                         color: AppColors.textPrimary,
-                        letterSpacing: 1.8,
                       ),
                     ),
                     Padding(

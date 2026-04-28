@@ -141,7 +141,6 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                 sectionLabel,
                 style: AppTypography.labelUppercaseMd.copyWith(
                   color: AppColors.accentMuted,
-                  letterSpacing: 1.8,
                 ),
               ),
             ),
@@ -244,7 +243,6 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                           'FINALIZADAS',
                           style: AppTypography.labelUppercaseMd.copyWith(
                             color: AppColors.accentMuted,
-                            letterSpacing: 1.8,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xs),
@@ -252,7 +250,6 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                           text: TextSpan(
                             style: AppTypography.bodyReading.copyWith(
                               color: AppColors.accentMuted,
-                              fontSize: 14,
                             ),
                             children: [
                               TextSpan(text: countLabel),
@@ -289,9 +286,8 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                               TextSpan(
                                 text:
                                     '+${c.actualRoi!.toStringAsFixed(1)}%',
-                                style: AppTypography.labelUppercaseSm.copyWith(
+                                style: AppTypography.metaUppercase.copyWith(
                                   color: const Color(0xFF2D6A4F),
-                                  fontSize: 12,
                                 ),
                               ),
                             ]
@@ -620,9 +616,8 @@ class _AssetRowState extends State<_AssetRow> {
                         const SizedBox(height: 2),
                       Text(
                         widget.location!.toUpperCase(),
-                        style: AppTypography.labelUppercaseSm.copyWith(
+                        style: AppTypography.metaUppercase.copyWith(
                           color: AppColors.accentMuted,
-                          fontSize: 12,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -633,17 +628,14 @@ class _AssetRowState extends State<_AssetRow> {
                         children: [
                           TextSpan(
                             text: _eurFormat.format(widget.amount),
-                            style: AppTypography.figureAmount.copyWith(
+                            style: AppTypography.figureRow.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           TextSpan(
                             text: '€',
-                            style: AppTypography.annotation.copyWith(
+                            style: AppTypography.figureCurrency.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -653,9 +645,8 @@ class _AssetRowState extends State<_AssetRow> {
                       const SizedBox(height: 3),
                       RichText(
                         text: TextSpan(
-                          style: AppTypography.labelUppercaseSm.copyWith(
+                          style: AppTypography.metaUppercase.copyWith(
                             color: AppColors.accentMuted,
-                            fontSize: 12,
                           ),
                           children: widget.returnLabelSpans,
                         ),
@@ -664,9 +655,8 @@ class _AssetRowState extends State<_AssetRow> {
                       const SizedBox(height: 3),
                       Text(
                         widget.returnLabel!.toUpperCase(),
-                        style: AppTypography.labelUppercaseSm.copyWith(
+                        style: AppTypography.metaUppercase.copyWith(
                           color: AppColors.accentMuted,
-                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -730,9 +720,8 @@ class _RentaFijaRow extends StatelessWidget {
     final mainAmount = c.amount;
     final badgeDate = c.startDate;
     final hasDocs = c.hasDocuments;
-    final greenStyle = AppTypography.labelUppercaseSm.copyWith(
+    final greenStyle = AppTypography.metaUppercase.copyWith(
       color: const Color(0xFF2D6A4F),
-      fontSize: 12,
       letterSpacing: 0,
     );
 
@@ -763,9 +752,8 @@ class _RentaFijaRow extends StatelessWidget {
                     children: [
                       Text(
                         _kMonths[badgeDate.month - 1],
-                        style: AppTypography.labelUppercaseSm.copyWith(
+                        style: AppTypography.metaUppercase.copyWith(
                           color: AppColors.textOnDark,
-                          fontSize: 12,
                           letterSpacing: 0.5,
                           height: 1.0,
                         ),
@@ -775,7 +763,7 @@ class _RentaFijaRow extends StatelessWidget {
                         '${badgeDate.year % 100}',
                         style: AppTypography.figureAmount.copyWith(
                           color: AppColors.textOnDark,
-                          fontSize: 18,
+
                           height: 1.0,
                         ),
                       ),
@@ -783,9 +771,8 @@ class _RentaFijaRow extends StatelessWidget {
                   )
                 : Text(
                     '${index ?? 0}',
-                    style: AppTypography.figureAmount.copyWith(
+                    style: AppTypography.figureRow.copyWith(
                       color: AppColors.textOnDark,
-                      fontSize: 22,
                     ),
                   ),
           ),
@@ -799,17 +786,14 @@ class _RentaFijaRow extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: _eurFormat.format(mainAmount),
-                        style: AppTypography.figureAmount.copyWith(
+                        style: AppTypography.figureRow.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       TextSpan(
                         text: '€',
-                        style: AppTypography.annotation.copyWith(
+                        style: AppTypography.figureCurrency.copyWith(
                           color: AppColors.textPrimary,
-                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -820,10 +804,8 @@ class _RentaFijaRow extends StatelessWidget {
                   // L2 — términos del contrato finalizado: rate + cuándo venció
                   RichText(
                     text: TextSpan(
-                      style: AppTypography.labelUppercaseSm.copyWith(
+                      style: AppTypography.metaUppercase.copyWith(
                         color: AppColors.accentMuted,
-                        fontSize: 12,
-                        letterSpacing: 0,
                       ),
                       children: [
                         TextSpan(
@@ -849,10 +831,8 @@ class _RentaFijaRow extends StatelessWidget {
                   // intereses.
                   RichText(
                     text: TextSpan(
-                      style: AppTypography.labelUppercaseSm.copyWith(
+                      style: AppTypography.metaUppercase.copyWith(
                         color: AppColors.accentMuted,
-                        fontSize: 12,
-                        letterSpacing: 0,
                       ),
                       children: [
                         const TextSpan(text: 'Ganancia '),
@@ -867,10 +847,8 @@ class _RentaFijaRow extends StatelessWidget {
                   // L2 — términos contractuales: rate + vencimiento
                   RichText(
                     text: TextSpan(
-                      style: AppTypography.labelUppercaseSm.copyWith(
+                      style: AppTypography.metaUppercase.copyWith(
                         color: AppColors.accentMuted,
-                        fontSize: 12,
-                        letterSpacing: 0,
                       ),
                       children: [
                         TextSpan(
@@ -890,10 +868,8 @@ class _RentaFijaRow extends StatelessWidget {
                   // L3 — flujo de pagos: frecuencia + intereses cobrados acumulados
                   RichText(
                     text: TextSpan(
-                      style: AppTypography.labelUppercaseSm.copyWith(
+                      style: AppTypography.metaUppercase.copyWith(
                         color: AppColors.accentMuted,
-                        fontSize: 12,
-                        letterSpacing: 0,
                       ),
                       children: [
                         TextSpan(
@@ -1037,17 +1013,14 @@ class _PurchaseRowState extends State<_PurchaseRow> {
                         children: [
                           TextSpan(
                             text: _eurFormat.format(c.purchaseValue),
-                            style: AppTypography.figureAmount.copyWith(
+                            style: AppTypography.figureRow.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           TextSpan(
                             text: '€',
-                            style: AppTypography.annotation.copyWith(
+                            style: AppTypography.figureCurrency.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -1059,7 +1032,6 @@ class _PurchaseRowState extends State<_PurchaseRow> {
                         address,
                         style: AppTypography.bodyReading.copyWith(
                           color: AppColors.accentMuted,
-                          fontSize: 14,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1069,10 +1041,8 @@ class _PurchaseRowState extends State<_PurchaseRow> {
                       const SizedBox(height: 2),
                       RichText(
                         text: TextSpan(
-                          style: AppTypography.labelUppercaseSm.copyWith(
+                          style: AppTypography.metaUppercase.copyWith(
                             color: AppColors.accentMuted,
-                            fontSize: 12,
-                            letterSpacing: 0,
                           ),
                           children: [
                             if (yieldLabel != null) TextSpan(text: yieldLabel),
@@ -1138,9 +1108,8 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
   @override
   Widget build(BuildContext context) {
     final c = widget.contract;
-    final greenStyle = AppTypography.labelUppercaseSm.copyWith(
+    final greenStyle = AppTypography.metaUppercase.copyWith(
       color: const Color(0xFF2D6A4F),
-      fontSize: 12,
       letterSpacing: 0,
     );
 
@@ -1206,17 +1175,14 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
                         children: [
                           TextSpan(
                             text: _eurFormat.format(c.amount),
-                            style: AppTypography.figureAmount.copyWith(
+                            style: AppTypography.figureRow.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           TextSpan(
                             text: '€',
-                            style: AppTypography.annotation.copyWith(
+                            style: AppTypography.figureCurrency.copyWith(
                               color: AppColors.textPrimary,
-                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -1228,7 +1194,6 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
                         c.projectName,
                         style: AppTypography.bodyReading.copyWith(
                           color: AppColors.accentMuted,
-                          fontSize: 14,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1239,10 +1204,8 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
                       const SizedBox(height: 2),
                       RichText(
                         text: TextSpan(
-                          style: AppTypography.labelUppercaseSm.copyWith(
+                          style: AppTypography.metaUppercase.copyWith(
                             color: AppColors.accentMuted,
-                            fontSize: 12,
-                            letterSpacing: 0,
                           ),
                           children: [
                             const TextSpan(
@@ -1262,10 +1225,8 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
                       const SizedBox(height: 2),
                       RichText(
                         text: TextSpan(
-                          style: AppTypography.labelUppercaseSm.copyWith(
+                          style: AppTypography.metaUppercase.copyWith(
                             color: AppColors.accentMuted,
-                            fontSize: 12,
-                            letterSpacing: 0,
                           ),
                           children: [
                             const TextSpan(text: 'Ganancia '),
@@ -1447,9 +1408,9 @@ class _EmptyState extends StatelessWidget {
                     Text(
                       'Todavía no tienes inversiones en esta firma.',
                       textAlign: TextAlign.center,
-                      style: AppTypography.bodyReading.copyWith(
+                      style: AppTypography.bodyEmphasis.copyWith(
+                        fontWeight: FontWeight.w400,
                         color: AppColors.textPrimary,
-                        fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),

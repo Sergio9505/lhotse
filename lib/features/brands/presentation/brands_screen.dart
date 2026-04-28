@@ -46,26 +46,29 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                 // the fintech premium pattern used in L3 detail tabs.
                 Expanded(
                   child: LhotseFilterTab(
-                    label: 'FIRMAS',
+                    label: 'Firmas',
                     isActive: _tab == _BrandsTab.firmas,
                     onTap: () => setState(() => _tab = _BrandsTab.firmas),
                     fullWidth: true,
+                    editorial: true,
                   ),
                 ),
                 Expanded(
                   child: LhotseFilterTab(
-                    label: 'PROYECTOS',
+                    label: 'Proyectos',
                     isActive: _tab == _BrandsTab.proyectos,
                     onTap: () => setState(() => _tab = _BrandsTab.proyectos),
                     fullWidth: true,
+                    editorial: true,
                   ),
                 ),
                 Expanded(
                   child: LhotseFilterTab(
-                    label: 'NOTICIAS',
+                    label: 'Noticias',
                     isActive: _tab == _BrandsTab.noticias,
                     onTap: () => setState(() => _tab = _BrandsTab.noticias),
                     fullWidth: true,
+                    editorial: true,
                   ),
                 ),
               ],

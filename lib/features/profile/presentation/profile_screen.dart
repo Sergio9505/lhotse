@@ -290,9 +290,8 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
                   color: role.badgeColor,
                   child: Text(
                     role.label,
-                    style: AppTypography.labelUppercaseSm.copyWith(
+                    style: AppTypography.badgePill.copyWith(
                       color: AppColors.textOnDark,
-                      fontSize: 9,
                     ),
                   ),
                 ),
@@ -380,7 +379,6 @@ class _SectionLabel extends StatelessWidget {
             style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.accentMuted,
               fontWeight: FontWeight.w400,
-              letterSpacing: 1.8,
             ),
           ),
           const SizedBox(width: AppSpacing.md),

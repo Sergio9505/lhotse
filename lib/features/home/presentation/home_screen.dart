@@ -222,7 +222,6 @@ class _FeedError extends StatelessWidget {
               'REINTENTAR',
               style: AppTypography.labelUppercaseMd.copyWith(
                 color: AppColors.textOnDark,
-                letterSpacing: 1.8,
                 decoration: TextDecoration.underline,
               ),
             ),

@@ -315,7 +315,6 @@ class _WebCta extends StatelessWidget {
             'VISITAR WEB',
             style: AppTypography.labelUppercaseMd.copyWith(
               color: AppColors.textOnDark,
-              letterSpacing: 1.8,
             ),
           ),
         ),

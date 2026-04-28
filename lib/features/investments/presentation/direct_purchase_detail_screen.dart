@@ -241,7 +241,6 @@ class _DirectPurchaseDetailContentState
                           brandName.toUpperCase(),
                           style: AppTypography.labelUppercaseSm.copyWith(
                             color: AppColors.textPrimary,
-                            letterSpacing: 1.8,
                           ),
                         ),
                         if (c.assetLocation != null) ...[
@@ -272,9 +271,8 @@ class _DirectPurchaseDetailContentState
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       '$purchaseFormatted€',
-                      style: AppTypography.figureAmount.copyWith(
+                      style: AppTypography.figureHero.copyWith(
                         color: AppColors.textPrimary,
-                        fontSize: 40,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -497,7 +495,6 @@ class _AssetTab extends StatelessWidget {
                   'GALERÍA',
                   style: AppTypography.labelUppercaseMd.copyWith(
                     color: AppColors.accentMuted,
-                    letterSpacing: 1.8,
                   ),
                 ),
                 if (galleryImages.length > _kMaxVisibleGallery) ...[

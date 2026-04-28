@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 /// Rectangular filter chip — sharp edges, black when active, transparent when inactive.
-/// Used for document category filters, status filters, etc.
+/// Used for catalog status filters (Firmas archives) and document category
+/// filters across investment detail screens + bottom sheets.
 class LhotseFilterChip extends StatelessWidget {
   const LhotseFilterChip({
     super.key,
@@ -27,9 +28,10 @@ class LhotseFilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isActive ? AppColors.primary : Colors.transparent,
           border: Border.all(
+            width: isActive ? 1.0 : 0.5,
             color: isActive
                 ? AppColors.primary
-                : AppColors.textPrimary.withValues(alpha: 0.1),
+                : AppColors.textPrimary.withValues(alpha: 0.18),
           ),
         ),
         child: Text(

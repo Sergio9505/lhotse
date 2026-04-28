@@ -4,10 +4,10 @@ import '../theme/app_theme.dart';
 import 'lhotse_image.dart';
 
 /// Reusable news card. Two variants:
-/// - **Default (full)**: minimal-luxury-modern captioned photograph. 1:1
-///   image wrapped in a shared-element `Hero`, editorial hairlines framing
-///   the caption, `displayHero` Light 48pt title, italic deck and textual
-///   `POR {BRAND} · {DATE}` byline. Used in AllNews + NewsArchiveBody.
+/// - **Default (full)**: catalog-grammar tile (escaparate curado). 3:2 image
+///   wrapped in a shared-element `Hero`, `editorialTitle` 36pt title, italic
+///   deck (1 line), 2-token byline `{BRAND} · {DATE}`. Used in
+///   NewsArchiveBody.
 /// - **Compact**: 260×160 with beige overlay on image — unchanged, for
 ///   horizontal carousels inside detail screens.
 class LhotseNewsCard extends StatelessWidget {
@@ -21,7 +21,6 @@ class LhotseNewsCard extends StatelessWidget {
     this.date,
     this.type,
     this.hasPlayButton = false,
-    this.isLeadStory = false,
     this.onTap,
   })  : width = null,
         height = null;
@@ -39,7 +38,6 @@ class LhotseNewsCard extends StatelessWidget {
         height = 160,
         date = null,
         type = null,
-        isLeadStory = false,
         heroTag = null;
 
   final String title;
@@ -52,7 +50,6 @@ class LhotseNewsCard extends StatelessWidget {
   final double? width;
   final double? height;
   final bool hasPlayButton;
-  final bool isLeadStory;
   final VoidCallback? onTap;
 
   bool get _isCompact => width != null;
@@ -63,16 +60,8 @@ class LhotseNewsCard extends StatelessWidget {
   }
 
   Widget _buildFull() {
-    final deckMaxLines = isLeadStory ? 3 : 2;
-    // Image stack hosts the optional play button + the type chip overlay.
-    // The Hero wraps only the LhotseImage so the chip stays in the card and
-    // doesn't travel during the shared-element transition. 1:1 aspect keeps
-    // the full caption (title + deck + byline) visible without scroll —
-    // critical for a scrollable catalogue where the user is scanning piece
-    // to piece. Cover-magazine treatment lives in the news detail screen,
-    // not in this listing tile.
     final image = AspectRatio(
-      aspectRatio: 1,
+      aspectRatio: 3 / 2,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -81,34 +70,6 @@ class LhotseNewsCard extends StatelessWidget {
           else
             LhotseImage(imageUrl),
           if (hasPlayButton) _playButton(false),
-          if (type != null && type!.isNotEmpty)
-            Positioned(
-              top: 20,
-              left: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 0.5,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x33000000),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: Text(
-                  type!.toUpperCase(),
-                  style: AppTypography.labelUppercaseSm.copyWith(
-                    color: Colors.white,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -120,25 +81,23 @@ class LhotseNewsCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           image,
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Title — Campton Light 48pt, mixed case, tight line-height.
                 Text(
                   title,
-                  style: AppTypography.editorialHero.copyWith(
+                  style: AppTypography.editorialTitle.copyWith(
                     color: AppColors.textPrimary,
                   ),
-                  maxLines: 3,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (subtitle != null && subtitle!.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),
-                  // Deck in italic — magazine pull-quote treatment.
                   Text(
                     subtitle!,
                     style: AppTypography.annotation.copyWith(
@@ -146,11 +105,11 @@ class LhotseNewsCard extends StatelessWidget {
                       height: 1.6,
                       fontStyle: FontStyle.italic,
                     ),
-                    maxLines: deckMaxLines,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: 10),
                 _byline(),
               ],
             ),
@@ -160,46 +119,54 @@ class LhotseNewsCard extends StatelessWidget {
     );
   }
 
-  /// Byline — `POR {BRAND}  ·  {DATE}`. News keeps the textual treatment
-  /// because the brand is an *author* (editorial publisher), not a maison.
+  /// 3-token byline mirroring ProjectShowcaseCard: only the brand wordmark
+  /// is uppercase (identity); date and type are mixed case (descriptive meta).
   Widget _byline() {
     final hasBrand = brand != null && brand!.isNotEmpty;
     final hasDate = date != null && date!.isNotEmpty;
-    if (!hasBrand && !hasDate) return const SizedBox.shrink();
+    final hasType = type != null && type!.isNotEmpty;
+    if (!hasBrand && !hasDate && !hasType) return const SizedBox.shrink();
+
+    final separator = TextSpan(
+      text: '  ·  ',
+      style: AppTypography.annotation.copyWith(
+        color: AppColors.textPrimary.withValues(alpha: 0.4),
+      ),
+    );
 
     final children = <InlineSpan>[];
     if (hasBrand) {
       children.add(TextSpan(
-        text: 'POR ',
-        style: TextStyle(color: AppColors.accentMuted, letterSpacing: 1.5),
-      ));
-      children.add(TextSpan(
         text: brand!.toUpperCase(),
-        style: TextStyle(color: AppColors.textPrimary, letterSpacing: 1.5),
-      ));
-    }
-    if (hasBrand && hasDate) {
-      children.add(TextSpan(
-        text: '  ·  ',
-        style: TextStyle(
-          color: AppColors.textPrimary.withValues(alpha: 0.4),
+        style: AppTypography.labelUppercaseSm.copyWith(
+          color: AppColors.textPrimary,
+          letterSpacing: 1.5,
         ),
       ));
+      if (hasDate || hasType) children.add(separator);
     }
     if (hasDate) {
       children.add(TextSpan(
-        text: date!.toUpperCase(),
-        style: TextStyle(color: AppColors.accentMuted, letterSpacing: 1.2),
+        text: date!,
+        style: AppTypography.annotation.copyWith(
+          color: AppColors.accentMuted,
+        ),
+      ));
+      if (hasType) children.add(separator);
+    }
+    if (hasType) {
+      children.add(TextSpan(
+        text: type!,
+        style: AppTypography.annotation.copyWith(
+          color: AppColors.accentMuted,
+        ),
       ));
     }
 
     return RichText(
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      text: TextSpan(
-        style: AppTypography.labelUppercaseSm.copyWith(letterSpacing: 1.5),
-        children: children,
-      ),
+      text: TextSpan(children: children),
     );
   }
 

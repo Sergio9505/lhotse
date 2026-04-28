@@ -13,15 +13,13 @@ enum ProjectPhase {
         _ => ProjectPhase.preConstruction,
       };
 
-  /// Uppercase user-facing label used in editorial kickers (card + detail).
-  /// preConstruction and construction collapse to a single "EN DESARROLLO"
-  /// state — the investor doesn't need to distinguish "raising" from "building"
-  /// at catalog level. Only the exit is a separate visual state.
+  /// Mixed-case label for inline bylines. preConstruction and construction
+  /// collapse — the investor doesn't need to distinguish raising from building.
   String get label => switch (this) {
         ProjectPhase.preConstruction ||
         ProjectPhase.construction =>
-          'EN DESARROLLO',
-        ProjectPhase.exited => 'FINALIZADO',
+          'En desarrollo',
+        ProjectPhase.exited => 'Finalizado',
       };
 }
 

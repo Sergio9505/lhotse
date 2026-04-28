@@ -6,6 +6,12 @@ extension NewsTypeX on NewsType {
         'press' => NewsType.press,
         _ => NewsType.press,
       };
+
+  /// Mixed-case label for inline bylines. Uppercase callers .toUpperCase().
+  String get label => switch (this) {
+        NewsType.project => 'Proyecto',
+        NewsType.press => 'Prensa',
+      };
 }
 
 class NewsItemData {
