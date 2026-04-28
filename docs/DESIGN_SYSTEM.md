@@ -38,34 +38,51 @@ These rules apply to ALL UI built in the app. Check before every screen/widget i
 
 ### Typography (`app_typography.dart`) — Campton only
 
-18 semantic tokens, role-based (not shape). Use tokens at native size — `copyWith` restricted to `color` and `fontStyle: italic` only. Token audit reduced call-site overrides from ~142 to 2 justified residuals.
+**24 semantic tokens**, role-based (not shape). Use tokens at native size. Contract: `copyWith` restricted to `color` and `fontStyle` only — any other property is either a token or documented with `// EXCEPTION` in the call site. Audit tool: `bash tool/check_typography_overrides.sh`.
 
 | Token | Size | Weight | Role |
 |-------|------|--------|------|
 | editorialHero | 48 | Light (300) | Top-level covers. L1 Estrategia, project_detail + news_detail heroes, feed_card title. h0.98 / ls −0.5 |
-| editorialTitle | 36 | Light (300) | Interior covers (one level down). L2/L3 Estrategia heros, **catalog cards** (`ProjectShowcaseCard` + `LhotseNewsCard` full), profile_screen display name + avatar initials fallback. h1.0 / ls −0.4 |
-| editorialSubtitle | 24 | Medium (500) | Mixed-case taglines / second-level statements. brand_detail tagline, profile private banner title, search empty state |
-| titleUppercaseLg | 24 | Medium (500) | Large uppercase titles. project_card title (home feed), large card heros, app_header title, login header, bottom_sheet title, AppBar default. ls −0.2 |
-| titleUppercase | 18 | Medium (500) | Uppercase headers. Collapsed AppBar titles, asset rows in L2, search result project/asset cards, brand fallback wordmarks, profile/settings screen headers. ls −0.2 |
-| **figureHero** | **40** | **Book (400)** | **Full-screen detail header amount. L3 investment detail screens (compraDirecta / coinversion / completed). tabular. h1.1 / ls −0.5** |
-| **figureRow** | **22** | **Medium (500)** | **Row-level capital amounts in investment rows (PurchaseRow / CoinvestmentRow / RentaFijaRow). tabular. h1.2 / ls −0.3** |
-| figureAmount | 18 | Book (400) | Ledger-level amounts (metric blocks, Estrategia L1/L2 rows). `tabularFigures` for column alignment. Color set per screen |
-| **figureCurrency** | **14** | **Book (400)** | **Paired € / currency glyph beside figureRow or figureAmount. Muted color via copyWith. h1.2 / ls −0.1** |
-| bodyInput | 18 | Book (400) | Mixed-case text inputs (search field, auth fields). Hint con `fontWeight: w300` override. h1.2 |
-| bodyEmphasis | 16 | Medium (500) | Emphasized body where the value is the read target. Ledger row title + amount. h1.4 |
-| bodyReading | 14 | Book (400) | Description paragraphs (project/news/brand body), legal text, profile read-only field values, doc row name, key-value list values. h1.6 |
-| labelUppercaseMd | 12 | Medium (500) | Section labels, sticky headers, CTAs (DESCARGAR FOLLETO / VISITAR WEB / GUARDAR), tab markers (LhotseFilterTab non-editorial), filter chips. **ls 1.8** (recalibrated from 1.5) |
-| annotation | 12 | Book (400) | Italic taglines, "est." labels, error messages, fine print, catalog card editorial deck (italic, accentMuted). h1.5 |
-| **metaUppercase** | **12** | **Medium (500)** | **Investment row meta lines (yield, reval, payment freq, phase). Uppercase, no tracking (ls 0). Distinct from labelUppercaseMd (which has ls 1.8 and is for external labels/CTAs).** |
-| **metaCaption** | **12** | **Book (400)** | **Sentence-case label beneath a figure ("Valor de compra", metric column labels). ls 0.** |
-| labelUppercaseSm | 10 | Medium (500) | Brand names, bylines in catalog cards, PRIVATE/VIP chips, filter chips. ls 1.2 |
-| **badgePill** | **9** | **Medium (500)** | **Status pills: role badge (INVERSOR/VIEWER), KYC status, security status. ls 0.8.** |
+| editorialTitle | 36 | Light (300) | Interior covers (one level down). L2/L3 Estrategia heros, catalog cards (`ProjectShowcaseCard` + `LhotseNewsCard` full). h1.0 / ls −0.4 |
+| editorialSubtitle | 24 | Medium (500) | Mixed-case taglines / second-level statements. brand_detail tagline, profile private banner title, search empty state. h1.3 / ls −0.3 |
+| titleUppercaseLg | 24 | Medium (500) | Large uppercase titles. project_card title (home feed), large card heros, app_header title, login header, bottom_sheet title. ls −0.2 |
+| titleUppercase | 18 | Medium (500) | Uppercase headers. Collapsed AppBar titles, search result project/asset/brand rows. ls −0.2 |
+| figureHero | 40 | Book (400) | Full-screen detail header amount. L3 investment detail screens. tabular. h1.1 / ls −0.5 |
+| figureRow | 22 | Medium (500) | Row-level capital amounts in investment rows. tabular. h1.2 / ls −0.3 |
+| figureAmount | 18 | Book (400) | Ledger-level amounts (metric blocks, Estrategia L1/L2 rows). tabular. Color set per screen |
+| figureCurrency | 14 | Book (400) | Paired € / currency glyph beside figureRow or figureAmount. h1.2 / ls −0.1 |
+| bodyInput | 18 | Book (400) | Mixed-case text inputs (search field, auth fields). h1.2 |
+| bodyEmphasis | 16 | Medium (500) | Emphasized body where the value is the read target. Ledger row title + amount, primary tab navigation. h1.4 |
+| bodyRow | 16 | Book (400) | Row primary text in calm read contexts (search result rows, key-value lists, error/empty states). Lighter than bodyEmphasis. h1.4 |
+| bodyReading | 14 | Book (400) | Description paragraphs (project/news/brand body), legal text, doc row name. h1.6 |
+| labelUppercaseMd | 12 | Medium (500) | Active control labels: CTAs, tab markers (LhotseFilterTab), filter chips, sticky headers. **ls 1.8** |
+| labelCompact | 12 | Medium (500) | Dense navigation/settings row labels, KYC rows, notification toggles. Same weight as labelUppercaseMd but **ls 0.8** for contexts where 1.8 reads too open |
+| sectionLabel | 12 | Book (400) | Quiet section organizer headers. Used internally by `LhotseSectionLabel` widget and inline Row headers. **ls 1.8, w400** (vs labelUppercaseMd w500) |
+| annotation | 12 | Book (400) | Short inline annotations, "est." labels, error messages, fine print. h1.5 |
+| annotationParagraph | 12 | Book (400) | Multi-line italic deck / catalog card subtitle. Same as annotation but **h1.6** for comfortable paragraph reading |
+| metaUppercase | 12 | Medium (500) | Investment row meta lines (yield, reval, payment freq, phase), trending chips, brand initials. ls 0. Case set at call site |
+| metaCaption | 12 | Book (400) | Sentence-case label beneath a figure ("Valor de compra", metric column labels). ls 0 |
+| labelUppercaseSm | 10 | Medium (500) | Brand names in detail screen AppBar kicker, PRIVATE/VIP chips. ls 1.2 |
+| wordmarkByline | 10 | Medium (500) | Uppercase brand identifier in catalog cards, detail heroes, login CTA, PRIVATE badges. **ls 1.5** (wider than labelUppercaseSm to reinforce identity read) |
+| badgePill | 9 | Medium (500) | Status pills: role badge (INVERSOR/VIEWER), KYC status, security status. ls 0.8 |
+| badgeMicro | 8 | Medium (500) | Compact card bylines (`LhotseNewsCard.compact`) and notification count pills. ls 1.2 |
 
-**Residuals justificados (únicos 2 copyWith(fontSize:) restantes):**
-- `labelUppercaseSm.copyWith(fontSize: 8)` — compact news card subtitle en tarjeta 160px (micro badge).
-- `bodyEmphasis.copyWith(fontSize: 14)` — editorial tab label (Firmas/Proyectos/Noticias) con `LhotseFilterTab.editorial: true`.
+**Documented exceptions** (marked `// EXCEPTION` in call site):
+- `editorialTitle.copyWith(fontWeight: w500)` — avatar initials in profile (w300 Light reads too thin at 36pt)
+- `bodyInput.copyWith(fontWeight: w300)` — placeholder hint text (lighter than input value)
+- `bodyEmphasis.copyWith(fontFeatures: [tabularFigures()])` — amount columns in `LhotseLedgerRow` (tabular alignment)
+- `annotation.copyWith(fontWeight: w600/w500)` — highlighted total row in `LhotseKeyValueList`
+- `bodyReading.copyWith(fontWeight: w500/w600)` — value column weight in `LhotseKeyValueList`
+- `labelUppercaseSm.copyWith(letterSpacing: 0.8)` — date byline in `LhotseDocRow` (native 1.2 too wide)
+- `labelUppercaseSm.copyWith(letterSpacing: 1.0/1.35)` — compact chip/form field label contexts
+- `labelUppercaseSm.copyWith(fontWeight: w400)` — input field caption in `LhotseAuthField`
+- `labelUppercaseSm.copyWith(letterSpacing: 2.0)` — hero kicker text (intentional opening)
+- `labelUppercaseMd.copyWith(letterSpacing: 1.2)` — CTA pill on dark background
+- `labelUppercaseSm/Md.copyWith(height: 1.0)` — chip vertical centering
 
-**Constante exportada:** `AppTypography.fontFamily` (`'Campton'`) — única ocurrencia legítima del literal. Los casos bare `TextStyle(...)` (welcome wordmark con strut, cifras hero animadas en Estrategia con fontSize interpolado en scroll) referencian esta constante.
+**Contract enforcement:** `bash tool/check_typography_overrides.sh` — reports violations. `--ci` flag exits 1.
+
+**Constante exportada:** `AppTypography.fontFamily` (`'Campton'`) — única ocurrencia legítima del literal.
 
 ### Icon scale (Phosphor Thin)
 
