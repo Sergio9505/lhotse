@@ -22,6 +22,7 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
+import '../../home/presentation/widgets/project_showcase_card.dart';
 import '../../investments/data/investments_provider.dart';
 import '../../investments/domain/coinvestment_contract_data.dart';
 import '../../investments/domain/fixed_income_contract_data.dart';
@@ -502,80 +503,18 @@ class _FeaturedSection extends StatelessWidget {
       children: [
         const LhotseSectionLabel(label: 'DESTACADOS'),
         const SizedBox(height: AppSpacing.md),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (int i = 0; i < projects.length; i++) ...[
-                _FeaturedCard(project: projects[i]),
-                if (i < projects.length - 1)
-                  const SizedBox(height: AppSpacing.md),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.project});
-
-  final ProjectData project;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/projects/${project.id}', extra: project),
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 200,
-            width: double.infinity,
-            child: LhotseImage(project.imageUrl),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            project.name.toUpperCase(),
-            style: AppTypography.titleUppercase.copyWith(
-              color: AppColors.textPrimary,
+        for (int i = 0; i < projects.length; i++) ...[
+          ProjectShowcaseCard(
+            project: projects[i],
+            onTap: () => context.push(
+              '/projects/${projects[i].id}',
+              extra: projects[i],
             ),
           ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Text(
-                project.brand.toUpperCase(),
-                style: AppTypography.wordmarkByline.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  '·',
-                  style: AppTypography.labelUppercaseSm.copyWith(
-                    color: AppColors.textPrimary.withValues(alpha: 0.4),
-                  ),
-                ),
-              ),
-              Flexible(
-                child: Text(
-                  project.location.toUpperCase(),
-                  style: AppTypography.labelUppercaseSm.copyWith(
-                    color: AppColors.accentMuted,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
+          if (i < projects.length - 1)
+            const SizedBox(height: AppSpacing.lg),
         ],
-      ),
+      ],
     );
   }
 }
