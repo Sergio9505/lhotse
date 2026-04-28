@@ -41,7 +41,7 @@ class LhotseFilterTab extends StatelessWidget {
   /// matches the label width.
   final bool fullWidth;
 
-  /// When true, uses `bodyEmphasis` 14pt sentence-case (Firmas sub-tabs,
+  /// When true, uses `bodyEmphasis` 16pt sentence-case (Firmas sub-tabs,
   /// detail screen sub-navs). When false, uses `labelUppercaseMd` 12pt
   /// uppercase tracked (filter chip / archive selector style).
   final bool editorial;
@@ -50,7 +50,7 @@ class LhotseFilterTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final highlighted = isActive || hasSelection;
     final baseStyle = editorial
-        ? AppTypography.bodyEmphasis.copyWith(fontSize: 14)
+        ? AppTypography.bodyEmphasis
         : AppTypography.labelUppercaseMd;
 
     final column = Column(

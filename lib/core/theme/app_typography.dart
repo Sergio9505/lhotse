@@ -147,7 +147,8 @@ abstract final class AppTypography {
   );
 
   /// Body emphasis — 16pt Medium. Ledger row title + amount, doc row
-  /// names, key-value emphasized values. Heavier than bodyReading for
+  /// names, key-value emphasized values, primary tab navigation
+  /// (LhotseFilterTab editorial mode). Heavier than bodyReading for
   /// rows where the value is the read target. Apply tabularFigures via
   /// copyWith for column-stable amounts.
   static const bodyEmphasis = TextStyle(
