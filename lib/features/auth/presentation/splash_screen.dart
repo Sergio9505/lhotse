@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../app/router.dart';
 import '../../../core/data/assets_provider.dart';
@@ -16,14 +15,9 @@ import '../../../core/data/projects_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../investments/data/investments_provider.dart';
 
-/// First screen after the native bootstrap. Plays a Lottie motion while
-/// warming up the critical Riverpod providers so that any tab the user
-/// jumps into first (Buscar, Estrategia…) has data ready.
-///
-/// TODO: when the designer delivers `lhotse_splash.json`, drop it in
-/// `assets/animations/` + register in pubspec + swap `Lottie.network(...)`
-/// for `Lottie.asset(...)` below. Also consider `flutter_native_splash`
-/// with a matching first-frame PNG for a fully seamless cold start.
+/// First screen after the native bootstrap. Plays the branded splash video
+/// (muted, looping) while warming up the critical Riverpod providers so that
+/// any tab the user jumps into first has data ready.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -32,10 +26,7 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
-  // Stable public Lottie sample from the lottie-flutter package repo.
-  // Placeholder — will be replaced with the branded Lhotse motion.
-  static const _placeholderLottieUrl =
-      'https://raw.githubusercontent.com/xvrh/lottie-flutter/master/example/assets/Logo/LogoSmall.json';
+  late final VideoPlayerController _controller;
 
   static const _minSplashDuration = Duration(milliseconds: 3000);
   static const _warmUpTimeout = Duration(seconds: 5);
@@ -43,13 +34,29 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _controller = VideoPlayerController.asset('assets/videos/lhotse_splash.mp4')
+      ..setVolume(0)
+      ..setLooping(true)
+      ..initialize().then((_) {
+        if (mounted) {
+          setState(() {});
+          _controller.play();
+        }
+      });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Flutter has rendered its first frame — dismiss the native splash so
-      // the Lottie becomes visible. The transition is continuous because
-      // both stages share the same centered-logo-on-black visual.
+      // the video becomes visible. The transition is seamless because the
+      // native splash and the first video frame share the same black visual.
       FlutterNativeSplash.remove();
       _warmUpAndNavigate();
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   /// Runs a future and swallows any error. Returns `Future<void>` so all
@@ -102,36 +109,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: Center(
-        child: SizedBox(
-          width: 180,
-          height: 180,
-          child: Lottie.network(
-            _placeholderLottieUrl,
-            fit: BoxFit.contain,
-            repeat: true,
-            errorBuilder: (context, _, _) => _StaticLogoFallback(),
-            // While the JSON downloads on first cold-boot with network,
-            // show the static logo so the screen is never empty.
-            frameBuilder: (context, child, composition) =>
-                composition == null ? _StaticLogoFallback() : child,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StaticLogoFallback extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SvgPicture.asset(
-        'assets/images/lhotse_logo.svg',
-        width: 120,
-        colorFilter: const ColorFilter.mode(
-          AppColors.textOnDark,
-          BlendMode.srcIn,
-        ),
+        child: _controller.value.isInitialized
+            ? AspectRatio(
+                aspectRatio: _controller.value.aspectRatio,
+                child: VideoPlayer(_controller),
+              )
+            : const SizedBox.shrink(),
       ),
     );
   }

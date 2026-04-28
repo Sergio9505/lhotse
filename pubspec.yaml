@@ -79,6 +79,7 @@ flutter:
     - assets/icons/
     - assets/icons/brands/
     - assets/images/
+    - assets/videos/
 
   fonts:
     - family: Campton
