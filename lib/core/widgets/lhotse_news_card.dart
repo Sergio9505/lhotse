@@ -100,9 +100,8 @@ class LhotseNewsCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     subtitle!,
-                    style: AppTypography.annotation.copyWith(
+                    style: AppTypography.annotationParagraph.copyWith(
                       color: AppColors.accentMuted,
-                      height: 1.6,
                       fontStyle: FontStyle.italic,
                     ),
                     maxLines: 1,
@@ -138,9 +137,8 @@ class LhotseNewsCard extends StatelessWidget {
     if (hasBrand) {
       children.add(TextSpan(
         text: brand!.toUpperCase(),
-        style: AppTypography.labelUppercaseSm.copyWith(
+        style: AppTypography.wordmarkByline.copyWith(
           color: AppColors.textPrimary,
-          letterSpacing: 1.5,
         ),
       ));
       if (hasDate || hasType) children.add(separator);

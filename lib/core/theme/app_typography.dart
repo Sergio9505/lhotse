@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Typography tokens — Campton only, role-based naming.
 ///
-/// 19 semantic tokens covering the entire app's editorial system
+/// 22 semantic tokens covering the entire app's editorial system
 /// (luxury wealth management). Reach for a token by its role.
 ///
 /// CONTRACT: `.copyWith` is restricted to `color` and `fontStyle` only.
@@ -12,8 +12,8 @@ import 'package:flutter/material.dart';
 /// Editorial scale:   editorialHero 48 → editorialTitle 36 → editorialSubtitle 24
 /// Title scale:       titleUppercaseLg 24 → titleUppercase 18
 /// Figure scale:      figureHero 40 → figureRow 22 → figureAmount 18 → figureCurrency 14
-/// Body scale:        bodyInput 18 → bodyEmphasis 16 → bodyReading 14
-/// Label scale:       labelUppercaseMd 12 → annotation 12 → labelUppercaseSm 10
+/// Body scale:        bodyInput 18 → bodyEmphasis 16 → bodyRow 16 → bodyReading 14
+/// Label scale:       labelUppercaseMd 12 → annotation 12 → annotationParagraph 12 → labelUppercaseSm 10 → wordmarkByline 10
 /// Micro scale:       metaUppercase 12 → metaCaption 12 → badgePill 9 → badgeMicro 8
 abstract final class AppTypography {
   /// Public so non-token callers (welcome wordmark with strut, animated
@@ -138,6 +138,19 @@ abstract final class AppTypography {
     letterSpacing: 1.2,
   );
 
+  /// Wordmark byline — uppercase brand identifier in catalog cards and detail
+  /// screens. 10pt w500 ls 1.5. Used in project_card, project_showcase_card,
+  /// lhotse_news_card, brand_detail, asset_detail, project_detail, news_detail,
+  /// login, and search results. Wider tracking than labelUppercaseSm (1.2)
+  /// reinforces the identity read over descriptive meta.
+  static const wordmarkByline = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 10,
+    fontWeight: FontWeight.w500,
+    height: 1.4,
+    letterSpacing: 1.5,
+  );
+
   /// Body input — 18pt Regular. Mixed-case text inputs (search field,
   /// auth fields) one step above bodyReading for primary input prominence.
   /// Drop hint weight to w300 via copyWith.
@@ -162,6 +175,17 @@ abstract final class AppTypography {
     letterSpacing: -0.1,
   );
 
+  /// Body row — 16pt Regular. Row primary text in calm read contexts (search
+  /// result rows, key-value lists) where the label is informational rather
+  /// than the primary value target. Lighter weight than bodyEmphasis (w500).
+  static const bodyRow = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+    letterSpacing: -0.1,
+  );
+
   /// Body reading — 14pt Regular, line-height 1.6. Description paragraphs
   /// (project_detail, brand_detail, news body). Color via copyWith.
   static const bodyReading = TextStyle(
@@ -171,8 +195,9 @@ abstract final class AppTypography {
     height: 1.6,
   );
 
-  /// Annotation — 12pt w400. Taglines, italic annotations, "est." labels.
-  /// Apply italic via copyWith(fontStyle) when needed.
+  /// Annotation — 12pt w400. Short taglines, inline annotations, "est." labels.
+  /// Apply italic via copyWith(fontStyle) when needed. For multi-line italic
+  /// decks use annotationParagraph (height 1.6).
   static const annotation = TextStyle(
     fontFamily: fontFamily,
     fontSize: 12,
@@ -181,10 +206,21 @@ abstract final class AppTypography {
     letterSpacing: 0.1,
   );
 
+  /// Annotation paragraph — 12pt w400, line-height 1.6. Multi-line italic deck
+  /// in editorial cards (catalog cards, detail kickers). Same spec as annotation
+  /// but taller line-height for comfortable paragraph reading.
+  static const annotationParagraph = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 1.6,
+    letterSpacing: 0.1,
+  );
+
   /// Meta uppercase — 12pt w500, no tracking. Investment row meta lines
-  /// (yield, reval, payment frequency, phase). Same size as annotation
-  /// but uppercase w500 with tracking reset — distinct from labelUppercaseSm
-  /// which is 10pt for brand bylines / chips.
+  /// (yield, reval, payment frequency, phase), trending chips, brand
+  /// initials fallback. Same size as annotation but w500 — case (upper or
+  /// mixed) is decided at call site, not by the token.
   static const metaUppercase = TextStyle(
     fontFamily: fontFamily,
     fontSize: 12,

@@ -98,8 +98,7 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
               ? const CircularProgressIndicator(strokeWidth: 1.5)
               : Text(
                   'Activo no encontrado',
-                  style: AppTypography.bodyEmphasis.copyWith(
-                    fontWeight: FontWeight.w400,
+                  style: AppTypography.bodyRow.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -220,9 +219,7 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                     RichText(
                       overflow: TextOverflow.ellipsis,
                       text: TextSpan(
-                        style: AppTypography.labelUppercaseSm.copyWith(
-                          letterSpacing: 1.5,
-                        ),
+                        style: AppTypography.wordmarkByline,
                         children: [
                           if (detail.brandName != null &&
                               detail.brandName!.isNotEmpty) ...[

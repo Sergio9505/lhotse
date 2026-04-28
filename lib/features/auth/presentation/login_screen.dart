@@ -155,9 +155,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Text(
                           'OLVIDÉ MI CONTRASEÑA',
-                          style: AppTypography.labelUppercaseSm.copyWith(
+                          style: AppTypography.wordmarkByline.copyWith(
                             color: AppColors.textSecondary,
-                            letterSpacing: 1.5,
                           ),
                         ),
                       ),

@@ -48,9 +48,8 @@ class ProjectShowcaseCard extends StatelessWidget {
                           horizontal: 8, vertical: 5),
                       child: Text(
                         'PRIVATE',
-                        style: AppTypography.labelUppercaseSm.copyWith(
+                        style: AppTypography.wordmarkByline.copyWith(
                           color: AppColors.textOnDark,
-                          letterSpacing: 1.5,
                         ),
                       ),
                     ),
@@ -77,9 +76,8 @@ class ProjectShowcaseCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     project.tagline,
-                    style: AppTypography.annotation.copyWith(
+                    style: AppTypography.annotationParagraph.copyWith(
                       color: AppColors.accentMuted,
-                      height: 1.6,
                       fontStyle: FontStyle.italic,
                     ),
                     maxLines: 1,
@@ -117,9 +115,8 @@ class _ProjectByline extends StatelessWidget {
           if (hasBrand) ...[
             TextSpan(
               text: project.brand.toUpperCase(),
-              style: AppTypography.labelUppercaseSm.copyWith(
+              style: AppTypography.wordmarkByline.copyWith(
                 color: AppColors.textPrimary,
-                letterSpacing: 1.5,
               ),
             ),
             if (hasCity || status.isNotEmpty)

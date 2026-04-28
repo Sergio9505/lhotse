@@ -1408,8 +1408,7 @@ class _EmptyState extends StatelessWidget {
                     Text(
                       'Todavía no tienes inversiones en esta firma.',
                       textAlign: TextAlign.center,
-                      style: AppTypography.bodyEmphasis.copyWith(
-                        fontWeight: FontWeight.w400,
+                      style: AppTypography.bodyRow.copyWith(
                         color: AppColors.textPrimary,
                       ),
                     ),

@@ -82,8 +82,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               ? const CircularProgressIndicator(strokeWidth: 1.5)
               : Text(
                   'Noticia no encontrada',
-                  style: AppTypography.bodyEmphasis.copyWith(
-                    fontWeight: FontWeight.w400,
+                  style: AppTypography.bodyRow.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -248,9 +247,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       Text(
                         news.subtitle!,
-                        style: AppTypography.annotation.copyWith(
+                        style: AppTypography.annotationParagraph.copyWith(
                           color: AppColors.accentMuted,
-                          height: 1.6,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -343,9 +341,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     if (hasBrand) {
       children.add(TextSpan(
         text: brand.toUpperCase(),
-        style: AppTypography.labelUppercaseSm.copyWith(
+        style: AppTypography.wordmarkByline.copyWith(
           color: AppColors.textPrimary,
-          letterSpacing: 1.5,
         ),
       ));
       children.add(TextSpan(

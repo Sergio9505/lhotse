@@ -41,9 +41,8 @@ class ProjectCard extends StatelessWidget {
                           horizontal: 8, vertical: 5),
                       child: Text(
                         'PRIVATE',
-                        style: AppTypography.labelUppercaseSm.copyWith(
+                        style: AppTypography.wordmarkByline.copyWith(
                           color: AppColors.textOnDark,
-                          letterSpacing: 1.5,
                         ),
                       ),
                     ),

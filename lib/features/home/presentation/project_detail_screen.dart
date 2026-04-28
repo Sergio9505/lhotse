@@ -87,8 +87,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
               ? const CircularProgressIndicator(strokeWidth: 1.5)
               : Text(
                   'Proyecto no encontrado',
-                  style: AppTypography.bodyEmphasis.copyWith(
-                    fontWeight: FontWeight.w400,
+                  style: AppTypography.bodyRow.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -212,9 +211,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       Text(
                         project.tagline,
-                        style: AppTypography.annotation.copyWith(
+                        style: AppTypography.annotationParagraph.copyWith(
                           color: AppColors.accentMuted,
-                          height: 1.6,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -223,9 +221,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                     RichText(
                       overflow: TextOverflow.ellipsis,
                       text: TextSpan(
-                        style: AppTypography.labelUppercaseSm.copyWith(
-                          letterSpacing: 1.5,
-                        ),
+                        style: AppTypography.wordmarkByline,
                         children: [
                           if (project.brand.isNotEmpty) ...[
                             TextSpan(
