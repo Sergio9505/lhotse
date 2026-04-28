@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/news_provider.dart';
 import '../../../core/domain/news_item_data.dart';
@@ -11,8 +10,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
+import '../../../core/widgets/lhotse_play_button.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
-import '../../../core/widgets/lhotse_video_player.dart';
 import 'widgets/fullscreen_video_player.dart';
 
 class NewsDetailScreen extends ConsumerStatefulWidget {
@@ -170,14 +169,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                     children: [
                       Hero(
                         tag: 'news-hero-${news.id}',
-                        child: (news.videoUrl != null &&
-                                news.videoUrl!.isNotEmpty)
-                            ? LhotseVideoPlayer(
-                                videoUrl: news.videoUrl!,
-                                posterUrl: news.imageUrl,
-                                isActive: true,
-                              )
-                            : LhotseImage(news.imageUrl),
+                        child: LhotseImage(news.imageUrl),
                       ),
                       const DecoratedBox(
                         decoration: BoxDecoration(
@@ -203,19 +195,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                             ),
                           ),
                         ),
-                      // Fullscreen affordance for video — small corner icon
-                      // instead of a center play button that competes with
-                      // the already-playing muted video.
-                      if (news.hasPlayButton)
-                        Positioned(
-                          right: AppSpacing.md,
-                          bottom: AppSpacing.md,
-                          child: PhosphorIcon(
-                            PhosphorIconsThin.arrowsOut,
-                            color: Colors.white.withValues(alpha: 0.8),
-                            size: 18,
-                          ),
-                        ),
+                      if (news.hasPlayButton) const LhotsePlayButton(),
                     ],
                   ),
                 ),

@@ -9,6 +9,7 @@ import '../../../../core/domain/news_item_data.dart';
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/lhotse_image.dart';
+import '../../../../core/widgets/lhotse_play_button.dart';
 import '../../../../core/widgets/lhotse_video_player.dart';
 import '../../domain/feed_item.dart';
 
@@ -86,12 +87,14 @@ class _FeedCardState extends State<FeedCard> {
                         imageUrl: content.imageUrl,
                         videoUrl: content.videoUrl,
                         isActive: widget.isActive,
+                        autoplayMuted: content.autoplayMuted,
                       ),
                     )
                   : _Media(
                       imageUrl: content.imageUrl,
                       videoUrl: content.videoUrl,
                       isActive: widget.isActive,
+                      autoplayMuted: content.autoplayMuted,
                     ),
             ),
             _Caption(content: content),
@@ -125,7 +128,11 @@ class _FeedCardState extends State<FeedCard> {
     // We can't mount FeedVideoPlayer inside the shuttle — Flutter would
     // create a new VideoPlayerController mid-flight and AVFoundation would
     // hit naturalSize synchronously, blocking the main thread.
-    if (hasVideo) {
+    // Project reels (autoplayMuted): resting state is the playing video.
+    // Using the poster as shuttle flashes an image never seen at rest.
+    // News posters (!autoplayMuted): both source and destination show the
+    // static image, so the poster shuttle is coherent (no flash).
+    if (hasVideo && content.autoplayMuted) {
       return Container(color: AppColors.primary);
     }
     return LhotseImage(content.imageUrl);
@@ -185,19 +192,34 @@ class _Media extends StatelessWidget {
     required this.imageUrl,
     required this.videoUrl,
     required this.isActive,
+    required this.autoplayMuted,
   });
 
   final String imageUrl;
   final String? videoUrl;
   final bool isActive;
 
+  /// True for project reels (ambient visual, muted autoplay is correct).
+  /// False for news (audio is content — show poster + play button instead).
+  final bool autoplayMuted;
+
   @override
   Widget build(BuildContext context) {
-    if (videoUrl != null && videoUrl!.isNotEmpty) {
+    final hasVideo = videoUrl != null && videoUrl!.isNotEmpty;
+    if (hasVideo && autoplayMuted) {
       return LhotseVideoPlayer(
         videoUrl: videoUrl!,
         posterUrl: imageUrl,
         isActive: isActive,
+      );
+    }
+    if (hasVideo && !autoplayMuted) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          LhotseImage(imageUrl),
+          const LhotsePlayButton(),
+        ],
       );
     }
     return LhotseImage(imageUrl);
@@ -336,6 +358,7 @@ class _FeedContent {
     required this.brand,
     required this.metaParts,
     required this.cta,
+    this.autoplayMuted = true,
   });
 
   final String title;
@@ -352,6 +375,10 @@ class _FeedContent {
   final List<String> metaParts;
 
   final String cta;
+
+  /// Projects = ambient visual reel → autoplay muted (true).
+  /// News = audio is content → poster + play button (false).
+  final bool autoplayMuted;
 
   factory _FeedContent.fromProject(ProjectData p, {required String cta}) {
     return _FeedContent(
@@ -378,6 +405,7 @@ class _FeedContent {
       brand: (n.brand?.isNotEmpty ?? false) ? n.brand : null,
       metaParts: [date],
       cta: 'LEER',
+      autoplayMuted: false,
     );
   }
 

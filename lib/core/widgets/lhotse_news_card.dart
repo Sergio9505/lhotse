@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import 'lhotse_image.dart';
-import 'lhotse_video_player.dart';
+import 'lhotse_play_button.dart';
 
 /// Reusable news card. Two variants:
 /// - **Default (full)**: catalog-grammar tile (escaparate curado). 3:2 image
@@ -50,6 +50,8 @@ class LhotseNewsCard extends StatelessWidget {
   final String? subtitle;
   final String? date;
   final String? type;
+  // Passed so the card knows whether to show the play button overlay.
+  // News video is "content to listen to" — never autoplay-muted inline.
   final String? videoUrl;
   final double? width;
   final double? height;
@@ -71,15 +73,10 @@ class LhotseNewsCard extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           if (heroTag != null)
-            Hero(
-              tag: heroTag!,
-              flightShuttleBuilder:
-                  hasVideo ? _videoFlightShuttle : null,
-              child: _newsMedia(),
-            )
+            Hero(tag: heroTag!, child: LhotseImage(imageUrl))
           else
-            _newsMedia(),
-          if (hasPlayButton && !hasVideo) _playButton(false),
+            LhotseImage(imageUrl),
+          if (hasVideo) const LhotsePlayButton(),
         ],
       ),
     );
@@ -178,26 +175,6 @@ class LhotseNewsCard extends StatelessWidget {
     );
   }
 
-  Widget _newsMedia() {
-    if (videoUrl != null && videoUrl!.isNotEmpty) {
-      return LhotseVideoPlayer(
-        videoUrl: videoUrl!,
-        posterUrl: imageUrl,
-        isActive: true,
-      );
-    }
-    return LhotseImage(imageUrl);
-  }
-
-  static Widget _videoFlightShuttle(
-    BuildContext flightContext,
-    Animation<double> animation,
-    HeroFlightDirection direction,
-    BuildContext fromHeroContext,
-    BuildContext toHeroContext,
-  ) =>
-      Container(color: AppColors.primary);
-
   Widget _buildCompact() {
     return GestureDetector(
       onTap: onTap,
@@ -208,7 +185,7 @@ class LhotseNewsCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             LhotseImage(imageUrl),
-            if (hasPlayButton) _playButton(true),
+            if (hasPlayButton) const LhotsePlayButton(size: 40),
             Positioned(
               left: 0,
               right: 0,
@@ -276,33 +253,6 @@ class LhotseNewsCard extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _playButton(bool isCompact) {
-    return Center(
-      child: Container(
-        width: isCompact ? 40 : 56,
-        height: isCompact ? 40 : 56,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.4),
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x40000000),
-              blurRadius: 25,
-            ),
-          ],
-        ),
-        child: Icon(
-          Icons.play_arrow_rounded,
-          color: Colors.white,
-          size: isCompact ? 20 : 28,
-        ),
-      ),
     );
   }
 }
