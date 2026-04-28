@@ -122,7 +122,17 @@ To be extracted from Figma as screens are built:
 - [x] Section label — `LhotseSectionLabel` in `core/widgets/lhotse_section_label.dart`. Uppercase text (labelLarge 11px/700, letterSpacing 1.8, accentMuted). Used across all detail screens
 - [x] Construction status — `_ConstructionStatus` in `investment_detail_screen.dart`. Phase (18px) + "En plazo"/"Retrasado" badge (navy 6% / danger 10% bg)
 - [x] Document row — `_DocumentRow` in `investment_detail_screen.dart`. Type icon (scale/banknote/hardHat/receipt) + name + date + preview/download actions
-- [x] Filter chip — `LhotseFilterChip` in `core/widgets/lhotse_filter_chip.dart`. Rectangular sharp-edge chip: black bg + white text when active, transparent + muted border when inactive. Caps text with `height: 1.0` + asymmetric padding (`fromLTRB(8, 9, 8, 7)`) for optical centering of uppercase glyphs. Used across docs category filters in 4 detail screens. Distinct from search `_TagChip` (mixed case, query-style)
+- [x] Filter chip — `LhotseFilterChip` in `core/widgets/lhotse_filter_chip.dart`. Rectangular sharp-edge chip: black bg + white text when active, transparent + hairline 0.5px border (alpha 0.18) when inactive. Caps text with `height: 1.0` + asymmetric padding (`fromLTRB(8, 9, 8, 7)`) for optical centering of uppercase glyphs. Distinct from search `_TagChip` (mixed case, query-style).
+
+  **Filter chip selection model — choose by dimension semantics:**
+
+  | Dimension type | Cardinality | Behaviour | Clear affordance | Example |
+  |---|---|---|---|---|
+  | Boolean / mutually exclusive | 2 | Single-select toggle — tap active chip to deselect | None (re-tap = clear) | Status: EN DESARROLLO / FINALIZADOS (Firmas › Proyectos) |
+  | Facetable category | 4–8 | Multi-select toggle — any combination valid | `PhosphorIconsThin.x` (14px, accentMuted) trailing the chip row, visible only when ≥1 active; add `SizedBox(width: AppSpacing.lg)` after it for scroll breathing room | Category: Contrato / Acta / Boletín (L3 Docs tab) |
+  | High-cardinality facet | 50+ | Single selection via bottomsheet with search | Sheet dismiss = clear | Firma / Brand (Projects filter) |
+
+  **Decision rule:** identify the dimension's cardinality and exclusivity *before* wiring chips. Do not default to one pattern.
 - **Image overlay chips** (pattern, not a single widget) — chips on top of the card image signal **gating/privileged status only**, not content classification. Phase and news-type are descriptive metadata; they live in the byline caption, not on the image.
   - **Fill chip (privileged)**: `AppColors.primary` bg + white caption w500 ls1.5. Used for VIP "PRIVATE" top-right of `ProjectShowcaseCard` — the only chip that belongs on a catalog image.
   - **Outline chip style** (transparent + 0.5px white border + soft `BoxShadow(Color(0x33000000), 8)` + white w500 ls1.5) exists as a pattern for future gating cases; currently unused in catalog cards (phase chip was removed in favor of byline).

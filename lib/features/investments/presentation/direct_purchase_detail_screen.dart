@@ -673,7 +673,7 @@ class _DocsTab extends ConsumerWidget {
                           onTap: () => onToggleFilter(cat.id),
                         ),
                       )),
-                  if (activeFilters.isNotEmpty)
+                  if (activeFilters.isNotEmpty) ...[
                     GestureDetector(
                       onTap: onClearFilters,
                       behavior: HitTestBehavior.opaque,
@@ -683,6 +683,8 @@ class _DocsTab extends ConsumerWidget {
                             size: 14, color: AppColors.accentMuted),
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.lg),
+                  ],
                 ],
               ),
             ),
