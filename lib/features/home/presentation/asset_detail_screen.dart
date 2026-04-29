@@ -8,6 +8,7 @@ import '../../../core/domain/asset_data.dart';
 import '../../../core/domain/asset_detail_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
@@ -79,7 +80,7 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
       thumbnailImage: a.thumbnailImage,
       address: a.address ?? '',
       city: a.city,
-      galleryImages: const [],
+      galleryMedia: const [],
       floorPlanUrl: null,
       useLightOverlay: true,
       brandName: null,
@@ -258,7 +259,7 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
             // =========================================================
             // 3. GALERÍA
             // =========================================================
-            if (detail.galleryImages.isNotEmpty)
+            if (detail.galleryMedia.isNotEmpty)
               SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,12 +276,12 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                               color: AppColors.accentMuted,
                             ),
                           ),
-                          if (detail.galleryImages.length >
+                          if (detail.galleryMedia.length >
                               _kMaxVisibleGallery) ...[
                             const SizedBox(width: AppSpacing.sm),
                             GestureDetector(
                               onTap: () => showAllGallery(
-                                  context, 'GALERÍA', detail.galleryImages),
+                                  context, 'GALERÍA', detail.galleryMedia),
                               child: const PhosphorIcon(
                                 PhosphorIconsThin.arrowUpRight,
                                 size: 14,
@@ -299,28 +300,32 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg),
                         itemCount:
-                            detail.galleryImages.length > _kMaxVisibleGallery
+                            detail.galleryMedia.length > _kMaxVisibleGallery
                                 ? _kMaxVisibleGallery
-                                : detail.galleryImages.length,
+                                : detail.galleryMedia.length,
                         separatorBuilder: (_, _) =>
                             const SizedBox(width: AppSpacing.sm),
-                        itemBuilder: (context, i) => GestureDetector(
-                          onTap: () =>
-                              showFullImage(context, detail.galleryImages[i]),
-                          child: Container(
-                            width: screenWidth * 0.75,
-                            decoration: const BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color(0x1A000000),
-                                  blurRadius: 20,
-                                  offset: Offset(0, 8),
-                                ),
-                              ],
+                        itemBuilder: (context, i) {
+                          final item = detail.galleryMedia[i];
+                          return GestureDetector(
+                            onTap: () => showFullMedia(context, item),
+                            child: Container(
+                              width: screenWidth * 0.75,
+                              decoration: const BoxDecoration(
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color(0x1A000000),
+                                    blurRadius: 20,
+                                    offset: Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: item.type == MediaType.image
+                                  ? LhotseImage(item.url)
+                                  : VideoThumbnailTile(url: item.url),
                             ),
-                            child: LhotseImage(detail.galleryImages[i]),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ),
                   ],

@@ -12,6 +12,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/data/supabase_provider.dart';
 import 'widgets/vip_lock_sheet.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_video_player.dart';
@@ -291,7 +292,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
             // =========================================================
             // 4. GALERÍA
             // =========================================================
-            if (project.galleryImages.isNotEmpty)
+            if (project.galleryMedia.isNotEmpty)
               SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,12 +309,12 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                               color: AppColors.accentMuted,
                             ),
                           ),
-                          if (project.galleryImages.length >
+                          if (project.galleryMedia.length >
                               _kMaxVisibleGallery) ...[
                             const SizedBox(width: AppSpacing.sm),
                             GestureDetector(
                               onTap: () => showAllGallery(context, 'GALERÍA',
-                                  project.galleryImages),
+                                  project.galleryMedia),
                               child: PhosphorIcon(
                                 PhosphorIconsThin.arrowUpRight,
                                 size: 14,
@@ -331,29 +332,33 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg),
-                        itemCount: project.galleryImages.length >
+                        itemCount: project.galleryMedia.length >
                                 _kMaxVisibleGallery
                             ? _kMaxVisibleGallery
-                            : project.galleryImages.length,
+                            : project.galleryMedia.length,
                         separatorBuilder: (_, _) =>
                             const SizedBox(width: AppSpacing.sm),
-                        itemBuilder: (context, i) => GestureDetector(
-                          onTap: () => showFullImage(
-                              context, project.galleryImages[i]),
-                          child: Container(
-                            width: screenWidth * 0.75,
-                            decoration: const BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color(0x1A000000),
-                                  blurRadius: 20,
-                                  offset: Offset(0, 8),
-                                ),
-                              ],
+                        itemBuilder: (context, i) {
+                          final item = project.galleryMedia[i];
+                          return GestureDetector(
+                            onTap: () => showFullMedia(context, item),
+                            child: Container(
+                              width: screenWidth * 0.75,
+                              decoration: const BoxDecoration(
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color(0x1A000000),
+                                    blurRadius: 20,
+                                    offset: Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: item.type == MediaType.image
+                                  ? LhotseImage(item.url)
+                                  : VideoThumbnailTile(url: item.url),
                             ),
-                            child: LhotseImage(project.galleryImages[i]),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ),
                   ],

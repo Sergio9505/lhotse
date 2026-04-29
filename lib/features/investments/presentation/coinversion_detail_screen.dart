@@ -18,6 +18,7 @@ import '../../../core/utils/open_supabase_doc.dart';
 import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
+import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
@@ -640,7 +641,13 @@ class _GallerySectionHeader extends StatelessWidget {
           if (hasMore) ...[
             const SizedBox(width: AppSpacing.sm),
             GestureDetector(
-              onTap: () => showAllGallery(context, title, images),
+              onTap: () => showAllGallery(
+                  context,
+                  title,
+                  images
+                      .map((url) =>
+                          MediaItem(type: MediaType.image, url: url))
+                      .toList()),
               child: const PhosphorIcon(
                 PhosphorIconsThin.arrowUpRight,
                 size: 16,

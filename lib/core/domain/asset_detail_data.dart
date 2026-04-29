@@ -1,3 +1,5 @@
+import 'media_item.dart';
+
 /// Full asset detail model: thumbnail, address (title), brand (from owning
 /// project), gallery, and floor plan. Fetched via `assetByIdProvider`.
 ///
@@ -7,7 +9,7 @@ final class AssetDetailData {
   const AssetDetailData({
     required this.id,
     required this.address,
-    required this.galleryImages,
+    required this.galleryMedia,
     required this.useLightOverlay,
     this.thumbnailImage,
     this.city,
@@ -19,7 +21,7 @@ final class AssetDetailData {
   final String? thumbnailImage;
   final String address;
   final String? city;
-  final List<String> galleryImages;
+  final List<MediaItem> galleryMedia;
   final String? floorPlanUrl;
   final bool useLightOverlay;
 
@@ -37,16 +39,20 @@ final class AssetDetailData {
     final assetJson = row['assets'] as Map<String, dynamic>;
     final brandsJson = row['brands'] as Map<String, dynamic>?;
 
-    final rawGallery = assetJson['gallery_images'];
-    final gallery =
-        rawGallery is List ? List<String>.from(rawGallery) : const <String>[];
+    final rawGallery = assetJson['gallery_media'];
+    final gallery = rawGallery is List
+        ? rawGallery
+            .whereType<Map>()
+            .map((m) => MediaItem.fromJson(Map<String, dynamic>.from(m)))
+            .toList()
+        : const <MediaItem>[];
 
     return AssetDetailData(
       id: assetJson['id'] as String,
       thumbnailImage: assetJson['thumbnail_image'] as String?,
       address: assetJson['address'] as String? ?? '',
       city: assetJson['city'] as String?,
-      galleryImages: gallery,
+      galleryMedia: gallery,
       floorPlanUrl: assetJson['floor_plan_url'] as String?,
       useLightOverlay: assetJson['use_light_overlay'] as bool? ?? true,
       brandName: brandsJson?['name'] as String?,

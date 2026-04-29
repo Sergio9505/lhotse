@@ -16,7 +16,7 @@ final assetByIdProvider =
   final row = await client
       .from('projects')
       .select(
-        'brands(name), assets!inner(id, thumbnail_image, address, city, gallery_images, floor_plan_url, use_light_overlay)',
+        'brands(name), assets!inner(id, thumbnail_image, address, city, gallery_media, floor_plan_url, use_light_overlay)',
       )
       .eq('asset_id', assetId)
       .maybeSingle();

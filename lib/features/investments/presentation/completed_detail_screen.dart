@@ -12,6 +12,7 @@ import '../../../core/utils/open_supabase_doc.dart';
 import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
+import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
@@ -99,11 +100,13 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
     final purchaseAssetDetail = d.assetId != null
         ? ref.watch(purchaseAssetDetailProvider(d.assetId!)).valueOrNull
         : null;
-    final galleryImages = d.galleryImages.isNotEmpty
-        ? d.galleryImages
-        : purchaseAssetDetail?.galleryImages ??
-            coinvestmentProjectDetail?.renderImages ??
-            const <String>[];
+    final galleryMedia = d.galleryMedia.isNotEmpty
+        ? d.galleryMedia
+        : purchaseAssetDetail?.galleryMedia ??
+            coinvestmentProjectDetail?.renderImages
+                .map((url) => MediaItem(type: MediaType.image, url: url))
+                .toList() ??
+            const <MediaItem>[];
     final assetInfoEntries = purchaseAssetDetail?.assetInfo ??
         coinvestmentProjectDetail?.assetInfo ??
         const <AssetInfoEntry>[];
@@ -297,7 +300,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                 bottomPadding: bottomPadding,
                 child: _ActivoTab(
                   assetInfo: assetInfo,
-                  galleryImages: galleryImages,
+                  galleryMedia: galleryMedia,
                   cardWidth: screenWidth * 0.75,
                 ),
               ),
@@ -341,12 +344,12 @@ class _TabScrollWrapper extends StatelessWidget {
 class _ActivoTab extends StatelessWidget {
   const _ActivoTab({
     required this.assetInfo,
-    required this.galleryImages,
+    required this.galleryMedia,
     required this.cardWidth,
   });
 
   final AssetInfo? assetInfo;
-  final List<String> galleryImages;
+  final List<MediaItem> galleryMedia;
   final double cardWidth;
 
   @override
@@ -360,7 +363,7 @@ class _ActivoTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           LhotseKeyValueList(entries: assetInfo!.entries),
         ],
-        if (galleryImages.isNotEmpty) ...[
+        if (galleryMedia.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -372,11 +375,11 @@ class _ActivoTab extends StatelessWidget {
                     color: AppColors.accentMuted,
                   ),
                 ),
-                if (galleryImages.length > _kMaxVisibleGallery) ...[
+                if (galleryMedia.length > _kMaxVisibleGallery) ...[
                   const SizedBox(width: AppSpacing.sm),
                   GestureDetector(
                     onTap: () =>
-                        showAllGallery(context, 'GALERÍA', galleryImages),
+                        showAllGallery(context, 'GALERÍA', galleryMedia),
                     child: const PhosphorIcon(
                       PhosphorIconsThin.arrowUpRight,
                       size: 14,
@@ -394,27 +397,32 @@ class _ActivoTab extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding:
                   const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: galleryImages.length > _kMaxVisibleGallery
+              itemCount: galleryMedia.length > _kMaxVisibleGallery
                   ? _kMaxVisibleGallery
-                  : galleryImages.length,
+                  : galleryMedia.length,
               separatorBuilder: (_, _) =>
                   const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (context, i) => GestureDetector(
-                onTap: () => showFullImage(context, galleryImages[i]),
-                child: Container(
-                  width: cardWidth,
-                  decoration: const BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x1A000000),
-                        blurRadius: 20,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
+              itemBuilder: (context, i) {
+                final item = galleryMedia[i];
+                return GestureDetector(
+                  onTap: () => showFullMedia(context, item),
+                  child: Container(
+                    width: cardWidth,
+                    decoration: const BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x1A000000),
+                          blurRadius: 20,
+                          offset: Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: item.type == MediaType.image
+                        ? LhotseImage(item.url)
+                        : VideoThumbnailTile(url: item.url),
                   ),
-                  child: LhotseImage(galleryImages[i]),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],

@@ -1,3 +1,5 @@
+import 'media_item.dart';
+
 /// Physical stage of a coinvestment project asset.
 ///
 /// `projects` table only describes coinvestment (flip model: raise → build → sell),
@@ -37,7 +39,7 @@ class ProjectData {
     this.videoUrl,
     required this.tagline,
     required this.description,
-    this.galleryImages = const [],
+    this.galleryMedia = const [],
     this.isVip = false,
     this.isFundraisingOpen = true,
     this.phase = ProjectPhase.preConstruction,
@@ -76,7 +78,7 @@ class ProjectData {
 
   final String tagline;
   final String description;
-  final List<String> galleryImages;
+  final List<MediaItem> galleryMedia;
   final bool isVip;
 
   /// True while the project accepts new investors. Orthogonal to `phase`:
@@ -109,10 +111,17 @@ class ProjectData {
   final bool useLightOverlay;
 
   /// Maps a Supabase row from `projects` joined with `brands` and `assets`.
+  static List<MediaItem> _parseGalleryMedia(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((m) => MediaItem.fromJson(Map<String, dynamic>.from(m)))
+        .toList();
+  }
+
   factory ProjectData.fromSupabaseRow(Map<String, dynamic> row) {
     final brands = row['brands'] as Map<String, dynamic>?;
     final assets = row['assets'] as Map<String, dynamic>?;
-    final galleryRaw = row['gallery_images'] as List<dynamic>?;
 
     return ProjectData(
       id: row['id'] as String,
@@ -127,7 +136,7 @@ class ProjectData {
       videoUrl: row['video_url'] as String?,
       tagline: row['tagline'] as String? ?? '',
       description: row['description'] as String? ?? '',
-      galleryImages: galleryRaw?.cast<String>() ?? [],
+      galleryMedia: _parseGalleryMedia(row['gallery_media']),
       isVip: row['is_vip'] as bool? ?? false,
       isFundraisingOpen: row['is_fundraising_open'] as bool? ?? true,
       phase: ProjectPhase.fromDb(row['phase'] as String?),

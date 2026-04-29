@@ -1,4 +1,5 @@
 import '../../../core/domain/asset_info.dart';
+import '../../../core/domain/media_item.dart';
 
 /// Per-asset data for the direct purchase detail screen's ACTIVO tab.
 /// Loaded lazily via `purchaseAssetDetailProvider(assetId)`.
@@ -23,7 +24,7 @@ class PurchaseAssetDetails {
     this.orientation,
     this.views,
     this.floorPlanUrl,
-    this.galleryImages = const [],
+    this.galleryMedia = const [],
     this.useLightOverlay = true,
   });
 
@@ -43,7 +44,7 @@ class PurchaseAssetDetails {
   final String? orientation;
   final String? views;
   final String? floorPlanUrl;
-  final List<String> galleryImages;
+  final List<MediaItem> galleryMedia;
   final bool useLightOverlay;
 
   /// Physical description of the asset (shown on ACTIVO tab).
@@ -82,9 +83,15 @@ class PurchaseAssetDetails {
     ];
   }
 
+  static List<MediaItem> _parseMedia(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((m) => MediaItem.fromJson(Map<String, dynamic>.from(m)))
+        .toList();
+  }
+
   factory PurchaseAssetDetails.fromJson(Map<String, dynamic> json) {
-    List<String> strings(dynamic raw) =>
-        (raw as List<dynamic>?)?.cast<String>() ?? [];
     return PurchaseAssetDetails(
       assetId: json['asset_id'] as String,
       cadastralReference: json['asset_cadastral_reference'] as String?,
@@ -102,7 +109,7 @@ class PurchaseAssetDetails {
       orientation: json['asset_orientation'] as String?,
       views: json['asset_views'] as String?,
       floorPlanUrl: json['asset_floor_plan_url'] as String?,
-      galleryImages: strings(json['asset_gallery_images']),
+      galleryMedia: _parseMedia(json['asset_gallery_media']),
       useLightOverlay: json['asset_use_light_overlay'] as bool? ?? true,
     );
   }

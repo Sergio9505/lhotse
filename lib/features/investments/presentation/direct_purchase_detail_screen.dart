@@ -13,6 +13,7 @@ import '../../../core/utils/open_supabase_doc.dart';
 import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
+import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
@@ -341,8 +342,8 @@ class _DirectPurchaseDetailContentState
                 child: _AssetTab(
                   assetInfo: assetDetail?.assetInfo ?? const <AssetInfoEntry>[],
                   floorPlanUrl: assetDetail?.floorPlanUrl,
-                  galleryImages:
-                      assetDetail?.galleryImages ?? const <String>[],
+                  galleryMedia:
+                      assetDetail?.galleryMedia ?? const <MediaItem>[],
                   cardWidth: screenWidth * 0.75,
                 ),
               ),
@@ -433,13 +434,13 @@ class _AssetTab extends StatelessWidget {
   const _AssetTab({
     required this.assetInfo,
     required this.floorPlanUrl,
-    required this.galleryImages,
+    required this.galleryMedia,
     required this.cardWidth,
   });
 
   final List<AssetInfoEntry> assetInfo;
   final String? floorPlanUrl;
-  final List<String> galleryImages;
+  final List<MediaItem> galleryMedia;
   final double cardWidth;
 
   @override
@@ -485,7 +486,7 @@ class _AssetTab extends StatelessWidget {
             ),
           ),
         ],
-        if (galleryImages.isNotEmpty) ...[
+        if (galleryMedia.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -497,11 +498,11 @@ class _AssetTab extends StatelessWidget {
                     color: AppColors.accentMuted,
                   ),
                 ),
-                if (galleryImages.length > _kMaxVisibleGallery) ...[
+                if (galleryMedia.length > _kMaxVisibleGallery) ...[
                   const SizedBox(width: AppSpacing.sm),
                   GestureDetector(
                     onTap: () =>
-                        showAllGallery(context, 'GALERÍA', galleryImages),
+                        showAllGallery(context, 'GALERÍA', galleryMedia),
                     child: const PhosphorIcon(
                       PhosphorIconsThin.arrowUpRight,
                       size: 16,
@@ -519,27 +520,32 @@ class _AssetTab extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding:
                   const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: galleryImages.length > _kMaxVisibleGallery
+              itemCount: galleryMedia.length > _kMaxVisibleGallery
                   ? _kMaxVisibleGallery
-                  : galleryImages.length,
+                  : galleryMedia.length,
               separatorBuilder: (_, _) =>
                   const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (context, i) => GestureDetector(
-                onTap: () => showFullImage(context, galleryImages[i]),
-                child: Container(
-                  width: cardWidth,
-                  decoration: const BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x1A000000),
-                        blurRadius: 20,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
+              itemBuilder: (context, i) {
+                final item = galleryMedia[i];
+                return GestureDetector(
+                  onTap: () => showFullMedia(context, item),
+                  child: Container(
+                    width: cardWidth,
+                    decoration: const BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x1A000000),
+                          blurRadius: 20,
+                          offset: Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: item.type == MediaType.image
+                        ? LhotseImage(item.url)
+                        : VideoThumbnailTile(url: item.url),
                   ),
-                  child: LhotseImage(galleryImages[i]),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],

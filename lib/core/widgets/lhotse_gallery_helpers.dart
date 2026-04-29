@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../domain/media_item.dart';
 import '../theme/app_theme.dart';
 import 'lhotse_bottom_sheet.dart';
 import 'lhotse_image.dart';
+import '../../features/home/presentation/widgets/fullscreen_video_player.dart';
 
-/// Opens a bottom sheet with all gallery images in a vertical scroll.
+/// Opens a bottom sheet with all gallery items (images and videos) in a
+/// vertical scroll. Tapping an image opens a pinch-to-zoom viewer; tapping a
+/// video opens a fullscreen player.
 void showAllGallery(
-    BuildContext context, String title, List<String> images) {
+    BuildContext context, String title, List<MediaItem> items) {
   showLhotseBottomSheet(
     context: context,
     title: title,
-    itemCount: images.length,
-
+    itemCount: items.length,
     listPadding: EdgeInsets.fromLTRB(
       AppSpacing.lg,
       0,
@@ -20,15 +23,37 @@ void showAllGallery(
       MediaQuery.of(context).padding.bottom + AppSpacing.md,
     ),
     separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.lg),
-    itemBuilder: (context, i) => GestureDetector(
-      onTap: () => showFullImage(context, images[i]),
-      child: SizedBox(
-        height: 200,
-        width: double.infinity,
-        child: LhotseImage(images[i]),
-      ),
-    ),
+    itemBuilder: (context, i) {
+      final item = items[i];
+      return GestureDetector(
+        onTap: () => showFullMedia(context, item),
+        child: SizedBox(
+          height: 200,
+          width: double.infinity,
+          child: item.type == MediaType.image
+              ? LhotseImage(item.url)
+              : VideoThumbnailTile(url: item.url),
+        ),
+      );
+    },
   );
+}
+
+/// Opens an image fullscreen viewer or a video player depending on item type.
+void showFullMedia(BuildContext context, MediaItem item) {
+  if (item.type == MediaType.image) {
+    showFullImage(context, item.url);
+  } else {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => FullscreenVideoPlayer(
+          videoUrl: item.url,
+          posterUrl: '',
+        ),
+      ),
+    );
+  }
 }
 
 /// Opens a full-screen image viewer with InteractiveViewer (pinch to zoom).
@@ -95,4 +120,28 @@ void showFullImage(BuildContext context, String imageUrl) {
       },
     ),
   );
+}
+
+/// Simple dark tile with a film icon used as video placeholder in galleries.
+class VideoThumbnailTile extends StatelessWidget {
+  const VideoThumbnailTile({super.key, required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.textPrimary.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Center(
+        child: PhosphorIcon(
+          PhosphorIconsThin.filmSlate,
+          color: Colors.white,
+          size: 40,
+        ),
+      ),
+    );
+  }
 }

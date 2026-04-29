@@ -1,5 +1,6 @@
 import 'coinvestment_contract_data.dart';
 import 'purchase_contract_data.dart';
+import '../../../core/domain/media_item.dart';
 
 /// Thin adapter for CompletedDetailScreen.
 /// Maps from either PurchaseContractData or CoinvestmentContractData.
@@ -21,7 +22,7 @@ class CompletedContractData {
     this.actualDuration,
     this.actualRoi,
     this.actualTir,
-    this.galleryImages = const [],
+    this.galleryMedia = const [],
   });
 
   final String id;
@@ -46,7 +47,7 @@ class CompletedContractData {
   final int? actualDuration;
   final double? actualRoi;
   final double? actualTir;
-  final List<String> galleryImages;
+  final List<MediaItem> galleryMedia;
 
   factory CompletedContractData.fromPurchase(
     PurchaseContractData c, {
