@@ -187,22 +187,22 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Logo + wordmark — hero visual
-                    SizedBox(
-                      height: 48,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/images/lhotse_logo.svg',
-                            height: 48,
-                            colorFilter: const ColorFilter.mode(
-                              Colors.white,
-                              BlendMode.srcIn,
-                            ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/images/lhotse_logo.svg',
+                          height: 36,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
                           ),
-                          const SizedBox(width: 12),
-                          Column(
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          height: 48,
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -240,21 +240,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Subtitle — engraved whisper
-                    Text(
-                      'Lhotse Group, a holding company specialized in redefining wealth management and creation through strategic investments in real estate assets.',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.annotation.copyWith(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        letterSpacing: 0.3,
-                        height: 1.5,
-                      ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 56),
