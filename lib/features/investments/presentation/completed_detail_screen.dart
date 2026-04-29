@@ -103,9 +103,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
     final galleryMedia = d.galleryMedia.isNotEmpty
         ? d.galleryMedia
         : purchaseAssetDetail?.galleryMedia ??
-            coinvestmentProjectDetail?.renderImages
-                .map((url) => MediaItem(type: MediaType.image, url: url))
-                .toList() ??
+            coinvestmentProjectDetail?.renderMedia ??
             const <MediaItem>[];
     final assetInfoEntries = purchaseAssetDetail?.assetInfo ??
         coinvestmentProjectDetail?.assetInfo ??

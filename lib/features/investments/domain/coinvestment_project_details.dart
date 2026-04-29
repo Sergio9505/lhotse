@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 import '../../../core/domain/asset_info.dart';
+import '../../../core/domain/media_item.dart';
 
 /// Per-project data for the coinvestion detail screen tabs (ACTIVO, AVANCE,
 /// FINANZAS). Loaded lazily via `coinvestmentProjectDetailProvider(projectId)`.
@@ -10,8 +11,8 @@ import '../../../core/domain/asset_info.dart';
 class CoinvestmentProjectDetails {
   const CoinvestmentProjectDetails({
     required this.projectId,
-    this.renderImages = const [],
-    this.progressImages = const [],
+    this.renderMedia = const [],
+    this.progressMedia = const [],
     // Asset
     this.assetSurfaceM2,
     this.assetPlotM2,
@@ -43,8 +44,8 @@ class CoinvestmentProjectDetails {
   });
 
   final String projectId;
-  final List<String> renderImages;
-  final List<String> progressImages;
+  final List<MediaItem> renderMedia;
+  final List<MediaItem> progressMedia;
   final double? assetSurfaceM2;
   final double? assetPlotM2;
   final int? assetBedrooms;
@@ -146,14 +147,19 @@ class CoinvestmentProjectDetails {
     ];
   }
 
-  factory CoinvestmentProjectDetails.fromJson(Map<String, dynamic> json) {
-    List<String> strings(dynamic raw) =>
-        (raw as List<dynamic>?)?.cast<String>() ?? [];
+  static List<MediaItem> _parseMedia(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((m) => MediaItem.fromJson(Map<String, dynamic>.from(m)))
+        .toList();
+  }
 
+  factory CoinvestmentProjectDetails.fromJson(Map<String, dynamic> json) {
     return CoinvestmentProjectDetails(
       projectId: json['project_id'] as String,
-      renderImages: strings(json['render_images']),
-      progressImages: strings(json['progress_images']),
+      renderMedia: _parseMedia(json['render_media']),
+      progressMedia: _parseMedia(json['progress_media']),
       assetSurfaceM2: (json['asset_surface_m2'] as num?)?.toDouble(),
       assetPlotM2: (json['asset_plot_m2'] as num?)?.toDouble(),
       assetBedrooms: json['asset_bedrooms'] as int?,

@@ -149,8 +149,8 @@ class _CoinversionDetailScreenState
     final projectImageUrl = c.projectImageUrl;
     final currentPhaseIndex =
         phases.where((p) => p.isCompleted).length;
-    final renderImages = projectDetail?.renderImages ?? const <String>[];
-    final progressImages = projectDetail?.progressImages ?? const <String>[];
+    final renderMedia = projectDetail?.renderMedia ?? const <MediaItem>[];
+    final progressMedia = projectDetail?.progressMedia ?? const <MediaItem>[];
     final assetFloorPlanUrl = projectDetail?.assetFloorPlanUrl;
     final assetInfo = projectDetail?.assetInfo ?? const <AssetInfoEntry>[];
     final economicAnalysis =
@@ -327,7 +327,7 @@ class _CoinversionDetailScreenState
                   child: _AvanceTab(
                     phases: phases,
                     currentPhaseIndex: currentPhaseIndex,
-                    progressImages: progressImages,
+                    progressMedia: progressMedia,
                     news: relatedNews,
                     cardWidth: screenWidth * 0.75,
                   ),
@@ -337,7 +337,7 @@ class _CoinversionDetailScreenState
                   child: _ProyectoTab(
                     assetInfo: assetInfo,
                     floorPlanUrl: assetFloorPlanUrl,
-                    renderImages: renderImages,
+                    renderMedia: renderMedia,
                     cardWidth: screenWidth * 0.75,
                   ),
                   bottomPadding: bottomPadding,
@@ -447,14 +447,14 @@ class _AvanceTab extends StatelessWidget {
   const _AvanceTab({
     required this.phases,
     required this.currentPhaseIndex,
-    required this.progressImages,
+    required this.progressMedia,
     required this.news,
     required this.cardWidth,
   });
 
   final List<ProjectPhase> phases;
   final int currentPhaseIndex;
-  final List<String> progressImages;
+  final List<MediaItem> progressMedia;
   final List<NewsItemData> news;
   final double cardWidth;
 
@@ -469,19 +469,19 @@ class _AvanceTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           _InvestmentTimeline(phases: phases, currentIndex: currentPhaseIndex),
         ],
-        if (progressImages.isNotEmpty) ...[
+        if (progressMedia.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           _GallerySectionHeader(
             label: 'AVANCE DE OBRA',
-            images: progressImages,
+            items: progressMedia,
             title: 'AVANCE DE OBRA',
           ),
           const SizedBox(height: AppSpacing.md),
           _InvestmentGallery(
-            renderImages: progressImages.length > _kMaxVisibleGallery
-                ? progressImages.sublist(0, _kMaxVisibleGallery)
-                : progressImages,
-            progressImages: const [],
+            renderMedia: progressMedia.length > _kMaxVisibleGallery
+                ? progressMedia.sublist(0, _kMaxVisibleGallery)
+                : progressMedia,
+            progressMedia: const [],
             selectedTab: 0,
             onTabChanged: (_) {},
             cardWidth: cardWidth,
@@ -530,13 +530,13 @@ class _ProyectoTab extends StatelessWidget {
   const _ProyectoTab({
     required this.assetInfo,
     required this.floorPlanUrl,
-    required this.renderImages,
+    required this.renderMedia,
     required this.cardWidth,
   });
 
   final List<AssetInfoEntry> assetInfo;
   final String? floorPlanUrl;
-  final List<String> renderImages;
+  final List<MediaItem> renderMedia;
   final double cardWidth;
 
   @override
@@ -587,19 +587,19 @@ class _ProyectoTab extends StatelessWidget {
             ),
           ),
         ],
-        if (renderImages.isNotEmpty) ...[
+        if (renderMedia.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           _GallerySectionHeader(
             label: 'RENDERS',
-            images: renderImages,
+            items: renderMedia,
             title: 'RENDERS',
           ),
           const SizedBox(height: AppSpacing.md),
           _InvestmentGallery(
-            renderImages: renderImages.length > _kMaxVisibleGallery
-                ? renderImages.sublist(0, _kMaxVisibleGallery)
-                : renderImages,
-            progressImages: const [],
+            renderMedia: renderMedia.length > _kMaxVisibleGallery
+                ? renderMedia.sublist(0, _kMaxVisibleGallery)
+                : renderMedia,
+            progressMedia: const [],
             selectedTab: 0,
             onTabChanged: (_) {},
             cardWidth: cardWidth,
@@ -617,17 +617,17 @@ class _ProyectoTab extends StatelessWidget {
 class _GallerySectionHeader extends StatelessWidget {
   const _GallerySectionHeader({
     required this.label,
-    required this.images,
+    required this.items,
     required this.title,
   });
 
   final String label;
-  final List<String> images;
+  final List<MediaItem> items;
   final String title;
 
   @override
   Widget build(BuildContext context) {
-    final hasMore = images.length > _kMaxVisibleGallery;
+    final hasMore = items.length > _kMaxVisibleGallery;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
@@ -641,13 +641,7 @@ class _GallerySectionHeader extends StatelessWidget {
           if (hasMore) ...[
             const SizedBox(width: AppSpacing.sm),
             GestureDetector(
-              onTap: () => showAllGallery(
-                  context,
-                  title,
-                  images
-                      .map((url) =>
-                          MediaItem(type: MediaType.image, url: url))
-                      .toList()),
+              onTap: () => showAllGallery(context, title, items),
               child: const PhosphorIcon(
                 PhosphorIconsThin.arrowUpRight,
                 size: 16,
@@ -1211,24 +1205,24 @@ class _PulsingNodeState extends State<_PulsingNode>
 
 class _InvestmentGallery extends StatelessWidget {
   const _InvestmentGallery({
-    required this.renderImages,
-    required this.progressImages,
+    required this.renderMedia,
+    required this.progressMedia,
     required this.selectedTab,
     required this.onTabChanged,
     required this.cardWidth,
   });
 
-  final List<String> renderImages;
-  final List<String> progressImages;
+  final List<MediaItem> renderMedia;
+  final List<MediaItem> progressMedia;
   final int selectedTab;
   final ValueChanged<int> onTabChanged;
   final double cardWidth;
 
   @override
   Widget build(BuildContext context) {
-    final images = selectedTab == 0 ? renderImages : progressImages;
-    final hasRenders = renderImages.isNotEmpty;
-    final hasProgress = progressImages.isNotEmpty;
+    final items = selectedTab == 0 ? renderMedia : progressMedia;
+    final hasRenders = renderMedia.isNotEmpty;
+    final hasProgress = progressMedia.isNotEmpty;
 
     return Column(
       children: [
@@ -1260,11 +1254,11 @@ class _InvestmentGallery extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding:
                 const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: images.length,
+            itemCount: items.length,
             separatorBuilder: (_, _) =>
                 const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, i) => _GalleryCard(
-                width: cardWidth, imageUrl: images[i]),
+                width: cardWidth, item: items[i]),
           ),
         ),
       ],
@@ -1315,15 +1309,15 @@ class _ChipTab extends StatelessWidget {
 class _GalleryCard extends StatelessWidget {
   const _GalleryCard({
     required this.width,
-    required this.imageUrl,
+    required this.item,
   });
   final double width;
-  final String imageUrl;
+  final MediaItem item;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => showFullImage(context, imageUrl),
+      onTap: () => showFullMedia(context, item),
       child: Container(
         width: width,
         decoration: const BoxDecoration(
@@ -1335,7 +1329,9 @@ class _GalleryCard extends StatelessWidget {
             ),
           ],
         ),
-        child: LhotseImage(imageUrl),
+        child: item.type == MediaType.image
+            ? LhotseImage(item.url)
+            : VideoThumbnailTile(url: item.url),
       ),
     );
   }
