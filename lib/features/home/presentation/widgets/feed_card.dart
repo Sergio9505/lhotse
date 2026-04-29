@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../../core/data/supabase_provider.dart';
 import '../../../../core/domain/asset_data.dart';
 import '../../../../core/domain/brand_data.dart';
 import '../../../../core/domain/news_item_data.dart';
 import '../../../../core/domain/project_data.dart';
+import '../../../../core/domain/user_role.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/lhotse_image.dart';
 import '../../../../core/widgets/lhotse_play_button.dart';
 import '../../../../core/widgets/lhotse_video_player.dart';
 import '../../domain/feed_item.dart';
+import 'vip_lock_sheet.dart';
 
 /// Universal card for every [FeedItem] variant. Each card fills the full
 /// viewport (minus the header) and splits into:
@@ -174,7 +178,13 @@ class _FeedCardState extends State<FeedCard> {
     // position with no flight). See ADR-53 / ProjectDetailScreen docstring.
     switch (item) {
       case FeedProjectItem(:final project):
-        context.push('/projects/${project.id}', extra: project);
+        if (project.isVip &&
+            ProviderScope.containerOf(context).read(currentUserRoleProvider) !=
+                UserRole.investorVip) {
+          showVipLockSheet(context);
+        } else {
+          context.push('/projects/${project.id}', extra: project);
+        }
       case FeedNewsItem(:final news):
         context.push('/news/${news.id}', extra: news);
       case FeedBrandItem(:final brand):

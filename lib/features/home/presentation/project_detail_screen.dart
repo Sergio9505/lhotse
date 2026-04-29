@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/projects_provider.dart';
 import '../../../core/domain/project_data.dart';
+import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/data/supabase_provider.dart';
+import 'widgets/vip_lock_sheet.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
@@ -42,6 +46,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
   double _heroHeight = 0;
+  bool _gateDone = false;
 
   @override
   void initState() {
@@ -94,6 +99,19 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
         ),
       );
     }
+
+    // Defense-in-depth: if a VIP project slips through an unguarded entry point
+    // (deep-link, doc-scope push, future entry points), pop and show the sheet.
+    if (!_gateDone && project.isVip &&
+        ref.read(currentUserRoleProvider) != UserRole.investorVip) {
+      _gateDone = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (context.canPop()) context.pop();
+        showVipLockSheet(context);
+      });
+    }
+    _gateDone = true;
 
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;

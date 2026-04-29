@@ -22,6 +22,7 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_search_field.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
+import '../../../core/widgets/project_access_gate.dart';
 import '../../home/presentation/widgets/project_showcase_card.dart';
 import '../../investments/data/investments_provider.dart';
 import '../../investments/domain/coinvestment_contract_data.dart';
@@ -490,13 +491,13 @@ class _TrendingChip extends StatelessWidget {
   }
 }
 
-class _FeaturedSection extends StatelessWidget {
+class _FeaturedSection extends ConsumerWidget {
   const _FeaturedSection({required this.projects});
 
   final List<ProjectData> projects;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (projects.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -506,6 +507,7 @@ class _FeaturedSection extends StatelessWidget {
         for (int i = 0; i < projects.length; i++) ...[
           ProjectShowcaseCard(
             project: projects[i],
+            isLocked: isProjectLocked(ref, projects[i]),
             onTap: () => context.push(
               '/projects/${projects[i].id}',
               extra: projects[i],
@@ -758,18 +760,18 @@ class _BrandResultItem extends StatelessWidget {
   }
 }
 
-class _ProjectResultItem extends StatelessWidget {
+class _ProjectResultItem extends ConsumerWidget {
   const _ProjectResultItem({required this.project, this.onTap});
 
   final ProjectData project;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () {
         onTap?.call();
-        context.push('/projects/${project.id}', extra: project);
+        openProjectOrLock(context, ref, project);
       },
       behavior: HitTestBehavior.opaque,
       child: Padding(
