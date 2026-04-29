@@ -88,6 +88,26 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - Support / contact
 - Logout
 
+## Onboarding capture
+
+Triggered once, immediately after a new account is created (inside `_signUp()` in `signup_screen.dart`). Existing users never see it. No skip.
+
+9-question profile survey stored in `public.user_onboarding` (one row per user, upserted per question).
+
+| # | Column | Type | Question |
+|---|--------|------|----------|
+| 1 | `primary_goal` | text | ¿Cuál es tu principal objetivo hoy? |
+| 2 | `investor_profile` | text | ¿Qué relación tienes actualmente con la inversión? |
+| 3 | `asset_experience` | text[] | ¿En qué tipos de activos has invertido? |
+| 4 | `ticket_size` | text | ¿Cuál es el rango típico de inversión por operación? |
+| 5 | `risk_appetite` | text | ¿Cómo defines tu relación con el riesgo? |
+| 6 | `time_horizon` | text | ¿Qué plazo encaja mejor contigo? |
+| 7 | `decision_drivers` | text[] (max 2) | ¿Qué valoras más en una inversión? |
+| 8 | `involvement_level` | text | ¿Cuánto quieres involucrarte en la gestión? |
+| 9 | `lifestyle_interests` | text[] | Más allá de invertir, ¿qué te interesa? |
+
+All stored values are English keys (e.g. `grow_wealth`, `recurring`, `under_25k`). Spanish display labels live in `onboarding_questions.dart`. `completed_at` is set after Q9.
+
 ## Navigation Flow
 ```
 App Shell (BottomNav: 5 tabs)

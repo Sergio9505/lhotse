@@ -25,6 +25,8 @@ import '../features/investments/presentation/coinversion_detail_screen.dart';
 import '../features/investments/presentation/direct_purchase_detail_screen.dart';
 import '../features/investments/presentation/completed_detail_screen.dart';
 import '../features/investments/presentation/investments_screen.dart';
+import '../features/onboarding/presentation/onboarding_done_screen.dart';
+import '../features/onboarding/presentation/onboarding_host.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
 import '../features/profile/presentation/kyc_screen.dart';
 import '../features/profile/presentation/legal_text_screen.dart';
@@ -59,6 +61,9 @@ abstract final class AppRoutes {
   static const welcome = '/welcome';
   static const login = '/login';
   static const signup = '/signup';
+  // Onboarding (post sign-up, outside shell)
+  static const onboarding = '/onboarding';
+  static const onboardingDone = '/onboarding/done';
   // Main app
   static const home = '/';
   static const newsDetail = '/news/:id';
@@ -150,6 +155,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _fadePage(
           key: state.pageKey,
           child: const SignUpScreen(),
+        ),
+      ),
+      // ── Onboarding (post sign-up, authenticated, outside shell) ──
+      GoRoute(
+        path: AppRoutes.onboarding,
+        pageBuilder: (context, state) => _fadePage(
+          key: state.pageKey,
+          child: const OnboardingHost(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.onboardingDone,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: OnboardingDoneScreen(),
         ),
       ),
       // ── Main app shell ──

@@ -67,15 +67,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         fullName: fullName,
       );
 
-      // If email confirmation is disabled, signUp returns a session and
-      // onAuthStateChange will fire — router redirect takes over. If it's
-      // enabled, session is null; fall back to signIn so the user lands on
-      // the home feed without a confirmation step (per current product
-      // decision: email confirmation is deferred).
+      // If email confirmation is disabled, signUp returns a session directly.
+      // If enabled, session is null; fall back to signIn (email confirmation
+      // is deferred per current product decision).
       if (response.session == null) {
         await repo.signIn(email: email, password: password);
       }
-      // No manual navigation — router redirect handles it on auth state change.
+      if (!mounted) return;
+      context.go(AppRoutes.onboarding);
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {
