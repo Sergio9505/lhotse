@@ -264,6 +264,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       label: 'INICIAR SESIÓN',
                       onTap: () => context.push(AppRoutes.login),
                     ),
+
+                    const SizedBox(height: 20),
+
+                    // Secondary — plain text entry to signup
+                    _SignUpEntry(
+                      onTap: () => context.push(AppRoutes.signup),
+                    ),
                   ],
                 ),
               ),
@@ -349,6 +356,61 @@ class _AuthButtonState extends State<_AuthButton> {
             style: AppTypography.labelUppercaseMd.copyWith(
               color: Colors.white,
               letterSpacing: 1.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Sign-up entry (plain text under primary CTA) ─────────────────────────────
+
+class _SignUpEntry extends StatefulWidget {
+  const _SignUpEntry({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_SignUpEntry> createState() => _SignUpEntryState();
+}
+
+class _SignUpEntryState extends State<_SignUpEntry> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: '¿NUEVO EN LHOTSE?  ',
+                  style: AppTypography.labelUppercaseSm.copyWith(
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                ),
+                TextSpan(
+                  text: 'CREAR CUENTA',
+                  style: AppTypography.labelUppercaseMd.copyWith(
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

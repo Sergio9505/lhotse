@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/supabase_provider.dart';
+import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_mark.dart';
 import '../../../core/widgets/lhotse_notification_bell.dart';
@@ -18,6 +20,11 @@ class InvestmentsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(currentUserRoleProvider);
+    if (role == UserRole.viewer) {
+      return const _ViewerEmptyState();
+    }
+
     final topPadding = MediaQuery.of(context).padding.top;
     final summariesAsync = ref.watch(userPortfolioProvider);
 
@@ -437,6 +444,101 @@ class _BrandRowState extends State<_BrandRow> {
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Viewer empty state ────────────────────────────────────────────────────────
+
+class _ViewerEmptyState extends StatelessWidget {
+  const _ViewerEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final topPadding = MediaQuery.of(context).padding.top;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          topPadding + 16,
+          AppSpacing.lg,
+          AppSpacing.lg + bottomPadding,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const LhotseMark(color: AppColors.textPrimary),
+                const Spacer(),
+                const LhotseNotificationBell(color: AppColors.textPrimary),
+              ],
+            ),
+            const Spacer(flex: 2),
+            Text(
+              'Tu estrategia comienza con tu primera inversión.',
+              style: AppTypography.editorialHero.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Esta sección se activa cuando formas parte del grupo de inversores de Lhotse.',
+              style: AppTypography.annotationParagraph.copyWith(
+                color: AppColors.accentMuted,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const Spacer(flex: 3),
+            const _ContactButton(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Contact CTA button ────────────────────────────────────────────────────────
+
+class _ContactButton extends StatefulWidget {
+  const _ContactButton();
+
+  @override
+  State<_ContactButton> createState() => _ContactButtonState();
+}
+
+class _ContactButtonState extends State<_ContactButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        // TODO: navigate to contact (destination TBD by product)
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: _pressed ? 0.6 : 1.0,
+        child: Container(
+          height: 52,
+          alignment: Alignment.center,
+          color: AppColors.primary,
+          child: Text(
+            'CONTACTAR',
+            style: AppTypography.labelUppercaseMd.copyWith(
+              color: Colors.white,
+              letterSpacing: 1.2,
+            ),
           ),
         ),
       ),

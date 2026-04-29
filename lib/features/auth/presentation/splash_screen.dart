@@ -38,18 +38,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   /// Hold the native splash until the video controller is initialized so the
-  /// hand-off goes native PNG (= first video frame) → playing video, with no
-  /// black gap while AVFoundation/ExoPlayer warm up. Debug builds on real
-  /// devices need ~1-2 s for video init; release is much faster but the gap
-  /// still exists. A 2 s safety timeout avoids freezing the splash if
-  /// initialization fails (e.g. corrupt asset on first install).
+  /// hand-off goes native PNG → playing video, with no black gap while
+  /// AVFoundation/ExoPlayer warm up. The native splash is the safety net: if
+  /// the video init times out, we still dismiss it so the user is never
+  /// frozen — but the timeout is generous (5 s) because debug builds on real
+  /// devices can take ~2-4 s the first time, and missing the video to a black
+  /// background defeats the purpose of having one.
   Future<void> _bootstrap() async {
     _controller = VideoPlayerController.asset('assets/videos/lhotse_splash.mp4')
       ..setVolume(0)
       ..setLooping(true);
 
     try {
-      await _controller.initialize().timeout(const Duration(seconds: 2));
+      await _controller.initialize().timeout(const Duration(seconds: 5));
     } catch (_) {
       // Fall through — we'll dismiss the splash and show black/empty body
       // until the user navigates onward. Better than a frozen native splash.
@@ -119,14 +120,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primary,
-      body: Center(
-        child: _controller.value.isInitialized
-            ? AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: VideoPlayer(_controller),
-              )
-            : const SizedBox.shrink(),
-      ),
+      body: _controller.value.isInitialized
+          // Cover the whole viewport — same pattern as WelcomeScreen so the
+          // splash never shows black bars on tall phones / non-matching
+          // aspect ratios.
+          ? SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _controller.value.size.width,
+                  height: _controller.value.size.height,
+                  child: VideoPlayer(_controller),
+                ),
+              ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 }

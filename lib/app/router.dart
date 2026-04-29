@@ -8,6 +8,7 @@ import '../core/domain/brand_data.dart';
 import '../core/domain/news_item_data.dart';
 import '../core/domain/project_data.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/signup_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
 import '../features/brands/presentation/brand_detail_screen.dart';
@@ -57,6 +58,7 @@ abstract final class AppRoutes {
   // Auth
   static const welcome = '/welcome';
   static const login = '/login';
+  static const signup = '/signup';
   // Main app
   static const home = '/';
   static const newsDetail = '/news/:id';
@@ -84,6 +86,7 @@ abstract final class AppRoutes {
 const _kAuthRoutes = {
   AppRoutes.welcome,
   AppRoutes.login,
+  AppRoutes.signup,
 };
 
 /// Routes that bypass the auth redirect (splash decides destination itself).
@@ -140,6 +143,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _fadePage(
           key: state.pageKey,
           child: const LoginScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.signup,
+        pageBuilder: (context, state) => _fadePage(
+          key: state.pageKey,
+          child: const SignUpScreen(),
         ),
       ),
       // ── Main app shell ──
