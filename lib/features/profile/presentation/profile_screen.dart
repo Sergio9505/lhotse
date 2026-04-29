@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -140,6 +141,7 @@ class _IdentitySection extends ConsumerStatefulWidget {
 
 class _IdentitySectionState extends ConsumerState<_IdentitySection> {
   final _picker = ImagePicker();
+  final _cropper = ImageCropper();
   bool _uploading = false;
 
   void _showImageSourceSheet() {
@@ -205,16 +207,41 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final file = await _picker.pickImage(
+    final picked = await _picker.pickImage(
       source: source,
       imageQuality: 85,
-      maxWidth: 720,
+      maxWidth: 1080,
     );
-    if (file == null || !mounted) return;
+    if (picked == null || !mounted) return;
+
+    final cropped = await _cropper.cropImage(
+      sourcePath: picked.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressFormat: ImageCompressFormat.jpg,
+      compressQuality: 90,
+      uiSettings: [
+        IOSUiSettings(
+          cropStyle: CropStyle.circle,
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+          rotateClockwiseButtonHidden: true,
+        ),
+        AndroidUiSettings(
+          cropStyle: CropStyle.circle,
+          toolbarTitle: '',
+          toolbarColor: Colors.black,
+          toolbarWidgetColor: Colors.white,
+          backgroundColor: Colors.black,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+        ),
+      ],
+    );
+    if (cropped == null || !mounted) return;
 
     setState(() => _uploading = true);
     try {
-      await uploadAvatar(ref, file);
+      await uploadAvatar(ref, XFile(cropped.path));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

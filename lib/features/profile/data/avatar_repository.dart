@@ -19,27 +19,34 @@ import '../../../core/data/supabase_provider.dart';
 /// to every widget watching the profile.
 Future<void> uploadAvatar(WidgetRef ref, XFile file) async {
   final client = ref.read(supabaseClientProvider);
-  final session = client.auth.currentSession;
-  final uid = session?.user.id;
-  if (uid == null) {
-    throw StateError('Cannot upload avatar: no authenticated user');
+
+  // Always refresh before upload — eliminates the stale-JWT class of bugs:
+  // refresh-token rotation, sign-out from another device, clock drift.
+  // The conditional `if (isExpired)` guard is insufficient because the
+  // client clock may consider the token valid while the server rejects it,
+  // causing storage to evaluate the request as anon and fail the RLS INSERT.
+  final AuthResponse refreshResp;
+  try {
+    refreshResp = await client.auth.refreshSession();
+  } on AuthException catch (e) {
+    throw StateError('Cannot upload avatar: session refresh failed (${e.message})');
+  }
+  final freshSession = refreshResp.session;
+  if (freshSession == null) {
+    throw StateError('Cannot upload avatar: no session after refresh');
   }
 
-  // Defensive refresh — if the JWT is missing/expired, supabase-storage will
-  // accept the request as anon and fail the RLS policy with a misleading
-  // "row violates RLS" 403 instead of "JWT expired".
-  if (session?.isExpired ?? false) {
-    developer.log('refreshing expired session before avatar upload',
-        name: 'AvatarRepository');
-    await client.auth.refreshSession();
-  }
+  final uid = freshSession.user.id;
 
-  final refreshed = client.auth.currentSession;
+  // Defensively propagate the refreshed token to the storage HTTP client.
+  // supabase_flutter 2.x does this automatically, but being explicit
+  // eliminates any cached-header regression.
+  client.storage.headers['Authorization'] = 'Bearer ${freshSession.accessToken}';
+
   developer.log(
     'avatar upload: uid=$uid '
-    'token=${refreshed?.accessToken.substring(0, 20)}… '
-    'expiresAt=${refreshed?.expiresAt} '
-    'sessionPresent=${refreshed != null}',
+    'token=${freshSession.accessToken.substring(0, 20)}… '
+    'expiresAt=${freshSession.expiresAt}',
     name: 'AvatarRepository',
   );
 
