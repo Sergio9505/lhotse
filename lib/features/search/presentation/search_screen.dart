@@ -16,6 +16,7 @@ import '../../../core/domain/document_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/search_utils.dart';
+import '../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_image.dart';
@@ -248,6 +249,59 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
+  Widget _buildSearchResults({
+    required AsyncValue<List<ProjectData>> projectsAsync,
+    required AsyncValue<List<BrandData>> brandsAsync,
+    required AsyncValue<List<AssetData>> assetsAsync,
+    required AsyncValue<List<DocumentData>> docsAsync,
+    required List<ProjectData> projectResults,
+    required List<BrandData> brandResults,
+    required List<AssetData> assetResults,
+    required List<DocumentData> docResults,
+    required Map<String, String> docSubtitles,
+    required List<dynamic> categories,
+    required List<PurchaseContractData> purchaseContracts,
+    required List<CoinvestmentContractData> coinvestmentContracts,
+    required List<FixedIncomeContractData> fixedIncomeContracts,
+  }) {
+    final primaryAsync = [projectsAsync, brandsAsync, assetsAsync, docsAsync];
+    if (primaryAsync.any((a) => a.hasError)) {
+      return LhotseAsyncError(
+        message: 'No se pudieron cargar los resultados.',
+        onRetry: () {
+          ref.invalidate(projectsProvider);
+          ref.invalidate(brandsProvider);
+          ref.invalidate(assetsProvider);
+          ref.invalidate(allUserDocumentsProvider);
+        },
+      );
+    }
+    if (primaryAsync.every((a) => a.value == null) &&
+        primaryAsync.any((a) => a.isLoading)) {
+      return const LhotseAsyncLoading();
+    }
+    return _SearchResults(
+      projectResults: projectResults,
+      brandResults: brandResults,
+      assetResults: assetResults,
+      docResults: docResults,
+      docSubtitles: docSubtitles,
+      categories: categories,
+      query: _query,
+      onResultTap: () => _addToRecent(_query),
+      onDocTap: (doc) {
+        _addToRecent(_query);
+        _openDoc(
+          context,
+          doc,
+          purchaseContracts: purchaseContracts,
+          coinvestmentContracts: coinvestmentContracts,
+          fixedIncomeContracts: fixedIncomeContracts,
+        );
+      },
+    );
+  }
+
   void _onTagTap(String tag) {
     _searchController.text = tag;
     setState(() => _query = tag);
@@ -271,11 +325,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final hasQuery = _query.isNotEmpty;
-    final projects = ref.watch(projectsProvider).valueOrNull ?? const [];
-    final brands = ref.watch(brandsProvider).valueOrNull ?? const [];
-    final assets = ref.watch(assetsProvider).valueOrNull ?? const [];
-    final allDocs =
-        ref.watch(allUserDocumentsProvider).valueOrNull ?? const [];
+
+    // Primary content — errors must surface, not collapse to empty.
+    final projectsAsync = ref.watch(projectsProvider);
+    final brandsAsync = ref.watch(brandsProvider);
+    final assetsAsync = ref.watch(assetsProvider);
+    final docsAsync = ref.watch(allUserDocumentsProvider);
+    final projects = projectsAsync.value ?? const [];
+    final brands = brandsAsync.value ?? const [];
+    final assets = assetsAsync.value ?? const [];
+    final allDocs = docsAsync.value ?? const [];
+
+    // Decoration — subtitles and icon maps degrade silently.
     final categories =
         ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
     final purchaseContracts =
@@ -352,25 +413,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           const SizedBox(height: AppSpacing.xl),
           Expanded(
             child: hasQuery
-                ? _SearchResults(
+                ? _buildSearchResults(
+                    projectsAsync: projectsAsync,
+                    brandsAsync: brandsAsync,
+                    assetsAsync: assetsAsync,
+                    docsAsync: docsAsync,
                     projectResults: projectResults,
                     brandResults: brandResults,
                     assetResults: assetResults,
                     docResults: docResults,
                     docSubtitles: docSubtitles,
                     categories: categories,
-                    query: _query,
-                    onResultTap: () => _addToRecent(_query),
-                    onDocTap: (doc) {
-                      _addToRecent(_query);
-                      _openDoc(
-                        context,
-                        doc,
-                        purchaseContracts: purchaseContracts,
-                        coinvestmentContracts: coinvestmentContracts,
-                        fixedIncomeContracts: fixedIncomeContracts,
-                      );
-                    },
+                    purchaseContracts: purchaseContracts,
+                    coinvestmentContracts: coinvestmentContracts,
+                    fixedIncomeContracts: fixedIncomeContracts,
                   )
                 : _IdleContent(
                     recentSearches: _recentSearches,

@@ -10,6 +10,7 @@ import '../../../../core/domain/project_data.dart';
 import '../../../../core/domain/user_role.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/search_utils.dart';
+import '../../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../../core/widgets/lhotse_brand_filter_row.dart';
 import '../../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../../core/widgets/lhotse_search_field.dart';
@@ -107,8 +108,10 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
 
   @override
   Widget build(BuildContext context) {
-    final projects = ref.watch(projectsProvider).valueOrNull ?? const [];
-    final allBrands = ref.watch(brandsProvider).valueOrNull ?? const [];
+    final projectsAsync = ref.watch(projectsProvider);
+    final brandsAsync = ref.watch(brandsProvider);
+    final projects = projectsAsync.value ?? const [];
+    final allBrands = brandsAsync.value ?? const [];
     final projectBrandNames = projects.map((p) => p.brand).toSet();
     final brands =
         allBrands.where((b) => projectBrandNames.contains(b.name)).toList();
@@ -165,28 +168,36 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
           ),
         ),
         Expanded(
-          child: ref.watch(projectsProvider).isLoading && projects.isEmpty
-              ? const Center(child: CircularProgressIndicator(strokeWidth: 1.5))
-              : ListView.separated(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.only(
-                      top: AppSpacing.md, bottom: AppSpacing.xxl),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: AppSpacing.lg),
-                  itemBuilder: (context, i) {
-                    return ProjectShowcaseCard(
-                      project: filtered[i],
-                      isLocked: filtered[i].isVip &&
-                          ref.read(currentUserRoleProvider) !=
-                              UserRole.investorVip,
-                      onTap: () => context.push(
-                        '/projects/${filtered[i].id}',
-                        extra: filtered[i],
-                      ),
-                    );
+          child: projectsAsync.hasError
+              ? LhotseAsyncError(
+                  message: 'No se pudieron cargar los proyectos.',
+                  onRetry: () {
+                    ref.invalidate(projectsProvider);
+                    ref.invalidate(brandsProvider);
                   },
-                ),
+                )
+              : projectsAsync.isLoading && projects.isEmpty
+                  ? const LhotseAsyncLoading()
+                  : ListView.separated(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.only(
+                          top: AppSpacing.md, bottom: AppSpacing.xxl),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppSpacing.lg),
+                      itemBuilder: (context, i) {
+                        return ProjectShowcaseCard(
+                          project: filtered[i],
+                          isLocked: filtered[i].isVip &&
+                              ref.read(currentUserRoleProvider) !=
+                                  UserRole.investorVip,
+                          onTap: () => context.push(
+                            '/projects/${filtered[i].id}',
+                            extra: filtered[i],
+                          ),
+                        );
+                      },
+                    ),
         ),
       ],
     );

@@ -631,98 +631,140 @@ class _DocsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rawDocs = ref
-            .watch(documentsProvider((type: modelType, id: modelId)))
-            .valueOrNull ??
-        const [];
+    final docsAsync =
+        ref.watch(documentsProvider((type: modelType, id: modelId)));
     final allCategories =
         ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
-    final iconMap = {for (var c in allCategories) c.id: c.iconName};
-    final filterCategories =
-        categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
-    final allDocs = rawDocs
-        .map((d) =>
-            d.toLhotseDocument(iconName: iconMap[d.categoryId] ?? 'fileText'))
-        .toList();
-    final documents = activeFilters.isEmpty
-        ? allDocs
-        : allDocs.where((d) => activeFilters.contains(d.categoryId)).toList();
 
-    // Filter chips render inline as the first item — they scroll with the
-    // docs (no sticky behaviour). Section tabs above already provide the
-    // pinned chrome anchor.
-    final hasChips = filterCategories.isNotEmpty;
-    return ListView.builder(
-      padding: EdgeInsets.fromLTRB(
-        0,
-        0,
-        0,
-        bottomPadding + AppSpacing.lg,
-      ),
-      itemCount: documents.length + (hasChips ? 1 : 0),
-      itemBuilder: (context, rawIndex) {
-        if (hasChips && rawIndex == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Row(
-                children: [
-                  ...filterCategories.map((cat) => Padding(
-                        padding:
-                            const EdgeInsets.only(right: AppSpacing.sm),
-                        child: LhotseFilterChip(
-                          label: cat.label,
-                          isActive: activeFilters.contains(cat.id),
-                          onTap: () => onToggleFilter(cat.id),
-                        ),
-                      )),
-                  if (activeFilters.isNotEmpty) ...[
-                    GestureDetector(
-                      onTap: onClearFilters,
-                      behavior: HitTestBehavior.opaque,
-                      child: const Padding(
-                        padding: EdgeInsets.all(6),
-                        child: PhosphorIcon(PhosphorIconsThin.x,
-                            size: 14, color: AppColors.accentMuted),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.lg),
-                  ],
-                ],
-              ),
-            ),
-          );
-        }
-        final i = hasChips ? rawIndex - 1 : rawIndex;
-        final doc = documents[i];
-        return Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    return docsAsync.when(
+      loading: () =>
+          const Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (i > 0)
-                Container(
-                  height: 0.5,
-                  color: AppColors.textPrimary.withValues(alpha: 0.08),
+              Text(
+                'No se pudieron cargar los documentos.',
+                style: AppTypography.bodyReading
+                    .copyWith(color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              GestureDetector(
+                onTap: () => ref.invalidate(
+                    documentsProvider((type: modelType, id: modelId))),
+                child: Text(
+                  'Inténtalo de nuevo',
+                  style: AppTypography.bodyReading
+                      .copyWith(color: AppColors.accentMuted),
                 ),
-              LhotseDocRow(
-                name: doc.name,
-                date: doc.date,
-                icon: docCategoryIconByKey(doc.iconName),
-                onTap: doc.fileUrl != null
-                    ? () => openSupabaseDoc(
-                          context,
-                          fileUrl: doc.fileUrl!,
-                          fileName: doc.name,
-                          docId: doc.id,
-                        )
-                    : null,
               ),
             ],
           ),
+        ),
+      ),
+      data: (rawDocs) {
+        if (rawDocs.isEmpty) {
+          return Center(
+            child: Text(
+              'Aún no hay documentos disponibles.',
+              style: AppTypography.bodyReading
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+          );
+        }
+        final iconMap = {for (var c in allCategories) c.id: c.iconName};
+        final filterCategories =
+            categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
+        final allDocs = rawDocs
+            .map((d) => d.toLhotseDocument(
+                iconName: iconMap[d.categoryId] ?? 'fileText'))
+            .toList();
+        final documents = activeFilters.isEmpty
+            ? allDocs
+            : allDocs
+                .where((d) => activeFilters.contains(d.categoryId))
+                .toList();
+
+        // Filter chips render inline as the first item — they scroll with the
+        // docs (no sticky behaviour). Section tabs above already provide the
+        // pinned chrome anchor.
+        final hasChips = filterCategories.isNotEmpty;
+        return ListView.builder(
+          padding: EdgeInsets.fromLTRB(
+            0,
+            0,
+            0,
+            bottomPadding + AppSpacing.lg,
+          ),
+          itemCount: documents.length + (hasChips ? 1 : 0),
+          itemBuilder: (context, rawIndex) {
+            if (hasChips && rawIndex == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  child: Row(
+                    children: [
+                      ...filterCategories.map((cat) => Padding(
+                            padding:
+                                const EdgeInsets.only(right: AppSpacing.sm),
+                            child: LhotseFilterChip(
+                              label: cat.label,
+                              isActive: activeFilters.contains(cat.id),
+                              onTap: () => onToggleFilter(cat.id),
+                            ),
+                          )),
+                      if (activeFilters.isNotEmpty) ...[
+                        GestureDetector(
+                          onTap: onClearFilters,
+                          behavior: HitTestBehavior.opaque,
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: PhosphorIcon(PhosphorIconsThin.x,
+                                size: 14, color: AppColors.accentMuted),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }
+            final i = hasChips ? rawIndex - 1 : rawIndex;
+            final doc = documents[i];
+            return Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Column(
+                children: [
+                  if (i > 0)
+                    Container(
+                      height: 0.5,
+                      color: AppColors.textPrimary.withValues(alpha: 0.08),
+                    ),
+                  LhotseDocRow(
+                    name: doc.name,
+                    date: doc.date,
+                    icon: docCategoryIconByKey(doc.iconName),
+                    onTap: doc.fileUrl != null
+                        ? () => openSupabaseDoc(
+                              context,
+                              fileUrl: doc.fileUrl!,
+                              fileName: doc.name,
+                              docId: doc.id,
+                            )
+                        : null,
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

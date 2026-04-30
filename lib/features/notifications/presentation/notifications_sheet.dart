@@ -5,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/domain/app_notification.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../core/widgets/lhotse_notification_badge.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 import '../data/notifications_provider.dart';
@@ -35,8 +36,8 @@ class _NotificationsSheetContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifications =
-        ref.watch(notificationsProvider).valueOrNull ?? const [];
+    final notifAsync = ref.watch(notificationsProvider);
+    final notifications = notifAsync.value ?? const [];
     final now = DateTime.now();
     final weekAgo = now.subtract(const Duration(days: 7));
 
@@ -139,47 +140,54 @@ class _NotificationsSheetContent extends ConsumerWidget {
             color: AppColors.textPrimary.withValues(alpha: 0.08),
           ),
           Expanded(
-            child: notifications.isEmpty
-                ? Center(
-                    child: Text(
-                      'SIN NOTIFICACIONES',
-                      style: AppTypography.labelUppercaseMd.copyWith(
-                        color: AppColors.accentMuted,
+            child: notifAsync.when(
+              loading: () => const LhotseAsyncLoading(),
+              error: (_, _) => LhotseAsyncError(
+                message: 'No se pudieron cargar las notificaciones.',
+                onRetry: () => ref.invalidate(notificationsProvider),
+              ),
+              data: (_) => sections.isEmpty
+                  ? Center(
+                      child: Text(
+                        'SIN NOTIFICACIONES',
+                        style: AppTypography.labelUppercaseMd.copyWith(
+                          color: AppColors.accentMuted,
+                        ),
                       ),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: scrollController,
-                    padding: EdgeInsets.fromLTRB(
-                        0, 0, 0, bottomPadding + AppSpacing.md),
-                    itemCount: sections.length,
-                    itemBuilder: (context, sectionIndex) {
-                      final (label, items) = sections[sectionIndex];
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(
-                              top: sectionIndex == 0
-                                  ? AppSpacing.md
-                                  : AppSpacing.lg,
-                              bottom: AppSpacing.sm,
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      padding: EdgeInsets.fromLTRB(
+                          0, 0, 0, bottomPadding + AppSpacing.md),
+                      itemCount: sections.length,
+                      itemBuilder: (context, sectionIndex) {
+                        final (label, items) = sections[sectionIndex];
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: sectionIndex == 0
+                                    ? AppSpacing.md
+                                    : AppSpacing.lg,
+                                bottom: AppSpacing.sm,
+                              ),
+                              child: LhotseSectionLabel(label: label),
                             ),
-                            child: LhotseSectionLabel(label: label),
-                          ),
-                          ...items.asMap().entries.map((entry) {
-                            final idx = entry.key;
-                            final n = entry.value;
-                            return _NotificationRow(
-                              notification: n,
-                              now: now,
-                              isLast: idx == items.length - 1,
-                            );
-                          }),
-                        ],
-                      );
-                    },
-                  ),
+                            ...items.asMap().entries.map((entry) {
+                              final idx = entry.key;
+                              final n = entry.value;
+                              return _NotificationRow(
+                                notification: n,
+                                now: now,
+                                isLast: idx == items.length - 1,
+                              );
+                            }),
+                          ],
+                        );
+                      },
+                    ),
+            ),
           ),
         ],
       ),

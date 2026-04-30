@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/data/supabase_provider.dart';
 import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../core/widgets/lhotse_mark.dart';
 import '../../../core/widgets/lhotse_notification_bell.dart';
 import '../data/investments_provider.dart';
@@ -52,15 +53,15 @@ class InvestmentsScreen extends ConsumerWidget {
           ),
 
           // Brand rows
-          if (summaries.isEmpty && summariesAsync.isLoading)
-            const SliverToBoxAdapter(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.all(AppSpacing.xl),
-                  child: CircularProgressIndicator(strokeWidth: 1.5),
-                ),
+          if (summariesAsync.hasError)
+            SliverToBoxAdapter(
+              child: LhotseAsyncError(
+                message: 'No se pudo cargar tu cartera.',
+                onRetry: () => ref.invalidate(userPortfolioProvider),
               ),
             )
+          else if (summaries.isEmpty && summariesAsync.isLoading)
+            const SliverToBoxAdapter(child: LhotseAsyncLoading())
           else
             SliverList(
               delegate: SliverChildBuilderDelegate(

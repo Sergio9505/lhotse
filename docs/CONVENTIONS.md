@@ -17,6 +17,8 @@
 ## State Management (Riverpod)
 - `ref.watch()` for reactive data, `ref.read()` for one-off actions (callbacks)
 - `AsyncValue<T>` for async state: loading → data | error
+- **Primary content** (the list or section the user came to see) always uses `.when(loading, error, data)` — never `valueOrNull ?? []`. `LhotseAsyncLoading` + `LhotseAsyncError` in `core/widgets/lhotse_async_list_states.dart` provide the canonical UI for these states.
+- **Decoration** (icon maps, subtitle enrichment, counters/badges, hero-transition-gap fallbacks) may use `valueOrNull` — graceful degradation is correct there.
 - Invalidate providers on mutations: `ref.invalidate(provider)`
 - Per-user providers: watch auth state stream when Supabase is connected
 
@@ -130,6 +132,7 @@ Provider conventions:
 - One provider file per domain (`projects_provider.dart`, `news_provider.dart`, …).
 - Per-user providers watch `currentUserIdProvider` (`.distinct()`) — see **Auth Flow** below — to force a fresh fetch on auth change. Never read `supabaseAuthProvider.currentUser` directly for cache keys.
 - Mutations call `ref.invalidate(provider)` to force re-fetch; UI reconciles via `AsyncValue`.
+- **`documentsProvider`** (L3 Docs tab) loads multiple scopes per investment type: coinversión → investor + project; compra directa → investor + asset + rental (if exists); renta fija → investor only. Single OR query via PostgREST `.or()` after a PK sub-fetch of the contract's `project_id`/`asset_id`. Never add scope logic at the callsite — it lives inside `_fetchDocuments`.
 
 ## Navigation (GoRouter)
 - Named routes with path params: `/brands/:id`

@@ -8,6 +8,7 @@ import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
@@ -57,6 +58,15 @@ class BrandInvestmentsScreen extends ConsumerWidget {
 
     if (businessModel == null) {
       // Deep-link still resolving, or user has no investments in this brand.
+      if (heroContext == null && fallbackAsync.hasError) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: LhotseAsyncError(
+            message: 'No se pudieron cargar tus inversiones.',
+            onRetry: () => ref.invalidate(userPortfolioEntryProvider(brandId)),
+          ),
+        );
+      }
       if (heroContext == null && fallbackAsync.hasValue && fallbackEntry == null) {
         return _EmptyState(brandId: brandId);
       }
@@ -67,18 +77,20 @@ class BrandInvestmentsScreen extends ConsumerWidget {
     }
 
     // Only fetch the contract view for this brand's business model.
-    final allPurchase = businessModel == BusinessModel.directPurchase
-        ? (ref.watch(brandPurchaseContractsProvider(brandId)).valueOrNull ??
-            const <PurchaseContractData>[])
-        : const <PurchaseContractData>[];
-    final allCoinvest = businessModel == BusinessModel.coinvestment
-        ? (ref.watch(brandCoinvestmentContractsProvider(brandId)).valueOrNull ??
-            const <CoinvestmentContractData>[])
-        : const <CoinvestmentContractData>[];
-    final allRf = businessModel == BusinessModel.fixedIncome
-        ? (ref.watch(brandFixedIncomeContractsProvider(brandId)).valueOrNull ??
-            const <FixedIncomeContractData>[])
-        : const <FixedIncomeContractData>[];
+    final purchaseAsync = businessModel == BusinessModel.directPurchase
+        ? ref.watch(brandPurchaseContractsProvider(brandId))
+        : const AsyncValue<List<PurchaseContractData>>.data([]);
+    final coinvestAsync = businessModel == BusinessModel.coinvestment
+        ? ref.watch(brandCoinvestmentContractsProvider(brandId))
+        : const AsyncValue<List<CoinvestmentContractData>>.data([]);
+    final rfAsync = businessModel == BusinessModel.fixedIncome
+        ? ref.watch(brandFixedIncomeContractsProvider(brandId))
+        : const AsyncValue<List<FixedIncomeContractData>>.data([]);
+    final contractsHasError =
+        purchaseAsync.hasError || coinvestAsync.hasError || rfAsync.hasError;
+    final allPurchase = purchaseAsync.value ?? const <PurchaseContractData>[];
+    final allCoinvest = coinvestAsync.value ?? const <CoinvestmentContractData>[];
+    final allRf = rfAsync.value ?? const <FixedIncomeContractData>[];
 
     final isCompraDirecta = businessModel == BusinessModel.directPurchase;
     final isRentaFija = businessModel == BusinessModel.fixedIncome;
@@ -147,7 +159,22 @@ class BrandInvestmentsScreen extends ConsumerWidget {
           ),
 
           // Active investment rows
-          if (isRentaFija)
+          if (contractsHasError)
+            SliverToBoxAdapter(
+              child: LhotseAsyncError(
+                message: 'No se pudieron cargar tus inversiones.',
+                onRetry: () {
+                  if (businessModel == BusinessModel.directPurchase) {
+                    ref.invalidate(brandPurchaseContractsProvider(brandId));
+                  } else if (businessModel == BusinessModel.coinvestment) {
+                    ref.invalidate(brandCoinvestmentContractsProvider(brandId));
+                  } else {
+                    ref.invalidate(brandFixedIncomeContractsProvider(brandId));
+                  }
+                },
+              ),
+            )
+          else if (isRentaFija)
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, i) => _RentaFijaRow(
@@ -1295,19 +1322,15 @@ class _RentaFijaDocsSheetState extends ConsumerState<_RentaFijaDocsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final rawDocs = ref
-            .watch(documentsProvider(
-                (type: 'fixed_income', id: widget.contractId)))
-            .valueOrNull ??
-        const [];
+    final docsAsync = ref.watch(documentsProvider(
+        (type: 'fixed_income', id: widget.contractId)));
     final allCategories =
         ref.watch(allDocumentCategoriesProvider).valueOrNull ?? const [];
     final iconMap = {for (final c in allCategories) c.id: c.iconName};
+    // Use valueOrNull for header chips — visible once data arrives.
+    final rawDocs = docsAsync.valueOrNull ?? const [];
     final filterCategories =
         categoriesForIds(rawDocs.map((d) => d.categoryId), allCategories);
-    final docs = _activeFilters.isEmpty
-        ? rawDocs
-        : rawDocs.where((d) => _activeFilters.contains(d.categoryId)).toList();
 
     return LhotseBottomSheetBody(
       title: 'DOCUMENTOS',
@@ -1344,24 +1367,70 @@ class _RentaFijaDocsSheetState extends ConsumerState<_RentaFijaDocsSheet> {
                 ),
               ),
             ),
-      bodyBuilder: (bottomPadding) => ListView.separated(
-        shrinkWrap: true,
-        padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg, 0, AppSpacing.lg, bottomPadding + AppSpacing.md),
-        itemCount: docs.length,
-        separatorBuilder: (_, _) => Container(
-          height: 0.5,
-          color: AppColors.textPrimary.withValues(alpha: 0.08),
+      bodyBuilder: (bottomPadding) => docsAsync.when(
+        loading: () =>
+            const Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'No se pudieron cargar los documentos.',
+                  style: AppTypography.bodyReading
+                      .copyWith(color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                GestureDetector(
+                  onTap: () => ref.invalidate(documentsProvider(
+                      (type: 'fixed_income', id: widget.contractId))),
+                  child: Text(
+                    'Inténtalo de nuevo',
+                    style: AppTypography.bodyReading
+                        .copyWith(color: AppColors.accentMuted),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        itemBuilder: (context, i) {
-          final doc = docs[i];
-          final ui = doc.toLhotseDocument(
-            iconName: iconMap[doc.categoryId] ?? 'fileText',
-          );
-          return LhotseDocRow(
-            name: ui.name,
-            date: ui.date,
-            icon: docCategoryIconByKey(ui.iconName),
+        data: (docs) {
+          final filtered = _activeFilters.isEmpty
+              ? docs
+              : docs
+                  .where((d) => _activeFilters.contains(d.categoryId))
+                  .toList();
+          if (filtered.isEmpty) {
+            return Center(
+              child: Text(
+                'Aún no hay documentos disponibles.',
+                style: AppTypography.bodyReading
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            );
+          }
+          return ListView.separated(
+            shrinkWrap: true,
+            padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg,
+                bottomPadding + AppSpacing.md),
+            itemCount: filtered.length,
+            separatorBuilder: (_, _) => Container(
+              height: 0.5,
+              color: AppColors.textPrimary.withValues(alpha: 0.08),
+            ),
+            itemBuilder: (context, i) {
+              final doc = filtered[i];
+              final ui = doc.toLhotseDocument(
+                iconName: iconMap[doc.categoryId] ?? 'fileText',
+              );
+              return LhotseDocRow(
+                name: ui.name,
+                date: ui.date,
+                icon: docCategoryIconByKey(ui.iconName),
+              );
+            },
           );
         },
       ),

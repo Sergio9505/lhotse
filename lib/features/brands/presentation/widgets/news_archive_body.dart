@@ -8,6 +8,7 @@ import '../../../../core/data/news_provider.dart';
 import '../../../../core/domain/news_item_data.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/search_utils.dart';
+import '../../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../../core/widgets/lhotse_news_card.dart';
 import '../../../../core/widgets/lhotse_search_field.dart';
@@ -79,7 +80,8 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
 
   @override
   Widget build(BuildContext context) {
-    final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
+    final newsAsync = ref.watch(newsProvider);
+    final allNews = newsAsync.value ?? const [];
     final news = _applyFilters(allNews);
 
     return Column(
@@ -159,38 +161,46 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
           ),
         ),
         Expanded(
-          child: news.isEmpty
-              ? Center(
-                  child: Text(
-                    allNews.isEmpty ? '' : 'SIN RESULTADOS',
-                    style: AppTypography.labelUppercaseMd.copyWith(
-                      color: AppColors.accentMuted,
+          child: newsAsync.when(
+            loading: () => const LhotseAsyncLoading(),
+            error: (_, _) => LhotseAsyncError(
+              message: 'No se pudieron cargar las noticias.',
+              onRetry: () => ref.invalidate(newsProvider),
+            ),
+            data: (_) => news.isEmpty
+                ? Center(
+                    child: Text(
+                      'SIN RESULTADOS',
+                      style: AppTypography.labelUppercaseMd.copyWith(
+                        color: AppColors.accentMuted,
+                      ),
                     ),
+                  )
+                : ListView.separated(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.only(
+                        top: AppSpacing.md, bottom: AppSpacing.xxl),
+                    itemCount: news.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppSpacing.lg),
+                    itemBuilder: (context, i) {
+                      final item = news[i];
+                      return LhotseNewsCard(
+                        title: item.title,
+                        imageUrl: item.imageUrl,
+                        heroTag: 'news-hero-${item.id}',
+                        brand: item.brand,
+                        subtitle: _editorialDeck(item.subtitle),
+                        date:
+                            DateFormat('d MMM yyyy', 'es_ES').format(item.date),
+                        videoUrl: item.videoUrl,
+                        hasPlayButton: item.hasPlayButton,
+                        onTap: () =>
+                            context.push('/news/${item.id}', extra: item),
+                      );
+                    },
                   ),
-                )
-              : ListView.separated(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.only(
-                      top: AppSpacing.md, bottom: AppSpacing.xxl),
-                  itemCount: news.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: AppSpacing.lg),
-                  itemBuilder: (context, i) {
-                    final item = news[i];
-                    return LhotseNewsCard(
-                      title: item.title,
-                      imageUrl: item.imageUrl,
-                      heroTag: 'news-hero-${item.id}',
-                      brand: item.brand,
-                      subtitle: _editorialDeck(item.subtitle),
-                      date: DateFormat('d MMM yyyy', 'es_ES').format(item.date),
-                      videoUrl: item.videoUrl,
-                      hasPlayButton: item.hasPlayButton,
-                      onTap: () =>
-                          context.push('/news/${item.id}', extra: item),
-                    );
-                  },
-                ),
+          ),
         ),
       ],
     );
