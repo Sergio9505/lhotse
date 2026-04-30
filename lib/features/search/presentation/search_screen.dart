@@ -15,6 +15,7 @@ import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/document_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/open_supabase_doc.dart';
 import '../../../core/utils/search_utils.dart';
 import '../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
@@ -210,43 +211,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     required List<CoinvestmentContractData> coinvestmentContracts,
     required List<FixedIncomeContractData> fixedIncomeContracts,
   }) {
-    if (doc.scope == 'project' && doc.projectId != null) {
-      context.push('/projects/${doc.projectId}');
-      return;
-    }
-    // scope='asset' has no standalone route yet (see ROADMAP)
-    if (doc.scope == 'investor') {
-      if (doc.relatedPurchaseId != null) {
-        final contract = purchaseContracts
-            .where((c) => c.id == doc.relatedPurchaseId)
-            .firstOrNull;
-        if (contract == null) return;
-        context.push(
-          '/investments/detail/purchase/${contract.id}',
-          extra: (brandName: '', contract: contract),
-        );
-        return;
-      }
-      if (doc.relatedCoinvestmentId != null) {
-        final contract = coinvestmentContracts
-            .where((c) => c.id == doc.relatedCoinvestmentId)
-            .firstOrNull;
-        if (contract == null) return;
-        context.push(
-          '/investments/detail/coinvestment/${contract.id}',
-          extra: (contract: contract, brandName: ''),
-        );
-        return;
-      }
-      if (doc.relatedFixedIncomeId != null) {
-        final contract = fixedIncomeContracts
-            .where((c) => c.id == doc.relatedFixedIncomeId)
-            .firstOrNull;
-        if (contract == null) return;
-        context.push('/investments/brand/${contract.brandId}');
-        return;
-      }
-    }
+    if (doc.fileUrl == null || doc.fileUrl!.isEmpty) return;
+    openSupabaseDoc(
+      context,
+      fileUrl: doc.fileUrl!,
+      fileName: doc.name,
+      docId: doc.id,
+    );
   }
 
   Widget _buildSearchResults({

@@ -8,6 +8,7 @@ import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/open_supabase_doc.dart';
 import '../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
@@ -1429,6 +1430,14 @@ class _RentaFijaDocsSheetState extends ConsumerState<_RentaFijaDocsSheet> {
                 name: ui.name,
                 date: ui.date,
                 icon: docCategoryIconByKey(ui.iconName),
+                onTap: doc.fileUrl == null || doc.fileUrl!.isEmpty
+                    ? null
+                    : () => openSupabaseDoc(
+                          context,
+                          fileUrl: doc.fileUrl!,
+                          fileName: doc.name,
+                          docId: doc.id,
+                        ),
               );
             },
           );
