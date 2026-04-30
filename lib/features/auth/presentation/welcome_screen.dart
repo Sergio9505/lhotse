@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,30 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/lhotse_image.dart';
 import '../../../app/router.dart';
 
-// Drone shot of a luxury villa with pool — free commercial use (Coverr)
-// Replace with branded content before production.
-const _kVideoUrl =
-    'https://cdn.coverr.co/videos/coverr-villa-with-a-swimming-pool-6618/720p.mp4';
-
-// Ken Burns fallback — shown immediately while video loads (or if it fails)
-const _kImages = [
-  'assets/images/salon_dark.webp', // local — always available
-  'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200&q=85',
-  'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&q=85',
-];
-
-// Ken Burns zoom direction varies per image for visual variety
-const _kAlignments = [
-  Alignment.center,
-  Alignment.centerLeft,
-  Alignment.topRight,
-];
-
-const _kSlideDuration = Duration(seconds: 7);
-const _kCrossfadeDuration = Duration(milliseconds: 1500);
 const _kVideoFadeIn = Duration(milliseconds: 800);
 
 class WelcomeScreen extends StatefulWidget {
@@ -40,47 +16,20 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with SingleTickerProviderStateMixin {
-  // ── Ken Burns ──────────────────────────────────────────────────────────────
-  late final AnimationController _kenBurns;
-  late final Animation<double> _kenBurnsAnim;
-  late final Timer _slideTimer;
-  int _imageIndex = 0;
-
-  // ── Video ──────────────────────────────────────────────────────────────────
+class _WelcomeScreenState extends State<WelcomeScreen> {
   VideoPlayerController? _videoController;
   bool _videoReady = false;
 
   @override
   void initState() {
     super.initState();
-
-    // Ken Burns starts immediately — 1.0 → 1.08 slow zoom per image
-    _kenBurns = AnimationController(
-      vsync: this,
-      duration: _kSlideDuration,
-    )..forward();
-
-    _kenBurnsAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _kenBurns, curve: Curves.easeInOut),
-    );
-
-    _slideTimer = Timer.periodic(_kSlideDuration, (_) {
-      if (!mounted || _videoReady) return; // stop cycling once video is up
-      setState(() => _imageIndex = (_imageIndex + 1) % _kImages.length);
-      _kenBurns
-        ..reset()
-        ..forward();
-    });
-
     _initVideo();
   }
 
   Future<void> _initVideo() async {
     try {
-      final controller = VideoPlayerController.networkUrl(
-        Uri.parse(_kVideoUrl),
+      final controller = VideoPlayerController.asset(
+        'assets/videos/lhotse_welcome.mp4',
       );
       await controller.initialize();
       controller.setLooping(true);
@@ -95,14 +44,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         controller.dispose();
       }
     } catch (_) {
-      // Video failed — Ken Burns fallback stays active, no error shown
+      // Video failed — black background stays visible
     }
   }
 
   @override
   void dispose() {
-    _kenBurns.dispose();
-    _slideTimer.cancel();
     _videoController?.dispose();
     super.dispose();
   }
@@ -113,24 +60,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     final screenHeight = MediaQuery.of(context).size.height;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Stack(
           fit: StackFit.expand,
           children: [
-            // ── Ken Burns slideshow — always under, visible while video loads ─
-            AnimatedSwitcher(
-              duration: _kCrossfadeDuration,
-              child: _KenBurnsBackground(
-                key: ValueKey(_imageIndex),
-                imageUrl: _kImages[_imageIndex],
-                alignment: _kAlignments[_imageIndex],
-                animation: _kenBurnsAnim,
-              ),
-            ),
+            // ── Black base — visible during ~100 ms init ────────────────────
+            const ColoredBox(color: Colors.black),
 
-            // ── Video — fades in over Ken Burns once initialized ────────────
+            // ── Video — fades in once initialized ───────────────────────────
             if (_videoController != null)
               AnimatedOpacity(
                 duration: _kVideoFadeIn,
@@ -265,34 +204,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           ],
         ),
       ),
-    );
-  }
-}
-
-// ── Ken Burns background ─────────────────────────────────────────────────────
-
-class _KenBurnsBackground extends StatelessWidget {
-  const _KenBurnsBackground({
-    super.key,
-    required this.imageUrl,
-    required this.alignment,
-    required this.animation,
-  });
-
-  final String imageUrl;
-  final Alignment alignment;
-  final Animation<double> animation;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) => Transform.scale(
-        scale: animation.value,
-        alignment: alignment,
-        child: child,
-      ),
-      child: LhotseImage(imageUrl, fit: BoxFit.cover),
     );
   }
 }
