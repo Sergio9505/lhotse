@@ -341,7 +341,10 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                         itemBuilder: (context, i) {
                           final item = project.galleryMedia[i];
                           return GestureDetector(
-                            onTap: () => showFullMedia(context, item),
+                            onTap: () => showMediaGallery(
+                                context,
+                                items: project.galleryMedia,
+                                initialIndex: i),
                             child: Container(
                               width: screenWidth * 0.75,
                               decoration: const BoxDecoration(

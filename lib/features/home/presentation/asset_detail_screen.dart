@@ -308,7 +308,10 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                         itemBuilder: (context, i) {
                           final item = detail.galleryMedia[i];
                           return GestureDetector(
-                            onTap: () => showFullMedia(context, item),
+                            onTap: () => showMediaGallery(
+                                context,
+                                items: detail.galleryMedia,
+                                initialIndex: i),
                             child: Container(
                               width: screenWidth * 0.75,
                               decoration: const BoxDecoration(

@@ -1300,7 +1300,7 @@ class _InvestmentGallery extends StatelessWidget {
             separatorBuilder: (_, _) =>
                 const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, i) => _GalleryCard(
-                width: cardWidth, item: items[i]),
+                width: cardWidth, item: items[i], items: items, index: i),
           ),
         ),
       ],
@@ -1352,14 +1352,19 @@ class _GalleryCard extends StatelessWidget {
   const _GalleryCard({
     required this.width,
     required this.item,
+    required this.items,
+    required this.index,
   });
   final double width;
   final MediaItem item;
+  final List<MediaItem> items;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => showFullMedia(context, item),
+      onTap: () =>
+          showMediaGallery(context, items: items, initialIndex: index),
       child: Container(
         width: width,
         decoration: const BoxDecoration(

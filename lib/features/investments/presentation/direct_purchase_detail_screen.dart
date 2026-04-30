@@ -528,7 +528,10 @@ class _AssetTab extends StatelessWidget {
               itemBuilder: (context, i) {
                 final item = galleryMedia[i];
                 return GestureDetector(
-                  onTap: () => showFullMedia(context, item),
+                  onTap: () => showMediaGallery(
+                      context,
+                      items: galleryMedia,
+                      initialIndex: i),
                   child: Container(
                     width: cardWidth,
                     decoration: const BoxDecoration(

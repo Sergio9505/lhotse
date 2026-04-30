@@ -1,15 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:video_player/video_player.dart';
 
 import '../domain/media_item.dart';
 import '../theme/app_theme.dart';
 import 'lhotse_bottom_sheet.dart';
 import 'lhotse_image.dart';
-import '../../features/home/presentation/widgets/fullscreen_video_player.dart';
 
-/// Opens a bottom sheet with all gallery items (images and videos) in a
-/// vertical scroll. Tapping an image opens a pinch-to-zoom viewer; tapping a
-/// video opens a fullscreen player.
+/// Opens a bottom sheet with all gallery items in a vertical scroll.
+/// Tapping any item opens the paged gallery viewer at that index.
 void showAllGallery(
     BuildContext context, String title, List<MediaItem> items) {
   showLhotseBottomSheet(
@@ -26,7 +27,7 @@ void showAllGallery(
     itemBuilder: (context, i) {
       final item = items[i];
       return GestureDetector(
-        onTap: () => showFullMedia(context, item),
+        onTap: () => showMediaGallery(context, items: items, initialIndex: i),
         child: SizedBox(
           height: 200,
           width: double.infinity,
@@ -39,24 +40,34 @@ void showAllGallery(
   );
 }
 
-/// Opens an image fullscreen viewer or a video player depending on item type.
-void showFullMedia(BuildContext context, MediaItem item) {
-  if (item.type == MediaType.image) {
-    showFullImage(context, item.url);
-  } else {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => FullscreenVideoPlayer(
-          videoUrl: item.url,
-          posterUrl: '',
+/// Opens a paged full-screen gallery viewer starting at [initialIndex].
+/// Supports swipe between all items, pinch-to-zoom and double-tap on images,
+/// and auto-play (muted) on videos with tap-to-toggle controls.
+void showMediaGallery(
+  BuildContext context, {
+  required List<MediaItem> items,
+  required int initialIndex,
+}) {
+  if (items.isEmpty) return;
+  Navigator.of(context).push(
+    PageRouteBuilder<void>(
+      opaque: true,
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, animation, secondaryAnimation) => AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) =>
+            Opacity(opacity: animation.value, child: child),
+        child: _MediaGalleryViewer(
+          items: items,
+          initialIndex: initialIndex,
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
-/// Opens a full-screen image viewer with InteractiveViewer (pinch to zoom).
+/// Opens a full-screen single-image viewer (pinch to zoom, tap to dismiss).
+/// For galleries with multiple items use [showMediaGallery] instead.
 void showFullImage(BuildContext context, String imageUrl) {
   Navigator.of(context).push(
     PageRouteBuilder(
@@ -64,13 +75,10 @@ void showFullImage(BuildContext context, String imageUrl) {
       pageBuilder: (context, animation, secondaryAnimation) {
         final topPadding = MediaQuery.of(context).padding.top;
         final bottomPadding = MediaQuery.of(context).padding.bottom;
-
         return AnimatedBuilder(
           animation: animation,
-          builder: (context, child) => Opacity(
-            opacity: animation.value,
-            child: child,
-          ),
+          builder: (context, child) =>
+              Opacity(opacity: animation.value, child: child),
           child: Scaffold(
             backgroundColor: AppColors.background,
             body: GestureDetector(
@@ -101,8 +109,8 @@ void showFullImage(BuildContext context, String imageUrl) {
                           width: 44,
                           height: 44,
                           alignment: Alignment.center,
-                          color: AppColors.textPrimary
-                              .withValues(alpha: 0.08),
+                          color:
+                              AppColors.textPrimary.withValues(alpha: 0.08),
                           child: const PhosphorIcon(
                             PhosphorIconsThin.x,
                             color: AppColors.textPrimary,
@@ -122,7 +130,456 @@ void showFullImage(BuildContext context, String imageUrl) {
   );
 }
 
-/// Simple dark tile with a film icon used as video placeholder in galleries.
+// ─── Gallery viewer ────────────────────────────────────────────────────────
+
+class _MediaGalleryViewer extends StatefulWidget {
+  const _MediaGalleryViewer({
+    required this.items,
+    required this.initialIndex,
+  });
+
+  final List<MediaItem> items;
+  final int initialIndex;
+
+  @override
+  State<_MediaGalleryViewer> createState() => _MediaGalleryViewerState();
+}
+
+class _MediaGalleryViewerState extends State<_MediaGalleryViewer> {
+  late final PageController _pageController;
+  late int _currentPage;
+  final ValueNotifier<bool> _anyZoomed = ValueNotifier(false);
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPage = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _anyZoomed.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          ValueListenableBuilder<bool>(
+            valueListenable: _anyZoomed,
+            builder: (context, isZoomed, _) => PageView.builder(
+              controller: _pageController,
+              physics: isZoomed
+                  ? const NeverScrollableScrollPhysics()
+                  : const BouncingScrollPhysics(),
+              itemCount: widget.items.length,
+              onPageChanged: (i) => setState(() => _currentPage = i),
+              itemBuilder: (context, i) {
+                final item = widget.items[i];
+                final isActive = i == _currentPage;
+                return item.type == MediaType.video
+                    ? _VideoPage(item: item, isActive: isActive)
+                    : _ImagePage(
+                        item: item,
+                        isActive: isActive,
+                        onZoomChanged: (z) => _anyZoomed.value = z,
+                      );
+              },
+            ),
+          ),
+          if (widget.items.length > 1)
+            Positioned(
+              top: topPadding + AppSpacing.md,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                child: Center(
+                  child: Text(
+                    '${_currentPage + 1} / ${widget.items.length}',
+                    style: AppTypography.annotation.copyWith(
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Positioned(
+            top: topPadding + AppSpacing.sm,
+            right: AppSpacing.sm,
+            child: _ChromeButton(
+              icon: PhosphorIconsThin.x,
+              onTap: () => Navigator.of(context).pop(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Image page ────────────────────────────────────────────────────────────
+
+class _ImagePage extends StatefulWidget {
+  const _ImagePage({
+    required this.item,
+    required this.isActive,
+    required this.onZoomChanged,
+  });
+
+  final MediaItem item;
+  final bool isActive;
+  final ValueChanged<bool> onZoomChanged;
+
+  @override
+  State<_ImagePage> createState() => _ImagePageState();
+}
+
+class _ImagePageState extends State<_ImagePage> {
+  final TransformationController _txController = TransformationController();
+  Offset? _doubleTapPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    _txController.addListener(_onTransformChanged);
+  }
+
+  @override
+  void didUpdateWidget(_ImagePage old) {
+    super.didUpdateWidget(old);
+    if (!widget.isActive && old.isActive) {
+      _txController.value = Matrix4.identity();
+    }
+  }
+
+  @override
+  void dispose() {
+    _txController.removeListener(_onTransformChanged);
+    _txController.dispose();
+    super.dispose();
+  }
+
+  void _onTransformChanged() {
+    widget.onZoomChanged(_txController.value != Matrix4.identity());
+  }
+
+  void _onDoubleTapDown(TapDownDetails d) {
+    _doubleTapPosition = d.globalPosition;
+  }
+
+  void _onDoubleTap() {
+    if (_txController.value != Matrix4.identity()) {
+      _txController.value = Matrix4.identity();
+    } else {
+      final rb = context.findRenderObject() as RenderBox?;
+      if (rb == null || _doubleTapPosition == null) return;
+      const scale = 2.5;
+      final pos = rb.globalToLocal(_doubleTapPosition!);
+      final tx = -pos.dx * (scale - 1);
+      final ty = -pos.dy * (scale - 1);
+      _txController.value =
+          Matrix4.translationValues(tx, ty, 0.0)
+            ..multiply(Matrix4.diagonal3Values(scale, scale, 1.0));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onDoubleTapDown: _onDoubleTapDown,
+      onDoubleTap: _onDoubleTap,
+      child: InteractiveViewer(
+        transformationController: _txController,
+        maxScale: 4.0,
+        child: SizedBox.expand(
+          child: Center(
+            child: LhotseImage(widget.item.url, fit: BoxFit.contain),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Video page ────────────────────────────────────────────────────────────
+
+class _VideoPage extends StatefulWidget {
+  const _VideoPage({required this.item, required this.isActive});
+
+  final MediaItem item;
+  final bool isActive;
+
+  @override
+  State<_VideoPage> createState() => _VideoPageState();
+}
+
+class _VideoPageState extends State<_VideoPage> {
+  VideoPlayerController? _controller;
+  bool _ready = false;
+  bool _failed = false;
+  bool _muted = true;
+  bool _controlsVisible = false;
+  Timer? _hideTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      final c =
+          VideoPlayerController.networkUrl(Uri.parse(widget.item.url));
+      await c.initialize();
+      c.setLooping(true);
+      await c.setVolume(0);
+      if (!mounted) {
+        c.dispose();
+        return;
+      }
+      setState(() {
+        _controller = c;
+        _ready = true;
+      });
+      if (widget.isActive) c.play();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _failed = true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_VideoPage old) {
+    super.didUpdateWidget(old);
+    if (widget.isActive == old.isActive) return;
+    if (widget.isActive) {
+      _controller?.play();
+    } else {
+      _controller?.pause();
+      _hideTimer?.cancel();
+      if (mounted) setState(() => _controlsVisible = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _armHideTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      setState(() => _controlsVisible = false);
+    });
+  }
+
+  void _toggleControls() {
+    setState(() => _controlsVisible = !_controlsVisible);
+    if (_controlsVisible) _armHideTimer();
+  }
+
+  void _toggleMute() {
+    final c = _controller;
+    if (c == null) return;
+    setState(() => _muted = !_muted);
+    c.setVolume(_muted ? 0 : 1);
+    _armHideTimer();
+  }
+
+  void _togglePlayPause() {
+    final c = _controller;
+    if (c == null) return;
+    if (c.value.isPlaying) {
+      c.pause();
+    } else {
+      if (c.value.position >= c.value.duration) c.seekTo(Duration.zero);
+      c.play();
+      _armHideTimer();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    if (_failed) {
+      return Center(
+        child: Text(
+          'Vídeo no disponible',
+          style: AppTypography.bodyReading
+              .copyWith(color: Colors.white.withValues(alpha: 0.6)),
+        ),
+      );
+    }
+    if (!_ready) {
+      return const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+              strokeWidth: 1.5, color: Colors.white),
+        ),
+      );
+    }
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _toggleControls,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(
+            child: AspectRatio(
+              aspectRatio: _controller!.value.aspectRatio,
+              child: VideoPlayer(_controller!),
+            ),
+          ),
+          IgnorePointer(
+            ignoring: !_controlsVisible,
+            child: AnimatedOpacity(
+              opacity: _controlsVisible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Positioned(
+                    top: topPadding + AppSpacing.sm,
+                    left: AppSpacing.sm,
+                    child: _ChromeButton(
+                      icon: _muted
+                          ? PhosphorIconsThin.speakerSlash
+                          : PhosphorIconsThin.speakerHigh,
+                      onTap: _toggleMute,
+                    ),
+                  ),
+                  Center(
+                    child: GestureDetector(
+                      onTap: _togglePlayPause,
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        width: 72,
+                        height: 72,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3)),
+                        ),
+                        child: PhosphorIcon(
+                          _controller!.value.isPlaying
+                              ? PhosphorIconsThin.pause
+                              : PhosphorIconsThin.play,
+                          color: AppColors.textOnDark,
+                          size: 32,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: bottomPadding + AppSpacing.md,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg),
+                      child: _ProgressStrip(controller: _controller!),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Shared chrome ─────────────────────────────────────────────────────────
+
+class _ChromeButton extends StatelessWidget {
+  const _ChromeButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 44,
+        height: 44,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.35),
+          shape: BoxShape.circle,
+        ),
+        child: PhosphorIcon(icon, size: 20, color: AppColors.textOnDark),
+      ),
+    );
+  }
+}
+
+class _ProgressStrip extends StatelessWidget {
+  const _ProgressStrip({required this.controller});
+
+  final VideoPlayerController controller;
+
+  String _fmt(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: controller,
+      builder: (context, value, _) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          VideoProgressIndicator(
+            controller,
+            allowScrubbing: true,
+            padding: EdgeInsets.zero,
+            colors: VideoProgressColors(
+              playedColor: AppColors.textOnDark,
+              bufferedColor: Colors.white.withValues(alpha: 0.38),
+              backgroundColor: Colors.white.withValues(alpha: 0.18),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(_fmt(value.position),
+                  style: AppTypography.annotation
+                      .copyWith(color: AppColors.textOnDark)),
+              Text(_fmt(value.duration),
+                  style: AppTypography.annotation.copyWith(
+                      color: AppColors.textOnDark.withValues(alpha: 0.7))),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Simple dark tile with a film icon used as video placeholder in carousels.
 class VideoThumbnailTile extends StatelessWidget {
   const VideoThumbnailTile({super.key, required this.url});
 
