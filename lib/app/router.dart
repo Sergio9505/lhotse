@@ -25,6 +25,7 @@ import '../features/investments/presentation/coinversion_detail_screen.dart';
 import '../features/investments/presentation/direct_purchase_detail_screen.dart';
 import '../features/investments/presentation/completed_detail_screen.dart';
 import '../features/investments/presentation/investments_screen.dart';
+import '../features/documents/presentation/document_preview_screen.dart';
 import '../features/onboarding/presentation/onboarding_done_screen.dart';
 import '../features/onboarding/presentation/onboarding_host.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
@@ -86,6 +87,7 @@ abstract final class AppRoutes {
   static const profileSupport = '/profile/support';
   static const profileTerms = '/profile/terms';
   static const profilePrivacy = '/profile/privacy';
+  static const documentPreview = '/document-preview';
 }
 
 const _kAuthRoutes = {
@@ -156,6 +158,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           key: state.pageKey,
           child: const SignUpScreen(),
         ),
+      ),
+      // ── Document preview (outside shell — full-screen, any feature) ──
+      GoRoute(
+        path: AppRoutes.documentPreview,
+        pageBuilder: (context, state) {
+          final extra = state.extra as ({
+            String localPath,
+            String displayName,
+            String? subtitle,
+          });
+          return _fadePage(
+            key: state.pageKey,
+            child: DocumentPreviewScreen(
+              localPath: extra.localPath,
+              displayName: extra.displayName,
+              subtitle: extra.subtitle,
+            ),
+          );
+        },
       ),
       // ── Onboarding (post sign-up, authenticated, outside shell) ──
       GoRoute(

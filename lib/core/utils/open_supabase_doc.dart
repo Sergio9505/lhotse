@@ -1,32 +1,34 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
-import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Opens a document stored in Supabase (or hosted at a public URL) using
-/// the OS-native viewer (Quick Look on iOS, `Intent.ACTION_VIEW` on
-/// Android). Both platforms expose a native share sheet from the viewer
-/// (Save to Files, Mail, Print, Markup on iOS; system share / open-with
-/// on Android), so we don't render a custom in-app share UI.
+import '../../app/router.dart';
+
+/// Downloads a Supabase document to the local cache and opens it in the
+/// in-app [DocumentPreviewScreen].
 ///
-/// `fileUrl` may be either:
-/// - A fully qualified URL (`https://...`) — used directly to download.
-/// - A Supabase Storage path (`bucket/path/to/file.pdf` or just
-///   `path/to/file.pdf` if [bucketName] is provided) — converted to a
-///   signed URL with a 60s TTL before download.
+/// [fileUrl] may be:
+/// - A fully qualified URL (`https://…`) — used directly to download.
+/// - A Supabase Storage path — converted to a 60 s signed URL before download.
 ///
-/// `docId` is used as the cache key so the same document doesn't get
-/// re-downloaded on each tap. The cache lives in `getTemporaryDirectory()`
-/// which iOS/Android may evict at their discretion.
+/// [fileName] is the human display title shown in the preview header (e.g.
+/// "Contrato Renta Fija"). It is NOT used to derive the file extension.
+/// The extension is derived from [fileUrl] (reliable: every real URL in the
+/// DB carries it). Content-Type header is the last-resort fallback.
+///
+/// [docId] is the cache key — same document is never downloaded twice per
+/// session until the OS evicts the temp directory.
 Future<void> openSupabaseDoc(
   BuildContext context, {
   required String fileUrl,
   required String fileName,
   required String docId,
   String bucketName = 'documents',
+  String? subtitle,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
   try {
@@ -37,28 +39,36 @@ Future<void> openSupabaseDoc(
             .from(bucketName)
             .createSignedUrl(fileUrl, 60);
 
-    // 2. Cache lookup — skip download if already on disk.
+    // 2. Derive extension from URL first — 100 % reliable for seed + uploads.
+    String ext = _extensionFromUrl(fileUrl);
+
     final tempDir = await getTemporaryDirectory();
-    final ext = _extensionFromFilename(fileName);
-    final localPath = '${tempDir.path}/$docId$ext';
-    final file = File(localPath);
 
-    if (!await file.exists()) {
-      final response = await http.get(Uri.parse(downloadUrl));
-      if (response.statusCode != 200) {
-        throw Exception('HTTP ${response.statusCode}');
+    // 3. Cache hit: if ext is known we can check before downloading.
+    if (ext.isNotEmpty) {
+      final cached = File('${tempDir.path}/$docId$ext');
+      if (await cached.exists()) {
+        if (!context.mounted) return;
+        return _push(context, cached.path, fileName, subtitle);
       }
-      await file.writeAsBytes(response.bodyBytes);
     }
 
-    // 3. Open with system viewer — Quick Look on iOS, Intent.ACTION_VIEW
-    //    on Android. Both surface their own native share sheet.
-    final result = await OpenFilex.open(localPath);
-    if (result.type != ResultType.done) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('No se pudo abrir el documento: ${result.message}')),
-      );
+    // 4. Download.
+    final response = await http.get(Uri.parse(downloadUrl));
+    if (response.statusCode != 200) {
+      throw Exception('HTTP ${response.statusCode}');
     }
+
+    // 5. Last resort: derive extension from Content-Type if URL lacked it.
+    if (ext.isEmpty) {
+      ext = _extensionFromContentType(response.headers['content-type']);
+    }
+
+    final localPath = '${tempDir.path}/$docId$ext';
+    await File(localPath).writeAsBytes(response.bodyBytes);
+
+    if (!context.mounted) return;
+    _push(context, localPath, fileName, subtitle);
   } catch (e) {
     messenger.showSnackBar(
       SnackBar(content: Text('Error al cargar el documento: $e')),
@@ -66,9 +76,52 @@ Future<void> openSupabaseDoc(
   }
 }
 
-String _extensionFromFilename(String name) {
-  final dot = name.lastIndexOf('.');
-  if (dot < 0 || dot == name.length - 1) return '';
-  return name.substring(dot);
+void _push(
+  BuildContext context,
+  String localPath,
+  String displayName,
+  String? subtitle,
+) {
+  context.push(
+    AppRoutes.documentPreview,
+    extra: (localPath: localPath, displayName: displayName, subtitle: subtitle),
+  );
 }
 
+String _extensionFromUrl(String url) {
+  // Strip query string (signed URLs carry ?token=…)
+  final qIndex = url.indexOf('?');
+  final clean = qIndex >= 0 ? url.substring(0, qIndex) : url;
+  final lastSlash = clean.lastIndexOf('/');
+  final segment = lastSlash >= 0 ? clean.substring(lastSlash + 1) : clean;
+  final dot = segment.lastIndexOf('.');
+  if (dot < 0 || dot == segment.length - 1) return '';
+  return segment.substring(dot);
+}
+
+String _extensionFromContentType(String? contentType) {
+  if (contentType == null) return '';
+  final mime = contentType.split(';').first.trim().toLowerCase();
+  switch (mime) {
+    case 'application/pdf':
+      return '.pdf';
+    case 'image/jpeg':
+      return '.jpg';
+    case 'image/png':
+      return '.png';
+    case 'image/heic':
+      return '.heic';
+    case 'image/webp':
+      return '.webp';
+    case 'application/msword':
+      return '.doc';
+    case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      return '.docx';
+    case 'application/vnd.ms-excel':
+      return '.xls';
+    case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+      return '.xlsx';
+    default:
+      return '';
+  }
+}
