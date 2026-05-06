@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:video_player/video_player.dart';
 
+import '../data/bunny_thumbnail.dart';
+import '../data/playable_video_url_provider.dart';
 import '../domain/media_item.dart';
 import '../theme/app_theme.dart';
 import 'lhotse_bottom_sheet.dart';
@@ -310,17 +313,17 @@ class _ImagePageState extends State<_ImagePage> {
 
 // ─── Video page ────────────────────────────────────────────────────────────
 
-class _VideoPage extends StatefulWidget {
+class _VideoPage extends ConsumerStatefulWidget {
   const _VideoPage({required this.item, required this.isActive});
 
   final MediaItem item;
   final bool isActive;
 
   @override
-  State<_VideoPage> createState() => _VideoPageState();
+  ConsumerState<_VideoPage> createState() => _VideoPageState();
 }
 
-class _VideoPageState extends State<_VideoPage> {
+class _VideoPageState extends ConsumerState<_VideoPage> {
   VideoPlayerController? _controller;
   bool _ready = false;
   bool _failed = false;
@@ -331,13 +334,24 @@ class _VideoPageState extends State<_VideoPage> {
   @override
   void initState() {
     super.initState();
-    _init();
+    _resolveAndInit();
   }
 
-  Future<void> _init() async {
+  Future<void> _resolveAndInit() async {
     try {
-      final c =
-          VideoPlayerController.networkUrl(Uri.parse(widget.item.url));
+      final url = await ref.read(
+        playableVideoUrlProvider(widget.item.url).future,
+      );
+      await _init(url);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _failed = true);
+    }
+  }
+
+  Future<void> _init(String url) async {
+    try {
+      final c = VideoPlayerController.networkUrl(Uri.parse(url));
       await c.initialize();
       c.setLooping(true);
       await c.setVolume(0);
@@ -423,13 +437,13 @@ class _VideoPageState extends State<_VideoPage> {
       );
     }
     if (!_ready) {
-      return const Center(
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-              strokeWidth: 1.5, color: Colors.white),
-        ),
+      final thumb = bunnyThumbnailUrlFor(widget.item.url);
+      if (thumb == null) return const SizedBox.expand();
+      final signed = ref.watch(playableVideoUrlProvider(thumb));
+      return signed.when(
+        data: (u) => Center(child: LhotseImage(u, fit: BoxFit.contain)),
+        loading: () => const SizedBox.expand(),
+        error: (_, _) => const SizedBox.expand(),
       );
     }
     return GestureDetector(
@@ -579,11 +593,57 @@ class _ProgressStrip extends StatelessWidget {
   }
 }
 
-/// Simple dark tile with a film icon used as video placeholder in carousels.
-class VideoThumbnailTile extends StatelessWidget {
+/// Video tile for carousels and lists. Shows the Bunny static thumbnail
+/// (signed) when the URL is from Bunny CDN; falls back to a dark tile with
+/// a film icon otherwise (Storage uploads, broken URLs, etc.).
+class VideoThumbnailTile extends ConsumerWidget {
   const VideoThumbnailTile({super.key, required this.url});
 
   final String url;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final thumb = bunnyThumbnailUrlFor(url);
+    if (thumb == null) return const _VideoTileFallback();
+
+    final signed = ref.watch(playableVideoUrlProvider(thumb));
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          signed.when(
+            data: (u) => LhotseImage(u),
+            loading: () => Container(color: AppColors.surface),
+            error: (_, _) => const _VideoTileFallback(),
+          ),
+          const Center(
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Color(0x66000000),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: PhosphorIcon(
+                    PhosphorIconsFill.play,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VideoTileFallback extends StatelessWidget {
+  const _VideoTileFallback();
 
   @override
   Widget build(BuildContext context) {

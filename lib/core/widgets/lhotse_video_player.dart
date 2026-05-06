@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import 'lhotse_image.dart';
+
 /// Autoplay-muted inline video. Starts only when [isActive] is true and pauses
 /// otherwise. Feed uses this with a PageView-driven isActive flag; catalog cards
 /// pass isActive: true (ListView builds only visible items, so built == active).
@@ -72,7 +74,11 @@ class _LhotseVideoPlayerState extends State<LhotseVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     final c = _controller;
-    if (c == null || !_ready) return const SizedBox.shrink();
+    if (c == null || !_ready) {
+      return widget.posterUrl.isEmpty
+          ? const SizedBox.shrink()
+          : LhotseImage(widget.posterUrl, fit: BoxFit.cover);
+    }
     return FittedBox(
       fit: BoxFit.cover,
       child: SizedBox(
