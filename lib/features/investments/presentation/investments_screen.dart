@@ -33,7 +33,7 @@ class InvestmentsScreen extends ConsumerWidget {
     final total = summaries.fold<double>(0, (acc, s) => acc + s.totalAmount);
 
     final totalFormatted =
-        _eurFormat.format(total).replaceAll('.', ' ');
+        _eurFormat.format(total);
     final collapsedHeight = topPadding + HeroLayout.collapsedHeight;
     final expandedHeight = topPadding +
         HeroLayout.expandedHeight(titleHeight: 88, amountMax: 46);
@@ -390,9 +390,8 @@ class _BrandRowState extends State<_BrandRow> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: _eurFormat
-                                      .format(summary.totalAmount)
-                                      .replaceAll('.', ' '),
+                                  text:
+                                      _eurFormat.format(summary.totalAmount),
                                   style: AppTypography.figureAmount.copyWith(
                                     color: AppColors.textPrimary,
                                     fontWeight: FontWeight.w500,

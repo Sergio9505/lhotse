@@ -1141,11 +1141,12 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
       letterSpacing: 0,
     );
 
-    // Active: forward-looking estimates (prefix `Est.` italic).
+    // Active: forward-looking estimates (prefix `Est.` italic) — duration only.
+    // The estimated return % (estimatedReturnPct, mid scenario) is intentionally
+    // omitted from L2; L3 detail surfaces it in context.
     // Completed: realized gain (prefix `Ganancia ` + `+€` green).
-    final pct = c.estimatedReturnPct;
     final months = c.estimatedDurationMonths;
-    final hasEstimates = !widget.isCompleted && (pct != null || months != null);
+    final hasEstimates = !widget.isCompleted && months != null;
     final realizedGain = widget.isCompleted &&
             c.totalReturn != null &&
             c.totalReturn! > c.amount
@@ -1240,12 +1241,7 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
                               text: 'Est. ',
                               style: TextStyle(fontStyle: FontStyle.italic),
                             ),
-                            if (pct != null)
-                              TextSpan(text: '${pct.toStringAsFixed(1)}%'),
-                            if (pct != null && months != null)
-                              const TextSpan(text: '  ·  '),
-                            if (months != null)
-                              TextSpan(text: '$months meses'),
+                            TextSpan(text: '$months meses'),
                           ],
                         ),
                       ),
