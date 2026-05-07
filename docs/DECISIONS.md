@@ -1612,3 +1612,73 @@ Removed:
 - Dart `BusinessModel.directPurchase` enum and the `'direct_purchase'` JSON serialization.
 - Internal variable names like `isCompraDirecta` in `brand_investments_screen.dart` and file names (`direct_purchase_detail_screen.dart`). An identifier refactor is out of scope.
 - Historical ADRs mentioning "CompraDirecta" or "compra directa" (historical record — not rewritten).
+
+## ADR-56: Video access control — Bunny Token Auth + Edge Function signing (supersedes ADR-54 public URL assumption)
+
+**Date:** 2026-05-05
+**Status:** Accepted
+
+**Context:** ADR-54 assumed video URLs would be publicly reachable. After MVP, the client requirement changed: video assets are paid investment-marketing content and must not be freely accessible to anyone with the link. The CDN already in use (Bunny Stream) supports Token Authentication natively.
+
+**Decision:** Raw video URLs are stored in DB as canonical Bunny CDN paths. Before playback, the client calls `playableVideoUrlProvider` which delegates signing to the `sign_video_url` Supabase Edge Function. The function verifies the user's JWT, validates the Bunny hostname against a whitelist, computes `HMAC-SHA256(BUNNY_SECURITY_KEY + path + expires)`, and returns a signed URL with TTL 1h. The secret never leaves the Edge Function environment.
+
+**Alternatives rejected:**
+- *Public URLs* — original plan, rejected because marketing video assets have investment-grade value and must not be freely shareable.
+- *Client-side signing* — would require embedding `BUNNY_SECURITY_KEY` in the Flutter binary (extractable). Rejected.
+- *Move all video to Supabase Storage* — avoids Bunny dependency but increases storage cost (Supabase egress ~10× more expensive than Bunny for video). Documented as fallback for small uploads via relative path in `playableVideoUrlProvider`.
+- *HLS streaming* — adaptive bitrate, but `video_player` on Android handles HLS unreliably. Rejected. Videos in this app are short (15–40 s hero clips) — progressive MP4 at 4 Mbps is adequate even on 4G.
+
+**Consequences:**
+- (+) Videos inaccessible without a valid user session; signed URLs expire in 1h.
+- (+) Key rotation (Bunny panel → `supabase secrets set` → redeploy function) does not require any app update.
+- (-) ~200–400 ms extra latency on hero open while signing resolves. Hero shows poster image in the interim — no layout shift.
+- (-) Edge Function must be deployed and `BUNNY_SECURITY_KEY` secret set before video plays in production.
+
+## ADR-57: Splash — CustomPainter draw animation replaces SVG + pulse
+
+**Date:** 2026-05-07
+**Status:** Accepted (current implementation: v6.3)
+
+**Context.** The original splash rendered `assets/images/lhotse_logo.svg` via `SvgPicture.asset` with a sinusoidal pulse and a global fade-in/out. `flutter_svg` cannot animate stroke-dashoffset, and Rive/Lottie would add a non-trivial dependency for a one-screen effect. Replaced with a single `AnimationController` driving a `CustomPainter` (`_IsotypePainter`) and a `_Wordmark` widget — the isotype path is hardcoded in viewBox coordinates (25×22) and scaled at paint time. A second 500 ms `AnimationController` handles the fade-out before navigation. Trade-off: isotype path is duplicated in Dart vs. SVG file (if the brand mark changes, both must be updated).
+
+**Brand metaphor (load-bearing).** Lhotse is the 4th highest mountain in the world. The central narrative is "investing with this firm = reaching the economic summit". The isotype is a stylised mountain peak. The splash *narrates ascent* — it does not "draw a logo".
+
+### Current implementation (v6.5)
+
+Total duration ~7.35 s (6.85 s animation + 0.5 s fade-out).
+
+| Window (ms) | Action |
+|---|---|
+| 0 → 400 | Black settle |
+| 400 → 2200 | **Stroke trace (1.8 s)** — two open paths (`_strokeLeft`, `_strokeRight`) ascend simultaneously from base-left, sharing `strokeProgress`, converging at the summit. No descending segments. `Curves.easeOutCubic` |
+| 2200 → 2350 | **Beat (150 ms)** — outline complete at full opacity, no fill yet. Cinematic punctuation between "drawn" and "consacrated" |
+| 2350 → 4350 | **Crossfade (2.0 s)** — stroke opacity 1→0 (`easeInCubic`) while the fill ascends bottom-to-top via `clipRect` (`easeOutQuart`). Fill is intentionally longer than the stroke trace — the climax is contemplated |
+| 3650 → 4350 | **Wordmark static fade (0.7 s)** — timed so opacity 100 %, letter-spacing 1.0, and the haptic all arrive exactly at t=4350 ms (fill complete). Silhouette + wordmark + settle + haptic peak in the same instant — single moment of "you've reached the summit: here is Lhotse". Letter-spacing settle factor `0.78 + 0.22 × opacity`. No vertical slide |
+| ~4350 | **Haptic** `HapticFeedback.lightImpact()` fires once at the simultaneous arrival (one-shot listener on `_animCtrl`, guarded by `_hapticFired`). Physical device only |
+| 4350 → 6850 | Hold (2.5 s) |
+| 6850 → 7350 | Fade-out → `context.go` |
+
+**Composition.** Vertical centered — isotype canvas 160×141 pt above, 32 pt gap, wordmark below. Background: `AppColors.primary` (flat black).
+
+**Wordmark.** Width-matched to 160 pt via `TextPainter` measurement at build time. "LHOTSE" scales to span 160 pt; "GROUP" inherits the same `fontSize` and `letterSpacing` (naturally narrower, centered — luxury multi-line lock-up convention from JPM Private Bank, Cartier). Local override of `AppTypography.splashWordmark` in splash only; `welcome_screen.dart` continues to use the 24 pt token base for its horizontal lock-up with CTA.
+
+**Stroke caps.** `StrokeCap.round` (radius 0.175 viewBox units, ~1.1 pt) closes the angular gap where the two stroke paths converge at the summit — separate `drawPath` calls cannot form a miter join, so butt caps would leave the apex partially uncovered.
+
+### Design rules (survivors of the iteration journey)
+
+These constraints emerged through revision and define the boundaries of acceptable changes:
+
+- **No spark, glow, or halo on the trace tip** — fintech onboarding / AI startup vocabulary. Rejected against Hermès, Sotheby's, JPM PB references.
+- **No letter-by-letter wordmark stagger** — Apple keynote / corporate intro convention.
+- **No vertical slide on the wordmark** — generic UI motion (Stripe dashboards, fintech). Luxury wordmarks (Hermès, JPM PB, Brunello Cucinelli) appear static and let the fade and tracking carry the elegance.
+- **Flat black background** — explored a navy gradient (v5) for atmosphere; reverted at client preference for the austere architectural reading. Trade-off: "flat B&W = fintech sterile" risk consciously accepted.
+- **Dual ascending strokes** — single trace over the closed outline necessarily included descending segments (the silhouette has horizontal base, valley roof, descending interior). Two simultaneous paths converging at the summit cover the full outline with no descents.
+- **Fill duration ≥ stroke duration** — the climax (consacration) is contemplated, not rushed. v6.3 has fill 2.0 s > stroke 1.8 s.
+- **Width-matched wordmark** — "LHOTSE" spans the isotype canvas width, proportional balance between the two brand elements.
+- **Single source of truth for `splashWordmark` typography** — same Campton w600 / ls 2.0 / height 1.0 token used in both splash and welcome; splash overrides only the rendered size via the width-match calculation.
+
+### Iteration history (for context)
+
+The current implementation is the result of multiple visual reviews. Earlier explorations included: Remotion-style draw + spark + letter stagger (v1), pure ascending wipe (v2), dual ascending exterior edges with crossfade (v3 / v3.1), single horizon line + wipe (v4 / v4.1), and "horizonte real" with navy gradient and rising horizon-as-actor (v5). Each was rejected for specific reasons captured as design rules above. v6 returned to stroke + fill on flat black; v6.1 added the dual-stroke mechanic, beat, letter-spacing settle, and haptic; v6.2 fixed the summit cap with `StrokeCap.round`; v6.3 extended the fill and removed the wordmark slide; v6.4 overlapped the wordmark fade-in with the last 500 ms of the fill; v6.5 syncs the wordmark to peak exactly at fill-complete (silhouette, wordmark, letter-spacing settle, and haptic all arrive in the same instant) and uses the freed time to extend the hold to 2.5 s.
+
+**Operational note.** If repeat-launch use feels excessive, recommended trim order: hold 2.0 s → 1.5 s (−500 ms, total 6.85 s); then trace 1.8 → 1.6 s (−200 ms, total 6.65 s).
