@@ -9,6 +9,9 @@ import '../theme/app_theme.dart';
 /// renders instantly on subsequent views regardless of whether the app was
 /// restarted in between. The shared `AppColors.surface` placeholder + fade
 /// keep the transition from ever flashing a white hole.
+///
+/// Accepts a nullable `source`: when null or empty (e.g. an entity whose
+/// image column is NULL in the DB) the placeholder is rendered directly.
 class LhotseImage extends StatelessWidget {
   const LhotseImage(
     this.source, {
@@ -16,10 +19,11 @@ class LhotseImage extends StatelessWidget {
     this.fit = BoxFit.cover,
   });
 
-  final String source;
+  final String? source;
   final BoxFit fit;
 
-  bool get _isAsset => source.startsWith('assets/');
+  bool get _hasSource => source != null && source!.isNotEmpty;
+  bool get _isAsset => _hasSource && source!.startsWith('assets/');
 
   /// Kick off a decode into Flutter's `ImageCache` before the image is
   /// actually mounted. Call this as soon as you know the user is *likely* to
@@ -28,8 +32,9 @@ class LhotseImage extends StatelessWidget {
   /// widget whose bytes are already decoded → zero flicker.
   ///
   /// Mirrors the URL-vs-asset branching of `build` so callers don't have to
-  /// duplicate the decision.
-  static Future<void> precache(String source, BuildContext context) {
+  /// duplicate the decision. Null/empty sources are a no-op.
+  static Future<void> precache(String? source, BuildContext context) {
+    if (source == null || source.isEmpty) return Future.value();
     if (source.startsWith('assets/')) {
       return precacheImage(AssetImage(source), context);
     }
@@ -38,15 +43,18 @@ class LhotseImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!_hasSource) {
+      return Container(color: AppColors.surface);
+    }
     if (_isAsset) {
       return Image.asset(
-        source,
+        source!,
         fit: fit,
         errorBuilder: (_, _, _) => Container(color: AppColors.surface),
       );
     }
     return CachedNetworkImage(
-      imageUrl: source,
+      imageUrl: source!,
       fit: fit,
       fadeInDuration: const Duration(milliseconds: 180),
       placeholder: (_, _) => Container(color: AppColors.surface),

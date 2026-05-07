@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:video_player/video_player.dart';
@@ -52,7 +53,7 @@ void showMediaGallery(
   required int initialIndex,
 }) {
   if (items.isEmpty) return;
-  Navigator.of(context).push(
+  Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder<void>(
       opaque: true,
       transitionDuration: const Duration(milliseconds: 200),
@@ -72,65 +73,98 @@ void showMediaGallery(
 /// Opens a full-screen single-image viewer (pinch to zoom, tap to dismiss).
 /// For galleries with multiple items use [showMediaGallery] instead.
 void showFullImage(BuildContext context, String imageUrl) {
-  Navigator.of(context).push(
+  Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder(
       opaque: false,
       pageBuilder: (context, animation, secondaryAnimation) {
-        final topPadding = MediaQuery.of(context).padding.top;
-        final bottomPadding = MediaQuery.of(context).padding.bottom;
         return AnimatedBuilder(
           animation: animation,
           builder: (context, child) =>
               Opacity(opacity: animation.value, child: child),
-          child: Scaffold(
-            backgroundColor: AppColors.background,
-            body: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: SizedBox.expand(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: InteractiveViewer(
-                        maxScale: 4.0,
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            0,
-                            topPadding + kToolbarHeight,
-                            0,
-                            bottomPadding + AppSpacing.lg,
-                          ),
-                          child: LhotseImage(imageUrl, fit: BoxFit.contain),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: topPadding + AppSpacing.md,
-                      right: AppSpacing.lg,
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          alignment: Alignment.center,
-                          color:
-                              AppColors.textPrimary.withValues(alpha: 0.08),
-                          child: const PhosphorIcon(
-                            PhosphorIconsThin.x,
-                            color: AppColors.textPrimary,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          child: _FullImageView(imageUrl: imageUrl),
         );
       },
     ),
   );
+}
+
+class _FullImageView extends StatefulWidget {
+  const _FullImageView({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  State<_FullImageView> createState() => _FullImageViewState();
+}
+
+class _FullImageViewState extends State<_FullImageView> {
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations(
+        const [DeviceOrientation.portraitUp]);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: SizedBox.expand(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: InteractiveViewer(
+                  maxScale: 4.0,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      0,
+                      topPadding + kToolbarHeight,
+                      0,
+                      bottomPadding + AppSpacing.lg,
+                    ),
+                    child:
+                        LhotseImage(widget.imageUrl, fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: topPadding + AppSpacing.md,
+                right: AppSpacing.lg,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    color: AppColors.textPrimary.withValues(alpha: 0.08),
+                    child: const PhosphorIcon(
+                      PhosphorIconsThin.x,
+                      color: AppColors.textPrimary,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ─── Gallery viewer ────────────────────────────────────────────────────────
@@ -156,12 +190,19 @@ class _MediaGalleryViewerState extends State<_MediaGalleryViewer> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _currentPage = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
   }
 
   @override
   void dispose() {
+    SystemChrome.setPreferredOrientations(
+        const [DeviceOrientation.portraitUp]);
     _pageController.dispose();
     _anyZoomed.dispose();
     super.dispose();

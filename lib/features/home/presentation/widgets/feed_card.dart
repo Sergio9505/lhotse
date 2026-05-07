@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../../core/data/bunny_thumbnail.dart';
+import '../../../../core/data/playable_video_url_provider.dart';
 import '../../../../core/data/supabase_provider.dart';
 import '../../../../core/domain/asset_data.dart';
 import '../../../../core/domain/brand_data.dart';
@@ -12,8 +14,6 @@ import '../../../../core/domain/project_data.dart';
 import '../../../../core/domain/user_role.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/lhotse_image.dart';
-import '../../../../core/widgets/lhotse_play_button.dart';
-import '../../../../core/widgets/lhotse_video_player.dart';
 import '../../domain/feed_item.dart';
 import 'vip_lock_sheet.dart';
 
@@ -87,19 +87,9 @@ class _FeedCardState extends State<FeedCard> {
                   ? Hero(
                       tag: heroTag,
                       flightShuttleBuilder: _flightShuttleBuilder,
-                      child: _Media(
-                        imageUrl: content.imageUrl,
-                        videoUrl: content.videoUrl,
-                        isActive: widget.isActive,
-                        autoplayMuted: content.autoplayMuted,
-                      ),
+                      child: _Media(imageUrl: content.imageUrl),
                     )
-                  : _Media(
-                      imageUrl: content.imageUrl,
-                      videoUrl: content.videoUrl,
-                      isActive: widget.isActive,
-                      autoplayMuted: content.autoplayMuted,
-                    ),
+                  : _Media(imageUrl: content.imageUrl),
             ),
             _Caption(content: content),
           ],
@@ -115,31 +105,9 @@ class _FeedCardState extends State<FeedCard> {
     BuildContext fromHeroContext,
     BuildContext toHeroContext,
   ) {
-    final content = _contentFor(widget.item);
-    final hasVideo =
-        content.videoUrl != null && content.videoUrl!.isNotEmpty;
-    // Video cards: the resting state (both in feed and detail) is either the
-    // playing video or — during VideoPlayerController init — a plain dark
-    // frame. Rendering the still poster as the Hero shuttle would flash an
-    // image the user never otherwise sees on that card ("se ve
-    // momentáneamente la imagen"), breaking the video↔video continuity.
-    // Match the Home scaffold background instead.
-    //
-    // Image cards: the still poster IS the resting state, so LhotseImage as
-    // shuttle is coherent. It's also precached by HomeScreen._precacheFeed
-    // so resolution is instant.
-    //
-    // We can't mount FeedVideoPlayer inside the shuttle — Flutter would
-    // create a new VideoPlayerController mid-flight and AVFoundation would
-    // hit naturalSize synchronously, blocking the main thread.
-    // Project reels (autoplayMuted): resting state is the playing video.
-    // Using the poster as shuttle flashes an image never seen at rest.
-    // News posters (!autoplayMuted): both source and destination show the
-    // static image, so the poster shuttle is coherent (no flash).
-    if (hasVideo && content.autoplayMuted) {
-      return Container(color: AppColors.primary);
-    }
-    return LhotseImage(content.imageUrl);
+    // imageUrl is already the Bunny static thumbnail when the item has a video,
+    // so the shuttle matches the poster shown in the detail hero — no flash.
+    return LhotseImage(_contentFor(widget.item).imageUrl);
   }
 
   String? _heroTagFor(FeedItem item) {
@@ -183,9 +151,17 @@ class _FeedCardState extends State<FeedCard> {
                 UserRole.investorVip) {
           showVipLockSheet(context);
         } else {
+          if (project.videoUrl?.isNotEmpty == true) {
+            ProviderScope.containerOf(context)
+                .read(playableVideoUrlProvider(project.videoUrl!).future);
+          }
           context.push('/projects/${project.id}', extra: project);
         }
       case FeedNewsItem(:final news):
+        if (news.videoUrl?.isNotEmpty == true) {
+          ProviderScope.containerOf(context)
+              .read(playableVideoUrlProvider(news.videoUrl!).future);
+        }
         context.push('/news/${news.id}', extra: news);
       case FeedBrandItem(:final brand):
         context.push('/brands/${brand.id}', extra: brand);
@@ -198,42 +174,15 @@ class _FeedCardState extends State<FeedCard> {
 // ── Media block ──────────────────────────────────────────────────────────────
 
 class _Media extends StatelessWidget {
-  const _Media({
-    required this.imageUrl,
-    required this.videoUrl,
-    required this.isActive,
-    required this.autoplayMuted,
-  });
+  const _Media({required this.imageUrl});
 
-  final String imageUrl;
-  final String? videoUrl;
-  final bool isActive;
-
-  /// True for project reels (ambient visual, muted autoplay is correct).
-  /// False for news (audio is content — show poster + play button instead).
-  final bool autoplayMuted;
+  /// Bunny static thumbnail when the item has a video; legacy imageUrl otherwise.
+  /// Nullable for entities without an image — `LhotseImage` renders its
+  /// `AppColors.surface` placeholder in that case.
+  final String? imageUrl;
 
   @override
-  Widget build(BuildContext context) {
-    final hasVideo = videoUrl != null && videoUrl!.isNotEmpty;
-    if (hasVideo && autoplayMuted) {
-      return LhotseVideoPlayer(
-        videoUrl: videoUrl!,
-        posterUrl: imageUrl,
-        isActive: isActive,
-      );
-    }
-    if (hasVideo && !autoplayMuted) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          LhotseImage(imageUrl),
-          const LhotsePlayButton(),
-        ],
-      );
-    }
-    return LhotseImage(imageUrl);
-  }
+  Widget build(BuildContext context) => LhotseImage(imageUrl);
 }
 
 // ── Caption block ────────────────────────────────────────────────────────────
@@ -364,16 +313,18 @@ class _FeedContent {
   const _FeedContent({
     required this.title,
     required this.imageUrl,
-    required this.videoUrl,
     required this.brand,
     required this.metaParts,
     required this.cta,
-    this.autoplayMuted = true,
   });
 
   final String title;
-  final String imageUrl;
-  final String? videoUrl;
+
+  /// Poster image shown in the feed: Bunny static thumbnail when the item has
+  /// a video URL, legacy imageUrl otherwise, or `null` when the entity has no
+  /// image at all (DB column NULL). Precached in
+  /// [_FeedCardState.didChangeDependencies] so the Hero flight is always warm.
+  final String? imageUrl;
 
   /// Brand name rendered as uppercase tracked span — separate from [metaParts]
   /// so the renderer can apply `labelUppercaseSm` only to this segment while
@@ -386,15 +337,10 @@ class _FeedContent {
 
   final String cta;
 
-  /// Projects = ambient visual reel → autoplay muted (true).
-  /// News = audio is content → poster + play button (false).
-  final bool autoplayMuted;
-
   factory _FeedContent.fromProject(ProjectData p, {required String cta}) {
     return _FeedContent(
       title: p.name,
-      imageUrl: p.imageUrl,
-      videoUrl: p.videoUrl,
+      imageUrl: posterUrlFor(videoUrl: p.videoUrl, fallback: p.imageUrl),
       brand: p.brand.isNotEmpty ? p.brand : null,
       // City only (no country code): consistent with ProjectShowcaseCard in
       // archive — "Málaga" / "Dubai" / "Miami" read cleaner and more luxury
@@ -410,12 +356,10 @@ class _FeedContent {
     final date = DateFormat('d MMM yyyy', 'es_ES').format(n.date);
     return _FeedContent(
       title: n.title,
-      imageUrl: n.imageUrl,
-      videoUrl: n.videoUrl,
+      imageUrl: posterUrlFor(videoUrl: n.videoUrl, fallback: n.imageUrl),
       brand: (n.brand?.isNotEmpty ?? false) ? n.brand : null,
       metaParts: [date],
       cta: 'LEER',
-      autoplayMuted: false,
     );
   }
 
@@ -423,7 +367,6 @@ class _FeedContent {
     return _FeedContent(
       title: b.tagline ?? b.name,
       imageUrl: b.coverImageUrl,
-      videoUrl: null,
       brand: b.name,
       metaParts: [b.businessModel.displayName],
       cta: 'EXPLORAR',
@@ -435,7 +378,6 @@ class _FeedContent {
     return _FeedContent(
       title: title,
       imageUrl: a.thumbnailImage ?? '',
-      videoUrl: null,
       brand: null,
       metaParts: [
         if (a.city?.isNotEmpty ?? false) a.city!,

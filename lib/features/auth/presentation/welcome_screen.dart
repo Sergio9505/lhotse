@@ -147,15 +147,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             children: [
                               Text(
                                 'LHOTSE',
-                                style: TextStyle(
-                                  fontFamily: AppTypography.fontFamily,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                  letterSpacing: 2.0,
-                                  height: 1.0,
+                                style: AppTypography.splashWordmark.copyWith(
+                                  color: AppColors.textOnDark,
                                 ),
-                                strutStyle: StrutStyle(
+                                strutStyle: const StrutStyle(
                                   fontSize: 24,
                                   height: 1.0,
                                   forceStrutHeight: true,
@@ -163,15 +158,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                               ),
                               Text(
                                 'GROUP',
-                                style: TextStyle(
-                                  fontFamily: AppTypography.fontFamily,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                  letterSpacing: 2.0,
-                                  height: 1.0,
+                                style: AppTypography.splashWordmark.copyWith(
+                                  color: AppColors.textOnDark,
                                 ),
-                                strutStyle: StrutStyle(
+                                strutStyle: const StrutStyle(
                                   fontSize: 24,
                                   height: 1.0,
                                   forceStrutHeight: true,

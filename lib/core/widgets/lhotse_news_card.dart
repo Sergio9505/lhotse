@@ -15,7 +15,7 @@ class LhotseNewsCard extends StatelessWidget {
   const LhotseNewsCard({
     super.key,
     required this.title,
-    required this.imageUrl,
+    this.imageUrl,
     required this.heroTag,
     this.brand,
     this.subtitle,
@@ -31,7 +31,7 @@ class LhotseNewsCard extends StatelessWidget {
   const LhotseNewsCard.compact({
     super.key,
     required this.title,
-    required this.imageUrl,
+    this.imageUrl,
     this.brand,
     this.subtitle,
     this.hasPlayButton = false,
@@ -44,7 +44,7 @@ class LhotseNewsCard extends StatelessWidget {
         heroTag = null;
 
   final String title;
-  final String imageUrl;
+  final String? imageUrl;
   final String? heroTag;
   final String? brand;
   final String? subtitle;
@@ -107,9 +107,8 @@ class LhotseNewsCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     subtitle!,
-                    style: AppTypography.annotationParagraph.copyWith(
-                      color: AppColors.accentMuted,
-                      fontStyle: FontStyle.italic,
+                    style: AppTypography.editorialDeck.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

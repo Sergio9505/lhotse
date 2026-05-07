@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 /// Body scale:        bodyInput 18 → bodyEmphasis 16 → bodyRow 16 → bodyReading 14
 /// Label scale:       labelUppercaseMd 12 → labelCompact 12 → sectionLabel 12 → annotation 12 → annotationParagraph 12 → labelUppercaseSm 10 → wordmarkByline 10
 /// Micro scale:       metaUppercase 12 → metaCaption 12 → badgePill 9 → badgeMicro 8
+/// Wordmark scale:    splashWordmark 24 → wordmarkByline 10
 abstract final class AppTypography {
   /// Public so non-token callers (welcome wordmark with strut, animated
   /// hero figures with interpolated fontSize) reference the family
@@ -161,6 +162,18 @@ abstract final class AppTypography {
     letterSpacing: 1.2,
   );
 
+  /// Wordmark lock-up — "LHOTSE GROUP" brand identity. 24pt SemiBold,
+  /// letterSpacing 2.0, height 1.0. Apply white via copyWith.
+  /// Shared by splash_screen.dart (single-line stagger) and welcome_screen.dart
+  /// (two-line stack with StrutStyle) — same specs, different layouts.
+  static const splashWordmark = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 24,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 2.0,
+    height: 1.0,
+  );
+
   /// Wordmark byline — uppercase brand identifier in catalog cards and detail
   /// screens. 10pt w500 ls 1.5. Used in project_card, project_showcase_card,
   /// lhotse_news_card, brand_detail, asset_detail, project_detail, news_detail,
@@ -229,15 +242,27 @@ abstract final class AppTypography {
     letterSpacing: 0.1,
   );
 
-  /// Annotation paragraph — 12pt w400, line-height 1.6. Multi-line italic deck
-  /// in editorial cards (catalog cards, detail kickers). Same spec as annotation
-  /// but taller line-height for comfortable paragraph reading.
+  /// Annotation paragraph — 12pt w400, line-height 1.6. Multi-line deck text
+  /// in sheets, forms and secondary UI. Same spec as annotation but taller
+  /// line-height for comfortable paragraph reading.
   static const annotationParagraph = TextStyle(
     fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.6,
     letterSpacing: 0.1,
+  );
+
+  /// Editorial deck — 18pt w300 Light, sentence case, line-height 1.5.
+  /// Standfirst between the editorial title (36pt w400) and body copy
+  /// (`bodyReading` 14pt w400). Applies to project/news detail screens and
+  /// catalog cards. Differentiation by size + light weight — no italic needed.
+  static const editorialDeck = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 18,
+    fontWeight: FontWeight.w300,
+    height: 1.5,
+    letterSpacing: -0.05,
   );
 
   /// Meta uppercase — 12pt w500, no tracking. Investment row meta lines

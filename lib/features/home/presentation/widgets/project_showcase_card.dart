@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/data/bunny_thumbnail.dart';
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/lhotse_image.dart';
-import '../../../../core/widgets/lhotse_video_player.dart';
 import 'vip_lock_sheet.dart';
 
 /// Full-width catalog card for the Search catálogo and Firmas/Proyectos sub-tab.
@@ -37,9 +37,13 @@ class ProjectShowcaseCard extends StatelessWidget {
               children: [
                 Hero(
                   tag: 'project-hero-${project.id}',
-                  flightShuttleBuilder: project.videoUrl?.isNotEmpty == true
-                      ? _videoFlightShuttle
-                      : null,
+                  flightShuttleBuilder: (_, _, _, _, _) =>
+                      LhotseImage(
+                        posterUrlFor(
+                          videoUrl: project.videoUrl,
+                          fallback: project.imageUrl,
+                        ),
+                      ),
                   child: _ProjectMedia(
                     imageUrl: project.imageUrl,
                     videoUrl: project.videoUrl,
@@ -83,9 +87,8 @@ class ProjectShowcaseCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     project.tagline,
-                    style: AppTypography.annotationParagraph.copyWith(
-                      color: AppColors.accentMuted,
-                      fontStyle: FontStyle.italic,
+                    style: AppTypography.editorialDeck.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -102,31 +105,17 @@ class ProjectShowcaseCard extends StatelessWidget {
   }
 }
 
-Widget _videoFlightShuttle(
-  BuildContext flightContext,
-  Animation<double> animation,
-  HeroFlightDirection direction,
-  BuildContext fromHeroContext,
-  BuildContext toHeroContext,
-) =>
-    Container(color: AppColors.primary);
-
 class _ProjectMedia extends StatelessWidget {
   const _ProjectMedia({required this.imageUrl, this.videoUrl});
 
-  final String imageUrl;
+  final String? imageUrl;
   final String? videoUrl;
 
   @override
   Widget build(BuildContext context) {
-    if (videoUrl != null && videoUrl!.isNotEmpty) {
-      return LhotseVideoPlayer(
-        videoUrl: videoUrl!,
-        posterUrl: imageUrl,
-        isActive: true,
-      );
-    }
-    return LhotseImage(imageUrl);
+    return LhotseImage(
+      posterUrlFor(videoUrl: videoUrl, fallback: imageUrl),
+    );
   }
 }
 

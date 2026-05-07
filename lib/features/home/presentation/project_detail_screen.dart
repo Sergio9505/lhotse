@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/data/projects_provider.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/domain/user_role.dart';
@@ -15,7 +16,9 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/widgets/lhotse_video_player.dart';
+import 'widgets/fullscreen_video_player.dart';
 
 const _kMaxVisibleGallery = 5;
 
@@ -84,6 +87,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     // in the authoritative copy without flicker (same URL → same ImageCache
     // entry).
     final project = projectAsync.valueOrNull ?? widget.initialProject;
+    final signedVideoUrl = project?.videoUrl?.isNotEmpty == true
+        ? ref.watch(playableVideoUrlProvider(project!.videoUrl!)).valueOrNull
+        : null;
 
     if (project == null) {
       return Scaffold(
@@ -117,6 +123,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     _heroHeight = MediaQuery.of(context).size.height * 0.55;
+    final posterUrl = posterUrlFor(videoUrl: project.videoUrl, fallback: project.imageUrl);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone
@@ -166,42 +173,51 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 ),
               ),
               flexibleSpace: FlexibleSpaceBar(
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Hero(
-                      tag: 'project-hero-${project.id}',
-                      child: (project.videoUrl != null &&
-                              project.videoUrl!.isNotEmpty)
-                          ? LhotseVideoPlayer(
-                              videoUrl: project.videoUrl!,
-                              posterUrl: project.imageUrl,
-                              isActive: true,
-                            )
-                          : LhotseImage(project.imageUrl),
-                    ),
-                    const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.center,
-                          colors: [Color(0x66000000), Colors.transparent],
+                background: GestureDetector(
+                  onTap: signedVideoUrl != null
+                      ? () => _openProjectVideoPlayer(
+                            context,
+                            signedVideoUrl,
+                            posterUrl,
+                          )
+                      : null,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Hero(
+                        tag: 'project-hero-${project.id}',
+                        child: signedVideoUrl != null
+                            ? LhotseVideoPlayer(
+                                videoUrl: signedVideoUrl,
+                                posterUrl: posterUrl,
+                                isActive: true,
+                                playDelay: const Duration(milliseconds: 2500),
+                              )
+                            : LhotseImage(posterUrl),
+                      ),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.center,
+                            colors: [Color(0x66000000), Colors.transparent],
+                          ),
                         ),
                       ),
-                    ),
-                    const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment(0, 0.2),
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Color(0x8C1F1916),
-                          ],
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(0, 0.2),
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Color(0x8C1F1916),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -230,9 +246,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       Text(
                         project.tagline,
-                        style: AppTypography.annotationParagraph.copyWith(
-                          color: AppColors.accentMuted,
-                          fontStyle: FontStyle.italic,
+                        style: AppTypography.editorialDeck.copyWith(
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -405,4 +420,27 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
       ),
     );
   }
+}
+
+void _openProjectVideoPlayer(
+  BuildContext context,
+  String videoUrl,
+  String? posterUrl,
+) {
+  Navigator.of(context, rootNavigator: true).push(
+    PageRouteBuilder(
+      opaque: true,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) =>
+              Opacity(opacity: animation.value, child: child),
+          child: FullscreenVideoPlayer(
+            videoUrl: videoUrl,
+            posterUrl: posterUrl ?? '',
+          ),
+        );
+      },
+    ),
+  );
 }

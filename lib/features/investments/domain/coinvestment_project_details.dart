@@ -41,6 +41,7 @@ class CoinvestmentProjectDetails {
     this.otherCosts,
     this.totalCost,
     this.useLightOverlay = true,
+    this.videoUrl,
   });
 
   final String projectId;
@@ -72,6 +73,7 @@ class CoinvestmentProjectDetails {
   final double? otherCosts;
   final double? totalCost;
   final bool useLightOverlay;
+  final String? videoUrl;
 
   /// Physical description of the asset (shown on ACTIVO tab).
   List<AssetInfoEntry> get assetInfo {
@@ -187,6 +189,7 @@ class CoinvestmentProjectDetails {
       otherCosts: (json['other_costs'] as num?)?.toDouble(),
       totalCost: (json['total_cost'] as num?)?.toDouble(),
       useLightOverlay: json['project_use_light_overlay'] as bool? ?? true,
+      videoUrl: json['video_url'] as String?,
     );
   }
 }

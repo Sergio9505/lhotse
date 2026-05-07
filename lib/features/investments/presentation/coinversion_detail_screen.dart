@@ -20,7 +20,11 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
+import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/data/playable_video_url_provider.dart';
+import '../../../core/widgets/lhotse_video_player.dart';
+import '../../home/presentation/widgets/fullscreen_video_player.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
@@ -137,6 +141,9 @@ class _CoinversionDetailScreenState
     final projectDetail = ref
         .watch(coinvestmentProjectDetailProvider(c.projectId))
         .valueOrNull;
+    final signedVideoUrl = projectDetail?.videoUrl?.isNotEmpty == true
+        ? ref.watch(playableVideoUrlProvider(projectDetail!.videoUrl!)).valueOrNull
+        : null;
     // brandId is a compat shim (always null) after the news schema change;
     // prefer noticias enlazadas al proyecto, fallback a las más recientes.
     final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
@@ -147,6 +154,7 @@ class _CoinversionDetailScreenState
 
     final projectLocation = c.projectLocation;
     final projectImageUrl = c.projectImageUrl;
+    final videoPosterUrl = posterUrlFor(videoUrl: projectDetail?.videoUrl, fallback: projectImageUrl);
     final currentPhaseIndex =
         phases.where((p) => p.isCompleted).length;
     final renderMedia = projectDetail?.renderMedia ?? const <MediaItem>[];
@@ -205,23 +213,39 @@ class _CoinversionDetailScreenState
                   ),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      LhotseImage(projectImageUrl),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.center,
-                            colors: [
-                              Color(0x66000000),
-                              Colors.transparent
-                            ],
+                  background: GestureDetector(
+                    onTap: signedVideoUrl != null
+                        ? () => _openCoinversionVideoPlayer(
+                              context,
+                              signedVideoUrl,
+                              videoPosterUrl,
+                            )
+                        : null,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        signedVideoUrl != null
+                            ? LhotseVideoPlayer(
+                                videoUrl: signedVideoUrl,
+                                posterUrl: videoPosterUrl,
+                                isActive: true,
+                                playDelay: const Duration(milliseconds: 2500),
+                              )
+                            : LhotseImage(videoPosterUrl),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.center,
+                              colors: [
+                                Color(0x66000000),
+                                Colors.transparent
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -656,75 +680,101 @@ class _GallerySectionHeader extends StatelessWidget {
 }
 
 void _showFloorPlan(BuildContext context, String url) {
-  Navigator.of(context).push(
+  Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder(
       opaque: false,
       pageBuilder: (context, animation, secondaryAnimation) {
-        final topPadding = MediaQuery.of(context).padding.top;
-        final bottomPadding = MediaQuery.of(context).padding.bottom;
-
         return AnimatedBuilder(
           animation: animation,
           builder: (context, child) => Opacity(
             opacity: animation.value,
             child: child,
           ),
-          child: Scaffold(
-            extendBodyBehindAppBar: true,
-            extendBody: true,
-            backgroundColor: AppColors.background,
-            body: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: SizedBox.expand(
-                child: Stack(
-                  children: [
-                    // Image fills everything edge-to-edge
-                    Positioned.fill(
-                      child: InteractiveViewer(
-                        maxScale: 4.0,
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            topPadding + kToolbarHeight,
-                            AppSpacing.lg,
-                            bottomPadding + AppSpacing.lg,
-                          ),
-                          child: LhotseImage(
-                            url,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Close button — respects safe area
-                    Positioned(
-                      top: topPadding + AppSpacing.md,
-                      right: AppSpacing.lg,
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          alignment: Alignment.center,
-                          color: AppColors.textPrimary
-                              .withValues(alpha: 0.08),
-                          child: PhosphorIcon(
-                            PhosphorIconsThin.x,
-                            color: AppColors.textPrimary,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          child: _FloorPlanView(url: url),
         );
       },
     ),
   );
+}
+
+class _FloorPlanView extends StatefulWidget {
+  const _FloorPlanView({required this.url});
+
+  final String url;
+
+  @override
+  State<_FloorPlanView> createState() => _FloorPlanViewState();
+}
+
+class _FloorPlanViewState extends State<_FloorPlanView> {
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations(
+        const [DeviceOrientation.portraitUp]);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      extendBody: true,
+      backgroundColor: AppColors.background,
+      body: GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: SizedBox.expand(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: InteractiveViewer(
+                  maxScale: 4.0,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      topPadding + kToolbarHeight,
+                      AppSpacing.lg,
+                      bottomPadding + AppSpacing.lg,
+                    ),
+                    child: LhotseImage(widget.url, fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: topPadding + AppSpacing.md,
+                right: AppSpacing.lg,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    color: AppColors.textPrimary.withValues(alpha: 0.08),
+                    child: const PhosphorIcon(
+                      PhosphorIconsThin.x,
+                      color: AppColors.textPrimary,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ===========================================================================
@@ -1526,5 +1576,28 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
 // _showAllNews removed — news is now passed as a parameter from the parent widget
 
 const _kMaxVisibleNews = 3;
+
+void _openCoinversionVideoPlayer(
+  BuildContext context,
+  String videoUrl,
+  String? posterUrl,
+) {
+  Navigator.of(context, rootNavigator: true).push(
+    PageRouteBuilder(
+      opaque: true,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) =>
+              Opacity(opacity: animation.value, child: child),
+          child: FullscreenVideoPlayer(
+            videoUrl: videoUrl,
+            posterUrl: posterUrl ?? '',
+          ),
+        );
+      },
+    ),
+  );
+}
 
 // Documents loaded from Supabase via documentsProvider

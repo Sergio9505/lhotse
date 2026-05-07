@@ -18,3 +18,18 @@ String? bunnyThumbnailUrlFor(String videoUrl) {
   final guid = segments.first;
   return 'https://$host/$guid/thumbnail.jpg';
 }
+
+/// Returns the best poster URL for a video-bearing item:
+/// Bunny static thumbnail when [videoUrl] is a Bunny CDN URL,
+/// or [fallback] otherwise (non-Bunny URL, null, or empty).
+///
+/// Returns `null` when neither a Bunny thumbnail nor a usable fallback is
+/// available — let the consumer (typically `LhotseImage`) render its own
+/// placeholder for that case.
+///
+/// Use this wherever a video player or image needs a poster that matches
+/// the actual first frame of the video — keeps poster → playback seamless.
+String? posterUrlFor({required String? videoUrl, required String? fallback}) {
+  if (videoUrl == null || videoUrl.isEmpty) return fallback;
+  return bunnyThumbnailUrlFor(videoUrl) ?? fallback;
+}

@@ -14,10 +14,11 @@ sealed class FeedItem {
   /// Stable key for Flutter's list diffing.
   String get feedKey;
 
-  /// URL/asset of the hero image rendered in the feed card. Exposed on the
-  /// base class so the screen can precache everything at feed-data-arrival
-  /// time (Instagram / Pinterest pattern — decode ahead of tap).
-  String get imageUrl;
+  /// URL/asset of the hero image rendered in the feed card. Nullable when
+  /// the entity has no image (DB column NULL). Exposed on the base class so
+  /// the screen can precache everything at feed-data-arrival time (Instagram
+  /// / Pinterest pattern — decode ahead of tap).
+  String? get imageUrl;
 
   /// `true` when overlaid chrome (Lhotse wordmark, back button, etc.) should
   /// be rendered in light/white. Set via admin per source entity alongside its
@@ -35,7 +36,7 @@ class FeedProjectItem extends FeedItem {
   String get feedKey => 'project_${project.id}';
 
   @override
-  String get imageUrl => project.imageUrl;
+  String? get imageUrl => project.imageUrl;
 }
 
 class FeedNewsItem extends FeedItem {
@@ -46,7 +47,7 @@ class FeedNewsItem extends FeedItem {
   String get feedKey => 'news_${news.id}';
 
   @override
-  String get imageUrl => news.imageUrl;
+  String? get imageUrl => news.imageUrl;
 }
 
 class FeedBrandItem extends FeedItem {

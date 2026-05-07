@@ -26,6 +26,7 @@ class PurchaseAssetDetails {
     this.floorPlanUrl,
     this.galleryMedia = const [],
     this.useLightOverlay = true,
+    this.videoUrl,
   });
 
   final String assetId;
@@ -46,6 +47,7 @@ class PurchaseAssetDetails {
   final String? floorPlanUrl;
   final List<MediaItem> galleryMedia;
   final bool useLightOverlay;
+  final String? videoUrl;
 
   /// Physical description of the asset (shown on ACTIVO tab).
   List<AssetInfoEntry> get assetInfo {
@@ -111,6 +113,7 @@ class PurchaseAssetDetails {
       floorPlanUrl: json['asset_floor_plan_url'] as String?,
       galleryMedia: _parseMedia(json['asset_gallery_media']),
       useLightOverlay: json['asset_use_light_overlay'] as bool? ?? true,
+      videoUrl: json['video_url'] as String?,
     );
   }
 }

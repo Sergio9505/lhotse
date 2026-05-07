@@ -15,6 +15,7 @@ import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_filter_chip.dart';
+import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../data/investments_provider.dart';
 import '../domain/coinvestment_contract_data.dart';
@@ -324,6 +325,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                         projectName: c.assetName ?? '',
                         location: c.assetLocation,
                         imageUrl: c.assetImageUrl,
+                        videoUrl: c.videoUrl,
                         amount: c.totalReturn ?? c.purchaseValue,
                         returnLabel: hasResults ? null : '–',
                         returnLabelSpans: returnLabelSpans,
@@ -559,6 +561,7 @@ class _AssetRow extends StatefulWidget {
     required this.projectName,
     this.location,
     this.imageUrl,
+    this.videoUrl,
     required this.amount,
     this.isLast = false,
     this.onTap,
@@ -569,6 +572,7 @@ class _AssetRow extends StatefulWidget {
   final String projectName;
   final String? location;
   final String? imageUrl;
+  final String? videoUrl;
   final double amount;
   final bool isLast;
   final VoidCallback? onTap;
@@ -620,8 +624,11 @@ class _AssetRowState extends State<_AssetRow> {
               SizedBox(
                 width: 110,
                 height: 88,
-                child: widget.imageUrl != null
-                    ? LhotseImage(widget.imageUrl!)
+                child: widget.imageUrl != null || widget.videoUrl != null
+                    ? LhotseImage(posterUrlFor(
+                        videoUrl: widget.videoUrl,
+                        fallback: widget.imageUrl ?? '',
+                      ))
                     : Container(color: AppColors.surface),
               ),
               const SizedBox(width: 14),
@@ -1026,8 +1033,11 @@ class _PurchaseRowState extends State<_PurchaseRow> {
               SizedBox(
                 width: 96,
                 height: 72,
-                child: c.assetImageUrl != null
-                    ? LhotseImage(c.assetImageUrl!)
+                child: c.assetImageUrl != null || c.videoUrl != null
+                    ? LhotseImage(posterUrlFor(
+                        videoUrl: c.videoUrl,
+                        fallback: c.assetImageUrl ?? '',
+                      ))
                     : Container(color: AppColors.surface),
               ),
               const SizedBox(width: 14),
@@ -1189,8 +1199,11 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
               SizedBox(
                 width: 96,
                 height: 72,
-                child: c.projectImageUrl.isNotEmpty
-                    ? LhotseImage(c.projectImageUrl)
+                child: c.projectImageUrl.isNotEmpty || c.videoUrl != null
+                    ? LhotseImage(posterUrlFor(
+                        videoUrl: c.videoUrl,
+                        fallback: c.projectImageUrl,
+                      ))
                     : Container(color: AppColors.surface),
               ),
               const SizedBox(width: 14),

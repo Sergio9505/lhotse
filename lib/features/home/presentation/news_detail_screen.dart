@@ -4,14 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/data/news_provider.dart';
+import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/domain/news_item_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
-import '../../../core/widgets/lhotse_play_button.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
+import '../../../core/widgets/lhotse_video_player.dart';
 import 'widgets/fullscreen_video_player.dart';
 
 class NewsDetailScreen extends ConsumerStatefulWidget {
@@ -72,6 +74,9 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     // tag exists when Flutter starts the flight.
     final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
     final news = newsAsync.valueOrNull ?? widget.initialNews;
+    final signedVideoUrl = news?.videoUrl?.isNotEmpty == true
+        ? ref.watch(playableVideoUrlProvider(news!.videoUrl!)).valueOrNull
+        : null;
 
     if (news == null) {
       return Scaffold(
@@ -91,6 +96,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     _heroHeight = MediaQuery.of(context).size.height * 0.55;
+    final posterUrl = posterUrlFor(videoUrl: news.videoUrl, fallback: news.imageUrl);
 
     // Related news: prefer same project, then same asset, then most recent.
     // brandId/brand/region are compat shims (always null) until the news
@@ -161,15 +167,22 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               ),
               flexibleSpace: FlexibleSpaceBar(
                 background: GestureDetector(
-                  onTap: news.hasPlayButton
-                      ? () => _openVideoPlayer(context, news)
+                  onTap: signedVideoUrl != null
+                      ? () => _openVideoPlayer(context, signedVideoUrl, posterUrl)
                       : null,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
                       Hero(
                         tag: 'news-hero-${news.id}',
-                        child: LhotseImage(news.imageUrl),
+                        child: signedVideoUrl != null
+                            ? LhotseVideoPlayer(
+                                videoUrl: signedVideoUrl,
+                                posterUrl: posterUrl,
+                                isActive: true,
+                                playDelay: const Duration(milliseconds: 2500),
+                              )
+                            : LhotseImage(posterUrl),
                       ),
                       const DecoratedBox(
                         decoration: BoxDecoration(
@@ -180,22 +193,18 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                           ),
                         ),
                       ),
-                      // Bottom vignette: lighter for video (video has its own
-                      // visual weight; heavy gradient darkens the frame).
-                      if (!news.hasPlayButton)
-                        const DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment(0, 0.2),
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Color(0x8C1F1916),
-                              ],
-                            ),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(0, 0.2),
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Color(0x8C1F1916),
+                            ],
                           ),
                         ),
-                      if (news.hasPlayButton) const LhotsePlayButton(),
+                      ),
                     ],
                   ),
                 ),
@@ -227,9 +236,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       Text(
                         news.subtitle!,
-                        style: AppTypography.annotationParagraph.copyWith(
-                          color: AppColors.accentMuted,
-                          fontStyle: FontStyle.italic,
+                        style: AppTypography.editorialDeck.copyWith(
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -340,8 +348,12 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
   }
 }
 
-void _openVideoPlayer(BuildContext context, NewsItemData news) {
-  Navigator.of(context).push(
+void _openVideoPlayer(
+  BuildContext context,
+  String videoUrl,
+  String? posterUrl,
+) {
+  Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder(
       opaque: true,
       pageBuilder: (context, animation, secondaryAnimation) {
@@ -352,8 +364,8 @@ void _openVideoPlayer(BuildContext context, NewsItemData news) {
             child: child,
           ),
           child: FullscreenVideoPlayer(
-            videoUrl: news.videoUrl!,
-            posterUrl: news.imageUrl,
+            videoUrl: videoUrl,
+            posterUrl: posterUrl,
           ),
         );
       },

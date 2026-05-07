@@ -114,6 +114,37 @@
 - Max file size: configure per bucket in Supabase dashboard
 - Accepted MIME types: configure per bucket (images: `image/*`, documents: `application/pdf`)
 
+### Video fields — contract
+All video URL fields in this project (`projects.video_url`, `MediaItem.url` when `type == 'video'`) must satisfy:
+- **Format**: MP4 progressive (H.264). HLS (`.m3u8`) is NOT supported — `video_player` handles it unreliably on Android.
+- **DB value**: the raw canonical URL (e.g. `https://vz-…b-cdn.net/…/play_1080p.mp4`). Never store signed/expiring URLs in DB.
+- **Resolution**: 1080p preferred; 720p / 480p accepted for lower-bandwidth content.
+- **Origin**: Bunny Stream (Token Authentication ON, MP4 fallback enabled) or Supabase Storage private bucket (`project-videos`). The client resolves both through `playableVideoUrlProvider`.
+
+**Playback contract — never pass a raw DB URL directly to `LhotseVideoPlayer` or `FullscreenVideoPlayer`:**
+```dart
+// Correct: resolve signed URL first
+final signedVideoUrl = rawUrl?.isNotEmpty == true
+    ? ref.watch(playableVideoUrlProvider(rawUrl!)).valueOrNull
+    : null;
+// signedVideoUrl is null while signing resolves → hero falls back to poster image
+```
+`playableVideoUrlProvider` (`lib/core/data/playable_video_url_provider.dart`) branches by URL shape:
+- `https://vz-*` → Supabase Edge Function `sign_video_url` (Bunny HMAC-SHA256, TTL 1h)
+- `http*` non-Bunny → passthrough (demo/staging only)
+- relative path → `Supabase.instance.client.storage.from('project-videos').createSignedUrl(path, 3600)`
+
+Detail views that expose `video_url` to investment L3 screens:
+- `coinvestment_project_details.video_url` ← `projects.video_url`
+- `purchase_asset_details.video_url` ← `projects.video_url` (correlated subquery via `projects.asset_id`)
+
+### Edge Functions
+- Naming: `snake_case` matching the function's action (`sign_video_url`, not `videoSigner`)
+- Location: `supabase/functions/<name>/index.ts` (Deno)
+- **Always** verify JWT at the start: create a `supabaseClient` with the `Authorization` header and call `.auth.getUser()`. Return 401 if missing or invalid.
+- **Never** commit secret values — use `supabase secrets set KEY=value`. Reference via `Deno.env.get('KEY')`.
+- Whitelist inputs explicitly (allowed hosts, IDs) — do not trust raw client input.
+
 ### Supabase Client (Flutter SDK)
 - Single client instance via provider: `Supabase.instance.client`
 - Queries return `List<Map<String, dynamic>>` — always map to domain models in the repository, never pass raw maps to UI

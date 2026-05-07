@@ -23,6 +23,7 @@ class CoinvestmentContractData {
     required this.projectName,
     required this.projectLocation,
     required this.projectImageUrl,
+    this.videoUrl,
     // Loaded separately via providers
     this.profitScenarios = const [],
     this.phases = const [],
@@ -47,6 +48,7 @@ class CoinvestmentContractData {
   final String projectName;
   final String projectLocation;
   final String projectImageUrl;
+  final String? videoUrl;
   final List<ProfitScenario> profitScenarios;
   final List<ProjectPhase> phases;
 
@@ -71,6 +73,7 @@ class CoinvestmentContractData {
         projectName: projectName,
         projectLocation: projectLocation,
         projectImageUrl: projectImageUrl,
+        videoUrl: videoUrl,
         profitScenarios: profitScenarios ?? this.profitScenarios,
         phases: phases ?? this.phases,
       );
@@ -95,6 +98,7 @@ class CoinvestmentContractData {
       projectName: json['project_name'] as String? ?? '',
       projectLocation: json['project_location'] as String? ?? '',
       projectImageUrl: json['project_image_url'] as String? ?? '',
+      videoUrl: json['video_url'] as String?,
     );
   }
 }

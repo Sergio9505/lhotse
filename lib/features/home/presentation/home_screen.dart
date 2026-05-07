@@ -47,7 +47,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (!mounted) return;
       for (final item in items) {
         final url = item.imageUrl;
-        if (url.isEmpty || _precachedUrls.contains(url)) continue;
+        if (url == null || url.isEmpty || _precachedUrls.contains(url)) continue;
         _precachedUrls.add(url);
         LhotseImage.precache(url, context);
       }
@@ -81,7 +81,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         : AppColors.primary;
 
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      // Beige to match the caption + bottom nav, so the iOS bounce overscroll
+      // (top pull-to-refresh and bottom flick) reveals a continuous tone
+      // instead of a black band.
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           Positioned.fill(

@@ -14,7 +14,11 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
+import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/data/playable_video_url_provider.dart';
+import '../../../core/widgets/lhotse_video_player.dart';
+import '../../home/presentation/widgets/fullscreen_video_player.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
@@ -100,6 +104,12 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
     final purchaseAssetDetail = d.assetId != null
         ? ref.watch(purchaseAssetDetailProvider(d.assetId!)).valueOrNull
         : null;
+    final rawVideoUrl = purchaseAssetDetail?.videoUrl ??
+        coinvestmentProjectDetail?.videoUrl;
+    final signedVideoUrl = rawVideoUrl?.isNotEmpty == true
+        ? ref.watch(playableVideoUrlProvider(rawVideoUrl!)).valueOrNull
+        : null;
+    final videoPosterUrl = posterUrlFor(videoUrl: rawVideoUrl, fallback: d.imageUrl ?? '');
     final galleryMedia = d.galleryMedia.isNotEmpty
         ? d.galleryMedia
         : purchaseAssetDetail?.galleryMedia ??
@@ -159,20 +169,36 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                 ),
               ),
               flexibleSpace: FlexibleSpaceBar(
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    LhotseImage(d.imageUrl ?? ''),
-                    const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.center,
-                          colors: [Color(0x66000000), Colors.transparent],
+                background: GestureDetector(
+                  onTap: signedVideoUrl != null
+                      ? () => _openCompletedVideoPlayer(
+                            context,
+                            signedVideoUrl,
+                            videoPosterUrl,
+                          )
+                      : null,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      signedVideoUrl != null
+                          ? LhotseVideoPlayer(
+                              videoUrl: signedVideoUrl,
+                              posterUrl: videoPosterUrl,
+                              isActive: true,
+                              playDelay: const Duration(milliseconds: 2500),
+                            )
+                          : LhotseImage(videoPosterUrl),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.center,
+                            colors: [Color(0x66000000), Colors.transparent],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -588,6 +614,29 @@ class _DocsTab extends ConsumerWidget {
       },
     );
   }
+}
+
+void _openCompletedVideoPlayer(
+  BuildContext context,
+  String videoUrl,
+  String? posterUrl,
+) {
+  Navigator.of(context, rootNavigator: true).push(
+    PageRouteBuilder(
+      opaque: true,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) =>
+              Opacity(opacity: animation.value, child: child),
+          child: FullscreenVideoPlayer(
+            videoUrl: videoUrl,
+            posterUrl: posterUrl ?? '',
+          ),
+        );
+      },
+    ),
+  );
 }
 
 // Documents loaded from Supabase via documentsProvider

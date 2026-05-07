@@ -30,6 +30,7 @@ class PurchaseContractData {
     this.assetName,
     this.assetLocation,
     this.assetImageUrl,
+    this.videoUrl,
     this.assetRevaluationPct,
     // Rental (hero metric)
     this.monthlyRent,
@@ -56,6 +57,7 @@ class PurchaseContractData {
   final String? assetName;
   final String? assetLocation;
   final String? assetImageUrl;
+  final String? videoUrl;
   final double? assetRevaluationPct;
 
   final double? monthlyRent;
@@ -85,6 +87,7 @@ class PurchaseContractData {
       assetName: json['asset_name'] as String?,
       assetLocation: json['asset_location'] as String?,
       assetImageUrl: json['asset_thumbnail_image'] as String?,
+      videoUrl: json['video_url'] as String?,
       assetRevaluationPct: (json['asset_revaluation_pct'] as num?)?.toDouble(),
       monthlyRent: (json['monthly_rent'] as num?)?.toDouble(),
       rentalYieldPct: (json['rental_yield_pct'] as num?)?.toDouble(),

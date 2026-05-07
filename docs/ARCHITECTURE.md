@@ -77,6 +77,9 @@ User-scoped views do NOT expose `user_id` as a column. Client code does NOT filt
 
 Operational column-type rules (money as `NUMERIC(14,2)`, timestamps as `TIMESTAMPTZ`, enum-likes as `TEXT CHECK (...)`, etc.) are the implementer's checklist — see `CONVENTIONS.md § Column types` rather than duplicating them here.
 
+### 13. Protected media: canonical URLs in DB, signed at read time (ADR-56)
+Video URLs stored in DB (`projects.video_url`, `MediaItem.url`) are the raw canonical path — never signed/expiring. Before playback, clients call `playableVideoUrlProvider` (`lib/core/data/playable_video_url_provider.dart`) which routes to: (a) `sign_video_url` Edge Function for Bunny Stream URLs (HMAC-SHA256, TTL 1h, JWT verification — secret never leaves the function); (b) `createSignedUrl` for Supabase Storage relative paths. Never store a signed/expiring URL in the DB.
+
 ## Extension protocol
 
 When a new principle emerges from an incident:

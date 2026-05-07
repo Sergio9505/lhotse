@@ -16,11 +16,17 @@ class FullscreenVideoPlayer extends StatefulWidget {
   const FullscreenVideoPlayer({
     super.key,
     required this.videoUrl,
-    required this.posterUrl,
+    this.posterUrl,
+    this.initialPosition = Duration.zero,
   });
 
   final String videoUrl;
-  final String posterUrl;
+  final String? posterUrl;
+
+  /// Where to start playback. Used to keep continuity with the hero player
+  /// underneath. The route pops with the controller's current position so the
+  /// caller can seek the hero to the same spot on close.
+  final Duration initialPosition;
 
   @override
   State<FullscreenVideoPlayer> createState() => _FullscreenVideoPlayerState();
@@ -37,6 +43,11 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _init();
   }
 
@@ -46,6 +57,10 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
       await c.initialize();
       c.setVolume(1);
       c.addListener(_onVideoEvent);
+      if (widget.initialPosition > Duration.zero &&
+          widget.initialPosition < c.value.duration) {
+        await c.seekTo(widget.initialPosition);
+      }
       await c.play();
       if (!mounted) {
         c.dispose();
@@ -60,6 +75,14 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
       if (!mounted) return;
       setState(() => _failed = true);
     }
+  }
+
+  /// Pop with the current playback position so the hero can seek to the same
+  /// spot. Falls back to [widget.initialPosition] if the controller hasn't
+  /// finished initializing yet — better than 0 for continuity.
+  void _close() {
+    final pos = _controller?.value.position ?? widget.initialPosition;
+    Navigator.of(context).pop(pos);
   }
 
   void _onVideoEvent() {
@@ -118,6 +141,8 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
 
   @override
   void dispose() {
+    SystemChrome.setPreferredOrientations(
+        const [DeviceOrientation.portraitUp]);
     _hideTimer?.cancel();
     _controller?.removeListener(_onVideoEvent);
     _controller?.dispose();
@@ -131,9 +156,15 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: AppColors.primary,
-        body: Stack(
+      child: PopScope<Object?>(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          _close();
+        },
+        child: Scaffold(
+          backgroundColor: AppColors.primary,
+          body: Stack(
           fit: StackFit.expand,
           children: [
             if (_failed) ...[
@@ -171,7 +202,7 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
                 muted: _muted,
                 topPadding: topPadding,
                 bottomPadding: bottomPadding,
-                onClose: () => Navigator.of(context).pop(),
+                onClose: _close,
                 onToggleMute: _toggleMute,
                 onTogglePlayPause: _togglePlayPause,
               ),
@@ -182,10 +213,11 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
                 left: AppSpacing.sm,
                 child: _ChromeButton(
                   icon: PhosphorIconsThin.x,
-                  onTap: () => Navigator.of(context).pop(),
+                  onTap: _close,
                 ),
               ),
           ],
+        ),
         ),
       ),
     );
