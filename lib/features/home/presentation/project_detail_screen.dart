@@ -19,6 +19,7 @@ import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/widgets/lhotse_video_player.dart';
 import 'widgets/fullscreen_video_player.dart';
+import 'widgets/virtual_tour_section.dart';
 
 const _kMaxVisibleGallery = 5;
 
@@ -305,7 +306,21 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
             ),
 
             // =========================================================
-            // 4. GALERÍA
+            // 4. TOUR VIRTUAL
+            // =========================================================
+            if (project.virtualTourUrl != null && project.imageUrl != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xxl),
+                  child: VirtualTourSection(
+                    imageUrl: project.imageUrl!,
+                    tourUrl: project.virtualTourUrl!,
+                  ),
+                ),
+              ),
+
+            // =========================================================
+            // 5. GALERÍA
             // =========================================================
             if (project.galleryMedia.isNotEmpty)
               SliverToBoxAdapter(
@@ -384,7 +399,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
               ),
 
             // =========================================================
-            // 5. CTA — DESCARGAR FOLLETO
+            // 6. CTA — DESCARGAR FOLLETO
             // =========================================================
             if (project.brochureUrl != null)
             SliverToBoxAdapter(

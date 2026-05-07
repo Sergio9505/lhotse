@@ -37,6 +37,7 @@ class ProjectData {
     required this.country,
     this.imageUrl,
     this.videoUrl,
+    this.virtualTourUrl,
     required this.tagline,
     required this.description,
     this.galleryMedia = const [],
@@ -73,6 +74,7 @@ class ProjectData {
   final String country;
   final String? imageUrl;
   final String? videoUrl;
+  final String? virtualTourUrl;
 
   String get location => '$city, $country';
 
@@ -134,6 +136,7 @@ class ProjectData {
       country: assets?['country'] as String? ?? '',
       imageUrl: row['image_url'] as String?,
       videoUrl: row['video_url'] as String?,
+      virtualTourUrl: row['virtual_tour_url'] as String?,
       tagline: row['tagline'] as String? ?? '',
       description: row['description'] as String? ?? '',
       galleryMedia: _parseGalleryMedia(row['gallery_media']),

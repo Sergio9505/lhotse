@@ -31,6 +31,7 @@ import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
+import '../../home/presentation/widgets/virtual_tour_section.dart';
 import '../data/investments_provider.dart';
 import '../domain/coinvestment_contract_data.dart';
 
@@ -363,6 +364,8 @@ class _CoinversionDetailScreenState
                     floorPlanUrl: assetFloorPlanUrl,
                     renderMedia: renderMedia,
                     cardWidth: screenWidth * 0.75,
+                    virtualTourUrl: projectDetail?.virtualTourUrl,
+                    tourImageUrl: projectImageUrl,
                   ),
                   bottomPadding: bottomPadding,
                 ),
@@ -556,12 +559,16 @@ class _ProyectoTab extends StatelessWidget {
     required this.floorPlanUrl,
     required this.renderMedia,
     required this.cardWidth,
+    this.virtualTourUrl,
+    this.tourImageUrl,
   });
 
   final List<AssetInfoEntry> assetInfo;
   final String? floorPlanUrl;
   final List<MediaItem> renderMedia;
   final double cardWidth;
+  final String? virtualTourUrl;
+  final String? tourImageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -627,6 +634,14 @@ class _ProyectoTab extends StatelessWidget {
             selectedTab: 0,
             onTabChanged: (_) {},
             cardWidth: cardWidth,
+          ),
+        ],
+        if ((virtualTourUrl ?? '').isNotEmpty &&
+            (tourImageUrl ?? '').isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xxl),
+          VirtualTourSection(
+            imageUrl: tourImageUrl!,
+            tourUrl: virtualTourUrl!,
           ),
         ],
       ],
