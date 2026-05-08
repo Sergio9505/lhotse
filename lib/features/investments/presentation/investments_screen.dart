@@ -67,10 +67,8 @@ class InvestmentsScreen extends ConsumerWidget {
               delegate: SliverChildBuilderDelegate(
                 (context, i) {
                   final summary = summaries[i];
-                  final isEstimated = summary.businessModel != 'fixed_income';
                   return _BrandRow(
                     summary: summary,
-                    isEstimated: isEstimated,
                     isLast: i == summaries.length - 1,
                     onTap: () => context.push(
                       '/investments/brand/${summary.brandId}',
@@ -259,13 +257,11 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
 class _BrandRow extends StatefulWidget {
   const _BrandRow({
     required this.summary,
-    this.isEstimated = false,
     this.isLast = false,
     this.onTap,
   });
 
   final PortfolioEntry summary;
-  final bool isEstimated;
   final bool isLast;
   final VoidCallback? onTap;
 
@@ -283,7 +279,6 @@ class _BrandRowState extends State<_BrandRow> {
   Widget build(BuildContext context) {
     final summary = widget.summary;
     final icon = summary.brandIconAsset;
-    final avgReturn = summary.avgReturnPct ?? 0.0;
 
     return GestureDetector(
       onTapDown: widget.onTap != null
@@ -377,59 +372,24 @@ class _BrandRowState extends State<_BrandRow> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // Tabular layout: amount column with fixed width
-                    // (left-aligned so the first digit anchors with the
-                    // brand name above) and % starting at the same X
-                    // across all rows.
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 160,
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text:
-                                      _eurFormat.format(summary.totalAmount),
-                                  style: AppTypography.figureAmount.copyWith(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: ' €',
-                                  style: AppTypography.annotation.copyWith(
-                                    color: AppColors.accentMuted,
-                                  ),
-                                ),
-                              ],
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: _eurFormat.format(summary.totalAmount),
+                            style: AppTypography.figureAmount.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.lg),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: '${avgReturn.toStringAsFixed(1)}%',
-                                style: AppTypography.annotation.copyWith(
-                                  color: AppColors.accentMuted,
-                                ),
-                              ),
-                              if (widget.isEstimated)
-                                TextSpan(
-                                  text: ' est.',
-                                  style: AppTypography.annotation.copyWith(
-                                    color: AppColors.accentMuted,
-                                    fontStyle: FontStyle.italic,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                            ],
+                          TextSpan(
+                            text: ' €',
+                            style: AppTypography.annotation.copyWith(
+                              color: AppColors.accentMuted,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
