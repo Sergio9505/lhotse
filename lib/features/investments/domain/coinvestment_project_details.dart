@@ -14,15 +14,15 @@ class CoinvestmentProjectDetails {
     this.renderMedia = const [],
     this.progressMedia = const [],
     // Asset
-    this.assetSurfaceM2,
-    this.assetPlotM2,
+    this.assetBuiltSurfaceM2,
+    this.assetUsableSurfaceM2,
     this.assetBedrooms,
     this.assetBathrooms,
     this.assetFloor,
     this.assetOrientation,
     this.assetViews,
     this.assetTerraceM2,
-    this.assetHasPool,
+    this.assetHasElevator,
     this.assetParkingSpots,
     this.assetStorageRoom,
     this.assetYearBuilt,
@@ -48,15 +48,15 @@ class CoinvestmentProjectDetails {
   final String projectId;
   final List<MediaItem> renderMedia;
   final List<MediaItem> progressMedia;
-  final double? assetSurfaceM2;
-  final double? assetPlotM2;
+  final double? assetBuiltSurfaceM2;
+  final double? assetUsableSurfaceM2;
   final int? assetBedrooms;
   final int? assetBathrooms;
   final String? assetFloor;
   final String? assetOrientation;
   final String? assetViews;
   final double? assetTerraceM2;
-  final bool? assetHasPool;
+  final bool? assetHasElevator;
   final int? assetParkingSpots;
   final bool? assetStorageRoom;
   final int? assetYearBuilt;
@@ -81,10 +81,14 @@ class CoinvestmentProjectDetails {
   List<AssetInfoEntry> get assetInfo {
     String m2(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 1)} m²';
     return [
-      if (assetSurfaceM2 != null)
-        AssetInfoEntry(label: 'Superficie', value: m2(assetSurfaceM2!)),
-      if (assetPlotM2 != null)
-        AssetInfoEntry(label: 'Parcela', value: m2(assetPlotM2!)),
+      if (assetBuiltSurfaceM2 != null)
+        AssetInfoEntry(
+            label: 'Superficie construida', value: m2(assetBuiltSurfaceM2!)),
+      if (assetTerraceM2 != null)
+        AssetInfoEntry(label: 'Terraza', value: m2(assetTerraceM2!)),
+      if (assetUsableSurfaceM2 != null)
+        AssetInfoEntry(
+            label: 'Superficie útil', value: m2(assetUsableSurfaceM2!)),
       if (assetBedrooms != null)
         AssetInfoEntry(label: 'Habitaciones', value: '$assetBedrooms'),
       if (assetBathrooms != null)
@@ -95,10 +99,8 @@ class CoinvestmentProjectDetails {
         AssetInfoEntry(label: 'Orientación', value: assetOrientation!),
       if (assetViews != null)
         AssetInfoEntry(label: 'Vistas', value: assetViews!),
-      if (assetTerraceM2 != null)
-        AssetInfoEntry(label: 'Terraza', value: m2(assetTerraceM2!)),
-      if (assetHasPool == true)
-        const AssetInfoEntry(label: 'Piscina', value: 'Sí'),
+      if (assetHasElevator == true)
+        const AssetInfoEntry(label: 'Ascensor', value: 'Sí'),
       if (assetParkingSpots != null)
         AssetInfoEntry(
             label: 'Garaje',
@@ -164,15 +166,17 @@ class CoinvestmentProjectDetails {
       projectId: json['project_id'] as String,
       renderMedia: _parseMedia(json['render_media']),
       progressMedia: _parseMedia(json['progress_media']),
-      assetSurfaceM2: (json['asset_surface_m2'] as num?)?.toDouble(),
-      assetPlotM2: (json['asset_plot_m2'] as num?)?.toDouble(),
+      assetBuiltSurfaceM2:
+          (json['asset_built_surface_m2'] as num?)?.toDouble(),
+      assetUsableSurfaceM2:
+          (json['asset_usable_surface_m2'] as num?)?.toDouble(),
       assetBedrooms: json['asset_bedrooms'] as int?,
       assetBathrooms: json['asset_bathrooms'] as int?,
       assetFloor: json['asset_floor'] as String?,
       assetOrientation: json['asset_orientation'] as String?,
       assetViews: json['asset_views'] as String?,
       assetTerraceM2: (json['asset_terrace_m2'] as num?)?.toDouble(),
-      assetHasPool: json['asset_has_pool'] as bool?,
+      assetHasElevator: json['asset_has_elevator'] as bool?,
       assetParkingSpots: json['asset_parking_spots'] as int?,
       assetStorageRoom: json['asset_storage_room'] as bool?,
       assetYearBuilt: json['asset_year_built'] as int?,

@@ -33,7 +33,7 @@ final homeFeedProvider = FutureProvider<List<FeedItem>>((ref) async {
       ? client
           .from('projects')
           .select(
-              '*, use_light_overlay, brands(name, logo_asset), assets(city, country, address, surface_m2, bedrooms, bathrooms, floor, year_built, year_renovated, terrace_m2, parking_spots, storage_room, orientation, views, plot_m2, has_pool, floor_plan_url)')
+              '*, use_light_overlay, brands(name, logo_asset), assets(city, country, address, built_surface_m2, usable_surface_m2, bedrooms, bathrooms, floor, year_built, year_renovated, terrace_m2, parking_spots, storage_room, orientation, views, has_elevator, floor_plan_url)')
           .inFilter('id', idsByType['project']!)
       : Future.value(const <Map<String, dynamic>>[]);
 

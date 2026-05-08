@@ -12,13 +12,13 @@ class PurchaseAssetDetails {
     this.cadastralReference,
     this.bedrooms,
     this.bathrooms,
-    this.surfaceM2,
-    this.plotM2,
+    this.builtSurfaceM2,
+    this.usableSurfaceM2,
     this.floor,
     this.yearBuilt,
     this.yearRenovated,
     this.terraceM2,
-    this.hasPool,
+    this.hasElevator,
     this.parkingSpots,
     this.storageRoom,
     this.orientation,
@@ -33,13 +33,13 @@ class PurchaseAssetDetails {
   final String? cadastralReference;
   final int? bedrooms;
   final int? bathrooms;
-  final double? surfaceM2;
-  final double? plotM2;
+  final double? builtSurfaceM2;
+  final double? usableSurfaceM2;
   final String? floor;
   final int? yearBuilt;
   final int? yearRenovated;
   final double? terraceM2;
-  final bool? hasPool;
+  final bool? hasElevator;
   final int? parkingSpots;
   final bool? storageRoom;
   final String? orientation;
@@ -53,9 +53,13 @@ class PurchaseAssetDetails {
   List<AssetInfoEntry> get assetInfo {
     String m2(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 1)} m²';
     return [
-      if (surfaceM2 != null)
-        AssetInfoEntry(label: 'Superficie', value: m2(surfaceM2!)),
-      if (plotM2 != null) AssetInfoEntry(label: 'Parcela', value: m2(plotM2!)),
+      if (builtSurfaceM2 != null)
+        AssetInfoEntry(
+            label: 'Superficie construida', value: m2(builtSurfaceM2!)),
+      if (terraceM2 != null)
+        AssetInfoEntry(label: 'Terraza', value: m2(terraceM2!)),
+      if (usableSurfaceM2 != null)
+        AssetInfoEntry(label: 'Superficie útil', value: m2(usableSurfaceM2!)),
       if (bedrooms != null)
         AssetInfoEntry(label: 'Habitaciones', value: '$bedrooms'),
       if (bathrooms != null)
@@ -64,9 +68,8 @@ class PurchaseAssetDetails {
       if (orientation != null)
         AssetInfoEntry(label: 'Orientación', value: orientation!),
       if (views != null) AssetInfoEntry(label: 'Vistas', value: views!),
-      if (terraceM2 != null)
-        AssetInfoEntry(label: 'Terraza', value: m2(terraceM2!)),
-      if (hasPool == true) const AssetInfoEntry(label: 'Piscina', value: 'Sí'),
+      if (hasElevator == true)
+        const AssetInfoEntry(label: 'Ascensor', value: 'Sí'),
       if (parkingSpots != null)
         AssetInfoEntry(
             label: 'Garaje',
@@ -99,13 +102,13 @@ class PurchaseAssetDetails {
       cadastralReference: json['asset_cadastral_reference'] as String?,
       bedrooms: json['asset_bedrooms'] as int?,
       bathrooms: json['asset_bathrooms'] as int?,
-      surfaceM2: (json['asset_surface_m2'] as num?)?.toDouble(),
-      plotM2: (json['asset_plot_m2'] as num?)?.toDouble(),
+      builtSurfaceM2: (json['asset_built_surface_m2'] as num?)?.toDouble(),
+      usableSurfaceM2: (json['asset_usable_surface_m2'] as num?)?.toDouble(),
       floor: json['asset_floor'] as String?,
       yearBuilt: json['asset_year_built'] as int?,
       yearRenovated: json['asset_year_renovated'] as int?,
       terraceM2: (json['asset_terrace_m2'] as num?)?.toDouble(),
-      hasPool: json['asset_has_pool'] as bool?,
+      hasElevator: json['asset_has_elevator'] as bool?,
       parkingSpots: json['asset_parking_spots'] as int?,
       storageRoom: json['asset_storage_room'] as bool?,
       orientation: json['asset_orientation'] as String?,

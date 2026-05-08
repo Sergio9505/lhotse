@@ -45,7 +45,7 @@ class ProjectData {
     this.isFundraisingOpen = true,
     this.phase = ProjectPhase.preConstruction,
     this.constructionCompletedAt,
-    this.surfaceM2,
+    this.builtSurfaceM2,
     this.bedrooms,
     this.bathrooms,
     this.floor,
@@ -56,8 +56,8 @@ class ProjectData {
     this.storageRoom,
     this.orientation,
     this.views,
-    this.plotM2,
-    this.hasPool,
+    this.usableSurfaceM2,
+    this.hasElevator,
     this.floorPlanUrl,
     this.brochureUrl,
     this.assetId,
@@ -94,7 +94,7 @@ class ProjectData {
   final DateTime? constructionCompletedAt;
 
   // Asset physical characteristics
-  final double? surfaceM2;
+  final double? builtSurfaceM2;
   final int? bedrooms;
   final int? bathrooms;
   final String? floor;
@@ -105,8 +105,8 @@ class ProjectData {
   final bool? storageRoom;
   final String? orientation;
   final String? views;
-  final double? plotM2;
-  final bool? hasPool;
+  final double? usableSurfaceM2;
+  final bool? hasElevator;
   final String? floorPlanUrl;
   final String? brochureUrl;
   final String? assetId;
@@ -146,7 +146,7 @@ class ProjectData {
       constructionCompletedAt: row['construction_completed_at'] != null
           ? DateTime.parse(row['construction_completed_at'] as String)
           : null,
-      surfaceM2: (assets?['surface_m2'] as num?)?.toDouble(),
+      builtSurfaceM2: (assets?['built_surface_m2'] as num?)?.toDouble(),
       bedrooms: assets?['bedrooms'] as int?,
       bathrooms: assets?['bathrooms'] as int?,
       floor: assets?['floor'] as String?,
@@ -157,8 +157,8 @@ class ProjectData {
       storageRoom: assets?['storage_room'] as bool?,
       orientation: assets?['orientation'] as String?,
       views: assets?['views'] as String?,
-      plotM2: (assets?['plot_m2'] as num?)?.toDouble(),
-      hasPool: assets?['has_pool'] as bool?,
+      usableSurfaceM2: (assets?['usable_surface_m2'] as num?)?.toDouble(),
+      hasElevator: assets?['has_elevator'] as bool?,
       floorPlanUrl: assets?['floor_plan_url'] as String?,
       brochureUrl: row['brochure_url'] as String?,
       assetId: row['asset_id'] as String?,
