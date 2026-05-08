@@ -1718,3 +1718,25 @@ The current implementation is the result of multiple visual reviews. Earlier exp
 - (-) Three views had to be DROP+CREATE'd; no `CREATE OR REPLACE` shortcut because we were dropping columns.
 
 **Supersedes (partial):** the column list in ADR-33. The JSONB-elimination thesis itself stands.
+
+---
+
+## ADR-59: Asset district & neighborhood — admin-only, mobile views untouched
+
+**Date:** 2026-05-08
+**Status:** Accepted
+
+**Context:** Admins needed to record the *distrito* and *barrio* of every activo for filtering, grouping and reporting. The portfolio is Madrid-only today (21 distritos / 131 barrios) but will expand to other Spanish cities, so a hardcoded enum-per-city does not scale.
+
+**Decision:** add two nullable TEXT columns to `assets` — `district` and `neighborhood` — and populate them from the admin form via reverse geocoding (Nominatim/OSM). Migration `20260508140000_asset_district_neighborhood.sql` recreates `assets_with_status` to project the new columns. **`purchase_asset_details` and `coinvestment_project_details` are intentionally not touched**: the investor app does not display these fields, so leaving the mobile-facing views untouched avoids cascading regenerations and keeps the surface that the Flutter app must read minimal.
+
+**Rationale:**
+- Free-text columns scale to any city without code changes; UI normalization comes from Nominatim's structured response.
+- Geocoding via Nominatim (gratis, sin API key) suffices for admin volumes; rate limit (1 req/s) is a non-issue for an interactive form.
+- Backoffice-only scope: admin filters and exports benefit, but investors don't see "Calle Ayala 94, Goya, Salamanca" — they already see "Madrid, España" and the address line, which is enough.
+
+**Consequences:**
+- (+) Catalogue gains structured location data without a hardcoded `madrid_districts` enum.
+- (+) Mobile views stay frozen — no changes propagate to `lhotse_app` providers.
+- (-) Two views diverge in shape (admin sees more than mobile). Acceptable: views already differ for other reasons.
+- (-) Legacy assets need a one-shot backfill (done via MCP + Nominatim, not productionized as an endpoint).
