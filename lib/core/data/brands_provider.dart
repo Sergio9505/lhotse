@@ -14,6 +14,7 @@ final brandsProvider = FutureProvider<List<BrandData>>((ref) async {
       .from('brands')
       .select()
       .eq('is_visible', true)
+      .order('sort_order', ascending: true)
       .order('name', ascending: true);
   return (data as List<dynamic>)
       .map((e) => BrandData.fromJson(e as Map<String, dynamic>))
