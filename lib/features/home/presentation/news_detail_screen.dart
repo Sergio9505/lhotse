@@ -36,6 +36,7 @@ class NewsDetailScreen extends ConsumerStatefulWidget {
 
 class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
   final _scrollController = ScrollController();
+  final _videoKey = GlobalKey<LhotseVideoPlayerState>();
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
   double _heroHeight = 0;
@@ -65,6 +66,36 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
         _showCollapsedTitle = showTitle;
       });
     }
+  }
+
+  Future<void> _openVideoPlayer(
+    String videoUrl,
+    String? posterUrl,
+  ) async {
+    final start = _videoKey.currentState?.position ?? Duration.zero;
+    _videoKey.currentState?.pauseExternal();
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<Duration>(
+      PageRouteBuilder(
+        opaque: true,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) => Opacity(
+              opacity: animation.value,
+              child: child,
+            ),
+            child: FullscreenVideoPlayer(
+              videoUrl: videoUrl,
+              posterUrl: posterUrl,
+              initialPosition: start,
+            ),
+          );
+        },
+      ),
+    );
+    if (!mounted) return;
+    await _videoKey.currentState?.resumeFrom(result ?? start);
   }
 
   @override
@@ -168,7 +199,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               flexibleSpace: FlexibleSpaceBar(
                 background: GestureDetector(
                   onTap: signedVideoUrl != null
-                      ? () => _openVideoPlayer(context, signedVideoUrl, posterUrl)
+                      ? () => _openVideoPlayer(signedVideoUrl, posterUrl)
                       : null,
                   child: Stack(
                     fit: StackFit.expand,
@@ -177,6 +208,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                         tag: 'news-hero-${news.id}',
                         child: signedVideoUrl != null
                             ? LhotseVideoPlayer(
+                                key: _videoKey,
                                 videoUrl: signedVideoUrl,
                                 posterUrl: posterUrl,
                                 isActive: true,
@@ -348,27 +380,3 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
   }
 }
 
-void _openVideoPlayer(
-  BuildContext context,
-  String videoUrl,
-  String? posterUrl,
-) {
-  Navigator.of(context, rootNavigator: true).push(
-    PageRouteBuilder(
-      opaque: true,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return AnimatedBuilder(
-          animation: animation,
-          builder: (context, child) => Opacity(
-            opacity: animation.value,
-            child: child,
-          ),
-          child: FullscreenVideoPlayer(
-            videoUrl: videoUrl,
-            posterUrl: posterUrl,
-          ),
-        );
-      },
-    ),
-  );
-}

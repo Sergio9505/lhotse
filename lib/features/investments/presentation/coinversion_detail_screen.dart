@@ -69,6 +69,7 @@ class _CoinversionDetailScreenState
     extends ConsumerState<CoinversionDetailScreen>
     with SingleTickerProviderStateMixin {
   final _outerController = ScrollController();
+  final _videoKey = GlobalKey<LhotseVideoPlayerState>();
   late final TabController _tabController;
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
@@ -118,6 +119,34 @@ class _CoinversionDetailScreenState
         _showCollapsedTitle = showTitle;
       });
     }
+  }
+
+  Future<void> _openCoinversionVideoPlayer(
+    String videoUrl,
+    String? posterUrl,
+  ) async {
+    final start = _videoKey.currentState?.position ?? Duration.zero;
+    _videoKey.currentState?.pauseExternal();
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<Duration>(
+      PageRouteBuilder(
+        opaque: true,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) =>
+                Opacity(opacity: animation.value, child: child),
+            child: FullscreenVideoPlayer(
+              videoUrl: videoUrl,
+              posterUrl: posterUrl ?? '',
+              initialPosition: start,
+            ),
+          );
+        },
+      ),
+    );
+    if (!mounted) return;
+    await _videoKey.currentState?.resumeFrom(result ?? start);
   }
 
   @override
@@ -217,7 +246,6 @@ class _CoinversionDetailScreenState
                   background: GestureDetector(
                     onTap: signedVideoUrl != null
                         ? () => _openCoinversionVideoPlayer(
-                              context,
                               signedVideoUrl,
                               videoPosterUrl,
                             )
@@ -227,6 +255,7 @@ class _CoinversionDetailScreenState
                       children: [
                         signedVideoUrl != null
                             ? LhotseVideoPlayer(
+                                key: _videoKey,
                                 videoUrl: signedVideoUrl,
                                 posterUrl: videoPosterUrl,
                                 isActive: true,
@@ -1592,27 +1621,5 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
 
 const _kMaxVisibleNews = 3;
 
-void _openCoinversionVideoPlayer(
-  BuildContext context,
-  String videoUrl,
-  String? posterUrl,
-) {
-  Navigator.of(context, rootNavigator: true).push(
-    PageRouteBuilder(
-      opaque: true,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return AnimatedBuilder(
-          animation: animation,
-          builder: (context, child) =>
-              Opacity(opacity: animation.value, child: child),
-          child: FullscreenVideoPlayer(
-            videoUrl: videoUrl,
-            posterUrl: posterUrl ?? '',
-          ),
-        );
-      },
-    ),
-  );
-}
 
 // Documents loaded from Supabase via documentsProvider

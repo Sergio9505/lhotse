@@ -48,6 +48,7 @@ class ProjectDetailScreen extends ConsumerStatefulWidget {
 
 class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
   final _scrollController = ScrollController();
+  final _videoKey = GlobalKey<LhotseVideoPlayerState>();
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
   double _heroHeight = 0;
@@ -78,6 +79,34 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
         _showCollapsedTitle = showTitle;
       });
     }
+  }
+
+  Future<void> _openProjectVideoPlayer(
+    String videoUrl,
+    String? posterUrl,
+  ) async {
+    final start = _videoKey.currentState?.position ?? Duration.zero;
+    _videoKey.currentState?.pauseExternal();
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<Duration>(
+      PageRouteBuilder(
+        opaque: true,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) =>
+                Opacity(opacity: animation.value, child: child),
+            child: FullscreenVideoPlayer(
+              videoUrl: videoUrl,
+              posterUrl: posterUrl ?? '',
+              initialPosition: start,
+            ),
+          );
+        },
+      ),
+    );
+    if (!mounted) return;
+    await _videoKey.currentState?.resumeFrom(result ?? start);
   }
 
   @override
@@ -177,7 +206,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 background: GestureDetector(
                   onTap: signedVideoUrl != null
                       ? () => _openProjectVideoPlayer(
-                            context,
                             signedVideoUrl,
                             posterUrl,
                           )
@@ -189,6 +217,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                         tag: 'project-hero-${project.id}',
                         child: signedVideoUrl != null
                             ? LhotseVideoPlayer(
+                                key: _videoKey,
                                 videoUrl: signedVideoUrl,
                                 posterUrl: posterUrl,
                                 isActive: true,
@@ -437,25 +466,3 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
   }
 }
 
-void _openProjectVideoPlayer(
-  BuildContext context,
-  String videoUrl,
-  String? posterUrl,
-) {
-  Navigator.of(context, rootNavigator: true).push(
-    PageRouteBuilder(
-      opaque: true,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return AnimatedBuilder(
-          animation: animation,
-          builder: (context, child) =>
-              Opacity(opacity: animation.value, child: child),
-          child: FullscreenVideoPlayer(
-            videoUrl: videoUrl,
-            posterUrl: posterUrl ?? '',
-          ),
-        );
-      },
-    ),
-  );
-}
