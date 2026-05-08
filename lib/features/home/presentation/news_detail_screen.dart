@@ -264,15 +264,6 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    if ((news.subtitle ?? '').isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        news.subtitle!,
-                        style: AppTypography.editorialDeck.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 12),
                     _buildByline(news),
                   ],

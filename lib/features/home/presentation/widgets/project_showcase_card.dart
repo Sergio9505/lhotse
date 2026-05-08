@@ -43,6 +43,9 @@ class ProjectShowcaseCard extends StatelessWidget {
                           videoUrl: project.videoUrl,
                           fallback: project.imageUrl,
                         ),
+                        placeholder: project.videoUrl?.isNotEmpty == true
+                            ? LhotseImagePlaceholder.video
+                            : LhotseImagePlaceholder.image,
                       ),
                   child: _ProjectMedia(
                     imageUrl: project.imageUrl,
@@ -83,17 +86,6 @@ class ProjectShowcaseCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (project.tagline.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    project.tagline,
-                    style: AppTypography.editorialDeck.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
                 const SizedBox(height: 10),
                 _ProjectByline(project: project),
               ],
@@ -115,6 +107,9 @@ class _ProjectMedia extends StatelessWidget {
   Widget build(BuildContext context) {
     return LhotseImage(
       posterUrlFor(videoUrl: videoUrl, fallback: imageUrl),
+      placeholder: videoUrl?.isNotEmpty == true
+          ? LhotseImagePlaceholder.video
+          : LhotseImagePlaceholder.image,
     );
   }
 }

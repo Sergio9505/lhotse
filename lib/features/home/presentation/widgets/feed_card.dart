@@ -87,9 +87,15 @@ class _FeedCardState extends State<FeedCard> {
                   ? Hero(
                       tag: heroTag,
                       flightShuttleBuilder: _flightShuttleBuilder,
-                      child: _Media(imageUrl: content.imageUrl),
+                      child: _Media(
+                        imageUrl: content.imageUrl,
+                        placeholder: content.placeholder,
+                      ),
                     )
-                  : _Media(imageUrl: content.imageUrl),
+                  : _Media(
+                      imageUrl: content.imageUrl,
+                      placeholder: content.placeholder,
+                    ),
             ),
             _Caption(content: content),
           ],
@@ -107,7 +113,8 @@ class _FeedCardState extends State<FeedCard> {
   ) {
     // imageUrl is already the Bunny static thumbnail when the item has a video,
     // so the shuttle matches the poster shown in the detail hero — no flash.
-    return LhotseImage(_contentFor(widget.item).imageUrl);
+    final content = _contentFor(widget.item);
+    return LhotseImage(content.imageUrl, placeholder: content.placeholder);
   }
 
   String? _heroTagFor(FeedItem item) {
@@ -174,15 +181,17 @@ class _FeedCardState extends State<FeedCard> {
 // ── Media block ──────────────────────────────────────────────────────────────
 
 class _Media extends StatelessWidget {
-  const _Media({required this.imageUrl});
+  const _Media({required this.imageUrl, required this.placeholder});
 
   /// Bunny static thumbnail when the item has a video; legacy imageUrl otherwise.
   /// Nullable for entities without an image — `LhotseImage` renders its
   /// `AppColors.surface` placeholder in that case.
   final String? imageUrl;
+  final LhotseImagePlaceholder placeholder;
 
   @override
-  Widget build(BuildContext context) => LhotseImage(imageUrl);
+  Widget build(BuildContext context) =>
+      LhotseImage(imageUrl, placeholder: placeholder);
 }
 
 // ── Caption block ────────────────────────────────────────────────────────────
@@ -316,6 +325,7 @@ class _FeedContent {
     required this.brand,
     required this.metaParts,
     required this.cta,
+    required this.placeholder,
   });
 
   final String title;
@@ -337,6 +347,11 @@ class _FeedContent {
 
   final String cta;
 
+  /// Icon to show when [imageUrl] is missing or fails to load. Items derived
+  /// from projects/news with a `videoUrl` get the video clapboard so the
+  /// fallback hints at the asset type even when the thumbnail is absent.
+  final LhotseImagePlaceholder placeholder;
+
   factory _FeedContent.fromProject(ProjectData p, {required String cta}) {
     return _FeedContent(
       title: p.name,
@@ -349,6 +364,9 @@ class _FeedContent {
         if (p.city.isNotEmpty) p.city,
       ],
       cta: cta,
+      placeholder: p.videoUrl?.isNotEmpty == true
+          ? LhotseImagePlaceholder.video
+          : LhotseImagePlaceholder.image,
     );
   }
 
@@ -360,6 +378,9 @@ class _FeedContent {
       brand: (n.brand?.isNotEmpty ?? false) ? n.brand : null,
       metaParts: [date],
       cta: 'LEER',
+      placeholder: n.videoUrl?.isNotEmpty == true
+          ? LhotseImagePlaceholder.video
+          : LhotseImagePlaceholder.image,
     );
   }
 
@@ -370,6 +391,7 @@ class _FeedContent {
       brand: b.name,
       metaParts: [b.businessModel.displayName],
       cta: 'EXPLORAR',
+      placeholder: LhotseImagePlaceholder.image,
     );
   }
 
@@ -384,6 +406,7 @@ class _FeedContent {
         if (a.country?.isNotEmpty ?? false) a.country!,
       ],
       cta: 'EXPLORAR',
+      placeholder: LhotseImagePlaceholder.image,
     );
   }
 }

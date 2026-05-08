@@ -272,15 +272,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    if (project.tagline.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        project.tagline,
-                        style: AppTypography.editorialDeck.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 12),
                     RichText(
                       overflow: TextOverflow.ellipsis,

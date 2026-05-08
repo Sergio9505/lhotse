@@ -1,26 +1,36 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_theme.dart';
+
+/// Distinguishes the icon shown when a thumbnail is missing or fails to load.
+/// Defaults to [image]; pass [video] for entries that semantically represent
+/// a video (project/news with `videoUrl`, video gallery items).
+enum LhotseImagePlaceholder { image, video }
 
 /// Smart image widget: uses `Image.asset` for paths starting with `assets/`,
 /// `CachedNetworkImage` (disk + memory cache) for URLs. The disk cache is
 /// what keeps Hero transitions smooth — once an image has been loaded, it
 /// renders instantly on subsequent views regardless of whether the app was
-/// restarted in between. The shared `AppColors.surface` placeholder + fade
+/// restarted in between. The shared `AppColors.surface` background + fade
 /// keep the transition from ever flashing a white hole.
 ///
-/// Accepts a nullable `source`: when null or empty (e.g. an entity whose
-/// image column is NULL in the DB) the placeholder is rendered directly.
+/// When the source is missing or the load fails, a centered Phosphor icon
+/// over the beige surface signals absence. During an in-flight network load
+/// the surface is rendered plain (no icon) so the icon doesn't flash before
+/// the real image fades in.
 class LhotseImage extends StatelessWidget {
   const LhotseImage(
     this.source, {
     super.key,
     this.fit = BoxFit.cover,
+    this.placeholder = LhotseImagePlaceholder.image,
   });
 
   final String? source;
   final BoxFit fit;
+  final LhotseImagePlaceholder placeholder;
 
   bool get _hasSource => source != null && source!.isNotEmpty;
   bool get _isAsset => _hasSource && source!.startsWith('assets/');
@@ -44,13 +54,13 @@ class LhotseImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!_hasSource) {
-      return Container(color: AppColors.surface);
+      return _LhotseImagePlaceholder(kind: placeholder);
     }
     if (_isAsset) {
       return Image.asset(
         source!,
         fit: fit,
-        errorBuilder: (_, _, _) => Container(color: AppColors.surface),
+        errorBuilder: (_, _, _) => _LhotseImagePlaceholder(kind: placeholder),
       );
     }
     return CachedNetworkImage(
@@ -58,7 +68,35 @@ class LhotseImage extends StatelessWidget {
       fit: fit,
       fadeInDuration: const Duration(milliseconds: 180),
       placeholder: (_, _) => Container(color: AppColors.surface),
-      errorWidget: (_, _, _) => Container(color: AppColors.surface),
+      errorWidget: (_, _, _) => _LhotseImagePlaceholder(kind: placeholder),
+    );
+  }
+}
+
+class _LhotseImagePlaceholder extends StatelessWidget {
+  const _LhotseImagePlaceholder({required this.kind});
+
+  final LhotseImagePlaceholder kind;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final size =
+              (constraints.biggest.shortestSide * 0.28).clamp(20.0, 64.0);
+          return Center(
+            child: PhosphorIcon(
+              kind == LhotseImagePlaceholder.video
+                  ? PhosphorIconsThin.filmSlate
+                  : PhosphorIconsThin.image,
+              size: size,
+              color: AppColors.textPrimary.withValues(alpha: 0.18),
+            ),
+          );
+        },
+      ),
     );
   }
 }

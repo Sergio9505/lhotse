@@ -482,7 +482,13 @@ class _VideoPageState extends ConsumerState<_VideoPage> {
       if (thumb == null) return const SizedBox.expand();
       final signed = ref.watch(playableVideoUrlProvider(thumb));
       return signed.when(
-        data: (u) => Center(child: LhotseImage(u, fit: BoxFit.contain)),
+        data: (u) => Center(
+          child: LhotseImage(
+            u,
+            fit: BoxFit.contain,
+            placeholder: LhotseImagePlaceholder.video,
+          ),
+        ),
         loading: () => const SizedBox.expand(),
         error: (_, _) => const SizedBox.expand(),
       );
@@ -654,7 +660,10 @@ class VideoThumbnailTile extends ConsumerWidget {
         fit: StackFit.expand,
         children: [
           signed.when(
-            data: (u) => LhotseImage(u),
+            data: (u) => LhotseImage(
+              u,
+              placeholder: LhotseImagePlaceholder.video,
+            ),
             loading: () => Container(color: AppColors.surface),
             error: (_, _) => const _VideoTileFallback(),
           ),

@@ -67,15 +67,21 @@ class LhotseNewsCard extends StatelessWidget {
 
   Widget _buildFull() {
     final hasVideo = videoUrl != null && videoUrl!.isNotEmpty;
+    final placeholder = hasVideo
+        ? LhotseImagePlaceholder.video
+        : LhotseImagePlaceholder.image;
     final image = AspectRatio(
       aspectRatio: 3 / 2,
       child: Stack(
         fit: StackFit.expand,
         children: [
           if (heroTag != null)
-            Hero(tag: heroTag!, child: LhotseImage(imageUrl))
+            Hero(
+              tag: heroTag!,
+              child: LhotseImage(imageUrl, placeholder: placeholder),
+            )
           else
-            LhotseImage(imageUrl),
+            LhotseImage(imageUrl, placeholder: placeholder),
           if (hasVideo) const LhotsePlayButton(),
         ],
       ),
@@ -103,17 +109,6 @@ class LhotseNewsCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (subtitle != null && subtitle!.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    subtitle!,
-                    style: AppTypography.editorialDeck.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
                 const SizedBox(height: 10),
                 _byline(),
               ],
@@ -183,7 +178,12 @@ class LhotseNewsCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            LhotseImage(imageUrl),
+            LhotseImage(
+              imageUrl,
+              placeholder: hasPlayButton
+                  ? LhotseImagePlaceholder.video
+                  : LhotseImagePlaceholder.image,
+            ),
             if (hasPlayButton) const LhotsePlayButton(size: 40),
             Positioned(
               left: 0,
