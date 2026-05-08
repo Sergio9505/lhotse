@@ -37,7 +37,7 @@
 - Money: `NUMERIC(14,2)` — never `FLOAT`/`DOUBLE`
 - Percentages: `NUMERIC(5,2)` or `NUMERIC(6,2)`
 - Display-only arrays (galleries, freeform key-value extras): `JSONB DEFAULT '[]'`
-- Typed property attributes (bedrooms, floor, orientation, surface_m2…): **individual `NUMERIC`/`INTEGER`/`TEXT` columns** — never JSONB
+- Typed property attributes (bedrooms, floor, orientation, built_surface_m2…): **individual `NUMERIC`/`INTEGER`/`TEXT` columns** — never JSONB
 - Queryable child data (scenarios, phases, documents): **separate table** with FK
 
 ### Naming

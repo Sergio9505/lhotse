@@ -1682,3 +1682,39 @@ These constraints emerged through revision and define the boundaries of acceptab
 The current implementation is the result of multiple visual reviews. Earlier explorations included: Remotion-style draw + spark + letter stagger (v1), pure ascending wipe (v2), dual ascending exterior edges with crossfade (v3 / v3.1), single horizon line + wipe (v4 / v4.1), and "horizonte real" with navy gradient and rising horizon-as-actor (v5). Each was rejected for specific reasons captured as design rules above. v6 returned to stroke + fill on flat black; v6.1 added the dual-stroke mechanic, beat, letter-spacing settle, and haptic; v6.2 fixed the summit cap with `StrokeCap.round`; v6.3 extended the fill and removed the wordmark slide; v6.4 overlapped the wordmark fade-in with the last 500 ms of the fill; v6.5 syncs the wordmark to peak exactly at fill-complete (silhouette, wordmark, letter-spacing settle, and haptic all arrive in the same instant) and uses the freed time to extend the hold to 2.5 s.
 
 **Operational note.** If repeat-launch use feels excessive, recommended trim order: hold 2.0 s → 1.5 s (−500 ms, total 6.85 s); then trace 1.8 → 1.6 s (−200 ms, total 6.65 s).
+
+---
+
+## ADR-58: Asset surface fields remodel + pool→elevator (refines ADR-33)
+
+**Date:** 2026-05-08
+**Status:** Accepted
+
+**Context:** ADR-33 promoted asset attributes from JSONB to typed columns and, among others, added `surface_m2`, `plot_m2`, and `has_pool`. After running the catalog with real activos we found that:
+
+- What we labeled `surface_m2` was effectively *useful* surface, not built. The Spanish real-estate market routinely shows both *superficie construida* and *superficie útil* — investors expect both.
+- `plot_m2` never applied: every asset in the portfolio is an urban dwelling without an independent plot.
+- `has_pool` was always `false` — pool isn't a relevant amenity for our segment, but **elevator** is the binary that actually changes a flat's value in the cities we operate in.
+
+**Decision:** schema remodel (migration `20260508130000_asset_surface_rename_and_elevator.sql`):
+
+- `surface_m2` → renamed to `usable_surface_m2`, data preserved.
+- `plot_m2` → DROPPED.
+- `has_pool` → renamed to `has_elevator` (all values were `false`, no data loss).
+- New column `built_surface_m2 NUMERIC` — separate from the useful slot, fills from admin.
+- Views recreated (`assets_with_status`, `purchase_asset_details`, `coinvestment_project_details`) to project the new shape with `security_invoker = true`.
+- UI labels updated in Flutter: "Superficie / Parcela / Piscina" → "Superficie construida / Superficie útil / Ascensor".
+
+**Rationale:**
+- Keeps ADR-33's core thesis intact (typed columns > JSONB); this ADR only adjusts which typed columns we keep.
+- Mirrors the dual-surface convention used by every Spanish portal (Idealista, Fotocasa, Sotheby's RE) so investors don't have to reconcile vocabularies.
+- Reflects the reality of the catalog rather than a speculative "could one day have a pool" ask.
+
+**Consequences:**
+- (+) `built_surface_m2` and `usable_surface_m2` coexist explicitly — no overloaded "surface" with ambiguous meaning.
+- (+) `has_elevator` reuses the boolean slot for an attribute that actually appears in CARACTERÍSTICAS.
+- (+) Catalog does not lose data: useful surface preserved, pool/plot eliminations are factually empty.
+- (-) `built_surface_m2` is NULL for legacy rows until the admin fills each activo (graceful: the assetInfo getter omits NULL entries).
+- (-) Three views had to be DROP+CREATE'd; no `CREATE OR REPLACE` shortcut because we were dropping columns.
+
+**Supersedes (partial):** the column list in ADR-33. The JSONB-elimination thesis itself stands.
