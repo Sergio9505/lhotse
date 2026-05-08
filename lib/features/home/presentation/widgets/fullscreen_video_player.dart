@@ -151,7 +151,9 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
+    final viewInsets = MediaQuery.viewPaddingOf(context);
+    final topOffset =
+        (viewInsets.top > 0 ? viewInsets.top : AppSpacing.lg) + AppSpacing.sm;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -200,7 +202,7 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
                 visible: _controlsVisible,
                 controller: _controller!,
                 muted: _muted,
-                topPadding: topPadding,
+                topOffset: topOffset,
                 bottomPadding: bottomPadding,
                 onClose: _close,
                 onToggleMute: _toggleMute,
@@ -209,8 +211,8 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
             ],
             if (_failed || !_ready)
               Positioned(
-                top: topPadding + AppSpacing.sm,
-                left: AppSpacing.sm,
+                top: topOffset,
+                right: AppSpacing.sm,
                 child: _ChromeButton(
                   icon: PhosphorIconsThin.x,
                   onTap: _close,
@@ -229,7 +231,7 @@ class _ControlsOverlay extends StatelessWidget {
     required this.visible,
     required this.controller,
     required this.muted,
-    required this.topPadding,
+    required this.topOffset,
     required this.bottomPadding,
     required this.onClose,
     required this.onToggleMute,
@@ -239,7 +241,7 @@ class _ControlsOverlay extends StatelessWidget {
   final bool visible;
   final VideoPlayerController controller;
   final bool muted;
-  final double topPadding;
+  final double topOffset;
   final double bottomPadding;
   final VoidCallback onClose;
   final VoidCallback onToggleMute;
@@ -256,16 +258,16 @@ class _ControlsOverlay extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Positioned(
-              top: topPadding + AppSpacing.sm,
-              left: AppSpacing.sm,
+              top: topOffset,
+              right: AppSpacing.sm,
               child: _ChromeButton(
                 icon: PhosphorIconsThin.x,
                 onTap: onClose,
               ),
             ),
             Positioned(
-              top: topPadding + AppSpacing.sm,
-              right: AppSpacing.sm,
+              top: topOffset,
+              left: AppSpacing.sm,
               child: _ChromeButton(
                 icon: muted
                     ? PhosphorIconsThin.speakerSlash
