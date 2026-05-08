@@ -1151,8 +1151,8 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
       letterSpacing: 0,
     );
 
-    // Active: forward-looking estimates (prefix `Est.` italic) — duration only.
-    // The estimated return % (estimatedReturnPct, mid scenario) is intentionally
+    // Active: forward-looking duration (`Plazo estimado · {N} meses`, sentence
+    // case). The estimated return % (estimatedReturnPct) is intentionally
     // omitted from L2; L3 detail surfaces it in context.
     // Completed: realized gain (prefix `Ganancia ` + `+€` green).
     final months = c.estimatedDurationMonths;
@@ -1244,19 +1244,14 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
                     // L3 — meta line: estimates (active) or Ganancia (completed)
                     if (hasEstimates) ...[
                       const SizedBox(height: 2),
-                      RichText(
-                        text: TextSpan(
-                          style: AppTypography.metaUppercase.copyWith(
-                            color: AppColors.accentMuted,
-                          ),
-                          children: [
-                            const TextSpan(
-                              text: 'Est. ',
-                              style: TextStyle(fontStyle: FontStyle.italic),
-                            ),
-                            TextSpan(text: '$months meses'),
-                          ],
+                      Text(
+                        'Plazo estimado · $months meses',
+                        style: AppTypography.metaUppercase.copyWith(
+                          color: AppColors.accentMuted,
+                          letterSpacing: 0,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ] else if (realizedGain != null) ...[
                       const SizedBox(height: 2),
