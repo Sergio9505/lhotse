@@ -195,10 +195,20 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                   return _PurchaseRow(
                     contract: c,
                     isLast: i == activePurchase.length - 1,
-                    onTap: () => context.push(
-                      '/investments/detail/purchase/${c.id}',
-                      extra: (brandName: brandName, contract: c),
-                    ),
+                    onTap: () {
+                      // Prefetch L3 providers so the detail mounts with data
+                      // already in flight.
+                      ref.read(
+                          purchaseAssetDetailProvider(c.assetId).future);
+                      if (c.hasFinancing) {
+                        ref.read(
+                            purchaseMortgageDetailProvider(c.id).future);
+                      }
+                      context.push(
+                        '/investments/detail/purchase/${c.id}',
+                        extra: (brandName: brandName, contract: c),
+                      );
+                    },
                   );
                 },
                 childCount: activePurchase.length,
@@ -212,10 +222,19 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                   return _CoinvestmentRow(
                     contract: c,
                     isLast: i == activeCoinvest.length - 1,
-                    onTap: () => context.push(
-                      '/investments/detail/coinvestment/${c.id}',
-                      extra: (contract: c, brandName: brandName),
-                    ),
+                    onTap: () {
+                      // Prefetch L3 providers so the detail mounts with data
+                      // already in flight, hiding the cold-fetch latency
+                      // inside the page transition.
+                      ref.read(coinvestmentProjectDetailProvider(c.projectId)
+                          .future);
+                      ref.read(projectScenariosProvider(c.projectId).future);
+                      ref.read(projectPhasesProvider(c.projectId).future);
+                      context.push(
+                        '/investments/detail/coinvestment/${c.id}',
+                        extra: (contract: c, brandName: brandName),
+                      );
+                    },
                   );
                 },
                 childCount: activeCoinvest.length,
@@ -326,17 +345,27 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                         location: c.assetLocation,
                         imageUrl: c.assetImageUrl,
                         videoUrl: c.videoUrl,
+                        heroTag: 'asset-hero-${c.assetId}',
                         amount: c.totalReturn ?? c.purchaseValue,
                         returnLabel: hasResults ? null : '–',
                         returnLabelSpans: returnLabelSpans,
                         isLast: e.$1 == completedPurchase.length - 1,
-                        onTap: () => context.push(
-                          '/investments/detail/completed/purchase/${c.id}',
-                          extra: CompletedContractData.fromPurchase(
-                            c,
-                            brandName: brandName,
-                          ),
-                        ),
+                        onTap: () {
+                          // Same prefetch pattern as active purchase row.
+                          ref.read(
+                              purchaseAssetDetailProvider(c.assetId).future);
+                          if (c.hasFinancing) {
+                            ref.read(
+                                purchaseMortgageDetailProvider(c.id).future);
+                          }
+                          context.push(
+                            '/investments/detail/completed/purchase/${c.id}',
+                            extra: CompletedContractData.fromPurchase(
+                              c,
+                              brandName: brandName,
+                            ),
+                          );
+                        },
                       );
                     })
                   else if (isRentaFija)
@@ -350,13 +379,24 @@ class BrandInvestmentsScreen extends ConsumerWidget {
                           contract: e.$2,
                           isCompleted: true,
                           isLast: e.$1 == completedCoinvest.length - 1,
-                          onTap: () => context.push(
-                            '/investments/detail/completed/coinvestment/${e.$2.id}',
-                            extra: CompletedContractData.fromCoinvestment(
-                              e.$2,
-                              brandName: brandName,
-                            ),
-                          ),
+                          onTap: () {
+                            // Same prefetch pattern as active coinvestments —
+                            // completed detail consumes the same providers.
+                            ref.read(coinvestmentProjectDetailProvider(
+                                    e.$2.projectId)
+                                .future);
+                            ref.read(projectScenariosProvider(e.$2.projectId)
+                                .future);
+                            ref.read(projectPhasesProvider(e.$2.projectId)
+                                .future);
+                            context.push(
+                              '/investments/detail/completed/coinvestment/${e.$2.id}',
+                              extra: CompletedContractData.fromCoinvestment(
+                                e.$2,
+                                brandName: brandName,
+                              ),
+                            );
+                          },
                         )),
                 ],
               );
@@ -562,6 +602,7 @@ class _AssetRow extends StatefulWidget {
     this.location,
     this.imageUrl,
     this.videoUrl,
+    this.heroTag,
     required this.amount,
     this.isLast = false,
     this.onTap,
@@ -573,6 +614,7 @@ class _AssetRow extends StatefulWidget {
   final String? location;
   final String? imageUrl;
   final String? videoUrl;
+  final String? heroTag;
   final double amount;
   final bool isLast;
   final VoidCallback? onTap;
@@ -625,10 +667,18 @@ class _AssetRowState extends State<_AssetRow> {
                 width: 110,
                 height: 88,
                 child: widget.imageUrl != null || widget.videoUrl != null
-                    ? LhotseImage(posterUrlFor(
-                        videoUrl: widget.videoUrl,
-                        fallback: widget.imageUrl ?? '',
-                      ))
+                    ? (widget.heroTag != null
+                        ? Hero(
+                            tag: widget.heroTag!,
+                            child: LhotseImage(posterUrlFor(
+                              videoUrl: widget.videoUrl,
+                              fallback: widget.imageUrl ?? '',
+                            )),
+                          )
+                        : LhotseImage(posterUrlFor(
+                            videoUrl: widget.videoUrl,
+                            fallback: widget.imageUrl ?? '',
+                          )))
                     : Container(color: AppColors.surface),
               ),
               const SizedBox(width: 14),
@@ -1034,10 +1084,13 @@ class _PurchaseRowState extends State<_PurchaseRow> {
                 width: 96,
                 height: 72,
                 child: c.assetImageUrl != null || c.videoUrl != null
-                    ? LhotseImage(posterUrlFor(
-                        videoUrl: c.videoUrl,
-                        fallback: c.assetImageUrl ?? '',
-                      ))
+                    ? Hero(
+                        tag: 'asset-hero-${c.assetId}',
+                        child: LhotseImage(posterUrlFor(
+                          videoUrl: c.videoUrl,
+                          fallback: c.assetImageUrl ?? '',
+                        )),
+                      )
                     : Container(color: AppColors.surface),
               ),
               const SizedBox(width: 14),
@@ -1200,10 +1253,13 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
                 width: 96,
                 height: 72,
                 child: c.projectImageUrl.isNotEmpty || c.videoUrl != null
-                    ? LhotseImage(posterUrlFor(
-                        videoUrl: c.videoUrl,
-                        fallback: c.projectImageUrl,
-                      ))
+                    ? Hero(
+                        tag: 'project-hero-${c.projectId}',
+                        child: LhotseImage(posterUrlFor(
+                          videoUrl: c.videoUrl,
+                          fallback: c.projectImageUrl,
+                        )),
+                      )
                     : Container(color: AppColors.surface),
               ),
               const SizedBox(width: 14),

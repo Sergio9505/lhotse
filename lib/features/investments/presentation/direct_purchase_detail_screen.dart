@@ -253,15 +253,22 @@ class _DirectPurchaseDetailContentState
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      signedVideoUrl != null
-                          ? LhotseVideoPlayer(
-                              key: _videoKey,
-                              videoUrl: signedVideoUrl,
-                              posterUrl: videoPosterUrl,
-                              isActive: true,
-                              playDelay: const Duration(milliseconds: 2500),
-                            )
-                          : LhotseImage(videoPosterUrl),
+                      Hero(
+                        tag: 'asset-hero-${c.assetId}',
+                        flightShuttleBuilder: (flightContext, animation,
+                                direction, fromHeroContext, toHeroContext) =>
+                            LhotseImage(videoPosterUrl),
+                        child: signedVideoUrl != null
+                            ? LhotseVideoPlayer(
+                                key: _videoKey,
+                                videoUrl: signedVideoUrl,
+                                posterUrl: videoPosterUrl,
+                                isActive: true,
+                                playDelay:
+                                    const Duration(milliseconds: 2500),
+                              )
+                            : LhotseImage(videoPosterUrl),
+                      ),
                       const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(

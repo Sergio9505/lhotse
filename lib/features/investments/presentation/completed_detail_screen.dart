@@ -213,15 +213,53 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      signedVideoUrl != null
-                          ? LhotseVideoPlayer(
-                              key: _videoKey,
-                              videoUrl: signedVideoUrl,
-                              posterUrl: videoPosterUrl,
-                              isActive: true,
-                              playDelay: const Duration(milliseconds: 2500),
-                            )
-                          : LhotseImage(videoPosterUrl),
+                      if (d.projectId != null)
+                        Hero(
+                          tag: 'project-hero-${d.projectId}',
+                          flightShuttleBuilder:
+                              (flightContext, animation, direction,
+                                      fromHeroContext, toHeroContext) =>
+                                  LhotseImage(videoPosterUrl),
+                          child: signedVideoUrl != null
+                              ? LhotseVideoPlayer(
+                                  key: _videoKey,
+                                  videoUrl: signedVideoUrl,
+                                  posterUrl: videoPosterUrl,
+                                  isActive: true,
+                                  playDelay:
+                                      const Duration(milliseconds: 2500),
+                                )
+                              : LhotseImage(videoPosterUrl),
+                        )
+                      else if (d.assetId != null)
+                        Hero(
+                          tag: 'asset-hero-${d.assetId}',
+                          flightShuttleBuilder:
+                              (flightContext, animation, direction,
+                                      fromHeroContext, toHeroContext) =>
+                                  LhotseImage(videoPosterUrl),
+                          child: signedVideoUrl != null
+                              ? LhotseVideoPlayer(
+                                  key: _videoKey,
+                                  videoUrl: signedVideoUrl,
+                                  posterUrl: videoPosterUrl,
+                                  isActive: true,
+                                  playDelay:
+                                      const Duration(milliseconds: 2500),
+                                )
+                              : LhotseImage(videoPosterUrl),
+                        )
+                      else
+                        signedVideoUrl != null
+                            ? LhotseVideoPlayer(
+                                key: _videoKey,
+                                videoUrl: signedVideoUrl,
+                                posterUrl: videoPosterUrl,
+                                isActive: true,
+                                playDelay:
+                                    const Duration(milliseconds: 2500),
+                              )
+                            : LhotseImage(videoPosterUrl),
                       const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(

@@ -70,13 +70,32 @@ class InvestmentsScreen extends ConsumerWidget {
                   return _BrandRow(
                     summary: summary,
                     isLast: i == summaries.length - 1,
-                    onTap: () => context.push(
-                      '/investments/brand/${summary.brandId}',
-                      extra: (
-                        brandName: summary.brandName,
-                        businessModel: summary.businessModel,
-                      ),
-                    ),
+                    onTap: () {
+                      // Prefetch contracts so L2 mounts with data already in
+                      // flight — the fade transition overlaps the network
+                      // round-trip instead of waiting after it.
+                      switch (summary.businessModel) {
+                        case 'coinvestment':
+                          ref.read(brandCoinvestmentContractsProvider(
+                                  summary.brandId)
+                              .future);
+                        case 'direct_purchase':
+                          ref.read(
+                              brandPurchaseContractsProvider(summary.brandId)
+                                  .future);
+                        case 'fixed_income':
+                          ref.read(
+                              brandFixedIncomeContractsProvider(summary.brandId)
+                                  .future);
+                      }
+                      context.push(
+                        '/investments/brand/${summary.brandId}',
+                        extra: (
+                          brandName: summary.brandName,
+                          businessModel: summary.businessModel,
+                        ),
+                      );
+                    },
                   );
                 },
                 childCount: summaries.length,

@@ -262,15 +262,27 @@ class _CoinversionDetailScreenState
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        signedVideoUrl != null
-                            ? LhotseVideoPlayer(
-                                key: _videoKey,
-                                videoUrl: signedVideoUrl,
-                                posterUrl: videoPosterUrl,
-                                isActive: true,
-                                playDelay: const Duration(milliseconds: 2500),
-                              )
-                            : LhotseImage(videoPosterUrl),
+                        Hero(
+                          tag: 'project-hero-${c.projectId}',
+                          // During the flight, render the static poster only —
+                          // letting `LhotseVideoPlayer` mount mid-animation
+                          // would flash and break the visual continuity from
+                          // the L2 row thumbnail (same poster).
+                          flightShuttleBuilder:
+                              (flightContext, animation, direction,
+                                      fromHeroContext, toHeroContext) =>
+                                  LhotseImage(videoPosterUrl),
+                          child: signedVideoUrl != null
+                              ? LhotseVideoPlayer(
+                                  key: _videoKey,
+                                  videoUrl: signedVideoUrl,
+                                  posterUrl: videoPosterUrl,
+                                  isActive: true,
+                                  playDelay:
+                                      const Duration(milliseconds: 2500),
+                                )
+                              : LhotseImage(videoPosterUrl),
+                        ),
                         const DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
