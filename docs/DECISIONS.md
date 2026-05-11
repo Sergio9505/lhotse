@@ -1787,3 +1787,24 @@ The current implementation is the result of multiple visual reviews. Earlier exp
 2. Scroll inside a tab, switch to another (must open at top), switch back (must restore previous offset).
 3. Section labels (e.g. "ANÁLISIS ECONÓMICO" in coinversion Finanzas) must be visible immediately on tab entry — no `pinnedHeaderSliverHeightBuilder` offset bug.
 4. Hero collapse animation and `_heroGone`/`_showCollapsedTitle` state flips must behave exactly as before.
+
+## ADR-62: News video — static poster + play overlay, no inline autoplay
+
+**Date:** 2026-05-11
+**Status:** Accepted
+
+**Context:** News items frequently carry videos (interviews, statements, press). The previous implementation cloned the project-detail hero pattern (poster → autoplay muted inline after 2.5s → tap for fullscreen audio), copied via copy-paste. Result: viewers saw mute lips moving — a "content to listen to" experience presented as a silent loop. The card widget already documented the rationale ("never autoplay-muted inline") but the detail hero contradicted it.
+
+**Decision:** news detail hero shows the static poster (Bunny thumbnail or `image_url`) with a centred `LhotsePlayButton(size: 64)` overlay when there is a video. Tap opens the fullscreen viewer with audio. No inline playback. The same play-overlay grammar applies to news listings (catalog, related compact, L3 AVANCE compact).
+
+**Rationale:**
+- Honours the documented invariant: news = audio-driven content.
+- Unified grammar across every news touchpoint (listings, carousels, detail) — a single visual signal "this item is a video, tap to listen".
+- Faster first-frame on detail (no background video buffering).
+- Avoids the autoplay-with-sound anti-pattern: blocked by iOS/Android without a prior user gesture, and embarrassing in public contexts.
+
+**Consequences:**
+- (+) News hero is immediately readable and predictable.
+- (+) Bandwidth/battery: video only downloads when explicitly requested.
+- (-) Loses the "inline liveness" of the project hero — defensible since news is informational, not aesthetic loop.
+- Project hero stays as-is (autoplay muted): asset videos are visual loops where the absence of audio is fine (Zara / Nike-SNKRS pattern). Asymmetry intentional and justified by content type.

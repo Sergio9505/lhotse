@@ -12,8 +12,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
+import '../../../core/widgets/lhotse_play_button.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
-import '../../../core/widgets/lhotse_video_player.dart';
 import 'widgets/fullscreen_video_player.dart';
 
 class NewsDetailScreen extends ConsumerStatefulWidget {
@@ -36,7 +36,6 @@ class NewsDetailScreen extends ConsumerStatefulWidget {
 
 class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
   final _scrollController = ScrollController();
-  final _videoKey = GlobalKey<LhotseVideoPlayerState>();
   bool _heroGone = false;
   bool _showCollapsedTitle = false;
   double _heroHeight = 0;
@@ -72,10 +71,9 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     String videoUrl,
     String? posterUrl,
   ) async {
-    final start = _videoKey.currentState?.position ?? Duration.zero;
-    _videoKey.currentState?.pauseExternal();
-    final result = await Navigator.of(context, rootNavigator: true)
-        .push<Duration>(
+    // Per ADR-62: news playback only happens in fullscreen with audio,
+    // never inline. No inline player to pause/resume around the push.
+    await Navigator.of(context, rootNavigator: true).push<void>(
       PageRouteBuilder(
         opaque: true,
         pageBuilder: (context, animation, secondaryAnimation) {
@@ -88,14 +86,11 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
             child: FullscreenVideoPlayer(
               videoUrl: videoUrl,
               posterUrl: posterUrl,
-              initialPosition: start,
             ),
           );
         },
       ),
     );
-    if (!mounted) return;
-    await _videoKey.currentState?.resumeFrom(result ?? start);
   }
 
   @override
@@ -129,23 +124,24 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     _heroHeight = MediaQuery.of(context).size.height * 0.55;
     final posterUrl = posterUrlFor(videoUrl: news.videoUrl, fallback: news.imageUrl);
 
-    // Related news: prefer same project, then same asset, then most recent.
-    // brandId/brand/region are compat shims (always null) until the news
-    // query joins the project→brand chain — see NewsItemData docstrings.
-    final relatedNews = [
-      if (news.projectId != null)
-        ...allNews.where(
-            (n) => n.projectId == news.projectId && n.id != news.id),
-      if (news.assetId != null)
-        ...allNews.where((n) =>
-            n.assetId == news.assetId &&
-            n.projectId != news.projectId &&
-            n.id != news.id),
-      ...allNews.where((n) =>
-          n.projectId != news.projectId &&
-          n.assetId != news.assetId &&
-          n.id != news.id),
-    ].take(3).toList();
+    // "MÁS DE {brand}" — strict brand match. Ordering: same project first
+    // (preserve context), then the rest of the brand by date descending
+    // (newsProvider already returns DESC). Hidden when brandId is null
+    // (standalone news without project_id). brandId / brand are populated
+    // via the project→brand join in news_provider._newsSelect.
+    final relatedNews = news.brandId == null
+        ? const <NewsItemData>[]
+        : () {
+            final sameBrand = allNews.where(
+              (n) => n.brandId == news.brandId && n.id != news.id,
+            );
+            return [
+              if (news.projectId != null)
+                ...sameBrand.where((n) => n.projectId == news.projectId),
+              ...sameBrand.where((n) =>
+                  news.projectId == null || n.projectId != news.projectId),
+            ].take(3).toList();
+          }();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone
@@ -206,15 +202,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                     children: [
                       Hero(
                         tag: 'news-hero-${news.id}',
-                        child: signedVideoUrl != null
-                            ? LhotseVideoPlayer(
-                                key: _videoKey,
-                                videoUrl: signedVideoUrl,
-                                posterUrl: posterUrl,
-                                isActive: true,
-                                playDelay: const Duration(milliseconds: 2500),
-                              )
-                            : LhotseImage(posterUrl),
+                        child: LhotseImage(posterUrl),
                       ),
                       const DecoratedBox(
                         decoration: BoxDecoration(
@@ -237,6 +225,11 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                           ),
                         ),
                       ),
+                      // ADR-62: play overlay invites the user to open the
+                      // fullscreen viewer with audio. News video never
+                      // autoplays inline.
+                      if (signedVideoUrl != null)
+                        const LhotsePlayButton(size: 64),
                     ],
                   ),
                 ),
@@ -321,8 +314,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                           child: LhotseNewsCard.compact(
                             title: relatedNews[i].title,
                             imageUrl: relatedNews[i].imageUrl,
+                            videoUrl: relatedNews[i].videoUrl,
                             subtitle: DateFormat('d MMM yyyy').format(relatedNews[i].date),
-                            hasPlayButton: relatedNews[i].hasPlayButton,
                           ),
                         ),
                       ),

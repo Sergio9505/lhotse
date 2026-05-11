@@ -176,13 +176,17 @@ class _CoinversionDetailScreenState
     final signedVideoUrl = projectDetail?.videoUrl?.isNotEmpty == true
         ? ref.watch(playableVideoUrlProvider(projectDetail!.videoUrl!)).valueOrNull
         : null;
-    // brandId is a compat shim (always null) after the news schema change;
-    // prefer noticias enlazadas al proyecto, fallback a las más recientes.
+    // "NOTICIAS DEL PROYECTO" — strict project match. If the project has
+    // no news yet, the `if (news.isNotEmpty)` guard at render time hides
+    // the section instead of falling back to unrelated items. brandId is
+    // populated via the project→brand join in news_provider._newsSelect;
+    // a "more from the brand" fallback, if ever needed, belongs in a
+    // separate section with its own title (see news_detail_screen).
     final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
-    final relatedNews = [
-      ...allNews.where((n) => n.projectId == c.projectId),
-      ...allNews.where((n) => n.projectId != c.projectId),
-    ].take(4).toList();
+    final relatedNews = allNews
+        .where((n) => n.projectId == c.projectId)
+        .take(_kMaxVisibleNews)
+        .toList();
 
     final projectLocation = c.projectLocation;
     final projectImageUrl = c.projectImageUrl;
@@ -542,6 +546,7 @@ class _AvanceTab extends StatelessWidget {
             itemBuilder: (context, i) => LhotseNewsCard.compact(
               title: news[i].title,
               imageUrl: news[i].imageUrl,
+              videoUrl: news[i].videoUrl,
               subtitle: DateFormat('d MMM').format(news[i].date),
               onTap: () => context.push('/news/${news[i].id}'),
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/bunny_thumbnail.dart';
 import '../theme/app_theme.dart';
 import 'lhotse_image.dart';
 import 'lhotse_play_button.dart';
@@ -22,7 +23,6 @@ class LhotseNewsCard extends StatelessWidget {
     this.date,
     this.type,
     this.videoUrl,
-    this.hasPlayButton = false,
     this.onTap,
   })  : width = null,
         height = null;
@@ -34,13 +34,12 @@ class LhotseNewsCard extends StatelessWidget {
     this.imageUrl,
     this.brand,
     this.subtitle,
-    this.hasPlayButton = false,
+    this.videoUrl,
     this.onTap,
   })  : width = 260,
         height = 160,
         date = null,
         type = null,
-        videoUrl = null,
         heroTag = null;
 
   final String title;
@@ -50,12 +49,13 @@ class LhotseNewsCard extends StatelessWidget {
   final String? subtitle;
   final String? date;
   final String? type;
-  // Passed so the card knows whether to show the play button overlay.
-  // News video is "content to listen to" — never autoplay-muted inline.
+  /// Drives both the Bunny thumbnail fallback (via `posterUrlFor`) and the
+  /// play-button overlay. News video is "content to listen to" — listings show
+  /// a play overlay; playback only happens in the fullscreen viewer where
+  /// audio is on. Never autoplay-muted inline (see ADR-62).
   final String? videoUrl;
   final double? width;
   final double? height;
-  final bool hasPlayButton;
   final VoidCallback? onTap;
 
   bool get _isCompact => width != null;
@@ -67,6 +67,8 @@ class LhotseNewsCard extends StatelessWidget {
 
   Widget _buildFull() {
     final hasVideo = videoUrl != null && videoUrl!.isNotEmpty;
+    final effectiveImageUrl =
+        posterUrlFor(videoUrl: videoUrl, fallback: imageUrl);
     final placeholder = hasVideo
         ? LhotseImagePlaceholder.video
         : LhotseImagePlaceholder.image;
@@ -78,10 +80,10 @@ class LhotseNewsCard extends StatelessWidget {
           if (heroTag != null)
             Hero(
               tag: heroTag!,
-              child: LhotseImage(imageUrl, placeholder: placeholder),
+              child: LhotseImage(effectiveImageUrl, placeholder: placeholder),
             )
           else
-            LhotseImage(imageUrl, placeholder: placeholder),
+            LhotseImage(effectiveImageUrl, placeholder: placeholder),
           if (hasVideo) const LhotsePlayButton(),
         ],
       ),
@@ -170,6 +172,9 @@ class LhotseNewsCard extends StatelessWidget {
   }
 
   Widget _buildCompact() {
+    final hasVideo = videoUrl != null && videoUrl!.isNotEmpty;
+    final effectiveImageUrl =
+        posterUrlFor(videoUrl: videoUrl, fallback: imageUrl);
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -179,12 +184,12 @@ class LhotseNewsCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             LhotseImage(
-              imageUrl,
-              placeholder: hasPlayButton
+              effectiveImageUrl,
+              placeholder: hasVideo
                   ? LhotseImagePlaceholder.video
                   : LhotseImagePlaceholder.image,
             ),
-            if (hasPlayButton) const LhotsePlayButton(size: 40),
+            if (hasVideo) const LhotsePlayButton(size: 40),
             Positioned(
               left: 0,
               right: 0,
