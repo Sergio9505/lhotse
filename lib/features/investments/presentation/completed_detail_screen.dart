@@ -17,6 +17,7 @@ import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/widgets/lhotse_tab_scroll_wrapper.dart';
 import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/widgets/lhotse_video_player.dart';
 import '../../home/presentation/widgets/fullscreen_video_player.dart';
@@ -354,7 +355,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
             controller: _tabController,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              _TabScrollWrapper(
+              LhotseTabScrollWrapper(
                 bottomPadding: bottomPadding,
                 child: _ActivoTab(
                   assetInfo: assetInfo,
@@ -378,23 +379,6 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
     );
   }
 
-}
-
-// ── Tab scroll wrapper ────────────────────────────────────────────────────────
-
-class _TabScrollWrapper extends StatelessWidget {
-  const _TabScrollWrapper(
-      {required this.child, required this.bottomPadding});
-  final Widget child;
-  final double bottomPadding;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(bottom: bottomPadding + AppSpacing.lg),
-      child: child,
-    );
-  }
 }
 
 // ── ACTIVO tab ────────────────────────────────────────────────────────────────

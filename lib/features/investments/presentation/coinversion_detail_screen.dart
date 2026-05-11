@@ -23,6 +23,7 @@ import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/widgets/lhotse_tab_scroll_wrapper.dart';
 import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/widgets/lhotse_video_player.dart';
 import '../../home/presentation/widgets/fullscreen_video_player.dart';
@@ -382,7 +383,7 @@ class _CoinversionDetailScreenState
               controller: _tabController,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                _TabScrollWrapper(
+                LhotseTabScrollWrapper(
                   child: _AvanceTab(
                     phases: phases,
                     currentPhaseIndex: currentPhaseIndex,
@@ -393,7 +394,7 @@ class _CoinversionDetailScreenState
                   ),
                   bottomPadding: bottomPadding,
                 ),
-                _TabScrollWrapper(
+                LhotseTabScrollWrapper(
                   child: _ProyectoTab(
                     assetInfo: assetInfo,
                     floorPlanUrl: assetFloorPlanUrl,
@@ -404,7 +405,7 @@ class _CoinversionDetailScreenState
                   ),
                   bottomPadding: bottomPadding,
                 ),
-                _TabScrollWrapper(
+                LhotseTabScrollWrapper(
                   child: _FinancieroTab(
                     economicAnalysis: economicAnalysis,
                     scenarios: scenarios,
@@ -431,31 +432,6 @@ class _CoinversionDetailScreenState
   }
 
 }
-
-
-// ===========================================================================
-// Tab scroll wrapper — handles NestedScrollView overlap
-// ===========================================================================
-
-class _TabScrollWrapper extends StatelessWidget {
-  const _TabScrollWrapper({
-    required this.child,
-    required this.bottomPadding,
-  });
-
-  final Widget child;
-  final double bottomPadding;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(bottom: bottomPadding + AppSpacing.lg),
-      child: child,
-    );
-  }
-}
-
-// (Tab bar delegate extracted to core/widgets/lhotse_tab_bar_delegate.dart)
 
 
 // ===========================================================================
