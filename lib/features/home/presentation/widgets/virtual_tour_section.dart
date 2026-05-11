@@ -11,10 +11,12 @@ class VirtualTourSection extends StatelessWidget {
     super.key,
     required this.imageUrl,
     required this.tourUrl,
+    this.label = 'TOUR VIRTUAL',
   });
 
   final String imageUrl;
   final String tourUrl;
+  final String label;
 
   void _open(BuildContext context) {
     Navigator.of(context, rootNavigator: true).push(
@@ -30,7 +32,7 @@ class VirtualTourSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LhotseSectionLabel(label: 'TOUR VIRTUAL'),
+        LhotseSectionLabel(label: label),
         const SizedBox(height: AppSpacing.md),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),

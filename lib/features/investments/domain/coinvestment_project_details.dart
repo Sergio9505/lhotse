@@ -12,7 +12,7 @@ class CoinvestmentProjectDetails {
   const CoinvestmentProjectDetails({
     required this.projectId,
     this.renderMedia = const [],
-    this.progressMedia = const [],
+    this.progressTourUrl,
     // Asset
     this.assetBuiltSurfaceM2,
     this.assetUsableSurfaceM2,
@@ -47,7 +47,7 @@ class CoinvestmentProjectDetails {
 
   final String projectId;
   final List<MediaItem> renderMedia;
-  final List<MediaItem> progressMedia;
+  final String? progressTourUrl;
   final double? assetBuiltSurfaceM2;
   final double? assetUsableSurfaceM2;
   final int? assetBedrooms;
@@ -165,7 +165,7 @@ class CoinvestmentProjectDetails {
     return CoinvestmentProjectDetails(
       projectId: json['project_id'] as String,
       renderMedia: _parseMedia(json['render_media']),
-      progressMedia: _parseMedia(json['progress_media']),
+      progressTourUrl: json['progress_tour_url'] as String?,
       assetBuiltSurfaceM2:
           (json['asset_built_surface_m2'] as num?)?.toDouble(),
       assetUsableSurfaceM2:

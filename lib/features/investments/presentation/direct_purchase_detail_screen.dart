@@ -389,6 +389,7 @@ class _DirectPurchaseDetailContentState
           ],
           body: TabBarView(
             controller: _tabController,
+            physics: const NeverScrollableScrollPhysics(),
             children: [
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,

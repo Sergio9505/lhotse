@@ -1740,3 +1740,23 @@ The current implementation is the result of multiple visual reviews. Earlier exp
 - (+) Mobile views stay frozen — no changes propagate to `lhotse_app` providers.
 - (-) Two views diverge in shape (admin sees more than mobile). Acceptable: views already differ for other reasons.
 - (-) Legacy assets need a one-shot backfill (done via MCP + Nominatim, not productionized as an endpoint).
+
+## ADR-60: "Avance de obra" — Panoee 360° URL replaces gallery of images/videos
+
+**Date:** 2026-05-11
+**Status:** Accepted
+
+**Context:** The L3 coinvestment detail screen's AVANCE tab used to show a gallery of construction progress photos/videos populated via `projects.progress_media` (JSONB array). Two problems: (1) the admin had to upload media one by one on every visit to the site, and (2) static photos compete with the immersive feel of the Tour Virtual section (same screen, PROYECTO tab) which already uses a Panoee 360° walkthrough.
+
+**Decision:** drop `projects.progress_media` (JSONB) and add `projects.progress_tour_url` (TEXT). The Flutter `_AvanceTab` reuses `VirtualTourSection` — same component as Tour Virtual — parametrised with `label: 'AVANCE DE OBRA'`. The admin field becomes a single URL input mirroring `virtual_tour_url`. Migration `20260511120000_progress_tour_url.sql` recreates `coinvestment_project_details` and `projects_with_metrics` to project the new column.
+
+**Rationale:**
+- One URL ≪ N uploads. Admin friction drops; updates become an in-Panoee operation.
+- Mirrors the proven Tour Virtual pattern (WebView via `flutter_inappwebview`, `FullscreenVirtualTour`). Zero new UI primitives.
+- Principles #1 (single canonical source) and #4 (no speculative fields): `progress_media` had a single consumer (the gallery now removed), so it's not a candidate for "keep as historical record".
+
+**Consequences:**
+- (+) Admin time per progress update collapses from several minutes (upload+sort) to seconds (paste URL).
+- (+) UI consistency between PROYECTO and AVANCE tabs — same Matterport-like immersion.
+- (-) Historical galleries in `progress_media` are lost (DROP COLUMN). Acceptable: no productive data; seed only.
+- (-) Requires manual Panoee setup per project (capture + scene authoring). Outside this app's scope.

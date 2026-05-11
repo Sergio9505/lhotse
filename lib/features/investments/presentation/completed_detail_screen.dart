@@ -348,6 +348,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
 
           body: TabBarView(
             controller: _tabController,
+            physics: const NeverScrollableScrollPhysics(),
             children: [
               _TabScrollWrapper(
                 bottomPadding: bottomPadding,

@@ -188,7 +188,7 @@ class _CoinversionDetailScreenState
     final currentPhaseIndex =
         phases.where((p) => p.isCompleted).length;
     final renderMedia = projectDetail?.renderMedia ?? const <MediaItem>[];
-    final progressMedia = projectDetail?.progressMedia ?? const <MediaItem>[];
+    final progressTourUrl = projectDetail?.progressTourUrl;
     final assetFloorPlanUrl = projectDetail?.assetFloorPlanUrl;
     final assetInfo = projectDetail?.assetInfo ?? const <AssetInfoEntry>[];
     final economicAnalysis =
@@ -376,12 +376,14 @@ class _CoinversionDetailScreenState
             // ===========================================================
             body: TabBarView(
               controller: _tabController,
+              physics: const NeverScrollableScrollPhysics(),
               children: [
                 _TabScrollWrapper(
                   child: _AvanceTab(
                     phases: phases,
                     currentPhaseIndex: currentPhaseIndex,
-                    progressMedia: progressMedia,
+                    progressTourUrl: progressTourUrl,
+                    tourImageUrl: projectImageUrl,
                     news: relatedNews,
                     cardWidth: screenWidth * 0.75,
                   ),
@@ -503,19 +505,22 @@ class _AvanceTab extends StatelessWidget {
   const _AvanceTab({
     required this.phases,
     required this.currentPhaseIndex,
-    required this.progressMedia,
+    required this.progressTourUrl,
+    required this.tourImageUrl,
     required this.news,
     required this.cardWidth,
   });
 
   final List<ProjectPhase> phases;
   final int currentPhaseIndex;
-  final List<MediaItem> progressMedia;
+  final String? progressTourUrl;
+  final String tourImageUrl;
   final List<NewsItemData> news;
   final double cardWidth;
 
   @override
   Widget build(BuildContext context) {
+    final tourUrl = progressTourUrl;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -525,22 +530,12 @@ class _AvanceTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           _InvestmentTimeline(phases: phases, currentIndex: currentPhaseIndex),
         ],
-        if (progressMedia.isNotEmpty) ...[
+        if (tourUrl != null && tourUrl.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
-          _GallerySectionHeader(
+          VirtualTourSection(
+            imageUrl: tourImageUrl,
+            tourUrl: tourUrl,
             label: 'AVANCE DE OBRA',
-            items: progressMedia,
-            title: 'AVANCE DE OBRA',
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _InvestmentGallery(
-            renderMedia: progressMedia.length > _kMaxVisibleGallery
-                ? progressMedia.sublist(0, _kMaxVisibleGallery)
-                : progressMedia,
-            progressMedia: const [],
-            selectedTab: 0,
-            onTabChanged: (_) {},
-            cardWidth: cardWidth,
           ),
         ],
         if (news.isNotEmpty) ...[
@@ -647,6 +642,14 @@ class _ProyectoTab extends StatelessWidget {
             ),
           ),
         ],
+        if ((virtualTourUrl ?? '').isNotEmpty &&
+            (tourImageUrl ?? '').isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xxl),
+          VirtualTourSection(
+            imageUrl: tourImageUrl!,
+            tourUrl: virtualTourUrl!,
+          ),
+        ],
         if (renderMedia.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
           _GallerySectionHeader(
@@ -663,14 +666,6 @@ class _ProyectoTab extends StatelessWidget {
             selectedTab: 0,
             onTabChanged: (_) {},
             cardWidth: cardWidth,
-          ),
-        ],
-        if ((virtualTourUrl ?? '').isNotEmpty &&
-            (tourImageUrl ?? '').isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.xxl),
-          VirtualTourSection(
-            imageUrl: tourImageUrl!,
-            tourUrl: virtualTourUrl!,
           ),
         ],
       ],
