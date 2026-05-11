@@ -205,7 +205,7 @@ class _CoinversionDetailScreenState
             controller: _outerController,
             onlyOneScrollInBody: true,
             pinnedHeaderSliverHeightBuilder: () =>
-                MediaQuery.paddingOf(context).top + kToolbarHeight + 49,
+                MediaQuery.paddingOf(context).top + kToolbarHeight + kLhotseTabBarHeight,
             headerSliverBuilder: (context, innerBoxIsScrolled) => [
               // =========================================================
               // 1. HERO — full-bleed image behind toolbar

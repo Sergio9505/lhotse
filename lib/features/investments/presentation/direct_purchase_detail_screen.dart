@@ -203,7 +203,7 @@ class _DirectPurchaseDetailContentState
           controller: _outerController,
           onlyOneScrollInBody: true,
           pinnedHeaderSliverHeightBuilder: () =>
-              MediaQuery.paddingOf(context).top + kToolbarHeight + 49,
+              MediaQuery.paddingOf(context).top + kToolbarHeight + kLhotseTabBarHeight,
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             SliverAppBar(
               pinned: true,

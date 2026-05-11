@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'lhotse_filter_tab.dart';
 
-const _kTabBarHeight = 49.0;
+/// Public so screens that compose this delegate (e.g. L3 detail screens
+/// reporting pinned-header height to `ExtendedNestedScrollView`) can stay in
+/// sync with the actual rendered height.
+const double kLhotseTabBarHeight = 49.0;
 
 /// Shared pinned tab bar delegate for investment detail screens. Renders the
 /// tabs as **content-width left-aligned** `LhotseFilterTab(fullWidth: false)`
@@ -24,9 +27,9 @@ class LhotseTabBarDelegate extends SliverPersistentHeaderDelegate {
   final List<Tab> tabs;
 
   @override
-  double get minExtent => _kTabBarHeight;
+  double get minExtent => kLhotseTabBarHeight;
   @override
-  double get maxExtent => _kTabBarHeight;
+  double get maxExtent => kLhotseTabBarHeight;
 
   @override
   Widget build(

@@ -160,7 +160,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
           controller: _outerController,
           onlyOneScrollInBody: true,
           pinnedHeaderSliverHeightBuilder: () =>
-              MediaQuery.paddingOf(context).top + kToolbarHeight + 49,
+              MediaQuery.paddingOf(context).top + kToolbarHeight + kLhotseTabBarHeight,
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             // Hero
             SliverAppBar(
