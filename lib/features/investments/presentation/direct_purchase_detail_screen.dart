@@ -396,7 +396,6 @@ class _DirectPurchaseDetailContentState
             physics: const NeverScrollableScrollPhysics(),
             children: [
               _TabScrollWrapper(
-                storageKey: 'activo',
                 bottomPadding: bottomPadding,
                 child: _AssetTab(
                   assetInfo:
@@ -409,7 +408,6 @@ class _DirectPurchaseDetailContentState
               ),
               if (c.hasFinancing)
                 _TabScrollWrapper(
-                  storageKey: 'financiacion',
                   bottomPadding: bottomPadding,
                   child: _FinancingTab(
                     cashPayment: c.cashPayment,
@@ -476,19 +474,13 @@ class _MetricColumn extends StatelessWidget {
 }
 
 class _TabScrollWrapper extends StatelessWidget {
-  const _TabScrollWrapper({
-    required this.child,
-    required this.bottomPadding,
-    required this.storageKey,
-  });
+  const _TabScrollWrapper({required this.child, required this.bottomPadding});
   final Widget child;
   final double bottomPadding;
-  final String storageKey;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      key: PageStorageKey<String>(storageKey),
       padding: EdgeInsets.only(bottom: bottomPadding + AppSpacing.lg),
       child: child,
     );
@@ -763,7 +755,6 @@ class _DocsTab extends ConsumerWidget {
         // pinned chrome anchor.
         final hasChips = filterCategories.isNotEmpty;
         return ListView.builder(
-          key: const PageStorageKey<String>('docs'),
           padding: EdgeInsets.fromLTRB(
             0,
             0,
