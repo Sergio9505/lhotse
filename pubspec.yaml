@@ -24,6 +24,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.17
   cached_network_image: ^3.4.1
+  extended_nested_scroll_view: ^6.2.1
 
   # Models
   freezed_annotation: ^3.0.0

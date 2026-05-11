@@ -1,3 +1,4 @@
+import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -200,8 +201,11 @@ class _CoinversionDetailScreenState
       value: _heroGone ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
       child: Scaffold(
           backgroundColor: AppColors.background,
-          body: NestedScrollView(
+          body: ExtendedNestedScrollView(
             controller: _outerController,
+            onlyOneScrollInBody: true,
+            pinnedHeaderSliverHeightBuilder: () =>
+                MediaQuery.paddingOf(context).top + kToolbarHeight + 49,
             headerSliverBuilder: (context, innerBoxIsScrolled) => [
               // =========================================================
               // 1. HERO — full-bleed image behind toolbar
@@ -379,6 +383,7 @@ class _CoinversionDetailScreenState
               physics: const NeverScrollableScrollPhysics(),
               children: [
                 _TabScrollWrapper(
+                  storageKey: 'avance',
                   child: _AvanceTab(
                     phases: phases,
                     currentPhaseIndex: currentPhaseIndex,
@@ -390,6 +395,7 @@ class _CoinversionDetailScreenState
                   bottomPadding: bottomPadding,
                 ),
                 _TabScrollWrapper(
+                  storageKey: 'proyecto',
                   child: _ProyectoTab(
                     assetInfo: assetInfo,
                     floorPlanUrl: assetFloorPlanUrl,
@@ -401,6 +407,7 @@ class _CoinversionDetailScreenState
                   bottomPadding: bottomPadding,
                 ),
                 _TabScrollWrapper(
+                  storageKey: 'finanzas',
                   child: _FinancieroTab(
                     economicAnalysis: economicAnalysis,
                     scenarios: scenarios,
@@ -437,14 +444,17 @@ class _TabScrollWrapper extends StatelessWidget {
   const _TabScrollWrapper({
     required this.child,
     required this.bottomPadding,
+    required this.storageKey,
   });
 
   final Widget child;
   final double bottomPadding;
+  final String storageKey;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      key: PageStorageKey<String>(storageKey),
       padding: EdgeInsets.only(bottom: bottomPadding + AppSpacing.lg),
       child: child,
     );
@@ -902,6 +912,7 @@ class _DocumentosTab extends ConsumerWidget {
         // sticky band would be Apple News territory, not Sotheby's-luxe.
         final hasChips = filterCategories.isNotEmpty;
         return ListView.builder(
+          key: const PageStorageKey<String>('docs'),
           padding: EdgeInsets.fromLTRB(
             0,
             0,

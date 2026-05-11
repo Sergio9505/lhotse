@@ -1,3 +1,4 @@
+import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -155,8 +156,11 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
       value: _heroGone ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        body: NestedScrollView(
+        body: ExtendedNestedScrollView(
           controller: _outerController,
+          onlyOneScrollInBody: true,
+          pinnedHeaderSliverHeightBuilder: () =>
+              MediaQuery.paddingOf(context).top + kToolbarHeight + 49,
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             // Hero
             SliverAppBar(
@@ -351,6 +355,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
             physics: const NeverScrollableScrollPhysics(),
             children: [
               _TabScrollWrapper(
+                storageKey: 'activo',
                 bottomPadding: bottomPadding,
                 child: _ActivoTab(
                   assetInfo: assetInfo,
@@ -379,14 +384,19 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
 // ── Tab scroll wrapper ────────────────────────────────────────────────────────
 
 class _TabScrollWrapper extends StatelessWidget {
-  const _TabScrollWrapper(
-      {required this.child, required this.bottomPadding});
+  const _TabScrollWrapper({
+    required this.child,
+    required this.bottomPadding,
+    required this.storageKey,
+  });
   final Widget child;
   final double bottomPadding;
+  final String storageKey;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      key: PageStorageKey<String>(storageKey),
       padding: EdgeInsets.only(bottom: bottomPadding + AppSpacing.lg),
       child: child,
     );
@@ -568,6 +578,7 @@ class _DocsTab extends ConsumerWidget {
 
         final hasChips = filterCategories.isNotEmpty;
         return ListView.builder(
+          key: const PageStorageKey<String>('docs'),
           padding: EdgeInsets.fromLTRB(
             0,
             0,
