@@ -1760,3 +1760,30 @@ The current implementation is the result of multiple visual reviews. Earlier exp
 - (+) UI consistency between PROYECTO and AVANCE tabs — same Matterport-like immersion.
 - (-) Historical galleries in `progress_media` are lost (DROP COLUMN). Acceptable: no productive data; seed only.
 - (-) Requires manual Panoee setup per project (capture + scene authoring). Outside this app's scope.
+
+## ADR-61: `extended_nested_scroll_view` for independent per-tab scroll in L3
+
+**Date:** 2026-05-11
+**Status:** Accepted
+
+**Context:** L3 detail screens (coinversion, direct purchase, completed) wrap a collapsing hero, a scrollable identity block and a pinned `TabBar` in `NestedScrollView`, with each tab's body inside a `TabBarView`. Stock `NestedScrollView` does not preserve a `ScrollPosition` per tab — its internal `_NestedScrollController` manages only one active `ScrollPosition`, so switching tabs transfers the outer offset to the newly active tab, producing the bug "scroll persists across tabs". Tried `SliverOverlapAbsorber`/`Injector` (broke the rich `SliverAppBar` with `expandedHeight + flexibleSpace`), `PageStorageKey` on `SingleChildScrollView` (not enough in `NestedScrollView`'s coordinator), and `AutomaticKeepAliveClientMixin` (state survives but the shared controller still wins). All failed due to the same framework limit.
+
+**Decision:** adopt the `extended_nested_scroll_view` package (https://pub.dev/packages/extended_nested_scroll_view), a maintained drop-in replacement for `NestedScrollView` purpose-built to support per-tab scroll persistence. Replace `NestedScrollView` → `ExtendedNestedScrollView` in the 3 L3 detail screens with `onlyOneScrollInBody: true` and `pinnedHeaderSliverHeightBuilder: () => MediaQuery.paddingOf(context).top + kToolbarHeight + kLhotseTabBarHeight`. Header, hero, identity, pinned tab bar and the `_outerController` + `_heroGone` / `_showCollapsedTitle` callbacks stay unchanged.
+
+**Rationale:**
+- Preserves the exact current visual / animation contract — zero design impact.
+- Drop-in API: each screen gets a 2-line addition. No restructuring of slivers, no consolidation of hero+identity (which would change the animation).
+- Package is mature (500+ likes, active maintainer, widely used).
+- Building the equivalent ourselves would mean reimplementing `NestedScrollView`'s coordinator with multi-position support — impractical.
+
+**Consequences:**
+- (+) Per-tab scroll persists correctly across tab switches in the 3 L3 screens.
+- (+) `LhotseTabScrollWrapper` (extracted to `core/widgets/`) provides a single contract for tab body Scrollables and is reusable for future tab-based detail screens.
+- (-) New runtime dependency (`extended_nested_scroll_view` + transitive `visibility_detector`). Reviewable: package is small and focused.
+- (-) Maintenance contract: if the package's API changes around `pinnedHeaderSliverHeightBuilder` or `onlyOneScrollInBody`, the 3 L3 screens must be revisited. The signal will be visual (offset on initial tab open or shared scroll regression) — covered by the manual smoke test below.
+
+**How to verify on package upgrade:**
+1. Enter each L3 (coinversion, direct purchase, completed).
+2. Scroll inside a tab, switch to another (must open at top), switch back (must restore previous offset).
+3. Section labels (e.g. "ANÁLISIS ECONÓMICO" in coinversion Finanzas) must be visible immediately on tab entry — no `pinnedHeaderSliverHeightBuilder` offset bug.
+4. Hero collapse animation and `_heroGone`/`_showCollapsedTitle` state flips must behave exactly as before.
