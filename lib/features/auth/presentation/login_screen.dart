@@ -8,6 +8,7 @@ import '../../../app/router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../data/auth_repository.dart';
+import 'otp_verify_screen.dart';
 import 'widgets/lhotse_auth_field.dart';
 import 'widgets/lhotse_submit_button.dart';
 
@@ -47,11 +48,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      await ref.read(authRepositoryProvider).signIn(
-            email: email,
-            password: password,
+      final repo = ref.read(authRepositoryProvider);
+      final response = await repo.signIn(
+        email: email,
+        password: password,
+      );
+      if (!mounted) return;
+
+      // If the account has a phone-change pending (signup never completed),
+      // resume the OTP flow instead of dropping the user at /home.
+      final user = response.user;
+      if (user != null && user.phoneConfirmedAt == null) {
+        final pending = await repo.getPendingPhone();
+        if (!mounted) return;
+        if (pending != null && pending.isNotEmpty) {
+          context.go(
+            AppRoutes.otpVerify,
+            extra: OtpVerifyArgs(
+              phone: pending,
+              purpose: OtpPurpose.signupVerification,
+              isResume: true,
+            ),
           );
-      // Router redirect handles navigation automatically
+          return;
+        }
+        // Account in limbo — sign out so /welcome takes over and surface
+        // a clear message.
+        await repo.signOut();
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          _errorMessage =
+              'Tu cuenta no se completó. Vuelve a registrarte o contacta con soporte.';
+        });
+        return;
+      }
+
+      // Fully verified — router redirect handles navigation automatically.
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {

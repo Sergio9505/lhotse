@@ -9,7 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../data/auth_repository.dart';
 import 'otp_verify_screen.dart';
-import 'widgets/lhotse_auth_field.dart';
+import 'widgets/lhotse_phone_field.dart';
 import 'widgets/lhotse_submit_button.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -21,7 +21,7 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
-  final _phoneController = TextEditingController();
+  final _phoneController = LhotsePhoneController();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -32,13 +32,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   }
 
   Future<void> _submit() async {
-    final raw = _phoneController.text.trim();
-    final phone = _normalizePhone(raw);
+    final phone = _phoneController.e164;
 
     if (phone == null) {
-      setState(
-        () => _errorMessage = 'Introduce un teléfono válido con prefijo país.',
-      );
+      setState(() => _errorMessage = 'Introduce un teléfono válido.');
       return;
     }
 
@@ -72,19 +69,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         });
       }
     }
-  }
-
-  String? _normalizePhone(String input) {
-    final cleaned = input.replaceAll(RegExp(r'[\s\-()]'), '');
-    if (cleaned.startsWith('+') &&
-        RegExp(r'^\+[1-9]\d{6,14}$').hasMatch(cleaned)) {
-      return cleaned;
-    }
-    // Default to Spain if user typed only digits
-    if (RegExp(r'^[1-9]\d{8}$').hasMatch(cleaned)) {
-      return '+34$cleaned';
-    }
-    return null;
   }
 
   String _mapAuthError(String message) {
@@ -154,21 +138,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
                     const SizedBox(height: AppSpacing.xxl),
 
-                    LhotseAuthField(
-                      label: 'Teléfono',
+                    LhotsePhoneField(
                       controller: _phoneController,
-                      keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.done,
-                      autofocus: true,
                       onSubmitted: (_) => _submit(),
-                    ),
-
-                    const SizedBox(height: 8),
-                    Text(
-                      'Formato internacional, por ejemplo +34 600 000 000.',
-                      style: AppTypography.annotation.copyWith(
-                        color: AppColors.accentMuted,
-                      ),
                     ),
 
                     const SizedBox(height: AppSpacing.xxl),

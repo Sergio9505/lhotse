@@ -1817,10 +1817,16 @@ The current implementation is the result of multiple visual reviews. Earlier exp
 **Context:** The app needs a password-recovery flow accessible from the login screen. The brief was "enter phone → receive SMS code → set a new password". We considered three SMS routes — Twilio directly via Supabase Auth, Vonage Verify, and routing through OneSignal (which can call Twilio under the hood).
 
 **Decision:**
-1. Phone is **mandatory at signup** (E.164). The user verifies the SMS OTP before reaching the app shell.
+1. **Email + password is the primary login identity.** Phone is a **mandatory second factor at signup** (E.164), verified by SMS OTP before reaching the app shell.
 2. Password recovery is **SMS-only** (no parallel email-reset flow). Phone OTP → verifyOTP creates an ephemeral session → user sets a new password → `signOut` → back to login.
 3. SMS provider is **Twilio**, integrated through Supabase Auth's native provider config (Authentication → Providers → Phone). No code path inside the app touches Twilio.
 4. `auth.users.phone` is the single source of truth; `user_profiles.phone` is a read-only mirror synced by triggers `handle_new_user` (INSERT) and `handle_user_updated` (UPDATE).
+
+**Implementation correction (2026-05-12):** an earlier draft labelled this as "phone-first signup" and passed both `email` and `phone` to `auth.signUp` in a single call. GoTrue does not support email + phone in the same `signUp` — the call failed silently and accounts could not be created. The correct pattern is **two sequential calls**: `signUp(email, password)` creates the user (session active, requires "Confirm email" OFF in Supabase Dashboard) and `attachPhone(phone)` (wraps `auth.updateUser`) attaches the phone, which makes Supabase send the SMS via Twilio automatically. Signup OTP verification uses `OtpType.phoneChange`; password recovery OTP still uses `OtpType.sms`.
+
+**Resume of unverified accounts (2026-05-12 follow-up):** the original "zombie-account guard" tried to detect `phoneConfirmedAt == null` and force `/otp-verify` from the router redirect. It does not work because the gotrue Dart SDK (^2.19.0) does not expose the `auth.users.phone_change` column — the local `User` class only has `phone` (verified) and `phoneConfirmedAt`, both of which are `null` between `signUp` and `verifyOTP`. The router redirect must also be synchronous, which rules out reading server state.
+
+The premium solution is a `SECURITY DEFINER` RPC `public.get_pending_phone()` (migration `20260512150000_get_pending_phone.sql`) that returns `auth.users.phone_change` for `auth.uid()` when `phone_confirmed_at IS NULL`. `SplashScreen` and `LoginScreen` call this RPC: if there's a pending phone, they navigate to `/otp-verify` with `isResume: true` (the screen skips the resend cooldown because the previous SMS may be stale). This works across devices (in contrast to a SharedPreferences flag, which was rejected for that reason). If session exists with `phoneConfirmedAt == null` AND no `phone_change` pending — the signup never reached `attachPhone` — Splash signs the user out so they can restart, and Login surfaces "Tu cuenta no se completó. Vuelve a registrarte o contacta con soporte." The router redirect now only routes fully-verified sessions; it does not try to interpret intermediate states.
 
 **Rationale:**
 - **Native Supabase integration**: Supabase already encapsulates OTP generation, expiry, rate-limiting, and `verifyOTP` session creation. Twilio plugs in via dashboard credentials only.
@@ -1838,7 +1844,7 @@ The current implementation is the result of multiple visual reviews. Earlier exp
 - (-) Phone capture at signup adds one field of friction — acceptable for a wealth-management product where identity verification (KYC) is expected.
 
 **Implementation pointers:**
-- Repository methods: `sendPhoneOtp`, `verifyPhoneOtp`, `updatePassword`, `resendPhoneOtp` (`lib/features/auth/data/auth_repository.dart`).
-- Screens: `forgot_password_screen.dart`, `otp_verify_screen.dart` (purpose enum), `reset_password_screen.dart`.
-- Migration: `docs/sql/migrations/20260512084756_signup_phone_sync.sql` extends `handle_new_user` and adds `handle_user_updated`.
-- Router: `_kTransientAuthRoutes` bypasses the redirect for `/otp-verify` and `/reset-password` (sessions flip mid-flow).
+- Repository methods: `signUp` (email+password only), `attachPhone`, `verifyPhoneChangeOtp` (signup 2FA), `sendPhoneOtp`, `verifyPhoneOtp` (recovery), `updatePassword`, `resendPhoneOtp` (`lib/features/auth/data/auth_repository.dart`).
+- Screens: `signup_screen.dart` (chains signUp + attachPhone), `forgot_password_screen.dart`, `otp_verify_screen.dart` (purpose enum, args nullable for guard redirects), `reset_password_screen.dart`.
+- Migration: `docs/sql/migrations/20260512084756_signup_phone_sync.sql` extends `handle_new_user` and adds `handle_user_updated` (no further migration needed for the email-primary fix).
+- Router: `redirect` includes a zombie-account guard (`phoneConfirmedAt == null → /otp-verify`) and `refreshListenable` listens to every auth event so `phone_confirmed_at` mutations trigger re-evaluation. `_kTransientAuthRoutes` bypasses the standard auth-route redirect for `/reset-password` (sessions flip mid-flow).

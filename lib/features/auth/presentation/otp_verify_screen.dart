@@ -16,16 +16,27 @@ import 'widgets/lhotse_submit_button.dart';
 enum OtpPurpose { passwordRecovery, signupVerification }
 
 class OtpVerifyArgs {
-  const OtpVerifyArgs({required this.phone, required this.purpose});
+  const OtpVerifyArgs({
+    required this.phone,
+    required this.purpose,
+    this.isResume = false,
+  });
 
   final String phone;
   final OtpPurpose purpose;
+
+  /// True when the user landed here via resume (splash detected a session
+  /// with phone_change pending, or login found one). The previous SMS may
+  /// be stale, so the screen skips the initial 30s resend cooldown.
+  final bool isResume;
 }
 
 class OtpVerifyScreen extends ConsumerStatefulWidget {
-  const OtpVerifyScreen({super.key, required this.args});
+  const OtpVerifyScreen({super.key, this.args});
 
-  final OtpVerifyArgs args;
+  /// When the router redirects an unverified-phone session here directly,
+  /// [args] is null — we derive phone from the current Supabase user.
+  final OtpVerifyArgs? args;
 
   @override
   ConsumerState<OtpVerifyScreen> createState() => _OtpVerifyScreenState();
@@ -40,10 +51,23 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
   int _secondsRemaining = _resendCooldownSeconds;
   Timer? _resendTimer;
 
+  late final OtpVerifyArgs _args;
+
   @override
   void initState() {
     super.initState();
-    _startResendCooldown();
+    _args = widget.args ??
+        OtpVerifyArgs(
+          phone: Supabase.instance.client.auth.currentUser?.phone ?? '',
+          purpose: OtpPurpose.signupVerification,
+          isResume: true,
+        );
+    if (_args.isResume) {
+      // Stale SMS — let the user resend immediately.
+      _secondsRemaining = 0;
+    } else {
+      _startResendCooldown();
+    }
   }
 
   @override
@@ -80,12 +104,15 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
     });
 
     try {
-      await ref.read(authRepositoryProvider).verifyPhoneOtp(
-            phone: widget.args.phone,
-            token: token,
-          );
+      final repo = ref.read(authRepositoryProvider);
+      switch (_args.purpose) {
+        case OtpPurpose.passwordRecovery:
+          await repo.verifyPhoneOtp(phone: _args.phone, token: token);
+        case OtpPurpose.signupVerification:
+          await repo.verifyPhoneChangeOtp(phone: _args.phone, token: token);
+      }
       if (!mounted) return;
-      switch (widget.args.purpose) {
+      switch (_args.purpose) {
         case OtpPurpose.passwordRecovery:
           context.go(AppRoutes.resetPassword);
         case OtpPurpose.signupVerification:
@@ -112,7 +139,10 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
     if (_secondsRemaining > 0) return;
     setState(() => _errorMessage = null);
     try {
-      await ref.read(authRepositoryProvider).resendPhoneOtp(widget.args.phone);
+      await ref.read(authRepositoryProvider).resendPhoneOtp(
+            _args.phone,
+            isPhoneChange: _args.purpose == OtpPurpose.signupVerification,
+          );
       _startResendCooldown();
     } on AuthException catch (e) {
       if (mounted) setState(() => _errorMessage = _mapAuthError(e.message));
@@ -141,7 +171,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final topPadding = MediaQuery.of(context).padding.top;
 
-    final title = switch (widget.args.purpose) {
+    final title = switch (_args.purpose) {
       OtpPurpose.passwordRecovery => 'VERIFICAR CÓDIGO',
       OtpPurpose.signupVerification => 'CONFIRMAR TELÉFONO',
     };
@@ -187,7 +217,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
 
                     Text(
                       'Hemos enviado un código de 6 dígitos a '
-                      '${_maskPhone(widget.args.phone)}.',
+                      '${_maskPhone(_args.phone)}.',
                       style: AppTypography.annotationParagraph.copyWith(
                         color: AppColors.accentMuted,
                       ),

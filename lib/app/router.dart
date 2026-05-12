@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/data/supabase_provider.dart';
 import '../core/domain/asset_data.dart';
@@ -121,10 +122,12 @@ const _kTransientAuthRoutes = {
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // Bridge: Riverpod StreamProvider → GoRouter refreshListenable
-  final authNotifier = ValueNotifier<AsyncValue<String?>>(const AsyncLoading());
-  ref.listen(currentUserIdProvider, (_, next) {
-    authNotifier.value = next;
+  // Bridge: Supabase auth events → GoRouter refreshListenable. We refresh on
+  // every auth event (not just userId changes) because the signup 2FA guard
+  // depends on phone_confirmed_at, which mutates without changing userId.
+  final authNotifier = ValueNotifier<int>(0);
+  ref.listen(authStateProvider, (_, next) {
+    authNotifier.value++;
   });
 
   return GoRouter(
@@ -135,22 +138,26 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Splash handles its own navigation after warm-up; skip guard.
       if (_kBootRoutes.contains(state.matchedLocation)) return null;
 
-      final authValue = authNotifier.value;
-
-      // Still loading session — don't redirect yet
-      if (authValue is AsyncLoading) return null;
-
-      final isLoggedIn = authValue.valueOrNull != null;
+      final user = Supabase.instance.client.auth.currentUser;
+      final isLoggedIn = user != null;
       final isAuthRoute = _kAuthRoutes.contains(state.matchedLocation);
       final isTransient =
           _kTransientAuthRoutes.contains(state.matchedLocation);
 
-      // Transient flow routes never trigger a redirect — the screen owns
-      // navigation (e.g. OTP verify → reset password → login).
+      // Transient routes own their navigation (OTP verify, reset password).
       if (isTransient) return null;
 
+      // Only fully verified users are bounced off auth routes. A logged-in
+      // session with phoneConfirmedAt == null is mid-signup (between the
+      // signedIn event of signUp and verifyPhoneChangeOtp); the SignUpScreen
+      // owns navigation in that window. Detection of "pending OTP at app
+      // start / re-login" is async and lives in SplashScreen and LoginScreen
+      // via the get_pending_phone() RPC — the SDK does not expose
+      // auth.users.phone_change.
+      final fullyVerified = isLoggedIn && user.phoneConfirmedAt != null;
+      if (fullyVerified && isAuthRoute) return AppRoutes.home;
+
       if (!isLoggedIn && !isAuthRoute) return AppRoutes.welcome;
-      if (isLoggedIn && isAuthRoute) return AppRoutes.home;
       return null;
     },
     routes: [
@@ -192,7 +199,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.otpVerify,
         pageBuilder: (context, state) {
-          final args = state.extra as OtpVerifyArgs;
+          // args may be null when the router redirects an unverified-phone
+          // session here directly — OtpVerifyScreen falls back to the
+          // current user's phone in that case.
+          final args = state.extra as OtpVerifyArgs?;
           return _fadePage(
             key: state.pageKey,
             child: OtpVerifyScreen(args: args),

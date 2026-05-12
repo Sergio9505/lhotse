@@ -17,6 +17,8 @@ import '../../../core/data/projects_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../investments/data/investments_provider.dart';
+import '../data/auth_repository.dart';
+import 'otp_verify_screen.dart';
 
 /// First screen after the native bootstrap (~7.35 s). Two strokes ascend
 /// simultaneously toward the summit (1.8 s); a 150 ms beat marks the outline
@@ -100,7 +102,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _runSplash() async {
-    final authed = Supabase.instance.client.auth.currentUser != null;
+    final user = Supabase.instance.client.auth.currentUser;
+    final authed = user != null;
 
     // Provider warm-up runs in parallel and never blocks the splash timing.
     unawaited(_warmUp(authed));
@@ -111,7 +114,39 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await _fadeOutCtrl.forward();
     if (!mounted) return;
 
-    context.go(authed ? AppRoutes.home : AppRoutes.welcome);
+    if (user == null) {
+      context.go(AppRoutes.welcome);
+      return;
+    }
+
+    if (user.phoneConfirmedAt != null) {
+      context.go(AppRoutes.home);
+      return;
+    }
+
+    // Logged in but phone unverified → try to resume the OTP flow via
+    // get_pending_phone() (auth.users.phone_change, not exposed by the SDK).
+    final pendingPhone =
+        await ref.read(authRepositoryProvider).getPendingPhone();
+    if (!mounted) return;
+
+    if (pendingPhone != null && pendingPhone.isNotEmpty) {
+      context.go(
+        AppRoutes.otpVerify,
+        extra: OtpVerifyArgs(
+          phone: pendingPhone,
+          purpose: OtpPurpose.signupVerification,
+          isResume: true,
+        ),
+      );
+      return;
+    }
+
+    // Session exists, no phone confirmed, no pending — attachPhone failed
+    // at some point. Treat as unauthenticated so /welcome takes over.
+    await ref.read(authRepositoryProvider).signOut();
+    if (!mounted) return;
+    context.go(AppRoutes.welcome);
   }
 
   Future<void> _warmUp(bool authed) async {

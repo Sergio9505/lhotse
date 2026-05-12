@@ -222,23 +222,43 @@ DefaultTabController(
 
 ## Auth Flow
 
-Supabase Auth via `AuthRepository` (`lib/features/auth/data/auth_repository.dart`). Email + password as primary credentials; phone (E.164) is **mandatory** at signup and used for SMS OTP — both as signup phone verification and as the password-recovery factor. SMS provider is **Twilio**, configured in Supabase dashboard (no OneSignal in this flow — see ADR-63).
+Supabase Auth via `AuthRepository` (`lib/features/auth/data/auth_repository.dart`). **Email + password is the primary login identity**; phone (E.164) is a **second factor**: SMS OTP confirms the user's mobile at signup, and is the sole recovery channel for password resets. SMS provider is **Twilio**, configured in Supabase dashboard (no OneSignal in this flow — see ADR-63). "Confirm email" must be **OFF** in Supabase Auth so the session is active right after `signUp`.
+
+### Signup flow (two-step, atomic from user's perspective)
+1. `signUp(email, password, data:{full_name})` — creates the account, session active.
+2. `attachPhone(phone)` — wraps `auth.updateUser(phone: ...)`; Supabase sends the SMS via Twilio automatically (no extra call).
+3. Screen pushes `/otp-verify` with `OtpPurpose.signupVerification`.
+4. User enters code → `verifyPhoneChangeOtp(phone, token)` (uses `OtpType.phoneChange` because the phone is being attached to an existing user). On success, `auth.users.phone_confirmed_at` fills.
+5. Navigate to `/onboarding`.
+
+**Never pass `phone` directly to `signUp`.** GoTrue does not accept email + phone in the same `signUp` call; it returns an opaque error and the user sees the generic "Error al crear la cuenta. Inténtalo de nuevo." (this was the bug fixed by reverting from the original phone-first design — see ADR-63 update).
+
+### Password recovery flow (SMS-only)
+1. `sendPhoneOtp(phone)` — `signInWithOtp`, no session yet.
+2. `/otp-verify` with `OtpPurpose.passwordRecovery`.
+3. `verifyPhoneOtp(phone, token)` (uses `OtpType.sms`) — creates a session.
+4. `/reset-password` → `updatePassword(newPassword)` → `signOut` → `/login`.
 
 ### Screens
 - `WelcomeScreen` — fullscreen video loop via `video_player` with a Ken Burns static-image fallback while the video loads (`AnimationController` 12s, scale 1.0 → 1.08, repeat). Velvet multi-stop gradient over 65% height, 44px logo, tagline 13px w400 white 75% letterSpacing 2.0, single outline CTA "INICIAR SESIÓN" (0.5px border).
 - `LoginScreen` — beige background, header + `LhotseAuthField` for email/password + forgot-password link (routes to `/forgot-password`).
-- `SignUpScreen` — name + email + **phone** + password. On submit, Supabase sends an SMS OTP; the screen pushes `/otp-verify` with `OtpPurpose.signupVerification`.
-- `ForgotPasswordScreen` — phone input. Calls `sendPhoneOtp` and routes to `/otp-verify` with `OtpPurpose.passwordRecovery`.
-- `OtpVerifyScreen` — single editorial 6-digit field (`LhotseOtpField`), 30s resend cooldown. On success: `signupVerification` → `/onboarding`; `passwordRecovery` → `/reset-password`.
+- `SignUpScreen` — name + email + phone (via `LhotsePhoneField`) + password. CTA label is **"CONTINUAR"** (the account is not complete until the SMS is verified). Sequence: `signUp(email, password, fullName)` → `attachPhone(phone)` → push `/otp-verify`.
+- `ForgotPasswordScreen` — phone input via `LhotsePhoneField`. Calls `sendPhoneOtp` and routes to `/otp-verify` with `OtpPurpose.passwordRecovery`.
+- `OtpVerifyScreen` — single editorial 6-digit field (`LhotseOtpField`), 30s resend cooldown, masked phone in the body copy. Verifies via `verifyPhoneChangeOtp` (signup) or `verifyPhoneOtp` (recovery). `args` is nullable: when the router guard redirects here, the screen falls back to `currentUser.phone`.
 - `ResetPasswordScreen` — new password + confirmation. Calls `updatePassword`, then `signOut`, then routes to `/login`.
 - `LhotseAuthField` — underline-only border (0.5px inactive → 1px focused), Campton 18px w400, caption label above (accentMuted uppercase letterSpacing 1.8), optional eye toggle (PhosphorIconsThin 20px), error text below (danger).
+- `LhotsePhoneField` — phone capture with `[🇪🇸 +34 ▾] [600 123 456]` row sharing a single underline. Country flag emoji + dial code as a tap-target that opens `showLhotseCountryPicker` (bottom sheet with searchable list from `lib/core/data/countries.dart`). Local number is auto-grouped every 3 digits via a `TextInputFormatter`. Exposes `LhotsePhoneController` with `e164` getter (returns the composed `+34600123456` string or null when local digits < 6). Default country: España (+34). Used in `SignUpScreen` and `ForgotPasswordScreen`.
 - `LhotseSubmitButton`, `LhotseOtpField` — shared auth widgets in `presentation/widgets/`.
 
 ### Phone storage
 `auth.users.phone` is the **single source of truth**. `user_profiles.phone` is a read-only mirror kept in sync by two triggers (`handle_new_user` on INSERT, `handle_user_updated` on UPDATE of `auth.users`). To change a phone number, always go through `auth.updateUser(phone: ...)` — which fires Supabase's verification SMS — never via `UPDATE user_profiles`.
 
 ### Router guard
-GoRouter `redirect` sends unauthenticated users to `/welcome` and authenticated ones away from `/welcome` / `/login` / `/signup` / `/forgot-password` toward `/home`. `_kTransientAuthRoutes` (`/otp-verify`, `/reset-password`) bypass the guard entirely — the screen owns navigation because the session state flips mid-flow (verifyOTP creates a session). Role-based guards (e.g. blocking viewers from `/investments`) use the same mechanism.
+GoRouter `redirect` sends unauthenticated users to `/welcome` and **fully verified** authenticated users (`phoneConfirmedAt != null`) away from `/welcome` / `/login` / `/signup` / `/forgot-password` toward `/home`. A session with `phoneConfirmedAt == null` is mid-signup; the redirect does **not** move the user — `SignUpScreen` owns navigation in that window. `_kTransientAuthRoutes` (`/otp-verify`, `/reset-password`) bypass the redirect because the session state flips mid-flow.
+
+**Resuming a mid-OTP signup** (force-quit, device switch, re-login of an unverified account) is handled asynchronously, not by the router redirect: `SplashScreen` and `LoginScreen` call the `get_pending_phone()` RPC and navigate to `/otp-verify` (with `OtpVerifyArgs.isResume = true`, which skips the resend cooldown) if there's a pending phone change. We can't do this from the redirect because the SDK does **not** expose `auth.users.phone_change` and the router redirect must be synchronous. See `docs/sql/migrations/20260512150000_get_pending_phone.sql` and ADR-63.
+
+The router's `refreshListenable` listens to every auth event (not just userId changes) so `signedIn` / `userUpdated` re-evaluate the redirect when the session state changes.
 
 ### Per-user cache — `currentUserIdProvider.distinct()`
 **Critical gotcha.** Riverpod's `FutureProvider`s keyed to the current user must watch `currentUserIdProvider` with `.distinct()`, not `supabaseAuthProvider.currentUser`.

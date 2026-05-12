@@ -11,6 +11,7 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../data/auth_repository.dart';
 import 'otp_verify_screen.dart';
 import 'widgets/lhotse_auth_field.dart';
+import 'widgets/lhotse_phone_field.dart';
 import 'widgets/lhotse_submit_button.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -23,7 +24,7 @@ class SignUpScreen extends ConsumerStatefulWidget {
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _phoneController = LhotsePhoneController();
   final _passwordController = TextEditingController();
 
   bool _isLoading = false;
@@ -42,12 +43,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     final fullName = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    final phone = _normalizePhone(_phoneController.text.trim());
+    final phone = _phoneController.e164;
 
     if (fullName.isEmpty ||
         email.isEmpty ||
         password.isEmpty ||
-        _phoneController.text.trim().isEmpty) {
+        _phoneController.localNumber.isEmpty) {
       setState(() => _errorMessage = 'Completa todos los campos.');
       return;
     }
@@ -56,8 +57,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       return;
     }
     if (phone == null) {
-      setState(() => _errorMessage =
-          'Introduce un teléfono válido con prefijo país.');
+      setState(() => _errorMessage = 'Introduce un teléfono válido.');
       return;
     }
     if (password.length < 8) {
@@ -74,31 +74,39 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     try {
       final repo = ref.read(authRepositoryProvider);
+
+      // 1) Create the account with email + password — primary identity.
       final response = await repo.signUp(
         email: email,
         password: password,
         fullName: fullName,
-        phone: phone,
       );
 
       if (!mounted) return;
 
-      // With phone confirmation enabled (Twilio), signUp returns no session —
-      // the user must verify the SMS code first. verifyOTP will create the
-      // session and the OTP screen will route to onboarding.
+      // Requires "Confirm email" OFF in Supabase Dashboard so we get a
+      // session immediately and can attach the phone in the next step.
       if (response.session == null) {
-        context.push(
-          AppRoutes.otpVerify,
-          extra: OtpVerifyArgs(
-            phone: phone,
-            purpose: OtpPurpose.signupVerification,
-          ),
-        );
-        // Reset loading so the screen is usable if the user comes back.
-        setState(() => _isLoading = false);
-      } else {
-        context.go(AppRoutes.onboarding);
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Confirma tu email antes de continuar.';
+        });
+        return;
       }
+
+      // 2) Attach the phone — Supabase sends the SMS OTP via Twilio.
+      await repo.attachPhone(phone);
+
+      if (!mounted) return;
+
+      context.push(
+        AppRoutes.otpVerify,
+        extra: OtpVerifyArgs(
+          phone: phone,
+          purpose: OtpPurpose.signupVerification,
+        ),
+      );
+      setState(() => _isLoading = false);
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {
@@ -121,18 +129,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     return regex.hasMatch(value);
   }
 
-  String? _normalizePhone(String input) {
-    final cleaned = input.replaceAll(RegExp(r'[\s\-()]'), '');
-    if (cleaned.startsWith('+') &&
-        RegExp(r'^\+[1-9]\d{6,14}$').hasMatch(cleaned)) {
-      return cleaned;
-    }
-    if (RegExp(r'^[1-9]\d{8}$').hasMatch(cleaned)) {
-      return '+34$cleaned';
-    }
-    return null;
-  }
-
   String _mapAuthError(String message) {
     final msg = message.toLowerCase();
     if (msg.contains('already registered') ||
@@ -151,6 +147,17 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
     if (msg.contains('rate limit') || msg.contains('too many')) {
       return 'Demasiados intentos. Espera unos minutos.';
+    }
+    if (msg.contains('email') && msg.contains('confirm')) {
+      return 'Confirma tu email antes de continuar.';
+    }
+    if (msg.contains('sms') &&
+        (msg.contains('provider') || msg.contains('disabled'))) {
+      return 'No se puede enviar el SMS. Inténtalo más tarde.';
+    }
+    if (msg.contains('phone') &&
+        (msg.contains('exists') || msg.contains('taken'))) {
+      return 'Ese teléfono ya está vinculado a otra cuenta.';
     }
     return 'Error al crear la cuenta. Inténtalo de nuevo.';
   }
@@ -219,17 +226,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
                     const SizedBox(height: AppSpacing.xl),
 
-                    LhotseAuthField(
-                      label: 'Teléfono',
+                    LhotsePhoneField(
                       controller: _phoneController,
-                      keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
                     ),
 
                     const SizedBox(height: 8),
                     Text(
-                      'Te enviaremos un SMS para verificarlo. Formato '
-                      'internacional, por ejemplo +34 600 000 000.',
+                      'Te enviaremos un SMS para verificar tu identidad.',
                       style: AppTypography.annotation.copyWith(
                         color: AppColors.accentMuted,
                       ),
@@ -275,7 +279,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     ],
 
                     LhotseSubmitButton(
-                      label: 'CREAR CUENTA',
+                      label: 'CONTINUAR',
                       isLoading: _isLoading,
                       onTap: _signUp,
                     ),
