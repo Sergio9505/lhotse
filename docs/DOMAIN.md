@@ -34,6 +34,12 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 | Investor VIP | All of Investor + Premium features | Premium tier. Additional features TBD |
 | (Admin) | — | Not in this app. Managed separately |
 
+### Identity fields
+- `full_name` — required at signup.
+- `email` — required at signup, primary credential for login.
+- `phone` — **required** at signup (E.164, e.g. `+34600000000`). Verified by SMS OTP before the account reaches the app shell. Same number is used as the recovery factor (see ADR-63 + CONVENTIONS § Auth Flow).
+- `avatar_url`, `city`, `country` — optional, edited from Profile.
+
 ## Features
 
 ### Home (Inicio)

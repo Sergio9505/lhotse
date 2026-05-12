@@ -7,7 +7,10 @@ import '../core/domain/asset_data.dart';
 import '../core/domain/brand_data.dart';
 import '../core/domain/news_item_data.dart';
 import '../core/domain/project_data.dart';
+import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/otp_verify_screen.dart';
+import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/presentation/signup_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
@@ -62,6 +65,10 @@ abstract final class AppRoutes {
   static const welcome = '/welcome';
   static const login = '/login';
   static const signup = '/signup';
+  // Recovery / phone OTP (transient — accessible mid-flow)
+  static const forgotPassword = '/forgot-password';
+  static const otpVerify = '/otp-verify';
+  static const resetPassword = '/reset-password';
   // Onboarding (post sign-up, outside shell)
   static const onboarding = '/onboarding';
   static const onboardingDone = '/onboarding/done';
@@ -94,11 +101,21 @@ const _kAuthRoutes = {
   AppRoutes.welcome,
   AppRoutes.login,
   AppRoutes.signup,
+  AppRoutes.forgotPassword,
 };
 
 /// Routes that bypass the auth redirect (splash decides destination itself).
 const _kBootRoutes = {
   AppRoutes.splash,
+};
+
+/// Transient routes inside a multi-step flow (OTP, reset password). They are
+/// accessible both unauthenticated (OTP verify) and authenticated (reset
+/// password right after verifyOTP creates a session). The screen itself
+/// decides the next destination — the router must not redirect.
+const _kTransientAuthRoutes = {
+  AppRoutes.otpVerify,
+  AppRoutes.resetPassword,
 };
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -125,6 +142,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final isLoggedIn = authValue.valueOrNull != null;
       final isAuthRoute = _kAuthRoutes.contains(state.matchedLocation);
+      final isTransient =
+          _kTransientAuthRoutes.contains(state.matchedLocation);
+
+      // Transient flow routes never trigger a redirect — the screen owns
+      // navigation (e.g. OTP verify → reset password → login).
+      if (isTransient) return null;
 
       if (!isLoggedIn && !isAuthRoute) return AppRoutes.welcome;
       if (isLoggedIn && isAuthRoute) return AppRoutes.home;
@@ -157,6 +180,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _fadePage(
           key: state.pageKey,
           child: const SignUpScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        pageBuilder: (context, state) => _fadePage(
+          key: state.pageKey,
+          child: const ForgotPasswordScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.otpVerify,
+        pageBuilder: (context, state) {
+          final args = state.extra as OtpVerifyArgs;
+          return _fadePage(
+            key: state.pageKey,
+            child: OtpVerifyScreen(args: args),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        pageBuilder: (context, state) => _fadePage(
+          key: state.pageKey,
+          child: const ResetPasswordScreen(),
         ),
       ),
       // ── Document preview (outside shell — full-screen, any feature) ──

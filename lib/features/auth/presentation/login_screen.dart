@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../app/router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../data/auth_repository.dart';
 import 'widgets/lhotse_auth_field.dart';
+import 'widgets/lhotse_submit_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -148,9 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     alignment: Alignment.centerRight,
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        // TODO: forgot password flow
-                      },
+                      onTap: () => context.push(AppRoutes.forgotPassword),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Text(
@@ -177,7 +178,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
 
                   // Submit button
-                  _SubmitButton(
+                  LhotseSubmitButton(
                     label: 'ENTRAR',
                     isLoading: _isLoading,
                     onTap: _signIn,
@@ -192,67 +193,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           SizedBox(height: bottomPadding + AppSpacing.lg),
         ],
       ),
-      ),
-    );
-  }
-}
-
-// ── Submit button ────────────────────────────────────────────────────────────
-
-class _SubmitButton extends StatefulWidget {
-  const _SubmitButton({
-    required this.label,
-    required this.isLoading,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isLoading;
-  final VoidCallback onTap;
-
-  @override
-  State<_SubmitButton> createState() => _SubmitButtonState();
-}
-
-class _SubmitButtonState extends State<_SubmitButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: widget.isLoading ? null : (_) => setState(() => _pressed = true),
-      onTapUp: widget.isLoading
-          ? null
-          : (_) {
-              setState(() => _pressed = false);
-              widget.onTap();
-            },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 120),
-        opacity: _pressed ? 0.6 : 1.0,
-        child: Container(
-          height: 52,
-          alignment: Alignment.center,
-          color: AppColors.primary,
-          child: widget.isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.5,
-                    color: Colors.white,
-                  ),
-                )
-              : Text(
-                  widget.label,
-                  style: AppTypography.labelUppercaseMd.copyWith(
-                    color: Colors.white,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-        ),
       ),
     );
   }

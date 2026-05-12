@@ -9,7 +9,9 @@ import '../../../app/router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../data/auth_repository.dart';
+import 'otp_verify_screen.dart';
 import 'widgets/lhotse_auth_field.dart';
+import 'widgets/lhotse_submit_button.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -21,6 +23,7 @@ class SignUpScreen extends ConsumerStatefulWidget {
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _isLoading = false;
@@ -30,6 +33,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -38,13 +42,22 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     final fullName = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final phone = _normalizePhone(_phoneController.text.trim());
 
-    if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
+    if (fullName.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        _phoneController.text.trim().isEmpty) {
       setState(() => _errorMessage = 'Completa todos los campos.');
       return;
     }
     if (!_isEmail(email)) {
       setState(() => _errorMessage = 'Introduce un email válido.');
+      return;
+    }
+    if (phone == null) {
+      setState(() => _errorMessage =
+          'Introduce un teléfono válido con prefijo país.');
       return;
     }
     if (password.length < 8) {
@@ -65,16 +78,27 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         email: email,
         password: password,
         fullName: fullName,
+        phone: phone,
       );
 
-      // If email confirmation is disabled, signUp returns a session directly.
-      // If enabled, session is null; fall back to signIn (email confirmation
-      // is deferred per current product decision).
-      if (response.session == null) {
-        await repo.signIn(email: email, password: password);
-      }
       if (!mounted) return;
-      context.go(AppRoutes.onboarding);
+
+      // With phone confirmation enabled (Twilio), signUp returns no session —
+      // the user must verify the SMS code first. verifyOTP will create the
+      // session and the OTP screen will route to onboarding.
+      if (response.session == null) {
+        context.push(
+          AppRoutes.otpVerify,
+          extra: OtpVerifyArgs(
+            phone: phone,
+            purpose: OtpPurpose.signupVerification,
+          ),
+        );
+        // Reset loading so the screen is usable if the user comes back.
+        setState(() => _isLoading = false);
+      } else {
+        context.go(AppRoutes.onboarding);
+      }
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {
@@ -97,12 +121,27 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     return regex.hasMatch(value);
   }
 
+  String? _normalizePhone(String input) {
+    final cleaned = input.replaceAll(RegExp(r'[\s\-()]'), '');
+    if (cleaned.startsWith('+') &&
+        RegExp(r'^\+[1-9]\d{6,14}$').hasMatch(cleaned)) {
+      return cleaned;
+    }
+    if (RegExp(r'^[1-9]\d{8}$').hasMatch(cleaned)) {
+      return '+34$cleaned';
+    }
+    return null;
+  }
+
   String _mapAuthError(String message) {
     final msg = message.toLowerCase();
     if (msg.contains('already registered') ||
         msg.contains('user already') ||
         msg.contains('already exists')) {
-      return 'Ya existe una cuenta con este email. Inicia sesión.';
+      return 'Ya existe una cuenta con estos datos. Inicia sesión.';
+    }
+    if (msg.contains('phone') && msg.contains('invalid')) {
+      return 'Introduce un teléfono válido.';
     }
     if (msg.contains('password') && msg.contains('weak')) {
       return 'La contraseña es demasiado débil.';
@@ -181,6 +220,24 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     const SizedBox(height: AppSpacing.xl),
 
                     LhotseAuthField(
+                      label: 'Teléfono',
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                    ),
+
+                    const SizedBox(height: 8),
+                    Text(
+                      'Te enviaremos un SMS para verificarlo. Formato '
+                      'internacional, por ejemplo +34 600 000 000.',
+                      style: AppTypography.annotation.copyWith(
+                        color: AppColors.accentMuted,
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.xl),
+
+                    LhotseAuthField(
                       label: 'Contraseña',
                       controller: _passwordController,
                       obscureText: true,
@@ -217,7 +274,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       const SizedBox(height: AppSpacing.md),
                     ],
 
-                    _SubmitButton(
+                    LhotseSubmitButton(
                       label: 'CREAR CUENTA',
                       isLoading: _isLoading,
                       onTap: _signUp,
@@ -290,64 +347,3 @@ class _Tap extends TapGestureRecognizer {
   }
 }
 
-// ── Submit button (mirrors LoginScreen for visual coherence) ──────────────────
-
-class _SubmitButton extends StatefulWidget {
-  const _SubmitButton({
-    required this.label,
-    required this.isLoading,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isLoading;
-  final VoidCallback onTap;
-
-  @override
-  State<_SubmitButton> createState() => _SubmitButtonState();
-}
-
-class _SubmitButtonState extends State<_SubmitButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown:
-          widget.isLoading ? null : (_) => setState(() => _pressed = true),
-      onTapUp: widget.isLoading
-          ? null
-          : (_) {
-              setState(() => _pressed = false);
-              widget.onTap();
-            },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 120),
-        opacity: _pressed ? 0.6 : 1.0,
-        child: Container(
-          height: 52,
-          alignment: Alignment.center,
-          color: AppColors.primary,
-          child: widget.isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.5,
-                    color: Colors.white,
-                  ),
-                )
-              : Text(
-                  widget.label,
-                  style: AppTypography.labelUppercaseMd.copyWith(
-                    color: Colors.white,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-}

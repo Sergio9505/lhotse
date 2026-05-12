@@ -1808,3 +1808,37 @@ The current implementation is the result of multiple visual reviews. Earlier exp
 - (+) Bandwidth/battery: video only downloads when explicitly requested.
 - (-) Loses the "inline liveness" of the project hero — defensible since news is informational, not aesthetic loop.
 - Project hero stays as-is (autoplay muted): asset videos are visual loops where the absence of audio is fine (Zara / Nike-SNKRS pattern). Asymmetry intentional and justified by content type.
+
+## ADR-63: Phone OTP for signup + password recovery — Twilio direct, not OneSignal
+
+**Date:** 2026-05-12
+**Status:** Accepted
+
+**Context:** The app needs a password-recovery flow accessible from the login screen. The brief was "enter phone → receive SMS code → set a new password". We considered three SMS routes — Twilio directly via Supabase Auth, Vonage Verify, and routing through OneSignal (which can call Twilio under the hood).
+
+**Decision:**
+1. Phone is **mandatory at signup** (E.164). The user verifies the SMS OTP before reaching the app shell.
+2. Password recovery is **SMS-only** (no parallel email-reset flow). Phone OTP → verifyOTP creates an ephemeral session → user sets a new password → `signOut` → back to login.
+3. SMS provider is **Twilio**, integrated through Supabase Auth's native provider config (Authentication → Providers → Phone). No code path inside the app touches Twilio.
+4. `auth.users.phone` is the single source of truth; `user_profiles.phone` is a read-only mirror synced by triggers `handle_new_user` (INSERT) and `handle_user_updated` (UPDATE).
+
+**Rationale:**
+- **Native Supabase integration**: Supabase already encapsulates OTP generation, expiry, rate-limiting, and `verifyOTP` session creation. Twilio plugs in via dashboard credentials only.
+- **OneSignal rejected for auth OTP**: OneSignal targets marketing/journeys (push + SMS campaigns). Using it as a relay would require generating + verifying OTPs ourselves, plumbing the Supabase "Send SMS Hook", and paying the same Twilio SMS cost plus OneSignal overhead. Zero benefit for this flow. OneSignal remains a candidate for **non-auth transactional/marketing SMS** later.
+- **Vonage Verify** is cheaper at mid volume but offers smaller trial credit and identical Supabase integration; portable later by swapping dashboard credentials — zero Flutter changes.
+- **Mandatory phone over optional**: an opt-in phone field at signup splits the user base into "can recover" and "can't", forcing a second recovery channel and a "bind your phone" flow for legacy users. Cleaner to gate signup behind phone verification once.
+- **SMS-only recovery (no email reset)**: a single canonical recovery path avoids users trying both channels and hitting confusing "which session is active" issues. Email reset can be added later if support volume justifies it.
+
+**Consequences:**
+- (+) One auth surface to reason about: every active user can recover via SMS.
+- (+) Trial Twilio credit (~$15) covers all of development + QA.
+- (+) Migrating to Vonage/Plivo later is a dashboard swap.
+- (-) International rollouts pay Twilio's per-SMS price in each country; mid-volume costs are tracked separately.
+- (-) Users without a working phone temporarily can't recover access — accepted: this is the same constraint as a bank app.
+- (-) Phone capture at signup adds one field of friction — acceptable for a wealth-management product where identity verification (KYC) is expected.
+
+**Implementation pointers:**
+- Repository methods: `sendPhoneOtp`, `verifyPhoneOtp`, `updatePassword`, `resendPhoneOtp` (`lib/features/auth/data/auth_repository.dart`).
+- Screens: `forgot_password_screen.dart`, `otp_verify_screen.dart` (purpose enum), `reset_password_screen.dart`.
+- Migration: `docs/sql/migrations/20260512084756_signup_phone_sync.sql` extends `handle_new_user` and adds `handle_user_updated`.
+- Router: `_kTransientAuthRoutes` bypasses the redirect for `/otp-verify` and `/reset-password` (sessions flip mid-flow).

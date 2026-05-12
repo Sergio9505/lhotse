@@ -222,15 +222,23 @@ DefaultTabController(
 
 ## Auth Flow
 
-Supabase Auth via `AuthRepository` (`lib/features/auth/data/auth_repository.dart`). No public registration — only admins create accounts through the Supabase dashboard.
+Supabase Auth via `AuthRepository` (`lib/features/auth/data/auth_repository.dart`). Email + password as primary credentials; phone (E.164) is **mandatory** at signup and used for SMS OTP — both as signup phone verification and as the password-recovery factor. SMS provider is **Twilio**, configured in Supabase dashboard (no OneSignal in this flow — see ADR-63).
 
 ### Screens
 - `WelcomeScreen` — fullscreen video loop via `video_player` with a Ken Burns static-image fallback while the video loads (`AnimationController` 12s, scale 1.0 → 1.08, repeat). Velvet multi-stop gradient over 65% height, 44px logo, tagline 13px w400 white 75% letterSpacing 2.0, single outline CTA "INICIAR SESIÓN" (0.5px border).
-- `LoginScreen` — beige background, header + `LhotseAuthField` for email/password + forgot-password link.
+- `LoginScreen` — beige background, header + `LhotseAuthField` for email/password + forgot-password link (routes to `/forgot-password`).
+- `SignUpScreen` — name + email + **phone** + password. On submit, Supabase sends an SMS OTP; the screen pushes `/otp-verify` with `OtpPurpose.signupVerification`.
+- `ForgotPasswordScreen` — phone input. Calls `sendPhoneOtp` and routes to `/otp-verify` with `OtpPurpose.passwordRecovery`.
+- `OtpVerifyScreen` — single editorial 6-digit field (`LhotseOtpField`), 30s resend cooldown. On success: `signupVerification` → `/onboarding`; `passwordRecovery` → `/reset-password`.
+- `ResetPasswordScreen` — new password + confirmation. Calls `updatePassword`, then `signOut`, then routes to `/login`.
 - `LhotseAuthField` — underline-only border (0.5px inactive → 1px focused), Campton 18px w400, caption label above (accentMuted uppercase letterSpacing 1.8), optional eye toggle (PhosphorIconsThin 20px), error text below (danger).
+- `LhotseSubmitButton`, `LhotseOtpField` — shared auth widgets in `presentation/widgets/`.
+
+### Phone storage
+`auth.users.phone` is the **single source of truth**. `user_profiles.phone` is a read-only mirror kept in sync by two triggers (`handle_new_user` on INSERT, `handle_user_updated` on UPDATE of `auth.users`). To change a phone number, always go through `auth.updateUser(phone: ...)` — which fires Supabase's verification SMS — never via `UPDATE user_profiles`.
 
 ### Router guard
-GoRouter `redirect` sends unauthenticated users to `/welcome` and authenticated ones away from `/welcome` / `/login` toward `/home`. Role-based guards (e.g. blocking viewers from `/investments`) use the same mechanism.
+GoRouter `redirect` sends unauthenticated users to `/welcome` and authenticated ones away from `/welcome` / `/login` / `/signup` / `/forgot-password` toward `/home`. `_kTransientAuthRoutes` (`/otp-verify`, `/reset-password`) bypass the guard entirely — the screen owns navigation because the session state flips mid-flow (verifyOTP creates a session). Role-based guards (e.g. blocking viewers from `/investments`) use the same mechanism.
 
 ### Per-user cache — `currentUserIdProvider.distinct()`
 **Critical gotcha.** Riverpod's `FutureProvider`s keyed to the current user must watch `currentUserIdProvider` with `.distinct()`, not `supabaseAuthProvider.currentUser`.
