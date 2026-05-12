@@ -51,13 +51,13 @@ class _OnboardingDoneScreenState extends State<OnboardingDoneScreen> {
   Widget build(BuildContext context) {
     final firstName = _firstName;
     final greeting =
-        firstName.isNotEmpty ? 'Bienvenido, $firstName.' : 'Bienvenido.';
+        firstName.isNotEmpty ? 'Bienvenido,\n$firstName.' : 'Bienvenido.';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: AppColors.primary,
-        body: Center(
+        body: SafeArea(
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 700),
             opacity: _visible && !_fadingOut ? 1.0 : 0.0,
@@ -68,24 +68,20 @@ class _OnboardingDoneScreenState extends State<OnboardingDoneScreen> {
               }
             },
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _BrandLockup(),
-                const SizedBox(height: AppSpacing.xl),
-                Container(
-                  width: 40,
-                  height: 0.5,
-                  color: Colors.white.withValues(alpha: 0.6),
-                ),
-                const SizedBox(height: AppSpacing.xl),
+                const Spacer(flex: 2),
+                const _BrandLockup(),
+                const SizedBox(height: 96),
                 Text(
                   greeting,
-                  style: AppTypography.annotation.copyWith(
-                    color: Colors.white.withValues(alpha: 0.55),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.editorialTitle.copyWith(
+                    color: Colors.white,
                     fontStyle: FontStyle.italic,
-                    letterSpacing: 0.4,
                   ),
                 ),
+                const Spacer(flex: 3),
               ],
             ),
           ),
@@ -95,39 +91,35 @@ class _OnboardingDoneScreenState extends State<OnboardingDoneScreen> {
   }
 }
 
-// ── Logo + wordmark lockup ──────────────────────────────────────────────────
+// ── Brand stamp ─────────────────────────────────────────────────────────────
 //
-// Mirrors the welcome_screen lockup but scaled up for hero presence.
-// Logo height 72 + wordmark 28pt w600 ls 2.0 — same proportional ratio
-// (3:1 height-to-fontSize) as welcome_screen's 48 / 24 pairing.
+// Discreet stamp at the top of the screen: the greeting is the hero, the
+// brand provides context. Logo 32 + wordmark in wordmarkByline (10pt ls 1.5)
+// — same lockup grammar as login/search wordmark rows.
 
 class _BrandLockup extends StatelessWidget {
   const _BrandLockup();
 
   @override
   Widget build(BuildContext context) {
-    const wordmarkStyle = TextStyle(
-      fontFamily: AppTypography.fontFamily,
-      fontSize: 28,
-      fontWeight: FontWeight.w600,
+    final wordmarkStyle = AppTypography.wordmarkByline.copyWith(
       color: Colors.white,
-      letterSpacing: 2.0,
       height: 1.0,
     );
     const strut = StrutStyle(
-      fontSize: 28,
+      fontSize: 10,
       height: 1.0,
       forceStrutHeight: true,
     );
 
     return SizedBox(
-      height: 72,
+      height: 32,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const LhotseMark(color: Colors.white, height: 72),
-          const SizedBox(width: 16),
+          const LhotseMark(color: Colors.white, height: 32),
+          const SizedBox(width: 10),
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
