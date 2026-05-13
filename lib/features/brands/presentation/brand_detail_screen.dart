@@ -195,6 +195,7 @@ class _BrandLogo extends StatelessWidget {
         brand: brand,
         size: BrandWordmarkSize.lg,
         preferDetail: true,
+        alignment: Alignment.centerLeft,
       );
 }
 

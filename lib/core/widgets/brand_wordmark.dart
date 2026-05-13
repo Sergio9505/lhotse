@@ -6,10 +6,15 @@ import '../theme/app_theme.dart';
 
 enum BrandWordmarkSize { xs, sm, md, lg }
 
-/// Renders a brand wordmark from `brand.logoAsset` (SVG) at a canonical
-/// optical height. Width is intentionally left free so the unified viewBox
-/// ratio determines it via `BoxFit.contain`. When the chosen asset is null,
-/// renders `fallback` if provided, otherwise the brand name uppercase.
+/// Renders a brand wordmark from `brand.logoAsset` (SVG).
+///
+/// For `xs` / `sm` the widget sizes to the SVG's intrinsic width at the
+/// canonical height — the parent context (filter row slot, grid card) provides
+/// its own uniform bounding box.
+///
+/// For `md` / `lg` (detail screens) the widget renders inside a fixed-size
+/// container with `BoxFit.contain`, so every brand shares the same bounding
+/// box regardless of intrinsic aspect ratio.
 ///
 /// `preferDetail: true` reads `logoAssetDetail` (tight-cropped variant) with
 /// transparent fallback to `logoAsset` when the detail variant isn't uploaded.
@@ -21,6 +26,7 @@ class BrandWordmark extends StatelessWidget {
     this.color,
     this.fallback,
     this.preferDetail = false,
+    this.alignment = Alignment.center,
   });
 
   final BrandData brand;
@@ -28,12 +34,20 @@ class BrandWordmark extends StatelessWidget {
   final Color? color;
   final Widget? fallback;
   final bool preferDetail;
+  final AlignmentGeometry alignment;
 
   double get _height => switch (size) {
         BrandWordmarkSize.xs => 24,
-        BrandWordmarkSize.sm => 32,
-        BrandWordmarkSize.md => 40,
-        BrandWordmarkSize.lg => 64,
+        BrandWordmarkSize.sm => 36,
+        BrandWordmarkSize.md => 28,
+        BrandWordmarkSize.lg => 48,
+      };
+
+  Size? get _containerSize => switch (size) {
+        BrandWordmarkSize.xs => null,
+        BrandWordmarkSize.sm => null,
+        BrandWordmarkSize.md => const Size(140, 28),
+        BrandWordmarkSize.lg => const Size(240, 56),
       };
 
   @override
@@ -52,17 +66,39 @@ class BrandWordmark extends StatelessWidget {
     }
 
     final filter = ColorFilter.mode(tint, BlendMode.srcIn);
-    return SizedBox(
-      height: _height,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: SizedBox(
-          height: _height,
-          child: logo.startsWith('http')
-              ? SvgPicture.network(logo, fit: BoxFit.contain, colorFilter: filter)
-              : SvgPicture.asset(logo, fit: BoxFit.contain, colorFilter: filter),
-        ),
-      ),
+    final container = _containerSize;
+
+    if (container == null) {
+      return logo.startsWith('http')
+          ? SvgPicture.network(
+              logo,
+              height: _height,
+              fit: BoxFit.contain,
+              colorFilter: filter,
+            )
+          : SvgPicture.asset(
+              logo,
+              height: _height,
+              fit: BoxFit.contain,
+              colorFilter: filter,
+            );
+    }
+
+    return SizedBox.fromSize(
+      size: container,
+      child: logo.startsWith('http')
+          ? SvgPicture.network(
+              logo,
+              fit: BoxFit.contain,
+              alignment: alignment,
+              colorFilter: filter,
+            )
+          : SvgPicture.asset(
+              logo,
+              fit: BoxFit.contain,
+              alignment: alignment,
+              colorFilter: filter,
+            ),
     );
   }
 }
