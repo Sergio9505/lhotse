@@ -532,6 +532,7 @@ class _AvanceTab extends StatelessWidget {
             imageUrl: tourImageUrl,
             tourUrl: tourUrl,
             label: 'AVANCE DE OBRA',
+            actionLabel: 'ESTADO ACTUAL',
           ),
         ],
         if (news.isNotEmpty) ...[

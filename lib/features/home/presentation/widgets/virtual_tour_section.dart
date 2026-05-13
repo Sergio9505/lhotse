@@ -12,11 +12,13 @@ class VirtualTourSection extends StatelessWidget {
     required this.imageUrl,
     required this.tourUrl,
     this.label = 'TOUR VIRTUAL',
+    this.actionLabel = 'INICIAR TOUR',
   });
 
   final String imageUrl;
   final String tourUrl;
   final String label;
+  final String actionLabel;
 
   void _open(BuildContext context) {
     Navigator.of(context, rootNavigator: true).push(
@@ -58,7 +60,7 @@ class VirtualTourSection extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          'INICIAR TOUR',
+                          actionLabel,
                           style: AppTypography.labelUppercaseMd.copyWith(
                             color: AppColors.textOnDark,
                           ),
