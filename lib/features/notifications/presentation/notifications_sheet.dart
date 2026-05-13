@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/domain/app_notification.dart';
+import '../../../core/notifications/onesignal_service.dart';
+import '../../../core/notifications/push_permission_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../core/widgets/lhotse_notification_badge.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 import '../data/notifications_provider.dart';
+import 'push_soft_ask_sheet.dart';
 
 String _relativeTime(DateTime date, DateTime now) {
   final diff = now.difference(date);
@@ -31,12 +35,64 @@ void showNotificationsSheet(BuildContext context) {
   );
 }
 
-class _NotificationsSheetContent extends ConsumerWidget {
+class _NotificationsSheetContent extends ConsumerStatefulWidget {
   const _NotificationsSheetContent();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_NotificationsSheetContent> createState() =>
+      _NotificationsSheetContentState();
+}
+
+class _NotificationsSheetContentState
+    extends ConsumerState<_NotificationsSheetContent> {
+  bool _deniedBannerVisible = false;
+  bool _notDeterminedBannerDismissedThisSession = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapPermission());
+  }
+
+  Future<void> _bootstrapPermission() async {
+    final shouldShowDenied = await OneSignalService.shouldShowDeniedBanner();
+    if (mounted) {
+      setState(() => _deniedBannerVisible = shouldShowDenied);
+    }
+    if (await OneSignalService.canShowSoftAsk()) {
+      if (!mounted) return;
+      await showPushSoftAsk(context);
+    }
+  }
+
+  Future<void> _handleDeniedTap() async {
+    await OneSignalService.openSystemPushSettings();
+  }
+
+  Future<void> _handleDeniedDismiss() async {
+    await OneSignalService.markDeniedBannerDismissed();
+    if (!mounted) return;
+    setState(() => _deniedBannerVisible = false);
+  }
+
+  Future<void> _handleNotDeterminedTap() async {
+    final canShow = await OneSignalService.canShowSoftAsk();
+    if (!mounted) return;
+    if (canShow) {
+      await showPushSoftAsk(context);
+    } else {
+      await OneSignalService.openSystemPushSettings();
+    }
+  }
+
+  void _handleNotDeterminedDismiss() {
+    setState(() => _notDeterminedBannerDismissedThisSession = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notifAsync = ref.watch(notificationsProvider);
+    final permission = ref.watch(pushPermissionProvider);
     final notifications = notifAsync.value ?? const [];
     final now = DateTime.now();
     final weekAgo = now.subtract(const Duration(days: 7));
@@ -138,6 +194,15 @@ class _NotificationsSheetContent extends ConsumerWidget {
           Container(
             height: 0.5,
             color: AppColors.textPrimary.withValues(alpha: 0.08),
+          ),
+          _PermissionBanner(
+            permission: permission,
+            deniedVisible: _deniedBannerVisible,
+            notDeterminedDismissed: _notDeterminedBannerDismissedThisSession,
+            onTapDenied: _handleDeniedTap,
+            onDismissDenied: _handleDeniedDismiss,
+            onTapNotDetermined: _handleNotDeterminedTap,
+            onDismissNotDetermined: _handleNotDeterminedDismiss,
           ),
           Expanded(
             child: notifAsync.when(
@@ -318,4 +383,106 @@ class _NotificationRowState extends State<_NotificationRow> {
         NotificationType.news => PhosphorIconsThin.newspaper,
         NotificationType.document => PhosphorIconsThin.fileText,
       };
+}
+
+/// Discreet row above the notifications list. Visible only when the OS
+/// permission state warrants it. Dismissable; never blocking.
+class _PermissionBanner extends StatelessWidget {
+  const _PermissionBanner({
+    required this.permission,
+    required this.deniedVisible,
+    required this.notDeterminedDismissed,
+    required this.onTapDenied,
+    required this.onDismissDenied,
+    required this.onTapNotDetermined,
+    required this.onDismissNotDetermined,
+  });
+
+  final OSNotificationPermission permission;
+  final bool deniedVisible;
+  final bool notDeterminedDismissed;
+  final VoidCallback onTapDenied;
+  final VoidCallback onDismissDenied;
+  final VoidCallback onTapNotDetermined;
+  final VoidCallback onDismissNotDetermined;
+
+  @override
+  Widget build(BuildContext context) {
+    if (permission == OSNotificationPermission.denied && deniedVisible) {
+      return _BannerRow(
+        text: 'Notificaciones en pausa · Active en Ajustes →',
+        onTap: onTapDenied,
+        onDismiss: onDismissDenied,
+      );
+    }
+    if (permission == OSNotificationPermission.notDetermined &&
+        !notDeterminedDismissed &&
+        !OneSignalService.softAskShownThisSession) {
+      // Only shows up after the cap is hit (the soft-ask already auto-fires
+      // on open). Acts as the passive re-entry point.
+      return _BannerRow(
+        text: 'Active las notificaciones →',
+        onTap: onTapNotDetermined,
+        onDismiss: onDismissNotDetermined,
+      );
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+class _BannerRow extends StatelessWidget {
+  const _BannerRow({
+    required this.text,
+    required this.onTap,
+    required this.onDismiss,
+  });
+
+  final String text;
+  final VoidCallback onTap;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.textPrimary.withValues(alpha: 0.04),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm + 2,
+                ),
+                child: Text(
+                  text,
+                  style: AppTypography.labelUppercaseSm.copyWith(
+                    color: AppColors.textPrimary,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: onDismiss,
+            behavior: HitTestBehavior.opaque,
+            child: const SizedBox(
+              width: 44,
+              height: 32,
+              child: Center(
+                child: PhosphorIcon(
+                  PhosphorIconsThin.x,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -1848,3 +1848,41 @@ The premium solution is a `SECURITY DEFINER` RPC `public.get_pending_phone()` (m
 - Screens: `signup_screen.dart` (chains signUp + attachPhone), `forgot_password_screen.dart`, `otp_verify_screen.dart` (purpose enum, args nullable for guard redirects), `reset_password_screen.dart`.
 - Migration: `docs/sql/migrations/20260512084756_signup_phone_sync.sql` extends `handle_new_user` and adds `handle_user_updated` (no further migration needed for the email-primary fix).
 - Router: `redirect` includes a zombie-account guard (`phoneConfirmedAt == null → /otp-verify`) and `refreshListenable` listens to every auth event so `phone_confirmed_at` mutations trigger re-evaluation. `_kTransientAuthRoutes` bypasses the standard auth-route redirect for `/reset-password` (sessions flip mid-flow).
+
+---
+
+## ADR-64: Push permission UX — custom soft-ask with persistent cap, denied banner with cooldown
+
+**Date:** 2026-05-13
+**Status:** Accepted
+
+**Context:** The first iteration of push notifications called `OneSignal.Notifications.requestPermission(true)` directly inside `onboarding_done_screen.dart` via a 1.5s timer. Two problems with that approach: (1) the OS dialog appeared without context, increasing the chance of a `Don't Allow` tap that locks the permission as `denied` permanently in iOS; (2) users who reached the app via login (not signup) never saw the request at all, leaving them at `notDetermined` forever and triggering the OneSignal error `"All included players are not subscribed"` for any broadcast targeted at them.
+
+**Decision:**
+1. **Custom Flutter bottom sheet** (`PushSoftAskSheet`) — not `UIAlertController` / `CupertinoAlertDialog` / `AlertDialog`. Apple HIG explicitly recommends against alert-style pre-permission UI. The custom container also lets us apply the Campton / ivory / hairline-border design language and the formal "usted" voice from `docs/VOICE.md`.
+2. **`OneSignal.Notifications.requestPermission(true)` fires only when the user taps "Activar"** in our custom sheet. If the user taps "Más tarde" the OS dialog never fires, preserving `notDetermined` and the future ability to re-ask via our own UI.
+3. **Lifetime cap of 2 soft-ask shows per device**, persisted via `shared_preferences` (`push_soft_ask_count`). After the cap, no more custom prompts; users can still enable from the system Settings or via the passive banner in the notifications feed.
+4. **Triggers**: (a) `onboarding_done_screen.dart` — explicit `Continuar` CTA replaces the previous timer-fire fade-out (anti-ambush). (b) `notifications_sheet.dart` — auto-triggers on open when `notDetermined` and cap allows.
+5. **`denied` recovery** — discreet dismissable banner in the feed: "Notificaciones en pausa · Active en Ajustes →" → opens iOS/Android settings via `OneSignal.Notifications.requestPermission(true)` (the SDK's `fallbackToSettings=true` path). Dismiss persists a 7-day cooldown timestamp (`push_denied_banner_dismissed_at`).
+6. **`pushPermissionProvider`** (StateProvider) synced by `OneSignal.Notifications.addPermissionObserver` — when the user returns from Settings with push enabled, the banner disappears without a manual reload.
+
+**Rationale:**
+- **App Store §4.5.4** — "explicit consent via UI language in your app… explain the purpose before requesting permission". The soft-ask IS that language; the system dialog runs only once, at the user's tap.
+- **App Store §5.1.1(iv)** — anti dark-pattern. Symmetric CTAs (equal weight, equal hit area), informative non-FOMO copy ("Estaremos en contacto." / "Le avisaremos cuando haya movimiento en sus inversiones…"), hard cap of 2, dismissable banner with cooldown — all neutralise the only review-time grey zone (perception of "spam of prompts").
+- **Material 3 rationale UI** — same doctrine applies for Android 13+ `POST_NOTIFICATIONS`. The same Dart code path is OS-agnostic via `onesignal_flutter` 5.x.
+- **Persistent cap rather than session-only** — without it, a user who taps "Más tarde" once would see the soft-ask on every cold launch indefinitely. That would cross the line from "contextual re-ask" to "nag" in a reviewer's eyes.
+- **Custom container instead of native dialog** — Stripe, Revolut, Coinbase, Cash App, JPM Mobile, Robinhood, Notion all use custom UI for this. Native dialogs are commodity; an editorial wealth product cannot afford to fall back to them at the most important moment of permission ergonomics.
+
+**Consequences:**
+- (+) Users who tap "Más tarde" once still have a path to opt in later (banner) without us burning the OS-level permission slot.
+- (+) Users who never went through onboarding (account predates the OneSignal integration) get the soft-ask on their first feed open.
+- (+) Review defensibility — every safeguard traces to a written guideline, captured here.
+- (-) Adds `shared_preferences` as a dependency (small, official, standard).
+- (-) Logic now spans `OneSignalService` + the soft-ask sheet + the feed banner — more surface than a single `requestPermission` call but each piece is local and obvious.
+
+**Implementation pointers:**
+- `lib/core/notifications/push_permission_provider.dart` — Riverpod state mirror.
+- `lib/core/notifications/onesignal_service.dart` — observer wiring + persistence helpers (`softAskCount`, `incrementSoftAskCount`, `canShowSoftAsk`, `deniedBannerDismissedAt`, `markDeniedBannerDismissed`, `shouldShowDeniedBanner`, `openSystemPushSettings`).
+- `lib/features/notifications/presentation/push_soft_ask_sheet.dart` — custom bottom sheet, symmetric CTAs.
+- `lib/features/onboarding/presentation/onboarding_done_screen.dart` — `Continuar` CTA gates the soft-ask + navigates to home.
+- `lib/features/notifications/presentation/notifications_sheet.dart` — auto-trigger on open + `_PermissionBanner` for the `denied` / `notDetermined` cap-agotado states.

@@ -9,7 +9,20 @@ import '../../../app/router.dart';
 import '../../../core/notifications/onesignal_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_mark.dart';
+import '../../notifications/presentation/push_soft_ask_sheet.dart';
 
+/// Final screen of the onboarding flow.
+///
+/// Shows a welcoming greeting with an explicit "Continuar" CTA — no
+/// auto-fire timer for the push permission. When the user taps Continuar
+/// we show the custom soft-ask sheet (only if `notDetermined` and the
+/// lifetime cap allows it); after the sheet closes — accepted or not —
+/// we fade out and navigate to home.
+///
+/// Premium rationale: the previous version dispatched
+/// `requestPermission()` directly via a 1.5s timer, which (a) fired the
+/// OS dialog without context (anti-Apple HIG) and (b) felt like an
+/// ambush. The explicit CTA flips control back to the user.
 class OnboardingDoneScreen extends StatefulWidget {
   const OnboardingDoneScreen({super.key});
 
@@ -20,7 +33,8 @@ class OnboardingDoneScreen extends StatefulWidget {
 class _OnboardingDoneScreenState extends State<OnboardingDoneScreen> {
   bool _visible = false;
   bool _fadingOut = false;
-  final List<Timer> _timers = [];
+  bool _handling = false;
+  Timer? _fadeInTimer;
 
   String get _firstName {
     final fullName = Supabase.instance.client.auth.currentUser
@@ -32,26 +46,28 @@ class _OnboardingDoneScreenState extends State<OnboardingDoneScreen> {
   @override
   void initState() {
     super.initState();
-    _timers.add(Timer(const Duration(milliseconds: 300), () {
+    _fadeInTimer = Timer(const Duration(milliseconds: 300), () {
       if (mounted) setState(() => _visible = true);
-    }));
-    // Ask for iOS push permission after the user has seen the welcome.
-    // The native dialog is non-blocking — if rejected, the fade-out still
-    // routes to home on schedule.
-    _timers.add(Timer(const Duration(milliseconds: 1500), () {
-      OneSignalService.requestPermission();
-    }));
-    _timers.add(Timer(const Duration(milliseconds: 3400), () {
-      if (mounted) setState(() => _fadingOut = true);
-    }));
+    });
   }
 
   @override
   void dispose() {
-    for (final t in _timers) {
-      t.cancel();
-    }
+    _fadeInTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _onContinue() async {
+    if (_handling) return;
+    setState(() => _handling = true);
+
+    if (await OneSignalService.canShowSoftAsk()) {
+      if (!mounted) return;
+      await showPushSoftAsk(context);
+    }
+
+    if (!mounted) return;
+    setState(() => _fadingOut = true);
   }
 
   @override
@@ -80,17 +96,69 @@ class _OnboardingDoneScreenState extends State<OnboardingDoneScreen> {
                 const Spacer(flex: 2),
                 const _BrandLockup(),
                 const SizedBox(height: 96),
-                Text(
-                  greeting,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.editorialTitle.copyWith(
-                    color: Colors.white,
-                    fontStyle: FontStyle.italic,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
+                  child: Text(
+                    greeting,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.editorialTitle.copyWith(
+                      color: Colors.white,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
                 const Spacer(flex: 3),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.xl,
+                  ),
+                  child: _ContinueCta(
+                    enabled: !_handling,
+                    onTap: _onContinue,
+                  ),
+                ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ContinueCta extends StatelessWidget {
+  const _ContinueCta({required this.onTap, this.enabled = true});
+
+  final VoidCallback onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: double.infinity,
+        height: 52,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: enabled ? 0.45 : 0.15),
+            width: 0.6,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          'Continuar',
+          style: AppTypography.bodyEmphasis.copyWith(
+            color: Colors.white.withValues(alpha: enabled ? 1 : 0.4),
+            letterSpacing: 0.5,
           ),
         ),
       ),
