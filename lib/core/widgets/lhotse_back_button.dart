@@ -4,6 +4,21 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../theme/app_colors.dart';
 
+/// Pop the current route, or fall back to Inicio when the stack is empty.
+///
+/// Use this from any "back" UI that may be reached as the very first route
+/// of the app (cold-start deep-link, race conditions, hot reload with empty
+/// stack, etc.). Detail screens that pass a custom `onTap` to
+/// [LhotseBackButton] should delegate to this helper instead of
+/// `context.pop()` directly.
+void popOrGoHome(BuildContext context) {
+  if (context.canPop()) {
+    context.pop();
+  } else {
+    context.go('/');
+  }
+}
+
 /// Back button with two variants:
 /// - [LhotseBackButton.overImage] — bare arrow over a hero, colour driven by
 ///   `useLightOverlay` (same flag as the Lhotse wordmark on Home). No frosted
@@ -22,7 +37,8 @@ class LhotseBackButton extends StatefulWidget {
   })  : _variant = _Variant.onSurface,
         useLightOverlay = true;
 
-  /// Custom tap handler. Defaults to `context.pop()`.
+  /// Custom tap handler. Defaults to [popOrGoHome] — pops the current route
+  /// if there is one, or falls back to Inicio when the stack is empty.
   final VoidCallback? onTap;
 
   final _Variant _variant;
@@ -44,7 +60,12 @@ class _LhotseBackButtonState extends State<LhotseBackButton> {
   bool _pressed = false;
 
   void _handleTap() {
-    (widget.onTap ?? () => context.pop())();
+    final onTap = widget.onTap;
+    if (onTap != null) {
+      onTap();
+    } else {
+      popOrGoHome(context);
+    }
   }
 
   @override

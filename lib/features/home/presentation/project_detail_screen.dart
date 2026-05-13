@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -138,13 +137,15 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     }
 
     // Defense-in-depth: if a VIP project slips through an unguarded entry point
-    // (deep-link, doc-scope push, future entry points), pop and show the sheet.
+    // (deep-link, doc-scope push, future entry points), bounce the user out
+    // (back to where they came from, or Home if the stack is empty) and show
+    // the sheet.
     if (!_gateDone && project.isVip &&
         ref.read(currentUserRoleProvider) != UserRole.investorVip) {
       _gateDone = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        if (context.canPop()) context.pop();
+        popOrGoHome(context);
         showVipLockSheet(context);
       });
     }

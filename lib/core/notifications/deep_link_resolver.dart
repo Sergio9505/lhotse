@@ -35,8 +35,12 @@ Future<void> resolveAndNavigate(String path, WidgetRef ref) async {
   // The context comes from the root navigator key, not from a widget tree
   // observed during this async function — so the standard async-gap caveat
   // does not apply here.
+  // We use `push` (not `go`) so the destination lands ON TOP of whatever
+  // stack the user already has. Warm-start preserves prior context;
+  // cold-start (protected by the 500 ms delay in `flushPendingDeepLink`)
+  // pushes on top of `[Home]`.
   // ignore: use_build_context_synchronously
-  ctx.go(path);
+  ctx.push(path);
 }
 
 Future<bool> _tryCoinvestmentL3(String projectId, WidgetRef ref) async {
@@ -55,7 +59,7 @@ Future<bool> _tryCoinvestmentL3(String projectId, WidgetRef ref) async {
     if (ctx == null) return false;
     // Root-navigator context — not subject to the async-gap rule.
     // ignore: use_build_context_synchronously
-    ctx.go(
+    ctx.push(
       '/investments/detail/coinvestment/${contract.id}',
       extra: (contract: contract, brandName: brandName),
     );
@@ -82,7 +86,7 @@ Future<bool> _tryPurchaseL3(String assetId, WidgetRef ref) async {
     if (ctx == null) return false;
     // Root-navigator context — not subject to the async-gap rule.
     // ignore: use_build_context_synchronously
-    ctx.go(
+    ctx.push(
       '/investments/detail/purchase/${contract.id}',
       extra: (contract: contract, brandName: brandName),
     );

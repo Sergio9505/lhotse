@@ -204,10 +204,22 @@ class OneSignalService {
   }
 
   /// Consume any deep link queued before the router was ready (cold start).
+  ///
+  /// Wraps `_navigate` in a 500 ms delay to dodge the cold-start race:
+  /// `SplashScreen.initState` schedules its own `context.go(home)` from a
+  /// post-frame callback, and our flush also fires from one — order is
+  /// non-deterministic. If we pushed the detail before the splash navigated,
+  /// the splash's later `go(home)` would wipe the stack and stand the user
+  /// on Home with no detail. 500 ms is well over the splash transition
+  /// (~300 ms) and imperceptible while the OS launch screen is still up.
+  /// Warm-start clicks bypass this entirely (they go via the click listener,
+  /// not through the pending queue).
   static void flushPendingDeepLink() {
     final pending = _pendingDeepLink;
     if (pending == null) return;
     _pendingDeepLink = null;
-    _navigate(pending);
+    Future<void>.delayed(const Duration(milliseconds: 500), () {
+      _navigate(pending);
+    });
   }
 }

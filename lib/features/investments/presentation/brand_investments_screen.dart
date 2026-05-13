@@ -141,7 +141,7 @@ class BrandInvestmentsScreen extends ConsumerWidget {
               brandName: brandName,
               totalFormatted: totalFormatted,
               heroTitle: heroTitle,
-              onBack: () => context.pop(),
+              onBack: () => popOrGoHome(context),
             ),
           ),
 
