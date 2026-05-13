@@ -83,7 +83,7 @@ class _PushSoftAskContentState extends State<_PushSoftAskContent> {
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
-              'Estaremos en contacto.',
+              'Active las notificaciones.',
               style: AppTypography.editorialTitle.copyWith(
                 color: AppColors.textPrimary,
                 height: 1.1,
@@ -91,8 +91,8 @@ class _PushSoftAskContentState extends State<_PushSoftAskContent> {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Le avisaremos cuando haya movimiento en sus inversiones: '
-              'nuevas oportunidades, documentos o cambios en su cartera.',
+              'Le avisaremos cuando haya nuevas oportunidades, documentos '
+              'disponibles o cambios relevantes en su cartera.',
               style: AppTypography.bodyReading.copyWith(
                 color: AppColors.accentMuted,
                 height: 1.45,
