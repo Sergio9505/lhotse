@@ -6,23 +6,17 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/router.dart';
-import '../../../core/notifications/onesignal_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_mark.dart';
-import '../../notifications/presentation/push_soft_ask_sheet.dart';
 
 /// Final screen of the onboarding flow.
 ///
-/// Shows a welcoming greeting with an explicit "Continuar" CTA — no
-/// auto-fire timer for the push permission. When the user taps Continuar
-/// we show the custom soft-ask sheet (only if `notDetermined` and the
-/// lifetime cap allows it); after the sheet closes — accepted or not —
-/// we fade out and navigate to home.
-///
-/// Premium rationale: the previous version dispatched
-/// `requestPermission()` directly via a 1.5s timer, which (a) fired the
-/// OS dialog without context (anti-Apple HIG) and (b) felt like an
-/// ambush. The explicit CTA flips control back to the user.
+/// Welcoming greeting + explicit "Continuar" CTA that fades out and
+/// navigates to home. The push-permission soft-ask is *not* triggered
+/// here — it's owned by `ShellScreen.initState`, which fires it ~800 ms
+/// after Inicio mounts (both for fresh signups and for returning logins
+/// in the same place). Keeping this screen as the closing rite of
+/// onboarding — no sheet over a fading background.
 class OnboardingDoneScreen extends StatefulWidget {
   const OnboardingDoneScreen({super.key});
 
@@ -57,17 +51,12 @@ class _OnboardingDoneScreenState extends State<OnboardingDoneScreen> {
     super.dispose();
   }
 
-  Future<void> _onContinue() async {
+  void _onContinue() {
     if (_handling) return;
-    setState(() => _handling = true);
-
-    if (await OneSignalService.canShowSoftAsk()) {
-      if (!mounted) return;
-      await showPushSoftAsk(context);
-    }
-
-    if (!mounted) return;
-    setState(() => _fadingOut = true);
+    setState(() {
+      _handling = true;
+      _fadingOut = true;
+    });
   }
 
   @override

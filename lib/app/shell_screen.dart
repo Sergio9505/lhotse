@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../core/notifications/onesignal_service.dart';
 import '../core/theme/app_theme.dart';
 import '../features/notifications/data/notifications_provider.dart';
+import '../features/notifications/presentation/push_soft_ask_sheet.dart';
 
 // Navbar labels — uppercase, consistent with app typography
 const _kLabelInicio = 'INICIO';
@@ -13,22 +15,48 @@ const _kLabelBuscar = 'BUSCAR';
 const _kLabelEstrategia = 'ESTRATEGIA';
 const _kLabelPerfil = 'PERFIL';
 
-class ShellScreen extends ConsumerWidget {
+class ShellScreen extends ConsumerStatefulWidget {
   const ShellScreen({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ShellScreen> createState() => _ShellScreenState();
+}
+
+class _ShellScreenState extends ConsumerState<ShellScreen> {
+  /// Lives at process scope. Cold-start = new attempt; rebuild caused by
+  /// hot-reload or tab change won't re-trigger (the shell itself isn't
+  /// disposed in IndexedStack).
+  static bool _coldStartSoftAskAttempted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_coldStartSoftAskAttempted) return;
+    _coldStartSoftAskAttempted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Short delay so the user sees Inicio before the sheet appears.
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      if (!mounted) return;
+      if (await OneSignalService.canShowSoftAsk()) {
+        if (!mounted) return;
+        await showPushSoftAsk(context);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: navigationShell,
+      body: widget.navigationShell,
       bottomNavigationBar: _LhotseNavBar(
-        currentIndex: navigationShell.currentIndex,
+        currentIndex: widget.navigationShell.currentIndex,
         unreadCount: ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0,
-        onTap: (i) => navigationShell.goBranch(
+        onTap: (i) => widget.navigationShell.goBranch(
           i,
-          initialLocation: i == navigationShell.currentIndex,
+          initialLocation: i == widget.navigationShell.currentIndex,
         ),
       ),
     );
