@@ -208,12 +208,14 @@ class _NotificationsSheetContentState
             data: (_) => sections.isEmpty
                 ? Padding(
                     padding: EdgeInsets.only(
-                      top: AppSpacing.xl,
-                      bottom: bottomPadding + AppSpacing.xl,
+                      top: AppSpacing.xxl,
+                      bottom: bottomPadding + AppSpacing.xxl,
                     ),
-                    child: Center(
+                    child: SizedBox(
+                      width: double.infinity,
                       child: Text(
                         'SIN NOTIFICACIONES',
+                        textAlign: TextAlign.center,
                         style: AppTypography.labelUppercaseMd.copyWith(
                           color: AppColors.accentMuted,
                         ),
