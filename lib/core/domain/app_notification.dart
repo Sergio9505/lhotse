@@ -15,6 +15,7 @@ class AppNotification {
     required this.id,
     required this.type,
     required this.title,
+    this.body,
     this.projectName,
     this.brandName,
     this.modelType,
@@ -28,6 +29,7 @@ class AppNotification {
   final String id;
   final NotificationType type;
   final String title;
+  final String? body;
   final String? projectName;
   final String? brandName;
   final String? modelType;
@@ -42,6 +44,7 @@ class AppNotification {
         id: json['id'] as String,
         type: NotificationTypeX.fromString(json['type'] as String? ?? ''),
         title: json['title'] as String,
+        body: json['body'] as String?,
         projectName: json['project_name'] as String?,
         brandName: json['brand_name'] as String?,
         modelType: json['model_type'] as String?,
@@ -56,6 +59,7 @@ class AppNotification {
         id: id,
         type: type,
         title: title,
+        body: body,
         projectName: projectName,
         brandName: brandName,
         modelType: modelType,

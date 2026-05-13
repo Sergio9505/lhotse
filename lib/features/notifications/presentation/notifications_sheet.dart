@@ -347,7 +347,20 @@ class _NotificationRowState extends State<_NotificationRow> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 3),
+                    if (n.body != null && n.body!.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        n.body!,
+                        style: AppTypography.bodyReading.copyWith(
+                          color: AppColors.accentMuted,
+                          fontSize: 13.5,
+                          height: 1.35,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const SizedBox(height: 4),
                     Text(
                       meta,
                       style: AppTypography.labelUppercaseSm.copyWith(

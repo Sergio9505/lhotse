@@ -1886,3 +1886,5 @@ The premium solution is a `SECURITY DEFINER` RPC `public.get_pending_phone()` (m
 - `lib/features/notifications/presentation/push_soft_ask_sheet.dart` — custom bottom sheet, symmetric CTAs.
 - `lib/features/onboarding/presentation/onboarding_done_screen.dart` — `Continuar` CTA gates the soft-ask + navigates to home.
 - `lib/features/notifications/presentation/notifications_sheet.dart` — auto-trigger on open + `_PermissionBanner` for the `denied` / `notDetermined` cap-agotado states.
+
+**Follow-up (body field)**: subsequent iteration added an optional `body` (max 300 chars) to broadcasts — surfaces as the second-line of an iOS push (`headings` = title bold, `contents` = body) and as a descriptive second line in the in-app feed. Same `{ en, es }` duplication fallback applies to both `headings` and `contents`. Backwards compatible: notifications without body keep the prior single-line behaviour.
