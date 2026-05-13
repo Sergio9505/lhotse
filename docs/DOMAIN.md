@@ -86,6 +86,14 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - **Alquiler**: rental_contracts + rental_payments. Rental income shown in purchase contract detail (rental_yield_pct derived in view). No separate screen yet.
 - **Opportunities**: removed as a feature (ADR-55 supersedes ADR-52 which superseded ADR-10). No dedicated screen, no `FeedOpportunityItem`, no `user_opportunities` view, no `newOpportunities` preference. Discovery lives inside the curated Home feed alongside projects, news, brands, and assets — the admin picks what goes in `home_feed_items`.
 
+### Notifications
+- **Storage**: `notifications` table — one row per recipient per broadcast (no parent table; broadcasts are identified by `broadcast_id`).
+- **Channels** per row: `delivered_in_app` and `delivered_push`. CHECK enforces at least one is true. `notificationsProvider` filters `delivered_in_app = true`; the `unread_notification_counts` view honors the same filter so badges ignore push-only rows.
+- **Types**: `document | news | phase | financial | delay` (English values).
+- **Deep links**: optional `deep_link` column holds a GoRouter path (`/projects/<id>`, `/news/<id>`, `/brands/<id>`). Snapshot at send time — survives renames/deletes of the target. Resolved by the OneSignal click handler in `lib/core/notifications/onesignal_service.dart`.
+- **Push transport**: OneSignal — devices bind to the Supabase user id via `OneSignal.login(userId)` after Supabase auth. The admin Server Action posts to OneSignal REST with `include_external_user_ids` after inserting the in-app rows.
+- **Admin compose** (`lhotse_admin` `/notifications`): a single broadcast inserts N rows (one per recipient) with the same `broadcast_id`. Audience modes: `role` (any/viewer/investor/investor_vip/admin), `entity` (project or brand — resolves contractor user_ids), `manual` (user picker). Listing aggregates via the `notification_broadcast_history` view; expand row → drawer with recipient list + read status.
+
 ### Profile (Mi Perfil)
 - User info (name, email, photo)
 - Account settings

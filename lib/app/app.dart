@@ -9,6 +9,7 @@ import '../core/data/documents_provider.dart';
 import '../core/data/news_provider.dart';
 import '../core/data/projects_provider.dart';
 import '../core/data/supabase_provider.dart';
+import '../core/notifications/onesignal_service.dart';
 import '../core/theme/app_theme.dart';
 import '../features/investments/data/investments_provider.dart';
 import '../features/notifications/data/notifications_provider.dart';
@@ -29,6 +30,10 @@ class _LhotseAppState extends ConsumerState<LhotseApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    OneSignalService.bind(ref);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      OneSignalService.flushPendingDeepLink();
+    });
   }
 
   @override

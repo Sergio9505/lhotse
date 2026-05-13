@@ -80,6 +80,9 @@ Operational column-type rules (money as `NUMERIC(14,2)`, timestamps as `TIMESTAM
 ### 13. Protected media: canonical URLs in DB, signed at read time (ADR-56)
 Video URLs stored in DB (`projects.video_url`, `MediaItem.url`) are the raw canonical path — never signed/expiring. Before playback, clients call `playableVideoUrlProvider` (`lib/core/data/playable_video_url_provider.dart`) which routes to: (a) `sign_video_url` Edge Function for Bunny Stream URLs (HMAC-SHA256, TTL 1h, JWT verification — secret never leaves the function); (b) `createSignedUrl` for Supabase Storage relative paths. Never store a signed/expiring URL in the DB.
 
+### 14. Push + in-app notifications: single row, dual channels, internal deep links
+One `notifications` row per recipient per broadcast. Two boolean flags (`delivered_in_app`, `delivered_push`) describe which channels were used; CHECK forces at least one. The Flutter `notificationsProvider` filters `delivered_in_app = true` so push-only entries don't pollute the feed. OneSignal handles transport (binding via `OneSignal.login(userId)`). The admin Server Action talks to OneSignal REST directly — no Edge Function, no service-role key, no RPC for audience resolution (inline queries against `user_profiles` / contract tables are gated by the admin RLS policy). Deep links are internal GoRouter paths stored as a snapshot (`deep_link` column) — no Universal Links / AASA until they actually unlock a use case (email CTAs, public shares). The click handler in `lib/core/notifications/onesignal_service.dart` resolves the path via `appRouter.go()`; cold-start clicks are queued through `rootNavigatorKey` and flushed after the first frame.
+
 ## Extension protocol
 
 When a new principle emerges from an incident:

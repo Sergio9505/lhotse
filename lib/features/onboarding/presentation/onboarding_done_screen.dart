@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/router.dart';
+import '../../../core/notifications/onesignal_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_mark.dart';
 
@@ -33,6 +34,12 @@ class _OnboardingDoneScreenState extends State<OnboardingDoneScreen> {
     super.initState();
     _timers.add(Timer(const Duration(milliseconds: 300), () {
       if (mounted) setState(() => _visible = true);
+    }));
+    // Ask for iOS push permission after the user has seen the welcome.
+    // The native dialog is non-blocking — if rejected, the fade-out still
+    // routes to home on schedule.
+    _timers.add(Timer(const Duration(milliseconds: 1500), () {
+      OneSignalService.requestPermission();
     }));
     _timers.add(Timer(const Duration(milliseconds: 3400), () {
       if (mounted) setState(() => _fadingOut = true);

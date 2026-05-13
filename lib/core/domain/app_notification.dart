@@ -23,6 +23,7 @@ class AppNotification {
     required this.date,
     this.isRead = false,
     this.targetTab,
+    this.deepLink,
   });
 
   final String id;
@@ -35,6 +36,7 @@ class AppNotification {
   final DateTime date;
   final bool isRead;
   final String? targetTab;
+  final String? deepLink;
 
   factory AppNotification.fromJson(Map<String, dynamic> json) =>
       AppNotification(
@@ -48,6 +50,7 @@ class AppNotification {
         date: DateTime.parse(json['created_at'] as String),
         isRead: json['is_read'] as bool? ?? false,
         targetTab: json['target_tab'] as String?,
+        deepLink: json['deep_link'] as String?,
       );
 
   AppNotification copyWith({bool? isRead}) => AppNotification(
@@ -61,5 +64,6 @@ class AppNotification {
         date: date,
         isRead: isRead ?? this.isRead,
         targetTab: targetTab,
+        deepLink: deepLink,
       );
 }
