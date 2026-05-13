@@ -27,11 +27,17 @@ void showNotificationsSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useRootNavigator: true,
     backgroundColor: AppColors.background,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
     ),
-    builder: (_) => const _NotificationsSheetContent(),
+    builder: (ctx) => ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+      ),
+      child: const _NotificationsSheetContent(),
+    ),
   );
 }
 
@@ -120,142 +126,135 @@ class _NotificationsSheetContentState
     ];
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final screenHeight = MediaQuery.of(context).size.height;
     final hasUnread = notifications.any((n) => !n.isRead);
 
-    const headerHeight = 80.0;
-    const dividerHeight = 0.5;
-    const sectionHeaderHeight = 36.0;
-    const rowHeight = 64.0;
-    final totalRows = sections.fold<int>(0, (sum, s) => sum + s.$2.length);
-    final contentHeight = headerHeight +
-        dividerHeight +
-        (sections.length * sectionHeaderHeight) +
-        (totalRows * rowHeight) +
-        bottomPadding +
-        AppSpacing.lg;
-    final fitSize = (contentHeight / screenHeight).clamp(0.2, 0.8);
-
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: fitSize,
-      minChildSize: 0.2,
-      maxChildSize: fitSize,
-      builder: (context, scrollController) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 4),
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textPrimary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(2),
-              ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 4),
+          child: Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.textPrimary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
-            child: Row(
-              children: [
-                Text(
-                  'NOTIFICACIONES',
-                  style: AppTypography.titleUppercaseLg.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
+          child: Row(
+            children: [
+              Text(
+                'NOTIFICACIONES',
+                style: AppTypography.titleUppercaseLg.copyWith(
+                  color: AppColors.textPrimary,
                 ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: hasUnread
-                      ? () => markNotificationsRead(ref)
-                      : null,
-                  behavior: HitTestBehavior.opaque,
-                  child: SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: Center(
-                      child: LhotseNotificationBadge(
-                        show: hasUnread,
-                        child: PhosphorIcon(
-                          PhosphorIconsThin.checks,
-                          size: 20,
-                          color: hasUnread
-                              ? AppColors.textPrimary
-                              : AppColors.accentMuted,
-                        ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: hasUnread
+                    ? () => markNotificationsRead(ref)
+                    : null,
+                behavior: HitTestBehavior.opaque,
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Center(
+                    child: LhotseNotificationBadge(
+                      show: hasUnread,
+                      child: PhosphorIcon(
+                        PhosphorIconsThin.checks,
+                        size: 20,
+                        color: hasUnread
+                            ? AppColors.textPrimary
+                            : AppColors.accentMuted,
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+        Container(
+          height: 0.5,
+          color: AppColors.textPrimary.withValues(alpha: 0.08),
+        ),
+        _PermissionBanner(
+          permission: permission,
+          deniedVisible: _deniedBannerVisible,
+          notDeterminedDismissed: _notDeterminedBannerDismissedThisSession,
+          onTapDenied: _handleDeniedTap,
+          onDismissDenied: _handleDeniedDismiss,
+          onTapNotDetermined: _handleNotDeterminedTap,
+          onDismissNotDetermined: _handleNotDeterminedDismiss,
+        ),
+        Flexible(
+          child: notifAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              child: LhotseAsyncLoading(),
             ),
-          ),
-          Container(
-            height: 0.5,
-            color: AppColors.textPrimary.withValues(alpha: 0.08),
-          ),
-          _PermissionBanner(
-            permission: permission,
-            deniedVisible: _deniedBannerVisible,
-            notDeterminedDismissed: _notDeterminedBannerDismissedThisSession,
-            onTapDenied: _handleDeniedTap,
-            onDismissDenied: _handleDeniedDismiss,
-            onTapNotDetermined: _handleNotDeterminedTap,
-            onDismissNotDetermined: _handleNotDeterminedDismiss,
-          ),
-          Expanded(
-            child: notifAsync.when(
-              loading: () => const LhotseAsyncLoading(),
-              error: (_, _) => LhotseAsyncError(
+            error: (_, _) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              child: LhotseAsyncError(
                 message: 'No se pudieron cargar las notificaciones.',
                 onRetry: () => ref.invalidate(notificationsProvider),
               ),
-              data: (_) => sections.isEmpty
-                  ? Center(
+            ),
+            data: (_) => sections.isEmpty
+                ? Padding(
+                    padding: EdgeInsets.only(
+                      top: AppSpacing.xl,
+                      bottom: bottomPadding + AppSpacing.xl,
+                    ),
+                    child: Center(
                       child: Text(
                         'SIN NOTIFICACIONES',
                         style: AppTypography.labelUppercaseMd.copyWith(
                           color: AppColors.accentMuted,
                         ),
                       ),
-                    )
-                  : ListView.builder(
-                      controller: scrollController,
-                      padding: EdgeInsets.fromLTRB(
-                          0, 0, 0, bottomPadding + AppSpacing.md),
-                      itemCount: sections.length,
-                      itemBuilder: (context, sectionIndex) {
-                        final (label, items) = sections[sectionIndex];
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.only(
-                                top: sectionIndex == 0
-                                    ? AppSpacing.md
-                                    : AppSpacing.lg,
-                                bottom: AppSpacing.sm,
-                              ),
-                              child: LhotseSectionLabel(label: label),
-                            ),
-                            ...items.asMap().entries.map((entry) {
-                              final idx = entry.key;
-                              final n = entry.value;
-                              return _NotificationRow(
-                                notification: n,
-                                now: now,
-                                isLast: idx == items.length - 1,
-                              );
-                            }),
-                          ],
-                        );
-                      },
                     ),
-            ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.fromLTRB(
+                        0, 0, 0, bottomPadding + AppSpacing.md),
+                    itemCount: sections.length,
+                    itemBuilder: (context, sectionIndex) {
+                      final (label, items) = sections[sectionIndex];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: sectionIndex == 0
+                                  ? AppSpacing.md
+                                  : AppSpacing.lg,
+                              bottom: AppSpacing.sm,
+                            ),
+                            child: LhotseSectionLabel(label: label),
+                          ),
+                          ...items.asMap().entries.map((entry) {
+                            final idx = entry.key;
+                            final n = entry.value;
+                            return _NotificationRow(
+                              notification: n,
+                              now: now,
+                              isLast: idx == items.length - 1,
+                            );
+                          }),
+                        ],
+                      );
+                    },
+                  ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
