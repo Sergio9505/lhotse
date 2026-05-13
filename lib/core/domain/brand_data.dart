@@ -20,6 +20,7 @@ class BrandData {
     required this.id,
     required this.name,
     this.logoAsset,
+    this.logoAssetDetail,
     required this.coverImageUrl,
     required this.businessModel,
     this.tagline,
@@ -30,6 +31,7 @@ class BrandData {
   final String id;
   final String name;
   final String? logoAsset;
+  final String? logoAssetDetail;
   final String coverImageUrl;
   final BusinessModel businessModel;
   final String? tagline;
@@ -40,6 +42,7 @@ class BrandData {
         id: json['id'] as String,
         name: json['name'] as String,
         logoAsset: json['logo_asset'] as String?,
+        logoAssetDetail: json['logo_asset_detail'] as String?,
         coverImageUrl: json['cover_image_url'] as String? ?? '',
         businessModel: BusinessModelLabel.fromString(
           json['business_model'] as String? ?? '',

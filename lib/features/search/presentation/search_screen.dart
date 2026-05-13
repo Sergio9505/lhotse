@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -17,6 +16,7 @@ import '../../../core/domain/project_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/open_supabase_doc.dart';
 import '../../../core/utils/search_utils.dart';
+import '../../../core/widgets/brand_wordmark.dart';
 import '../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
@@ -728,12 +728,8 @@ class _BrandResultItem extends StatelessWidget {
   final BrandData brand;
   final VoidCallback? onTap;
 
-  static const _filter =
-      ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn);
-
   @override
   Widget build(BuildContext context) {
-    final logo = brand.logoAsset;
     return GestureDetector(
       onTap: () {
         onTap?.call();
@@ -748,22 +744,20 @@ class _BrandResultItem extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 48,
-              height: 32,
-              child: logo != null
-                  ? (logo.startsWith('http')
-                      ? SvgPicture.network(logo,
-                          fit: BoxFit.contain, colorFilter: _filter)
-                      : SvgPicture.asset(logo,
-                          fit: BoxFit.contain, colorFilter: _filter))
-                  : Center(
-                      child: Text(
-                        brand.name.split(' ').map((w) => w[0]).join(),
-                        style: AppTypography.metaUppercase.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
+              width: 56,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: BrandWordmark(
+                  brand: brand,
+                  size: BrandWordmarkSize.xs,
+                  fallback: Text(
+                    brand.name.split(' ').map((w) => w[0]).join(),
+                    style: AppTypography.metaUppercase.copyWith(
+                      color: AppColors.textPrimary,
                     ),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(

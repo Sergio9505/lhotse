@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../domain/brand_data.dart';
 import '../theme/app_theme.dart';
+import 'brand_wordmark.dart';
 
 /// Reusable horizontal brand filter row with SVG logos (single-select).
 /// The active brand uses a double signal: **full opacity + dot indicator**
@@ -50,7 +50,18 @@ class LhotseBrandFilterRow extends StatelessWidget {
                   child: SizedBox(
                     width: 80,
                     height: 32,
-                    child: Center(child: _BrandLogo(brand: brand)),
+                    child: Center(
+                      child: BrandWordmark(
+                        brand: brand,
+                        size: BrandWordmarkSize.xs,
+                        fallback: Text(
+                          brand.name[0],
+                          style: AppTypography.bodyInput.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -75,40 +86,3 @@ class LhotseBrandFilterRow extends StatelessWidget {
   }
 }
 
-class _BrandLogo extends StatelessWidget {
-  const _BrandLogo({required this.brand});
-  final BrandData brand;
-
-  static const _filter = ColorFilter.mode(
-    AppColors.textPrimary,
-    BlendMode.srcIn,
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    final logo = brand.logoAsset;
-    if (logo == null) {
-      return Text(
-        brand.name[0],
-        style: AppTypography.bodyInput.copyWith(
-          color: AppColors.textPrimary,
-        ),
-      );
-    }
-    return SizedBox(
-      width: 56,
-      height: 24,
-      child: logo.startsWith('http')
-          ? SvgPicture.network(
-              logo,
-              fit: BoxFit.contain,
-              colorFilter: _filter,
-            )
-          : SvgPicture.asset(
-              logo,
-              fit: BoxFit.contain,
-              colorFilter: _filter,
-            ),
-    );
-  }
-}

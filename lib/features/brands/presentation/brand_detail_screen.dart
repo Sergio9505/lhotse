@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/data/brands_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/brand_wordmark.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
 
@@ -175,25 +175,13 @@ class _BrandDetailScreenState extends ConsumerState<BrandDetailScreen> {
 class _BrandLogoHeader extends StatelessWidget {
   const _BrandLogoHeader({required this.brand});
   final BrandData brand;
-  static const _filter = ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn);
 
   @override
-  Widget build(BuildContext context) {
-    final logo = brand.logoAsset;
-    if (logo != null) {
-      return SizedBox(
-        width: 80,
-        height: 20,
-        child: logo.startsWith('http')
-            ? SvgPicture.network(logo, fit: BoxFit.contain, colorFilter: _filter)
-            : SvgPicture.asset(logo, fit: BoxFit.contain, colorFilter: _filter),
+  Widget build(BuildContext context) => BrandWordmark(
+        brand: brand,
+        size: BrandWordmarkSize.md,
+        preferDetail: true,
       );
-    }
-    return Text(
-      brand.name.toUpperCase(),
-      style: AppTypography.titleUppercase.copyWith(color: AppColors.textPrimary),
-    );
-  }
 }
 
 // ─── Logo (content) ──────────────────────────────────────────────────────────
@@ -201,28 +189,13 @@ class _BrandLogoHeader extends StatelessWidget {
 class _BrandLogo extends StatelessWidget {
   const _BrandLogo({required this.brand});
   final BrandData brand;
-  static const _filter = ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn);
 
   @override
-  Widget build(BuildContext context) {
-    final logo = brand.logoAsset;
-    if (logo != null) {
-      return SizedBox(
-        width: 160,
-        height: 40,
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: logo.startsWith('http')
-              ? SvgPicture.network(logo, fit: BoxFit.contain, colorFilter: _filter)
-              : SvgPicture.asset(logo, fit: BoxFit.contain, colorFilter: _filter),
-        ),
+  Widget build(BuildContext context) => BrandWordmark(
+        brand: brand,
+        size: BrandWordmarkSize.lg,
+        preferDetail: true,
       );
-    }
-    return Text(
-      brand.name.toUpperCase(),
-      style: AppTypography.titleUppercase.copyWith(color: AppColors.textPrimary),
-    );
-  }
 }
 
 // ─── Description ─────────────────────────────────────────────────────────────

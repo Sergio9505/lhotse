@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/data/brands_provider.dart';
 import '../../../core/domain/brand_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/brand_wordmark.dart';
 import '../../../core/widgets/lhotse_filter_tab.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
@@ -119,14 +119,13 @@ class _BrandCard extends StatelessWidget {
 
   final BrandData brand;
 
-  static const _filter = ColorFilter.mode(
-    AppColors.textPrimary,
-    BlendMode.srcIn,
-  );
-
   @override
   Widget build(BuildContext context) {
     final hasCover = brand.coverImageUrl.isNotEmpty;
+    final logo = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: BrandWordmark(brand: brand, size: BrandWordmarkSize.sm),
+    );
     return GestureDetector(
       onTap: () => context.push('/brands/${brand.id}', extra: brand),
       behavior: HitTestBehavior.opaque,
@@ -141,7 +140,7 @@ class _BrandCard extends StatelessWidget {
         child: hasCover
             ? Column(
                 children: [
-                  Expanded(flex: 25, child: Center(child: _logo())),
+                  Expanded(flex: 25, child: Center(child: logo)),
                   Expanded(
                     flex: 75,
                     child: Padding(
@@ -153,34 +152,8 @@ class _BrandCard extends StatelessWidget {
                   ),
                 ],
               )
-            : Center(child: _logo()),
+            : Center(child: logo),
       ),
-    );
-  }
-
-  Widget _logo() {
-    if (brand.logoAsset == null) {
-      return Text(
-        brand.name.toUpperCase(),
-        style: AppTypography.titleUppercase.copyWith(
-          color: AppColors.textPrimary,
-        ),
-      );
-    }
-    return SizedBox(
-      width: 64,
-      height: 18,
-      child: brand.logoAsset!.startsWith('http')
-          ? SvgPicture.network(
-              brand.logoAsset!,
-              fit: BoxFit.contain,
-              colorFilter: _filter,
-            )
-          : SvgPicture.asset(
-              brand.logoAsset!,
-              fit: BoxFit.contain,
-              colorFilter: _filter,
-            ),
     );
   }
 }
