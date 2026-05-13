@@ -89,10 +89,15 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 ### Notifications
 - **Storage**: `notifications` table — one row per recipient per broadcast (no parent table; broadcasts are identified by `broadcast_id`).
 - **Channels** per row: `delivered_in_app` and `delivered_push`. CHECK enforces at least one is true. `notificationsProvider` filters `delivered_in_app = true`; the `unread_notification_counts` view honors the same filter so badges ignore push-only rows.
-- **Types**: `document | news | phase | financial | delay` (English values).
-- **Deep links**: optional `deep_link` column holds a GoRouter path (`/projects/<id>`, `/news/<id>`, `/brands/<id>`). Snapshot at send time — survives renames/deletes of the target. Resolved by the OneSignal click handler in `lib/core/notifications/onesignal_service.dart`.
+- **Types**: `project | asset | news | document` (English values). Object-shaped — what the notification *is about*, not what *event* triggered it. The icon comes from the type; severity / urgency belongs in the title text.
+- **Deep links**: required `deep_link` column holds a GoRouter path snapshot, composed server-side from `type + entityId`: `/projects/<id>`, `/assets/<id>`, `/news/<id>`, `/documents/<id>`. Survives renames/deletes of the target.
+- **Smart routing** on click — the resolver in `lib/core/notifications/deep_link_resolver.dart` is invoked by the OneSignal click handler:
+  - `/projects/<id>` → user's L3 `/investments/detail/coinvestment/<contract.id>` if a `coinvestment_contract` exists for that project; otherwise the L1 commercial `/projects/<id>`.
+  - `/assets/<id>` → user's L3 `/investments/detail/purchase/<contract.id>` if a `purchase_contract` references that asset; otherwise L1 `/assets/<id>`.
+  - `/news/<id>` → direct.
+  - `/documents/<id>` → `DocumentLoaderScreen` fetches the row, downloads via `openSupabaseDoc`, and `pushReplacement`s into `/document-preview`.
 - **Push transport**: OneSignal — devices bind to the Supabase user id via `OneSignal.login(userId)` after Supabase auth. The admin Server Action posts to OneSignal REST with `include_external_user_ids` after inserting the in-app rows.
-- **Admin compose** (`lhotse_admin` `/notifications`): a single broadcast inserts N rows (one per recipient) with the same `broadcast_id`. Audience modes: `role` (any/viewer/investor/investor_vip/admin), `entity` (project or brand — resolves contractor user_ids), `manual` (user picker). Listing aggregates via the `notification_broadcast_history` view; expand row → drawer with recipient list + read status.
+- **Admin compose** (`lhotse_admin` `/notifications`): the type and the linked entity are picked together — no separate "deep link" toggle. Audience modes: `role` (any/viewer/investor/investor_vip/admin), `entity` (project or brand → resolves contractor user_ids), `manual` (user picker). Listing aggregates via the `notification_broadcast_history` view; expand row → drawer with recipient list + read status.
 
 ### Profile (Mi Perfil)
 - User info (name, email, photo)

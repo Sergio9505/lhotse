@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 import '../../app/router.dart' show rootNavigatorKey;
 import '../../features/notifications/data/notifications_provider.dart';
 import '../data/supabase_provider.dart';
+import 'deep_link_resolver.dart';
 
 /// Bridge between the OneSignal SDK and the rest of the app.
 ///
@@ -24,6 +24,7 @@ class OneSignalService {
 
   static String? _pendingDeepLink;
   static bool _bound = false;
+  static WidgetRef? _ref;
 
   static String get _appId =>
       const String.fromEnvironment('ONESIGNAL_APP_ID');
@@ -43,6 +44,7 @@ class OneSignalService {
   static void bind(WidgetRef ref) {
     if (_bound || !_configured) return;
     _bound = true;
+    _ref = ref;
 
     ref.listenManual<AsyncValue<String?>>(
       currentUserIdProvider,
@@ -77,16 +79,18 @@ class OneSignalService {
   }
 
   static void _navigate(String path) {
+    final ref = _ref;
     final ctx = rootNavigatorKey.currentContext;
-    if (ctx == null) {
+    if (ctx == null || ref == null) {
       _pendingDeepLink = path;
       return;
     }
-    try {
-      ctx.go(path);
-    } catch (e) {
-      if (kDebugMode) debugPrint('[OneSignal] nav failed for "$path": $e');
-    }
+    // Smart resolver: project/asset deep-links may land on user's L3 instead
+    // of the public L1 depending on their contracts. News / documents pass
+    // through unchanged.
+    resolveAndNavigate(path, ref).catchError((Object e) {
+      if (kDebugMode) debugPrint('[OneSignal] resolve failed for "$path": $e');
+    });
   }
 
   /// Consume any deep link queued before the router was ready (cold start).

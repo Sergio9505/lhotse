@@ -217,14 +217,10 @@ class _NotificationRowState extends State<_NotificationRow> {
   Widget build(BuildContext context) {
     final n = widget.notification;
     final isUnread = !n.isRead;
-    final isDelay = n.type == NotificationType.delay;
     final timeStr = _relativeTime(n.date, widget.now);
 
-    final titleColor = isDelay
-        ? AppColors.danger
-        : isUnread
-            ? AppColors.textPrimary
-            : AppColors.accentMuted;
+    final titleColor =
+        isUnread ? AppColors.textPrimary : AppColors.accentMuted;
     final titleWeight = isUnread ? FontWeight.w600 : FontWeight.w400;
     final metaColor =
         isUnread ? AppColors.accentMuted : AppColors.textSecondary;
@@ -263,14 +259,12 @@ class _NotificationRowState extends State<_NotificationRow> {
               Container(
                 width: 36,
                 height: 36,
-                color: isDelay
-                    ? AppColors.danger.withValues(alpha: 0.1)
-                    : AppColors.textPrimary.withValues(alpha: 0.06),
+                color: AppColors.textPrimary.withValues(alpha: 0.06),
                 child: Center(
                   child: PhosphorIcon(
                     _typeIcon(n.type),
                     size: 16,
-                    color: isDelay ? AppColors.danger : AppColors.textPrimary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -319,10 +313,9 @@ class _NotificationRowState extends State<_NotificationRow> {
   }
 
   PhosphorIconData _typeIcon(NotificationType type) => switch (type) {
-        NotificationType.document => PhosphorIconsThin.fileText,
+        NotificationType.project => PhosphorIconsThin.buildings,
+        NotificationType.asset => PhosphorIconsThin.houseLine,
         NotificationType.news => PhosphorIconsThin.newspaper,
-        NotificationType.phase => PhosphorIconsThin.flag,
-        NotificationType.financial => PhosphorIconsThin.trendUp,
-        NotificationType.delay => PhosphorIconsThin.warning,
+        NotificationType.document => PhosphorIconsThin.fileText,
       };
 }

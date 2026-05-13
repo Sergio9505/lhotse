@@ -29,6 +29,7 @@ Future<void> openSupabaseDoc(
   required String docId,
   String bucketName = 'documents',
   String? subtitle,
+  bool replace = false,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
   try {
@@ -49,7 +50,7 @@ Future<void> openSupabaseDoc(
       final cached = File('${tempDir.path}/$docId$ext');
       if (await cached.exists()) {
         if (!context.mounted) return;
-        return _push(context, cached.path, fileName, subtitle);
+        return _push(context, cached.path, fileName, subtitle, replace: replace);
       }
     }
 
@@ -68,7 +69,7 @@ Future<void> openSupabaseDoc(
     await File(localPath).writeAsBytes(response.bodyBytes);
 
     if (!context.mounted) return;
-    _push(context, localPath, fileName, subtitle);
+    _push(context, localPath, fileName, subtitle, replace: replace);
   } catch (e) {
     messenger.showSnackBar(
       SnackBar(content: Text('Error al cargar el documento: $e')),
@@ -80,12 +81,19 @@ void _push(
   BuildContext context,
   String localPath,
   String displayName,
-  String? subtitle,
-) {
-  context.push(
-    AppRoutes.documentPreview,
-    extra: (localPath: localPath, displayName: displayName, subtitle: subtitle),
+  String? subtitle, {
+  bool replace = false,
+}) {
+  final extra = (
+    localPath: localPath,
+    displayName: displayName,
+    subtitle: subtitle,
   );
+  if (replace) {
+    context.pushReplacement(AppRoutes.documentPreview, extra: extra);
+  } else {
+    context.push(AppRoutes.documentPreview, extra: extra);
+  }
 }
 
 String _extensionFromUrl(String url) {

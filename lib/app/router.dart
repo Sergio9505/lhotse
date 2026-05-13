@@ -29,6 +29,7 @@ import '../features/investments/presentation/coinversion_detail_screen.dart';
 import '../features/investments/presentation/direct_purchase_detail_screen.dart';
 import '../features/investments/presentation/completed_detail_screen.dart';
 import '../features/investments/presentation/investments_screen.dart';
+import '../features/documents/presentation/document_loader_screen.dart';
 import '../features/documents/presentation/document_preview_screen.dart';
 import '../features/onboarding/presentation/onboarding_done_screen.dart';
 import '../features/onboarding/presentation/onboarding_host.dart';
@@ -96,6 +97,7 @@ abstract final class AppRoutes {
   static const profileTerms = '/profile/terms';
   static const profilePrivacy = '/profile/privacy';
   static const documentPreview = '/document-preview';
+  static const documentById = '/documents/:id';
 }
 
 const _kAuthRoutes = {
@@ -232,6 +234,20 @@ final routerProvider = Provider<GoRouter>((ref) {
               displayName: extra.displayName,
               subtitle: extra.subtitle,
             ),
+          );
+        },
+      ),
+      // ── Document loader (push-notification deep link) ──
+      // Fetches the doc row by id, downloads, then pushReplaces with
+      // /document-preview. Lives outside the shell because the preview
+      // is full-screen too.
+      GoRoute(
+        path: AppRoutes.documentById,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _fadePage(
+            key: state.pageKey,
+            child: DocumentLoaderScreen(documentId: id),
           );
         },
       ),

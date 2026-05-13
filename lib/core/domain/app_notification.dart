@@ -1,12 +1,11 @@
-enum NotificationType { document, news, phase, financial, delay }
+enum NotificationType { project, asset, news, document }
 
 extension NotificationTypeX on NotificationType {
   static NotificationType fromString(String value) => switch (value) {
-        'document' => NotificationType.document,
+        'project' => NotificationType.project,
+        'asset' => NotificationType.asset,
         'news' => NotificationType.news,
-        'phase' => NotificationType.phase,
-        'financial' => NotificationType.financial,
-        'delay' => NotificationType.delay,
+        'document' => NotificationType.document,
         _ => NotificationType.news,
       };
 }
