@@ -1888,3 +1888,46 @@ The premium solution is a `SECURITY DEFINER` RPC `public.get_pending_phone()` (m
 - `lib/features/notifications/presentation/notifications_sheet.dart` — auto-trigger on open + `_PermissionBanner` for the `denied` / `notDetermined` cap-agotado states.
 
 **Follow-up (body field)**: subsequent iteration added an optional `body` (max 300 chars) to broadcasts — surfaces as the second-line of an iOS push (`headings` = title bold, `contents` = body) and as a descriptive second line in the in-app feed. Same `{ en, es }` duplication fallback applies to both `headings` and `contents`. Backwards compatible: notifications without body keep the prior single-line behaviour.
+
+## ADR-65: Brand wordmark — two SVG variants (`logo_asset` centered + `logo_asset_detail` tight) + `BrandWordmark` widget
+
+**Date:** 2026-05-14
+**Status:** Accepted
+
+**Context:** Originally each brand had a single `logo_asset` SVG, but the wordmarks were authored with tightly cropped viewBoxes — each marca había nacido con un ratio distinto (Ammaca ~2:1, Andhy ~3:1, Vellte ~10:1). Rendering them at any fixed height in a grid produced visually inconsistent cards: la marca corta se veía pequeña, la larga se desbordaba. To fix the grid we unified the viewBoxes to a common canvas (`128×40`) with internal padding centering each wordmark — this gave the grid a uniform bounding box across brands. But the same centered SVGs are **unusable in the brand detail screen** because the internal padding is baked into the path coordinates: no `Align(centerLeft)`, no Flutter wrapper can pull the trazo to the column's padding-left. The wordmark visually "floats" with phantom margin to its left.
+
+**Decision:**
+
+1. **Two SVG variants per brand** in the `brands` table:
+   - `logo_asset` — centered wordmark on a uniform canvas (current `viewBox="0 0 128 40"`, ratio 3.2:1). Used wherever bounding-box uniformity matters: grid de Firmas, filter row, search row.
+   - `logo_asset_detail` — tightly cropped wordmark with `viewBox` ajustado al contenido (no padding lateral). Used in la pantalla detalle de marca (header flotante + hero) para anclar el trazo al margen izquierdo. **Nullable**: si la marca aún no tiene la versión tight subida, el widget cae transparentemente al `logo_asset`. El isotipo cuadrado (`icon_asset`) sigue siendo una entidad aparte (queda en `portfolio_entry`, usado solo en Inversiones).
+
+2. **Componente compartido `BrandWordmark`** (`lib/core/widgets/brand_wordmark.dart`) con cuatro size tokens (`xs/sm/md/lg`) y dos modos de sizing:
+   - **xs (24) y sm (36)**: ancho intrínseco (`SvgPicture(height: _height, fit: contain)`). El padre (filter row 80×32, card del grid via `Expanded(flex:25)`, search row 56w) ya provee un slot uniforme — el wordmark se ciñe al SVG y BoxFit.contain protege overflow.
+   - **md (28) y lg (48)**: contenedor fijo `Size(140,28)` y `Size(240,56)` via `SizedBox.fromSize` + `SvgPicture(fit: contain, alignment:)`. Todas las marcas comparten el mismo bounding box independiente del aspect ratio — la zona del logo es uniforme entre fichas. La prop `alignment` (default center) la usa el caller: `Alignment.centerLeft` en el hero del detalle (anchor a padding-left de la Column), `Alignment.center` en el header flotante (centrado en su Row).
+
+3. **`preferDetail: bool` flag** en el widget: cuando es `true`, intenta `logoAssetDetail` primero y cae a `logoAsset` si null. Default `false` (todos los call-sites del grid/filter/search siguen con la versión centered).
+
+**Rationale:**
+- **Por qué dos variantes y no una sola**: el grid y el detalle tienen requirements opuestos — el grid exige bounding box uniforme entre marcas (lo que el SVG centered da gratis); el detalle exige anchor izquierdo del trazo (lo que el SVG tight da gratis). Forzar uno solo significaría sacrificar uno de los dos. Mantener ambos como assets independientes es 1 columna extra en `brands` y 1 SVG extra en Storage por marca — coste mínimo, beneficio editorial significativo.
+- **Por qué `nullable` para la variante tight**: permite incorporar marcas nuevas sin requerir que el admin suba ambas variantes el mismo día. El fallback a `logo_asset` es visualmente aceptable (queda centrado en el contenedor del detalle, no anclado, pero legible) hasta que se suba la tight.
+- **Por qué contenedor fijo (140×28 / 240×56) en md/lg en vez de altura intrínseca**: con aspects entre 2.0 (Ammaca) y 9.84 (Vellte, Renta Fija), un mismo `height: 48` produce wordmarks de ancho dispar (97pt a 472pt). Visualmente la card de una marca corta dominaría menos que la de una larga — inconsistencia editorial. El contenedor fijo + `BoxFit.contain` con `Alignment.centerLeft` da: (a) bounding box uniforme entre marcas, (b) anchor izquierdo del trazo, (c) la altura del trazo varía proporcionalmente al aspect ratio (wide wordmarks render shorter — comportamiento "correcto" tipográficamente).
+- **Por qué no `IntrinsicWidth` o `ConstrainedBox(maxWidth)` solos**: probados en iteraciones #5 y #6. `ConstrainedBox` cap horizontal sigue dejando el bounding box variable per brand (no uniforme). `SvgPicture(height: _height)` solo, en `Column-start`, además **infla** la caja a `parent.maxWidth` (bug en flutter_svg con loose-width parents — ver gotcha global). El contenedor fijo es la única solución que da uniformidad cross-brand + estabilidad de layout.
+
+**Consequences:**
+- (+) Cada pantalla recibe la SVG ajustada a su contexto sin compromisos.
+- (+) Cinco call-sites del wordmark (grid, filter row, search row, detail header, detail hero) consumen un único componente — sizing decisions viven en un solo archivo.
+- (+) El admin (`lhotse_admin`) expone los tres slots — Logo principal, Logo de detalle, Isotipo — con copy explicando la diferencia funcional.
+- (-) Subir una marca nueva requiere idealmente dos SVGs (centrado + tight). El admin acepta solo uno; el otro se rellena en una segunda pasada cuando esté listo.
+- (-) Un cambio en la dirección editorial del wordmark obliga a actualizar dos archivos por marca, no uno.
+
+**Implementation pointers:**
+- `lib/core/widgets/brand_wordmark.dart` — widget compartido con los 4 tokens.
+- `lib/core/domain/brand_data.dart` — `logoAsset` y `logoAssetDetail` (mapped from `logo_asset` y `logo_asset_detail`).
+- `lib/features/brands/presentation/brand_detail_screen.dart` — `_BrandLogo` (hero, lg + centerLeft) y `_BrandLogoHeader` (md + center default), ambos `preferDetail: true`.
+- `lib/features/brands/presentation/brands_screen.dart` — `_BrandCard` con `BrandWordmark.sm`.
+- `lib/core/widgets/lhotse_brand_filter_row.dart` — `BrandWordmark.xs` con fallback a inicial.
+- `lib/features/search/presentation/search_screen.dart` — `BrandWordmark.xs` con fallback a iniciales.
+- `lhotse_admin/components/forms/brand-form.tsx` — tres slots de upload con copy distintivo.
+- `lhotse_admin/scripts/upload-logos-detail.ts` — one-shot que pobló las 15 marcas iniciales.
+- Migration: `docs/sql/migrations/20260513184807_brand_logo_asset_detail.sql`.
