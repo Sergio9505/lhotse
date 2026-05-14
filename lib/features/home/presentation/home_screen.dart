@@ -29,7 +29,15 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final PageController _pager = PageController();
   int _activePage = 0;
+  bool _didCenter = false;
   final Set<String> _precachedUrls = {};
+
+  /// Half-range for the virtual page index. With `itemCount: null` the feed
+  /// is unbounded forward; we jump to `items.length * _virtualLoops` on first
+  /// load so the user also has ~5000 length-units of margin to scroll *up*
+  /// before hitting page 0. The modulo (`length * 5000 % length == 0`) keeps
+  /// `items[0]` as the visible card — no visual jump.
+  static const int _virtualLoops = 5000;
 
   @override
   void dispose() {
@@ -60,7 +68,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.invalidate(brandsProvider);
     ref.invalidate(assetsProvider);
     ref.invalidate(homeFeedProvider);
+    // List size might change on refresh, so re-center the virtual page index
+    // on the next data callback.
+    setState(() {
+      _didCenter = false;
+      _activePage = 0;
+    });
     await ref.read(homeFeedProvider.future);
+  }
+
+  void _centerIfNeeded(int length) {
+    if (_didCenter || length <= 1) return;
+    _didCenter = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pager.hasClients) return;
+      _pager.jumpToPage(length * _virtualLoops);
+    });
   }
 
   @override
@@ -91,12 +114,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: feedAsync.when(
               data: (items) {
                 _precacheFeed(items);
+                _centerIfNeeded(items.length);
                 return _FeedPager(
                   controller: _pager,
                   items: items,
                   cardHeight: mq.size.height,
                   activePage: _activePage,
-                  onPageChanged: (i) => setState(() => _activePage = i),
+                  onPageChanged: (i) => setState(() {
+                    _activePage = items.length > 1 ? i % items.length : i;
+                  }),
                   onRefresh: _refresh,
                 );
               },
@@ -171,15 +197,20 @@ class _FeedPager extends StatelessWidget {
         controller: controller,
         scrollDirection: Axis.vertical,
         onPageChanged: onPageChanged,
-        itemCount: items.length,
+        // `null` enables infinite cyclical scroll; the `itemBuilder` maps
+        // the unbounded virtual index back into `items` via modulo. Fall
+        // back to finite for length <= 1 (no loop makes sense, and adjacent
+        // virtual pages would collide on ValueKey).
+        itemCount: items.length > 1 ? null : items.length,
         itemBuilder: (context, i) {
-          final item = items[i];
+          final effective = items.length > 1 ? i % items.length : i;
+          final item = items[effective];
           return KeyedSubtree(
-            key: ValueKey(item.feedKey),
+            key: ValueKey(i),
             child: FeedCard(
               item: item,
               height: cardHeight,
-              isActive: i == activePage,
+              isActive: effective == activePage,
             ),
           );
         },
