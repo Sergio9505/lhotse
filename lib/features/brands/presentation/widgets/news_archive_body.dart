@@ -4,15 +4,19 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../../core/data/brands_provider.dart';
 import '../../../../core/data/news_provider.dart';
 import '../../../../core/domain/news_item_data.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/search_utils.dart';
 import '../../../../core/widgets/lhotse_async_list_states.dart';
+import '../../../../core/widgets/lhotse_brand_filter_row.dart';
 import '../../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../../core/widgets/lhotse_news_card.dart';
 import '../../../../core/widgets/lhotse_search_field.dart';
 import '../../../../core/widgets/scroll_aware_filter_bar.dart';
+
+enum _ActiveTool { none, brands, search }
 
 class NewsArchiveBody extends ConsumerStatefulWidget {
   const NewsArchiveBody({super.key});
@@ -23,7 +27,8 @@ class NewsArchiveBody extends ConsumerStatefulWidget {
 
 class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
   NewsType? _activeType;
-  bool _searchOpen = false;
+  _ActiveTool _activeTool = _ActiveTool.none;
+  final Set<String> _selectedBrands = {};
   String _searchQuery = '';
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
@@ -36,9 +41,18 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
   }
 
   List<NewsItemData> _applyFilters(List<NewsItemData> news) {
-    var result = news;
+    // Global exclusion: construction-progress news are scoped to the project's
+    // L3 Avance tab and never surface in this archive — independent of any
+    // other filter the user toggles.
+    var result =
+        news.where((n) => n.subtype != NewsSubtype.progress).toList();
     if (_activeType != null) {
       result = result.where((n) => n.type == _activeType).toList();
+    }
+    if (_selectedBrands.isNotEmpty) {
+      result = result
+          .where((n) => n.brand != null && _selectedBrands.contains(n.brand!))
+          .toList();
     }
     if (_searchQuery.isNotEmpty) {
       final q = normalizeForSearch(_searchQuery);
@@ -68,12 +82,26 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
     setState(() => _activeType = type);
   }
 
-  void _toggleSearch() {
+  void _toggleTool(_ActiveTool tool) {
     setState(() {
-      _searchOpen = !_searchOpen;
-      if (!_searchOpen) {
+      _activeTool = _activeTool == tool ? _ActiveTool.none : tool;
+      if (_activeTool != _ActiveTool.search) {
         _searchQuery = '';
         _searchController.clear();
+      }
+    });
+  }
+
+  void _toggleBrand(String brandName) {
+    // Single-select: tap the already-selected brand clears; tap a different
+    // brand replaces. Mirrors ProjectsArchiveBody._toggleBrand.
+    setState(() {
+      if (_selectedBrands.contains(brandName)) {
+        _selectedBrands.clear();
+      } else {
+        _selectedBrands
+          ..clear()
+          ..add(brandName);
       }
     });
   }
@@ -81,8 +109,19 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
   @override
   Widget build(BuildContext context) {
     final newsAsync = ref.watch(newsProvider);
+    final brandsAsync = ref.watch(brandsProvider);
     final allNews = newsAsync.value ?? const [];
     final news = _applyFilters(allNews);
+
+    final newsBrandNames = allNews
+        .where((n) => n.subtype != NewsSubtype.progress)
+        .map((n) => n.brand)
+        .whereType<String>()
+        .toSet();
+    final allBrands = brandsAsync.value ?? const [];
+    final brands =
+        allBrands.where((b) => newsBrandNames.contains(b.name)).toList();
+    final hasBrandSelection = _selectedBrands.isNotEmpty;
 
     return Column(
       children: [
@@ -128,11 +167,47 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                     Container(width: 1, height: 16, color: AppColors.border),
                     const SizedBox(width: AppSpacing.md),
                     GestureDetector(
-                      onTap: _toggleSearch,
+                      onTap: () => _toggleTool(_ActiveTool.brands),
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Center(
+                              child: PhosphorIcon(
+                                PhosphorIconsThin.stack,
+                                size: 20,
+                                color: _activeTool == _ActiveTool.brands ||
+                                        hasBrandSelection
+                                    ? AppColors.textPrimary
+                                    : AppColors.accentMuted,
+                              ),
+                            ),
+                            if (hasBrandSelection)
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.textPrimary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    GestureDetector(
+                      onTap: () => _toggleTool(_ActiveTool.search),
                       child: PhosphorIcon(
                         PhosphorIconsThin.magnifyingGlass,
                         size: 20,
-                        color: _searchOpen
+                        color: _activeTool == _ActiveTool.search
                             ? AppColors.textPrimary
                             : AppColors.accentMuted,
                       ),
@@ -140,7 +215,7 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                   ],
                 ),
               ),
-              if (_searchOpen)
+              if (_activeTool == _ActiveTool.search)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                       AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
@@ -152,9 +227,18 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                         hint: 'Buscar noticias, firmas, regiones...',
                         autofocus: true,
                         onChanged: (v) => setState(() => _searchQuery = v),
-                        onClose: _toggleSearch,
+                        onClose: () => _toggleTool(_ActiveTool.search),
                       ),
                     ),
+                  ),
+                )
+              else if (_activeTool == _ActiveTool.brands)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: LhotseBrandFilterRow(
+                    brands: brands,
+                    selectedBrands: _selectedBrands,
+                    onBrandTap: _toggleBrand,
                   ),
                 ),
             ],

@@ -53,6 +53,10 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - Filters exposed via `ScrollAwareFilterBar`: FIRMA (brand logo row), REGIÓN (flag emoji row: 🇪🇸🇲🇽🇺🇸🇵🇹🇦🇪), BUSCAR (search field). Brand and region combinable; search exclusive.
 - Cards: default `LhotseNewsCard` (1:1 captioned photograph, see DESIGN_SYSTEM.md).
 
+#### News classification
+- `news.type` (`project | press`) — primary classification, drives the `PROYECTOS / PRENSA` chips.
+- `news.subtype` (TEXT NULL, ortogonal a `type`) — subclasificación open-ended. Hoy solo `'progress'` (avance de obra): noticias excluidas del archivo global de Noticias (`BrandsScreen` sub-tab Noticias) y visibles solo en el L3 Avance del proyecto vinculado. `NULL` = noticia genérica. Independiente de `type`: `type=project, subtype=progress` es avance de obra; `type=project, subtype=null` es comercial del proyecto y sí aparece en el archivo. La CHECK constraint deja crecer la lista (`milestone`, `commercial`, etc.) sin renombrar.
+
 ### Firmas (formerly Marcas)
 - List of all brands within Lhotse Group (Myttas, Lacomb & Bos, Vellte, NUVE, Domorato, Andhy, Ciclo, Renta Fija)
 - Each brand shown as card with cover image + SVG logo + name

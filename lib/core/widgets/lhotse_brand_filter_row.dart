@@ -25,7 +25,7 @@ class LhotseBrandFilterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 52,
+      height: 64,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -48,12 +48,12 @@ class LhotseBrandFilterRow extends StatelessWidget {
                   duration: const Duration(milliseconds: 200),
                   opacity: opacity,
                   child: SizedBox(
-                    width: 80,
-                    height: 32,
+                    height: 36,
                     child: Center(
                       child: BrandWordmark(
                         brand: brand,
-                        size: BrandWordmarkSize.xs,
+                        size: BrandWordmarkSize.sm,
+                        preferDetail: true,
                         fallback: Text(
                           brand.name[0],
                           style: AppTypography.bodyInput.copyWith(

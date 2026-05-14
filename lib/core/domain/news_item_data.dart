@@ -14,6 +14,22 @@ extension NewsTypeX on NewsType {
       };
 }
 
+/// Optional sub-classification orthogonal to [NewsType]. Open-ended by design:
+/// today only `progress` exists; future values (e.g. `milestone`, `commercial`)
+/// extend the DB CHECK + this enum without renaming. `null` means generic news.
+enum NewsSubtype { progress }
+
+extension NewsSubtypeX on NewsSubtype {
+  static NewsSubtype? fromString(String? value) => switch (value) {
+        'progress' => NewsSubtype.progress,
+        _ => null,
+      };
+
+  String get label => switch (this) {
+        NewsSubtype.progress => 'Avance de obra',
+      };
+}
+
 class NewsItemData {
   const NewsItemData({
     required this.id,
@@ -28,6 +44,7 @@ class NewsItemData {
     this.videoUrl,
     required this.date,
     required this.type,
+    this.subtype,
     this.body,
     this.useLightOverlay = true,
   });
@@ -57,6 +74,13 @@ class NewsItemData {
   final String? videoUrl;
   final DateTime date;
   final NewsType type;
+
+  /// Sub-classification orthogonal to [type]. `NewsSubtype.progress` flags
+  /// construction-progress news that are excluded from the global Noticias
+  /// archive and visible only inside the project L3 Avance tab. `null` for
+  /// generic news.
+  final NewsSubtype? subtype;
+
   final String? body;
   final bool useLightOverlay;
 
@@ -91,6 +115,7 @@ class NewsItemData {
       videoUrl: row['video_url'] as String?,
       date: DateTime.parse(row['date'] as String),
       type: NewsTypeX.fromString(row['type'] as String? ?? ''),
+      subtype: NewsSubtypeX.fromString(row['subtype'] as String?),
       body: row['body'] as String?,
       useLightOverlay: row['use_light_overlay'] as bool? ?? true,
     );
