@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/data/supabase_provider.dart';
 
 class NotificationPreferences {
+  /// Defaults aligned with the DB column defaults on
+  /// `notification_preferences` so the local fallback (when no row exists
+  /// yet) matches what users would see once upsert creates their row.
   const NotificationPreferences({
     this.investmentUpdates = true,
-    this.documents = false,
+    this.documents = true,
     this.groupNews = true,
-    this.events = false,
+    this.events = true,
     this.pushEnabled = true,
-    this.emailEnabled = true,
+    this.emailEnabled = false,
   });
 
   final bool investmentUpdates;
@@ -22,11 +25,11 @@ class NotificationPreferences {
   factory NotificationPreferences.fromJson(Map<String, dynamic> json) =>
       NotificationPreferences(
         investmentUpdates: json['investment_updates'] as bool? ?? true,
-        documents: json['documents'] as bool? ?? false,
+        documents: json['documents'] as bool? ?? true,
         groupNews: json['group_news'] as bool? ?? true,
-        events: json['events'] as bool? ?? false,
+        events: json['events'] as bool? ?? true,
         pushEnabled: json['push_enabled'] as bool? ?? true,
-        emailEnabled: json['email_enabled'] as bool? ?? true,
+        emailEnabled: json['email_enabled'] as bool? ?? false,
       );
 
   NotificationPreferences copyWith({
@@ -71,6 +74,11 @@ final notificationPreferencesProvider =
       : null;
 });
 
+/// Upserts the user's notification preferences. `update` alone is a no-op
+/// when the user has no row yet (admin-created / pre-feature users), so a
+/// silent-fail toggle would have looked like it worked client-side but
+/// never persisted. `upsert` with `onConflict: 'user_id'` inserts on first
+/// toggle and updates from then on.
 Future<void> updateNotificationPreferences(
     WidgetRef ref, NotificationPreferences prefs) async {
   final userId = ref.read(currentUserIdProvider).valueOrNull;
@@ -78,7 +86,9 @@ Future<void> updateNotificationPreferences(
   await ref
       .read(supabaseClientProvider)
       .from('notification_preferences')
-      .update(prefs.toUpdateMap())
-      .eq('user_id', userId);
+      .upsert({
+    'user_id': userId,
+    ...prefs.toUpdateMap(),
+  }, onConflict: 'user_id');
   ref.invalidate(notificationPreferencesProvider);
 }

@@ -35,11 +35,9 @@ import '../features/documents/presentation/document_preview_screen.dart';
 import '../features/onboarding/presentation/onboarding_done_screen.dart';
 import '../features/onboarding/presentation/onboarding_host.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
-import '../features/profile/presentation/kyc_screen.dart';
 import '../features/profile/presentation/legal_text_screen.dart';
 import '../features/profile/presentation/notifications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
-import '../features/profile/presentation/security_screen.dart';
 import '../features/profile/presentation/support_screen.dart';
 import '../features/search/presentation/search_screen.dart';
 import 'shell_screen.dart';
@@ -94,9 +92,7 @@ abstract final class AppRoutes {
   static const completedCoinvestmentDetail = '/investments/detail/completed/coinvestment/:id';
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
-  static const profileKyc = '/profile/kyc';
   static const profileNotifications = '/profile/notifications';
-  static const profileSecurity = '/profile/security';
   static const profileSupport = '/profile/support';
   static const profileTerms = '/profile/terms';
   static const profilePrivacy = '/profile/privacy';
@@ -469,24 +465,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ),
             GoRoute(
-              path: AppRoutes.profileKyc,
-              pageBuilder: (context, state) => _fadePage(
-                key: state.pageKey,
-                child: const KycScreen(),
-              ),
-            ),
-            GoRoute(
               path: AppRoutes.profileNotifications,
               pageBuilder: (context, state) => _fadePage(
                 key: state.pageKey,
                 child: const NotificationsScreen(),
-              ),
-            ),
-            GoRoute(
-              path: AppRoutes.profileSecurity,
-              pageBuilder: (context, state) => _fadePage(
-                key: state.pageKey,
-                child: const SecurityScreen(),
               ),
             ),
             GoRoute(

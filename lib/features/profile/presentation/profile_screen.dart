@@ -12,6 +12,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 import '../../auth/data/auth_repository.dart';
 import '../data/avatar_repository.dart';
+import 'widgets/change_password_sheet.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -60,19 +61,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const _SectionLabel(title: 'GESTIÓN DE CUENTA'),
             const SizedBox(height: AppSpacing.md),
             _MenuItem(
-              icon: PhosphorIconsThin.identificationCard,
-              label: 'Documentación Legal (KYC)',
-              onTap: () => context.push('/profile/kyc'),
+              icon: PhosphorIconsThin.user,
+              label: 'Datos personales',
+              onTap: () => context.push('/profile/edit'),
+            ),
+            _MenuItem(
+              icon: PhosphorIconsThin.key,
+              label: 'Cambiar contraseña',
+              onTap: () => showChangePasswordSheet(context, ref),
             ),
             _MenuItem(
               icon: PhosphorIconsThin.bell,
               label: 'Notificaciones',
               onTap: () => context.push('/profile/notifications'),
-            ),
-            _MenuItem(
-              icon: PhosphorIconsThin.shieldCheck,
-              label: 'Seguridad',
-              onTap: () => context.push('/profile/security'),
             ),
             _MenuItem(
               icon: PhosphorIconsThin.chatCircle,
@@ -327,60 +328,54 @@ class _IdentitySectionState extends ConsumerState<_IdentitySection> {
           ),
         ),
 
-        // Name + metadata — tappable for edit contact data
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => context.push('/profile/edit'),
-          child: Column(
-            children: [
-              const SizedBox(height: AppSpacing.xs),
+        // Name + metadata — static display. Editing lives in the
+        // "Datos personales" row of GESTIÓN DE CUENTA so the affordance
+        // is explicit instead of buried in a tap-on-name gesture.
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          displayName,
+          style: AppTypography.editorialTitle.copyWith(
+            color: AppColors.textPrimary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+
+        const SizedBox(height: AppSpacing.sm),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (memberSince != null)
               Text(
-                displayName,
-                style: AppTypography.editorialTitle.copyWith(
-                  color: AppColors.textPrimary,
+                'MIEMBRO DESDE ${memberSince.year}',
+                style: AppTypography.labelUppercaseSm.copyWith(
+                  color: AppColors.accentMuted,
                 ),
-                textAlign: TextAlign.center,
               ),
-
-              const SizedBox(height: AppSpacing.sm),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (memberSince != null)
-                    Text(
-                      'MIEMBRO DESDE ${memberSince.year}',
-                      style: AppTypography.labelUppercaseSm.copyWith(
-                        color: AppColors.accentMuted,
-                      ),
-                    ),
-                  if (memberSince != null &&
-                      city != null &&
-                      city.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm),
-                      child: Container(
-                        width: 3,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: AppColors.accentMuted.withValues(alpha: 0.5),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (city != null && city.isNotEmpty)
-                    Text(
-                      city,
-                      style: AppTypography.annotation.copyWith(
-                        color: AppColors.accentMuted,
-                      ),
-                    ),
-                ],
+            if (memberSince != null &&
+                city != null &&
+                city.isNotEmpty) ...[
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                child: Container(
+                  width: 3,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: AppColors.accentMuted.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                ),
               ),
             ],
-          ),
+            if (city != null && city.isNotEmpty)
+              Text(
+                city,
+                style: AppTypography.annotation.copyWith(
+                  color: AppColors.accentMuted,
+                ),
+              ),
+          ],
         ),
       ],
     );
