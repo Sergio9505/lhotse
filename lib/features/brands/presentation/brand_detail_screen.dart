@@ -117,7 +117,7 @@ class _BrandDetailScreenState extends ConsumerState<BrandDetailScreen> {
 
                       // Tagline — editorial hero statement
                       if (brand.tagline != null) ...[
-                        const SizedBox(height: AppSpacing.lg),
+                        const SizedBox(height: AppSpacing.xl),
                         Padding(
                           padding: const EdgeInsets.symmetric(
                               horizontal: AppSpacing.lg),
@@ -181,6 +181,22 @@ class _BrandLogoHeader extends StatelessWidget {
         brand: brand,
         size: BrandWordmarkSize.md,
         preferDetail: true,
+        // Container calibrado contra el back arrow del header (icono 24pt
+        // según LhotseBackButton._iconSize). El wordmark a 20pt queda
+        // ligeramente subordinado al control de navegación primario sin
+        // dejar de leerse como peer-context — antes 28pt del default `md`
+        // que excedía la altura del icono. Ancho 120pt deja respiración
+        // entre el hit area del back button (44pt) y el SizedBox(44) de
+        // balance a la derecha.
+        containerSize: const Size(120, 20),
+        // `center` (default) por intención explícita: el wordmark vive
+        // en una Row con el back arrow centrado verticalmente; usar
+        // `bottomCenter` (como en filter row / hero) deja el texto
+        // pegado al borde inferior y desalineado del icono. En el
+        // header solo hay UNA marca visible → la baseline-fix entre
+        // marcas es teórica, mientras la alineación con el back arrow
+        // es la visible.
+        alignment: Alignment.center,
       );
 }
 
@@ -195,7 +211,17 @@ class _BrandLogo extends StatelessWidget {
         brand: brand,
         size: BrandWordmarkSize.lg,
         preferDetail: true,
-        alignment: Alignment.centerLeft,
+        // Hero proportion calibrated against the editorial scale: 40pt is
+        // between editorialTitle (36) and editorialHero (48) — the wordmark
+        // leads the page without out-shouting the typographic hero. Was
+        // lg's default 240×56 which exceeded every text on screen.
+        containerSize: const Size(180, 40),
+        // bottom-left: keeps the left padding (AppSpacing.lg) edge
+        // consistent between brands AND aligns the text baseline so
+        // multi-line wordmarks (Myttas, Ammaca with icon-above-text)
+        // don't sit lower than single-line ones (Lacomb, Nuve) when
+        // navigating between brand details.
+        alignment: Alignment.bottomLeft,
       );
 }
 
