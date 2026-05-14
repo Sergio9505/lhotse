@@ -23,13 +23,22 @@ class LhotseVideoPlayer extends StatefulWidget {
   const LhotseVideoPlayer({
     super.key,
     required this.videoUrl,
-    this.posterUrl,
+    this.rawVideoUrl,
+    this.imageUrl,
     required this.isActive,
     this.playDelay = Duration.zero,
   });
 
+  /// Signed playback URL. Used by the controller.
   final String videoUrl;
-  final String? posterUrl;
+
+  /// Raw (unsigned) source URL used only to derive the poster cascade via
+  /// [LhotseImage.poster]. Falls back to [videoUrl] when null.
+  final String? rawVideoUrl;
+
+  /// Explicit DB image used as last-resort poster fallback.
+  final String? imageUrl;
+
   final bool isActive;
   final Duration playDelay;
 
@@ -150,9 +159,11 @@ class LhotseVideoPlayerState extends State<LhotseVideoPlayer> {
           child: AnimatedOpacity(
             opacity: _showPoster ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 400),
-            child: (widget.posterUrl == null || widget.posterUrl!.isEmpty)
-                ? const SizedBox.shrink()
-                : LhotseImage(widget.posterUrl, fit: BoxFit.cover),
+            child: LhotseImage.poster(
+              videoUrl: widget.rawVideoUrl ?? widget.videoUrl,
+              imageUrl: widget.imageUrl,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
       ],

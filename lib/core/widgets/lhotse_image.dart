@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../data/bunny_thumbnail.dart';
 import '../theme/app_theme.dart';
 
 /// Distinguishes the icon shown when a thumbnail is missing or fails to load.
@@ -20,20 +21,71 @@ enum LhotseImagePlaceholder { image, video }
 /// over the beige surface signals absence. During an in-flight network load
 /// the surface is rendered plain (no icon) so the icon doesn't flash before
 /// the real image fades in.
-class LhotseImage extends StatelessWidget {
+///
+/// Supports a runtime [fallbacks] cascade: when [source] errors at load
+/// time, the widget advances through each fallback in order before falling
+/// back to the placeholder icon. Use the [LhotseImage.poster] factory for
+/// the Bunny video poster pattern (`thumbnail.jpg` → `thumbnail_1.jpg` →
+/// explicit DB `image_url` → placeholder).
+class LhotseImage extends StatefulWidget {
   const LhotseImage(
     this.source, {
     super.key,
     this.fit = BoxFit.cover,
     this.placeholder = LhotseImagePlaceholder.image,
+    this.fallbacks = const [],
   });
+
+  /// Bunny-aware poster builder. Resolves a cascade for videos hosted on
+  /// Bunny Stream:
+  ///
+  ///   1. `thumbnail.jpg` — curator-picked frame (only exists if someone
+  ///      used "Set as thumbnail" in the Bunny dashboard).
+  ///   2. `thumbnail_1.jpg` — auto-generated frame ~50% of the clip;
+  ///      Bunny produces this for every processed video.
+  ///   3. [imageUrl] — explicit `image_url` column from the DB.
+  ///
+  /// Each step is tried at load time; failure (404, network error) advances
+  /// to the next. When all sources fail or are missing, the standard
+  /// video-style placeholder icon is shown.
+  factory LhotseImage.poster({
+    Key? key,
+    required String? videoUrl,
+    required String? imageUrl,
+    BoxFit fit = BoxFit.cover,
+  }) {
+    final hasVideo = videoUrl != null && videoUrl.isNotEmpty;
+    final candidates = <String>[];
+    if (hasVideo) {
+      final custom = bunnyThumbnailUrlFor(videoUrl);
+      final auto = bunnyAutoFrameUrlFor(videoUrl, frame: 1);
+      if (custom != null) candidates.add(custom);
+      if (auto != null) candidates.add(auto);
+    }
+    if (imageUrl != null && imageUrl.isNotEmpty) candidates.add(imageUrl);
+
+    final primary = candidates.isNotEmpty ? candidates.first : null;
+    final rest = candidates.length > 1
+        ? candidates.sublist(1)
+        : const <String>[];
+    return LhotseImage(
+      primary,
+      key: key,
+      fit: fit,
+      placeholder: hasVideo
+          ? LhotseImagePlaceholder.video
+          : LhotseImagePlaceholder.image,
+      fallbacks: rest,
+    );
+  }
 
   final String? source;
   final BoxFit fit;
   final LhotseImagePlaceholder placeholder;
 
-  bool get _hasSource => source != null && source!.isNotEmpty;
-  bool get _isAsset => _hasSource && source!.startsWith('assets/');
+  /// Ordered fallbacks tried at runtime when [source] (or a previous
+  /// fallback) fails to load. Empty list = no cascade.
+  final List<String> fallbacks;
 
   /// Kick off a decode into Flutter's `ImageCache` before the image is
   /// actually mounted. Call this as soon as you know the user is *likely* to
@@ -52,23 +104,64 @@ class LhotseImage extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (!_hasSource) {
-      return _LhotseImagePlaceholder(kind: placeholder);
+  State<LhotseImage> createState() => _LhotseImageState();
+}
+
+class _LhotseImageState extends State<LhotseImage> {
+  int _stage = 0;
+
+  @override
+  void didUpdateWidget(LhotseImage old) {
+    super.didUpdateWidget(old);
+    if (old.source != widget.source ||
+        old.fallbacks.length != widget.fallbacks.length ||
+        !_sameList(old.fallbacks, widget.fallbacks)) {
+      _stage = 0;
     }
-    if (_isAsset) {
+  }
+
+  bool _sameList(List<String> a, List<String> b) {
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  String? _sourceAt(int stage) {
+    if (stage == 0) return widget.source;
+    final idx = stage - 1;
+    return idx < widget.fallbacks.length ? widget.fallbacks[idx] : null;
+  }
+
+  bool get _canAdvance => _stage < widget.fallbacks.length;
+
+  Widget _onError() {
+    if (_canAdvance) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _canAdvance) setState(() => _stage++);
+      });
+      return Container(color: AppColors.surface);
+    }
+    return _LhotseImagePlaceholder(kind: widget.placeholder);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final src = _sourceAt(_stage);
+    if (src == null || src.isEmpty) return _onError();
+    if (src.startsWith('assets/')) {
       return Image.asset(
-        source!,
-        fit: fit,
-        errorBuilder: (_, _, _) => _LhotseImagePlaceholder(kind: placeholder),
+        src,
+        fit: widget.fit,
+        errorBuilder: (_, _, _) => _onError(),
       );
     }
     return CachedNetworkImage(
-      imageUrl: source!,
-      fit: fit,
+      imageUrl: src,
+      fit: widget.fit,
       fadeInDuration: const Duration(milliseconds: 180),
       placeholder: (_, _) => Container(color: AppColors.surface),
-      errorWidget: (_, _, _) => _LhotseImagePlaceholder(kind: placeholder),
+      errorWidget: (_, _, _) => _onError(),
     );
   }
 }

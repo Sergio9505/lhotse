@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/data/bunny_thumbnail.dart';
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/lhotse_image.dart';
@@ -38,14 +37,9 @@ class ProjectShowcaseCard extends StatelessWidget {
                 Hero(
                   tag: 'project-hero-${project.id}',
                   flightShuttleBuilder: (_, _, _, _, _) =>
-                      LhotseImage(
-                        posterUrlFor(
-                          videoUrl: project.videoUrl,
-                          fallback: project.imageUrl,
-                        ),
-                        placeholder: project.videoUrl?.isNotEmpty == true
-                            ? LhotseImagePlaceholder.video
-                            : LhotseImagePlaceholder.image,
+                      LhotseImage.poster(
+                        videoUrl: project.videoUrl,
+                        imageUrl: project.imageUrl,
                       ),
                   child: _ProjectMedia(
                     imageUrl: project.imageUrl,
@@ -104,14 +98,10 @@ class _ProjectMedia extends StatelessWidget {
   final String? videoUrl;
 
   @override
-  Widget build(BuildContext context) {
-    return LhotseImage(
-      posterUrlFor(videoUrl: videoUrl, fallback: imageUrl),
-      placeholder: videoUrl?.isNotEmpty == true
-          ? LhotseImagePlaceholder.video
-          : LhotseImagePlaceholder.image,
-    );
-  }
+  Widget build(BuildContext context) => LhotseImage.poster(
+        videoUrl: videoUrl,
+        imageUrl: imageUrl,
+      );
 }
 
 /// Single-line byline: BRAND · City · Status — mixed casing per token.

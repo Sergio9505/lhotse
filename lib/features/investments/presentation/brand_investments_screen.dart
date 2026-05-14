@@ -15,7 +15,6 @@ import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/widgets/lhotse_doc_row.dart';
 import '../../../core/widgets/lhotse_documents_section.dart';
 import '../../../core/widgets/lhotse_filter_chip.dart';
-import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../data/investments_provider.dart';
 import '../domain/coinvestment_contract_data.dart';
@@ -670,15 +669,15 @@ class _AssetRowState extends State<_AssetRow> {
                     ? (widget.heroTag != null
                         ? Hero(
                             tag: widget.heroTag!,
-                            child: LhotseImage(posterUrlFor(
+                            child: LhotseImage.poster(
                               videoUrl: widget.videoUrl,
-                              fallback: widget.imageUrl ?? '',
-                            )),
+                              imageUrl: widget.imageUrl,
+                            ),
                           )
-                        : LhotseImage(posterUrlFor(
+                        : LhotseImage.poster(
                             videoUrl: widget.videoUrl,
-                            fallback: widget.imageUrl ?? '',
-                          )))
+                            imageUrl: widget.imageUrl,
+                          ))
                     : Container(color: AppColors.surface),
               ),
               const SizedBox(width: 14),
@@ -1086,10 +1085,10 @@ class _PurchaseRowState extends State<_PurchaseRow> {
                 child: c.assetImageUrl != null || c.videoUrl != null
                     ? Hero(
                         tag: 'asset-hero-${c.assetId}',
-                        child: LhotseImage(posterUrlFor(
+                        child: LhotseImage.poster(
                           videoUrl: c.videoUrl,
-                          fallback: c.assetImageUrl ?? '',
-                        )),
+                          imageUrl: c.assetImageUrl,
+                        ),
                       )
                     : Container(color: AppColors.surface),
               ),
@@ -1255,10 +1254,10 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
                 child: c.projectImageUrl.isNotEmpty || c.videoUrl != null
                     ? Hero(
                         tag: 'project-hero-${c.projectId}',
-                        child: LhotseImage(posterUrlFor(
+                        child: LhotseImage.poster(
                           videoUrl: c.videoUrl,
-                          fallback: c.projectImageUrl,
-                        )),
+                          imageUrl: c.projectImageUrl,
+                        ),
                       )
                     : Container(color: AppColors.surface),
               ),

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/data/projects_provider.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/domain/user_role.dart';
@@ -82,7 +81,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
 
   Future<void> _openProjectVideoPlayer(
     String videoUrl,
-    String? posterUrl,
+    String? rawVideoUrl,
+    String? imageUrl,
   ) async {
     final start = _videoKey.currentState?.position ?? Duration.zero;
     _videoKey.currentState?.pauseExternal();
@@ -97,7 +97,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 Opacity(opacity: animation.value, child: child),
             child: FullscreenVideoPlayer(
               videoUrl: videoUrl,
-              posterUrl: posterUrl ?? '',
+              rawVideoUrl: rawVideoUrl,
+              imageUrl: imageUrl,
               initialPosition: start,
             ),
           );
@@ -154,7 +155,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     _heroHeight = MediaQuery.of(context).size.height * 0.55;
-    final posterUrl = posterUrlFor(videoUrl: project.videoUrl, fallback: project.imageUrl);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone
@@ -208,7 +208,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                   onTap: signedVideoUrl != null
                       ? () => _openProjectVideoPlayer(
                             signedVideoUrl,
-                            posterUrl,
+                            project.videoUrl,
+                            project.imageUrl,
                           )
                       : null,
                   child: Stack(
@@ -220,11 +221,15 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                             ? LhotseVideoPlayer(
                                 key: _videoKey,
                                 videoUrl: signedVideoUrl,
-                                posterUrl: posterUrl,
+                                rawVideoUrl: project.videoUrl,
+                                imageUrl: project.imageUrl,
                                 isActive: true,
                                 playDelay: const Duration(milliseconds: 2500),
                               )
-                            : LhotseImage(posterUrl),
+                            : LhotseImage.poster(
+                                videoUrl: project.videoUrl,
+                                imageUrl: project.imageUrl,
+                              ),
                       ),
                       const DecoratedBox(
                         decoration: BoxDecoration(

@@ -15,7 +15,6 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
-import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_tab_scroll_wrapper.dart';
 import '../../../core/data/playable_video_url_provider.dart';
@@ -92,7 +91,8 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
 
   Future<void> _openCompletedVideoPlayer(
     String videoUrl,
-    String? posterUrl,
+    String? rawVideoUrl,
+    String? imageUrl,
   ) async {
     final start = _videoKey.currentState?.position ?? Duration.zero;
     _videoKey.currentState?.pauseExternal();
@@ -107,7 +107,8 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                 Opacity(opacity: animation.value, child: child),
             child: FullscreenVideoPlayer(
               videoUrl: videoUrl,
-              posterUrl: posterUrl ?? '',
+              rawVideoUrl: rawVideoUrl,
+              imageUrl: imageUrl,
               initialPosition: start,
             ),
           );
@@ -140,7 +141,7 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
     final signedVideoUrl = rawVideoUrl?.isNotEmpty == true
         ? ref.watch(playableVideoUrlProvider(rawVideoUrl!)).valueOrNull
         : null;
-    final videoPosterUrl = posterUrlFor(videoUrl: rawVideoUrl, fallback: d.imageUrl ?? '');
+    final imageUrl = d.imageUrl;
     final galleryMedia = d.galleryMedia.isNotEmpty
         ? d.galleryMedia
         : purchaseAssetDetail?.galleryMedia ??
@@ -207,7 +208,8 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                   onTap: signedVideoUrl != null
                       ? () => _openCompletedVideoPlayer(
                             signedVideoUrl,
-                            videoPosterUrl,
+                            rawVideoUrl,
+                            imageUrl,
                           )
                       : null,
                   child: Stack(
@@ -219,17 +221,24 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                           flightShuttleBuilder:
                               (flightContext, animation, direction,
                                       fromHeroContext, toHeroContext) =>
-                                  LhotseImage(videoPosterUrl),
+                                  LhotseImage.poster(
+                                    videoUrl: rawVideoUrl,
+                                    imageUrl: imageUrl,
+                                  ),
                           child: signedVideoUrl != null
                               ? LhotseVideoPlayer(
                                   key: _videoKey,
                                   videoUrl: signedVideoUrl,
-                                  posterUrl: videoPosterUrl,
+                                  rawVideoUrl: rawVideoUrl,
+                                  imageUrl: imageUrl,
                                   isActive: true,
                                   playDelay:
                                       const Duration(milliseconds: 2500),
                                 )
-                              : LhotseImage(videoPosterUrl),
+                              : LhotseImage.poster(
+                                  videoUrl: rawVideoUrl,
+                                  imageUrl: imageUrl,
+                                ),
                         )
                       else if (d.assetId != null)
                         Hero(
@@ -237,29 +246,40 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
                           flightShuttleBuilder:
                               (flightContext, animation, direction,
                                       fromHeroContext, toHeroContext) =>
-                                  LhotseImage(videoPosterUrl),
+                                  LhotseImage.poster(
+                                    videoUrl: rawVideoUrl,
+                                    imageUrl: imageUrl,
+                                  ),
                           child: signedVideoUrl != null
                               ? LhotseVideoPlayer(
                                   key: _videoKey,
                                   videoUrl: signedVideoUrl,
-                                  posterUrl: videoPosterUrl,
+                                  rawVideoUrl: rawVideoUrl,
+                                  imageUrl: imageUrl,
                                   isActive: true,
                                   playDelay:
                                       const Duration(milliseconds: 2500),
                                 )
-                              : LhotseImage(videoPosterUrl),
+                              : LhotseImage.poster(
+                                  videoUrl: rawVideoUrl,
+                                  imageUrl: imageUrl,
+                                ),
                         )
                       else
                         signedVideoUrl != null
                             ? LhotseVideoPlayer(
                                 key: _videoKey,
                                 videoUrl: signedVideoUrl,
-                                posterUrl: videoPosterUrl,
+                                rawVideoUrl: rawVideoUrl,
+                                imageUrl: imageUrl,
                                 isActive: true,
                                 playDelay:
                                     const Duration(milliseconds: 2500),
                               )
-                            : LhotseImage(videoPosterUrl),
+                            : LhotseImage.poster(
+                                videoUrl: rawVideoUrl,
+                                imageUrl: imageUrl,
+                              ),
                       const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(

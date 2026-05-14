@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/data/news_provider.dart';
 import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/domain/news_item_data.dart';
@@ -69,7 +68,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
 
   Future<void> _openVideoPlayer(
     String videoUrl,
-    String? posterUrl,
+    String? rawVideoUrl,
+    String? imageUrl,
   ) async {
     // Per ADR-62: news playback only happens in fullscreen with audio,
     // never inline. No inline player to pause/resume around the push.
@@ -85,7 +85,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
             ),
             child: FullscreenVideoPlayer(
               videoUrl: videoUrl,
-              posterUrl: posterUrl,
+              rawVideoUrl: rawVideoUrl,
+              imageUrl: imageUrl,
             ),
           );
         },
@@ -122,7 +123,6 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     _heroHeight = MediaQuery.of(context).size.height * 0.55;
-    final posterUrl = posterUrlFor(videoUrl: news.videoUrl, fallback: news.imageUrl);
 
     // "MÁS DE {brand}" — strict brand match. Ordering: same project first
     // (preserve context), then the rest of the brand by date descending
@@ -195,14 +195,21 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               flexibleSpace: FlexibleSpaceBar(
                 background: GestureDetector(
                   onTap: signedVideoUrl != null
-                      ? () => _openVideoPlayer(signedVideoUrl, posterUrl)
+                      ? () => _openVideoPlayer(
+                            signedVideoUrl,
+                            news.videoUrl,
+                            news.imageUrl,
+                          )
                       : null,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
                       Hero(
                         tag: 'news-hero-${news.id}',
-                        child: LhotseImage(posterUrl),
+                        child: LhotseImage.poster(
+                          videoUrl: news.videoUrl,
+                          imageUrl: news.imageUrl,
+                        ),
                       ),
                       const DecoratedBox(
                         decoration: BoxDecoration(

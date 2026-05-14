@@ -58,7 +58,7 @@ class _FeedCardState extends State<FeedCard> {
       final content = _contentFor(widget.item);
       // Fire-and-forget; if it fails the widget still renders via
       // CachedNetworkImage's own error path.
-      LhotseImage.precache(content.imageUrl, context);
+      LhotseImage.precache(content.precachePrimary, context);
     }
   }
 
@@ -87,15 +87,9 @@ class _FeedCardState extends State<FeedCard> {
                   ? Hero(
                       tag: heroTag,
                       flightShuttleBuilder: _flightShuttleBuilder,
-                      child: _Media(
-                        imageUrl: content.imageUrl,
-                        placeholder: content.placeholder,
-                      ),
+                      child: _Media(content: content),
                     )
-                  : _Media(
-                      imageUrl: content.imageUrl,
-                      placeholder: content.placeholder,
-                    ),
+                  : _Media(content: content),
             ),
             _Caption(content: content),
           ],
@@ -111,10 +105,13 @@ class _FeedCardState extends State<FeedCard> {
     BuildContext fromHeroContext,
     BuildContext toHeroContext,
   ) {
-    // imageUrl is already the Bunny static thumbnail when the item has a video,
-    // so the shuttle matches the poster shown in the detail hero — no flash.
+    // The shuttle mirrors `_Media` — same `LhotseImage.poster` cascade so the
+    // hero flight resolves to the same first frame the detail screen shows.
     final content = _contentFor(widget.item);
-    return LhotseImage(content.imageUrl, placeholder: content.placeholder);
+    return LhotseImage.poster(
+      videoUrl: content.videoUrl,
+      imageUrl: content.imageUrl,
+    );
   }
 
   String? _heroTagFor(FeedItem item) {
@@ -181,17 +178,15 @@ class _FeedCardState extends State<FeedCard> {
 // ── Media block ──────────────────────────────────────────────────────────────
 
 class _Media extends StatelessWidget {
-  const _Media({required this.imageUrl, required this.placeholder});
+  const _Media({required this.content});
 
-  /// Bunny static thumbnail when the item has a video; legacy imageUrl otherwise.
-  /// Nullable for entities without an image — `LhotseImage` renders its
-  /// `AppColors.surface` placeholder in that case.
-  final String? imageUrl;
-  final LhotseImagePlaceholder placeholder;
+  final _FeedContent content;
 
   @override
-  Widget build(BuildContext context) =>
-      LhotseImage(imageUrl, placeholder: placeholder);
+  Widget build(BuildContext context) => LhotseImage.poster(
+        videoUrl: content.videoUrl,
+        imageUrl: content.imageUrl,
+      );
 }
 
 // ── Caption block ────────────────────────────────────────────────────────────
@@ -321,19 +316,22 @@ class _MetaWithCta extends StatelessWidget {
 class _FeedContent {
   const _FeedContent({
     required this.title,
+    required this.videoUrl,
     required this.imageUrl,
     required this.brand,
     required this.metaParts,
     required this.cta,
-    required this.placeholder,
   });
 
   final String title;
 
-  /// Poster image shown in the feed: Bunny static thumbnail when the item has
-  /// a video URL, legacy imageUrl otherwise, or `null` when the entity has no
-  /// image at all (DB column NULL). Precached in
-  /// [_FeedCardState.didChangeDependencies] so the Hero flight is always warm.
+  /// Raw video URL (Bunny Stream) when the item has a video. Drives
+  /// [LhotseImage.poster]'s thumbnail cascade.
+  final String? videoUrl;
+
+  /// Explicit DB image — used as direct source for items without video,
+  /// and as last-resort fallback in [LhotseImage.poster] when the Bunny
+  /// thumbnails fail to load.
   final String? imageUrl;
 
   /// Brand name rendered as uppercase tracked span — separate from [metaParts]
@@ -347,15 +345,24 @@ class _FeedContent {
 
   final String cta;
 
-  /// Icon to show when [imageUrl] is missing or fails to load. Items derived
-  /// from projects/news with a `videoUrl` get the video clapboard so the
-  /// fallback hints at the asset type even when the thumbnail is absent.
-  final LhotseImagePlaceholder placeholder;
+  /// URL whose decode we eagerly warm so the Hero flight lands on a
+  /// pre-decoded bitmap. Mirrors the first source the runtime cascade will
+  /// try.
+  String? get precachePrimary {
+    final v = videoUrl;
+    if (v != null && v.isNotEmpty) {
+      return bunnyThumbnailUrlFor(v)
+          ?? bunnyAutoFrameUrlFor(v)
+          ?? imageUrl;
+    }
+    return imageUrl;
+  }
 
   factory _FeedContent.fromProject(ProjectData p, {required String cta}) {
     return _FeedContent(
       title: p.name,
-      imageUrl: posterUrlFor(videoUrl: p.videoUrl, fallback: p.imageUrl),
+      videoUrl: p.videoUrl,
+      imageUrl: p.imageUrl,
       brand: p.brand.isNotEmpty ? p.brand : null,
       // City only (no country code): consistent with ProjectShowcaseCard in
       // archive — "Málaga" / "Dubai" / "Miami" read cleaner and more luxury
@@ -364,9 +371,6 @@ class _FeedContent {
         if (p.city.isNotEmpty) p.city,
       ],
       cta: cta,
-      placeholder: p.videoUrl?.isNotEmpty == true
-          ? LhotseImagePlaceholder.video
-          : LhotseImagePlaceholder.image,
     );
   }
 
@@ -374,24 +378,22 @@ class _FeedContent {
     final date = DateFormat('d MMM yyyy', 'es_ES').format(n.date);
     return _FeedContent(
       title: n.title,
-      imageUrl: posterUrlFor(videoUrl: n.videoUrl, fallback: n.imageUrl),
+      videoUrl: n.videoUrl,
+      imageUrl: n.imageUrl,
       brand: (n.brand?.isNotEmpty ?? false) ? n.brand : null,
       metaParts: [date],
       cta: 'LEER',
-      placeholder: n.videoUrl?.isNotEmpty == true
-          ? LhotseImagePlaceholder.video
-          : LhotseImagePlaceholder.image,
     );
   }
 
   factory _FeedContent.fromBrand(BrandData b) {
     return _FeedContent(
       title: b.tagline ?? b.name,
+      videoUrl: null,
       imageUrl: b.coverImageUrl,
       brand: b.name,
       metaParts: [b.businessModel.displayName],
       cta: 'EXPLORAR',
-      placeholder: LhotseImagePlaceholder.image,
     );
   }
 
@@ -399,14 +401,14 @@ class _FeedContent {
     final title = (a.address?.isNotEmpty ?? false) ? a.address! : a.location;
     return _FeedContent(
       title: title,
-      imageUrl: a.thumbnailImage ?? '',
+      videoUrl: null,
+      imageUrl: a.thumbnailImage,
       brand: null,
       metaParts: [
         if (a.city?.isNotEmpty ?? false) a.city!,
         if (a.country?.isNotEmpty ?? false) a.country!,
       ],
       cta: 'EXPLORAR',
-      placeholder: LhotseImagePlaceholder.image,
     );
   }
 }

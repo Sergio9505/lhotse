@@ -16,7 +16,6 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
-import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_tab_scroll_wrapper.dart';
 import '../../../core/data/playable_video_url_provider.dart';
@@ -147,7 +146,8 @@ class _DirectPurchaseDetailContentState
 
   Future<void> _openVideoPlayer(
     String videoUrl,
-    String? posterUrl,
+    String? rawVideoUrl,
+    String? imageUrl,
   ) async {
     final start = _videoKey.currentState?.position ?? Duration.zero;
     _videoKey.currentState?.pauseExternal();
@@ -162,7 +162,8 @@ class _DirectPurchaseDetailContentState
                 Opacity(opacity: animation.value, child: child),
             child: FullscreenVideoPlayer(
               videoUrl: videoUrl,
-              posterUrl: posterUrl ?? '',
+              rawVideoUrl: rawVideoUrl,
+              imageUrl: imageUrl,
               initialPosition: start,
             ),
           );
@@ -187,7 +188,8 @@ class _DirectPurchaseDetailContentState
     final signedVideoUrl = assetDetail?.videoUrl?.isNotEmpty == true
         ? ref.watch(playableVideoUrlProvider(assetDetail!.videoUrl!)).valueOrNull
         : null;
-    final videoPosterUrl = posterUrlFor(videoUrl: assetDetail?.videoUrl, fallback: c.assetImageUrl ?? '');
+    final rawVideoUrl = assetDetail?.videoUrl;
+    final imageUrl = c.assetImageUrl;
     // FINANCIACIÓN tab content is lazy — only fetched if the contract has
     // financing AND the tab is rendered.
     final mortgageDetail = c.hasFinancing
@@ -247,7 +249,8 @@ class _DirectPurchaseDetailContentState
                   onTap: signedVideoUrl != null
                       ? () => _openVideoPlayer(
                             signedVideoUrl,
-                            videoPosterUrl,
+                            rawVideoUrl,
+                            imageUrl,
                           )
                       : null,
                   child: Stack(
@@ -257,17 +260,24 @@ class _DirectPurchaseDetailContentState
                         tag: 'asset-hero-${c.assetId}',
                         flightShuttleBuilder: (flightContext, animation,
                                 direction, fromHeroContext, toHeroContext) =>
-                            LhotseImage(videoPosterUrl),
+                            LhotseImage.poster(
+                              videoUrl: rawVideoUrl,
+                              imageUrl: imageUrl,
+                            ),
                         child: signedVideoUrl != null
                             ? LhotseVideoPlayer(
                                 key: _videoKey,
                                 videoUrl: signedVideoUrl,
-                                posterUrl: videoPosterUrl,
+                                rawVideoUrl: rawVideoUrl,
+                                imageUrl: imageUrl,
                                 isActive: true,
                                 playDelay:
                                     const Duration(milliseconds: 2500),
                               )
-                            : LhotseImage(videoPosterUrl),
+                            : LhotseImage.poster(
+                                videoUrl: rawVideoUrl,
+                                imageUrl: imageUrl,
+                              ),
                       ),
                       const DecoratedBox(
                         decoration: BoxDecoration(

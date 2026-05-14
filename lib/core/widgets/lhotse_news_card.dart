@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../data/bunny_thumbnail.dart';
 import '../theme/app_theme.dart';
 import 'lhotse_image.dart';
 import 'lhotse_play_button.dart';
@@ -49,7 +48,7 @@ class LhotseNewsCard extends StatelessWidget {
   final String? subtitle;
   final String? date;
   final String? type;
-  /// Drives both the Bunny thumbnail fallback (via `posterUrlFor`) and the
+  /// Drives both the `LhotseImage.poster` thumbnail cascade and the
   /// play-button overlay. News video is "content to listen to" — listings show
   /// a play overlay; playback only happens in the fullscreen viewer where
   /// audio is on. Never autoplay-muted inline (see ADR-62).
@@ -67,23 +66,17 @@ class LhotseNewsCard extends StatelessWidget {
 
   Widget _buildFull() {
     final hasVideo = videoUrl != null && videoUrl!.isNotEmpty;
-    final effectiveImageUrl =
-        posterUrlFor(videoUrl: videoUrl, fallback: imageUrl);
-    final placeholder = hasVideo
-        ? LhotseImagePlaceholder.video
-        : LhotseImagePlaceholder.image;
+    Widget poster() =>
+        LhotseImage.poster(videoUrl: videoUrl, imageUrl: imageUrl);
     final image = AspectRatio(
       aspectRatio: 3 / 2,
       child: Stack(
         fit: StackFit.expand,
         children: [
           if (heroTag != null)
-            Hero(
-              tag: heroTag!,
-              child: LhotseImage(effectiveImageUrl, placeholder: placeholder),
-            )
+            Hero(tag: heroTag!, child: poster())
           else
-            LhotseImage(effectiveImageUrl, placeholder: placeholder),
+            poster(),
           if (hasVideo) const LhotsePlayButton(),
         ],
       ),
@@ -173,8 +166,6 @@ class LhotseNewsCard extends StatelessWidget {
 
   Widget _buildCompact() {
     final hasVideo = videoUrl != null && videoUrl!.isNotEmpty;
-    final effectiveImageUrl =
-        posterUrlFor(videoUrl: videoUrl, fallback: imageUrl);
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -183,12 +174,7 @@ class LhotseNewsCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            LhotseImage(
-              effectiveImageUrl,
-              placeholder: hasVideo
-                  ? LhotseImagePlaceholder.video
-                  : LhotseImagePlaceholder.image,
-            ),
+            LhotseImage.poster(videoUrl: videoUrl, imageUrl: imageUrl),
             if (hasVideo) const LhotsePlayButton(size: 40),
             Positioned(
               left: 0,

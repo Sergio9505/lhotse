@@ -21,7 +21,6 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
-import '../../../core/data/bunny_thumbnail.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_tab_scroll_wrapper.dart';
 import '../../../core/data/playable_video_url_provider.dart';
@@ -125,7 +124,8 @@ class _CoinversionDetailScreenState
 
   Future<void> _openCoinversionVideoPlayer(
     String videoUrl,
-    String? posterUrl,
+    String? rawVideoUrl,
+    String? imageUrl,
   ) async {
     final start = _videoKey.currentState?.position ?? Duration.zero;
     _videoKey.currentState?.pauseExternal();
@@ -140,7 +140,8 @@ class _CoinversionDetailScreenState
                 Opacity(opacity: animation.value, child: child),
             child: FullscreenVideoPlayer(
               videoUrl: videoUrl,
-              posterUrl: posterUrl ?? '',
+              rawVideoUrl: rawVideoUrl,
+              imageUrl: imageUrl,
               initialPosition: start,
             ),
           );
@@ -190,7 +191,7 @@ class _CoinversionDetailScreenState
 
     final projectLocation = c.projectLocation;
     final projectImageUrl = c.projectImageUrl;
-    final videoPosterUrl = posterUrlFor(videoUrl: projectDetail?.videoUrl, fallback: projectImageUrl);
+    final rawVideoUrl = projectDetail?.videoUrl;
     final currentPhaseIndex =
         phases.where((p) => p.isCompleted).length;
     final renderMedia = projectDetail?.renderMedia ?? const <MediaItem>[];
@@ -256,7 +257,8 @@ class _CoinversionDetailScreenState
                     onTap: signedVideoUrl != null
                         ? () => _openCoinversionVideoPlayer(
                               signedVideoUrl,
-                              videoPosterUrl,
+                              rawVideoUrl,
+                              projectImageUrl,
                             )
                         : null,
                     child: Stack(
@@ -271,17 +273,24 @@ class _CoinversionDetailScreenState
                           flightShuttleBuilder:
                               (flightContext, animation, direction,
                                       fromHeroContext, toHeroContext) =>
-                                  LhotseImage(videoPosterUrl),
+                                  LhotseImage.poster(
+                                    videoUrl: rawVideoUrl,
+                                    imageUrl: projectImageUrl,
+                                  ),
                           child: signedVideoUrl != null
                               ? LhotseVideoPlayer(
                                   key: _videoKey,
                                   videoUrl: signedVideoUrl,
-                                  posterUrl: videoPosterUrl,
+                                  rawVideoUrl: rawVideoUrl,
+                                  imageUrl: projectImageUrl,
                                   isActive: true,
                                   playDelay:
                                       const Duration(milliseconds: 2500),
                                 )
-                              : LhotseImage(videoPosterUrl),
+                              : LhotseImage.poster(
+                                  videoUrl: rawVideoUrl,
+                                  imageUrl: projectImageUrl,
+                                ),
                         ),
                         const DecoratedBox(
                           decoration: BoxDecoration(

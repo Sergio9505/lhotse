@@ -16,12 +16,21 @@ class FullscreenVideoPlayer extends StatefulWidget {
   const FullscreenVideoPlayer({
     super.key,
     required this.videoUrl,
-    this.posterUrl,
+    this.rawVideoUrl,
+    this.imageUrl,
     this.initialPosition = Duration.zero,
   });
 
+  /// Signed playback URL (e.g. Bunny token-bearing). Used by the player.
   final String videoUrl;
-  final String? posterUrl;
+
+  /// Raw (unsigned) source URL used only to derive the loading poster via
+  /// [LhotseImage.poster]. Defaults to [videoUrl] when null — useful when
+  /// the caller has only the signed URL.
+  final String? rawVideoUrl;
+
+  /// Explicit DB image used as last-resort poster fallback.
+  final String? imageUrl;
 
   /// Where to start playback. Used to keep continuity with the hero player
   /// underneath. The route pops with the controller's current position so the
@@ -170,7 +179,10 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
           fit: StackFit.expand,
           children: [
             if (_failed) ...[
-              LhotseImage(widget.posterUrl),
+              LhotseImage.poster(
+                videoUrl: widget.rawVideoUrl ?? widget.videoUrl,
+                imageUrl: widget.imageUrl,
+              ),
               const DecoratedBox(
                 decoration: BoxDecoration(color: Color(0x99000000)),
               ),
@@ -183,7 +195,10 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
                 ),
               ),
             ] else if (!_ready) ...[
-              LhotseImage(widget.posterUrl),
+              LhotseImage.poster(
+                videoUrl: widget.rawVideoUrl ?? widget.videoUrl,
+                imageUrl: widget.imageUrl,
+              ),
               const DecoratedBox(
                 decoration: BoxDecoration(color: Color(0x99000000)),
               ),
