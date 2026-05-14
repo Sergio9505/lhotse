@@ -11,6 +11,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../core/widgets/lhotse_mark.dart';
 import '../../../core/widgets/lhotse_notification_bell.dart';
+import '../../profile/data/user_requests_provider.dart';
 import '../data/investments_provider.dart';
 import '../domain/portfolio_entry.dart';
 
@@ -485,35 +486,67 @@ class _ViewerEmptyState extends StatelessWidget {
 
 // ── Contact CTA button ────────────────────────────────────────────────────────
 
-class _ContactButton extends StatefulWidget {
+class _ContactButton extends ConsumerStatefulWidget {
   const _ContactButton();
 
   @override
-  State<_ContactButton> createState() => _ContactButtonState();
+  ConsumerState<_ContactButton> createState() => _ContactButtonState();
 }
 
-class _ContactButtonState extends State<_ContactButton> {
+class _ContactButtonState extends ConsumerState<_ContactButton> {
   bool _pressed = false;
+
+  Future<void> _submit(bool exists) async {
+    try {
+      await submitUserRequest(ref, UserRequestType.investInfo);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(exists
+              ? 'Ya tienes una solicitud en estudio.'
+              : 'Solicitud recibida. Te contactaremos pronto.'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('No se pudo enviar la solicitud. Inténtalo de nuevo.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final exists = ref
+            .watch(userRequestExistsProvider(UserRequestType.investInfo))
+            .valueOrNull ??
+        false;
+    final label = exists ? 'SOLICITUD EN ESTUDIO' : 'CONTACTAR';
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        // TODO: navigate to contact (destination TBD by product)
-      },
+      onTapDown: exists ? null : (_) => setState(() => _pressed = true),
+      onTapUp: exists
+          ? null
+          : (_) {
+              setState(() => _pressed = false);
+              _submit(false);
+            },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 120),
-        opacity: _pressed ? 0.6 : 1.0,
+        opacity: exists ? 0.6 : (_pressed ? 0.6 : 1.0),
         child: Container(
           height: 52,
           alignment: Alignment.center,
           color: AppColors.primary,
           child: Text(
-            'CONTACTAR',
+            label,
             style: AppTypography.labelUppercaseMd.copyWith(
               color: Colors.white,
               letterSpacing: 1.2,

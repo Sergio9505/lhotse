@@ -8,10 +8,12 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/supabase_provider.dart';
+import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 import '../../auth/data/auth_repository.dart';
 import '../data/avatar_repository.dart';
+import '../data/user_requests_provider.dart';
 import 'widgets/change_password_sheet.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -99,11 +101,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             const SizedBox(height: AppSpacing.xl),
 
-            // Lhotse Private banner
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: _PrivateBanner(),
-            ),
+            // Lhotse Private banner — hidden for VIP users (already have it).
+            if (ref.watch(currentUserRoleProvider) != UserRole.investorVip)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: _PrivateBanner(),
+              ),
 
             const SizedBox(height: AppSpacing.xxl),
 
@@ -489,11 +492,40 @@ class _MenuItemState extends State<_MenuItem> {
 // Lhotse Private banner
 // ---------------------------------------------------------------------------
 
-class _PrivateBanner extends StatelessWidget {
+class _PrivateBanner extends ConsumerWidget {
   const _PrivateBanner();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final exists = ref
+            .watch(userRequestExistsProvider(UserRequestType.vipAccess))
+            .valueOrNull ??
+        false;
+    final label = exists ? 'SOLICITUD EN ESTUDIO' : 'SOLICITAR INVITACIÓN';
+
+    Future<void> onTap() async {
+      try {
+        await submitUserRequest(ref, UserRequestType.vipAccess);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(exists
+                ? 'Ya tienes una solicitud en estudio.'
+                : 'Solicitud recibida. Te contactaremos pronto.'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo enviar la solicitud. Inténtalo de nuevo.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.primary,
@@ -511,36 +543,41 @@ class _PrivateBanner extends StatelessWidget {
               color: AppColors.textOnDark,
             ),
           ),
-
           const SizedBox(height: AppSpacing.sm),
-
           Text(
             'Acceso exclusivo a rondas Pre-Seed y eventos de networking de alto nivel.',
             style: AppTypography.annotation.copyWith(
               color: AppColors.textOnDark.withValues(alpha: 0.75),
             ),
           ),
-
           const SizedBox(height: AppSpacing.xl),
-
-          // CTA
-          Row(
-            children: [
-              Text(
-                'SOLICITAR INVITACIÓN',
-                // EXCEPTION: ls 1.2 — CTA on dark pill, tighter than labelUppercaseMd 1.8
-              style: AppTypography.labelUppercaseMd.copyWith(
-                  color: AppColors.textOnDark,
-                  letterSpacing: 1.2,
-                ),
+          // CTA — state-aware: existing request → disabled "EN ESTUDIO".
+          GestureDetector(
+            onTap: exists ? null : onTap,
+            behavior: HitTestBehavior.opaque,
+            child: Opacity(
+              opacity: exists ? 0.6 : 1.0,
+              child: Row(
+                children: [
+                  Text(
+                    label,
+                    // EXCEPTION: ls 1.2 — CTA on dark pill, tighter than labelUppercaseMd 1.8
+                    style: AppTypography.labelUppercaseMd.copyWith(
+                      color: AppColors.textOnDark,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  if (!exists) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    const PhosphorIcon(
+                      PhosphorIconsThin.arrowRight,
+                      size: 14,
+                      color: AppColors.textOnDark,
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(width: AppSpacing.sm),
-              const PhosphorIcon(
-                PhosphorIconsThin.arrowRight,
-                size: 14,
-                color: AppColors.textOnDark,
-              ),
-            ],
+            ),
           ),
         ],
       ),
