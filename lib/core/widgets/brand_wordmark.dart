@@ -27,6 +27,7 @@ class BrandWordmark extends StatelessWidget {
     this.fallback,
     this.preferDetail = false,
     this.alignment = Alignment.center,
+    this.containerSize,
   });
 
   final BrandData brand;
@@ -36,6 +37,14 @@ class BrandWordmark extends StatelessWidget {
   final bool preferDetail;
   final AlignmentGeometry alignment;
 
+  /// Custom bounding box override. When provided, the wordmark renders inside
+  /// a fixed-size container with `BoxFit.contain`, ignoring [size]'s default
+  /// container (or its lack of one for xs/sm). Use for situations where the
+  /// canonical tokens don't fit — e.g. the filter row slot that needs a
+  /// smaller uniform footprint than md (140×28) calibrated against the
+  /// adjacent LhotseFilterChip height.
+  final Size? containerSize;
+
   double get _height => switch (size) {
         BrandWordmarkSize.xs => 24,
         BrandWordmarkSize.sm => 36,
@@ -43,12 +52,15 @@ class BrandWordmark extends StatelessWidget {
         BrandWordmarkSize.lg => 48,
       };
 
-  Size? get _containerSize => switch (size) {
-        BrandWordmarkSize.xs => null,
-        BrandWordmarkSize.sm => null,
-        BrandWordmarkSize.md => const Size(140, 28),
-        BrandWordmarkSize.lg => const Size(240, 56),
-      };
+  Size? get _containerSize {
+    if (containerSize != null) return containerSize;
+    return switch (size) {
+      BrandWordmarkSize.xs => null,
+      BrandWordmarkSize.sm => null,
+      BrandWordmarkSize.md => const Size(140, 28),
+      BrandWordmarkSize.lg => const Size(240, 56),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -117,6 +117,23 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
         allBrands.where((b) => projectBrandNames.contains(b.name)).toList();
     final filtered = _applyFilters(projects);
 
+    // Defensive: if the brand pool collapses to empty (last project of a
+    // brand removed while the user has it open), drop any stale selection
+    // and close the tool so the user doesn't get trapped behind a hidden
+    // trigger.
+    if (brands.isEmpty &&
+        (_selectedBrands.isNotEmpty || _activeTool == _ActiveTool.brands)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _selectedBrands.clear();
+          if (_activeTool == _ActiveTool.brands) {
+            _activeTool = _ActiveTool.none;
+          }
+        });
+      });
+    }
+
     return Column(
       children: [
         ScrollAwareFilterBar(
@@ -128,6 +145,7 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
                 selectedStatus: _selectedStatus,
                 activeTool: _activeTool,
                 hasBrandSelection: _selectedBrands.isNotEmpty,
+                showBrandsTool: brands.isNotEmpty,
                 onStatusTap: _setStatus,
                 onBrandsTap: () => _toggleTool(_ActiveTool.brands),
                 onSearchTap: () => _toggleTool(_ActiveTool.search),
@@ -209,6 +227,7 @@ class _FilterBar extends StatelessWidget {
     required this.selectedStatus,
     required this.activeTool,
     required this.hasBrandSelection,
+    required this.showBrandsTool,
     required this.onStatusTap,
     required this.onBrandsTap,
     required this.onSearchTap,
@@ -217,6 +236,12 @@ class _FilterBar extends StatelessWidget {
   final _StatusFilter? selectedStatus;
   final _ActiveTool activeTool;
   final bool hasBrandSelection;
+
+  /// When false (no project has an associated brand), hide the `stack`
+  /// trigger entirely — the brand filter is empty and useless. The search
+  /// icon and chips remain visible.
+  final bool showBrandsTool;
+
   final ValueChanged<_StatusFilter?> onStatusTap;
   final VoidCallback onBrandsTap;
   final VoidCallback onSearchTap;
@@ -258,42 +283,44 @@ class _FilterBar extends StatelessWidget {
             ),
           ),
           Container(width: 1, height: 16, color: AppColors.border),
-          const SizedBox(width: AppSpacing.md),
-          GestureDetector(
-            onTap: onBrandsTap,
-            child: SizedBox(
-              width: 22,
-              height: 22,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Center(
-                    child: PhosphorIcon(
-                      PhosphorIconsThin.stack,
-                      size: 20,
-                      color: activeTool == _ActiveTool.brands ||
-                              hasBrandSelection
-                          ? AppColors.textPrimary
-                          : AppColors.accentMuted,
-                    ),
-                  ),
-                  if (hasBrandSelection)
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: AppColors.textPrimary,
-                          shape: BoxShape.circle,
-                        ),
+          if (showBrandsTool) ...[
+            const SizedBox(width: AppSpacing.md),
+            GestureDetector(
+              onTap: onBrandsTap,
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Center(
+                      child: PhosphorIcon(
+                        PhosphorIconsThin.stack,
+                        size: 20,
+                        color: activeTool == _ActiveTool.brands ||
+                                hasBrandSelection
+                            ? AppColors.textPrimary
+                            : AppColors.accentMuted,
                       ),
                     ),
-                ],
+                    if (hasBrandSelection)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppColors.textPrimary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
           const SizedBox(width: AppSpacing.md),
           GestureDetector(
             onTap: onSearchTap,

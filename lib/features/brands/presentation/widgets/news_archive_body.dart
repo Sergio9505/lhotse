@@ -123,6 +123,23 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
         allBrands.where((b) => newsBrandNames.contains(b.name)).toList();
     final hasBrandSelection = _selectedBrands.isNotEmpty;
 
+    // Defensive: if the brand pool collapses to empty (last non-progress
+    // news of a brand removed while the user has it open), drop any stale
+    // selection and close the tool so the user isn't left interacting with
+    // a hidden trigger.
+    if (brands.isEmpty &&
+        (_selectedBrands.isNotEmpty || _activeTool == _ActiveTool.brands)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _selectedBrands.clear();
+          if (_activeTool == _ActiveTool.brands) {
+            _activeTool = _ActiveTool.none;
+          }
+        });
+      });
+    }
+
     return Column(
       children: [
         ScrollAwareFilterBar(
@@ -165,42 +182,44 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                       ),
                     ),
                     Container(width: 1, height: 16, color: AppColors.border),
-                    const SizedBox(width: AppSpacing.md),
-                    GestureDetector(
-                      onTap: () => _toggleTool(_ActiveTool.brands),
-                      child: SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Center(
-                              child: PhosphorIcon(
-                                PhosphorIconsThin.stack,
-                                size: 20,
-                                color: _activeTool == _ActiveTool.brands ||
-                                        hasBrandSelection
-                                    ? AppColors.textPrimary
-                                    : AppColors.accentMuted,
-                              ),
-                            ),
-                            if (hasBrandSelection)
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.textPrimary,
-                                    shape: BoxShape.circle,
-                                  ),
+                    if (brands.isNotEmpty) ...[
+                      const SizedBox(width: AppSpacing.md),
+                      GestureDetector(
+                        onTap: () => _toggleTool(_ActiveTool.brands),
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Center(
+                                child: PhosphorIcon(
+                                  PhosphorIconsThin.stack,
+                                  size: 20,
+                                  color: _activeTool == _ActiveTool.brands ||
+                                          hasBrandSelection
+                                      ? AppColors.textPrimary
+                                      : AppColors.accentMuted,
                                 ),
                               ),
-                          ],
+                              if (hasBrandSelection)
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.textPrimary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                     const SizedBox(width: AppSpacing.md),
                     GestureDetector(
                       onTap: () => _toggleTool(_ActiveTool.search),

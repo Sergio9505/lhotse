@@ -25,7 +25,7 @@ class LhotseBrandFilterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 64,
+      height: 52,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -47,18 +47,30 @@ class LhotseBrandFilterRow extends StatelessWidget {
                 AnimatedOpacity(
                   duration: const Duration(milliseconds: 200),
                   opacity: opacity,
-                  child: SizedBox(
-                    height: 36,
-                    child: Center(
-                      child: BrandWordmark(
-                        brand: brand,
-                        size: BrandWordmarkSize.sm,
-                        preferDetail: true,
-                        fallback: Text(
-                          brand.name[0],
-                          style: AppTypography.bodyInput.copyWith(
-                            color: AppColors.textPrimary,
-                          ),
+                  child: BrandWordmark(
+                    brand: brand,
+                    size: BrandWordmarkSize.sm,
+                    preferDetail: true,
+                    // Fixed bounding box calibrated against the adjacent
+                    // LhotseFilterChip (also 28pt tall) so wordmarks read as
+                    // peer filter accessories, not heroes. BoxFit.contain
+                    // scales wide wordmarks down (Nuve 8:1) and lets narrow
+                    // ones (Ammaca 2:1) fill the slot. Uniform pitch 112pt
+                    // with the AppSpacing.lg separator.
+                    containerSize: const Size(88, 28),
+                    // Anchor to the bottom of the slot so multi-line tight
+                    // SVGs (Myttas, Ammaca — icon-above-text) and single-
+                    // line ones (Lacomb & Bos, Nuve) share the same
+                    // textual baseline. With center alignment, multi-line
+                    // wordmarks rendered with their text in the lower third
+                    // while single-line ones sat at the midline → visibly
+                    // misaligned baselines across the row.
+                    alignment: Alignment.bottomCenter,
+                    fallback: Center(
+                      child: Text(
+                        brand.name[0],
+                        style: AppTypography.bodyInput.copyWith(
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
