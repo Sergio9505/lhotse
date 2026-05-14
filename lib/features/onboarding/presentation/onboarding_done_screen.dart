@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/lhotse_mark.dart';
 
 /// Final screen of the onboarding flow.
 ///
@@ -120,34 +120,52 @@ class _OnboardingDoneScreenState extends State<OnboardingDoneScreen> {
   }
 }
 
-class _ContinueCta extends StatelessWidget {
+class _ContinueCta extends StatefulWidget {
   const _ContinueCta({required this.onTap, this.enabled = true});
 
   final VoidCallback onTap;
   final bool enabled;
 
   @override
+  State<_ContinueCta> createState() => _ContinueCtaState();
+}
+
+class _ContinueCtaState extends State<_ContinueCta> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: enabled ? onTap : null,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: double.infinity,
-        height: 52,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: enabled ? 0.45 : 0.15),
-            width: 0.6,
+      onTapDown:
+          widget.enabled ? (_) => setState(() => _pressed = true) : null,
+      onTapUp: widget.enabled
+          ? (_) {
+              setState(() => _pressed = false);
+              widget.onTap();
+            }
+          : null,
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: !widget.enabled ? 0.4 : (_pressed ? 0.5 : 1.0),
+        child: Container(
+          width: double.infinity,
+          height: 52,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.6),
+              width: 0.5,
+            ),
           ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          'Continuar',
-          style: AppTypography.bodyEmphasis.copyWith(
-            color: Colors.white.withValues(alpha: enabled ? 1 : 0.4),
-            letterSpacing: 0.5,
+          child: Text(
+            'CONTINUAR',
+            style: AppTypography.labelUppercaseMd.copyWith(
+              color: Colors.white,
+              letterSpacing: 1.2,
+            ),
           ),
         ),
       ),
@@ -157,43 +175,61 @@ class _ContinueCta extends StatelessWidget {
 
 // ── Brand stamp ─────────────────────────────────────────────────────────────
 //
-// Discreet stamp at the top of the screen: the greeting is the hero, the
-// brand provides context. Logo 32 + wordmark in wordmarkByline (10pt ls 1.5)
-// — same lockup grammar as login/search wordmark rows.
+// Mirrors `WelcomeScreen`'s hero lockup: SVG mark 36pt + two-line LHOTSE/GROUP
+// wordmark in `splashWordmark` (24pt) inside a 48pt column. Same grammar so
+// the user finishes onboarding looking at the same brand stamp that opened
+// the auth flow.
 
 class _BrandLockup extends StatelessWidget {
   const _BrandLockup();
 
   @override
   Widget build(BuildContext context) {
-    final wordmarkStyle = AppTypography.wordmarkByline.copyWith(
-      color: Colors.white,
-      height: 1.0,
-    );
-    const strut = StrutStyle(
-      fontSize: 10,
-      height: 1.0,
-      forceStrutHeight: true,
-    );
-
-    return SizedBox(
-      height: 32,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const LhotseMark(color: Colors.white, height: 32),
-          const SizedBox(width: 10),
-          Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SvgPicture.asset(
+          'assets/images/lhotse_logo.svg',
+          height: 36,
+          colorFilter: const ColorFilter.mode(
+            Colors.white,
+            BlendMode.srcIn,
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          height: 48,
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('LHOTSE', style: wordmarkStyle, strutStyle: strut),
-              Text('GROUP', style: wordmarkStyle, strutStyle: strut),
+              Text(
+                'LHOTSE',
+                style: AppTypography.splashWordmark.copyWith(
+                  color: AppColors.textOnDark,
+                ),
+                strutStyle: const StrutStyle(
+                  fontSize: 24,
+                  height: 1.0,
+                  forceStrutHeight: true,
+                ),
+              ),
+              Text(
+                'GROUP',
+                style: AppTypography.splashWordmark.copyWith(
+                  color: AppColors.textOnDark,
+                ),
+                strutStyle: const StrutStyle(
+                  fontSize: 24,
+                  height: 1.0,
+                  forceStrutHeight: true,
+                ),
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
