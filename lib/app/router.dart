@@ -8,6 +8,7 @@ import '../core/domain/asset_data.dart';
 import '../core/domain/brand_data.dart';
 import '../core/domain/news_item_data.dart';
 import '../core/domain/project_data.dart';
+import '../features/auth/presentation/complete_phone_screen.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/otp_verify_screen.dart';
@@ -71,6 +72,9 @@ abstract final class AppRoutes {
   static const forgotPassword = '/forgot-password';
   static const otpVerify = '/otp-verify';
   static const resetPassword = '/reset-password';
+  // Phone capture for sessions that landed without a verified phone (admin-
+  // created users / pre-feature signups). Transient — owns its own nav.
+  static const completePhone = '/complete-phone';
   // Onboarding (post sign-up, outside shell)
   static const onboarding = '/onboarding';
   static const onboardingDone = '/onboarding/done';
@@ -112,13 +116,15 @@ const _kBootRoutes = {
   AppRoutes.splash,
 };
 
-/// Transient routes inside a multi-step flow (OTP, reset password). They are
-/// accessible both unauthenticated (OTP verify) and authenticated (reset
-/// password right after verifyOTP creates a session). The screen itself
-/// decides the next destination — the router must not redirect.
+/// Transient routes inside a multi-step flow (OTP, reset password, complete
+/// phone). They are accessible both unauthenticated (OTP verify) and
+/// authenticated (reset password right after verifyOTP creates a session;
+/// complete-phone for sessions that landed without phone). The screen
+/// itself decides the next destination — the router must not redirect.
 const _kTransientAuthRoutes = {
   AppRoutes.otpVerify,
   AppRoutes.resetPassword,
+  AppRoutes.completePhone,
 };
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -160,6 +166,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (fullyVerified && isAuthRoute) return AppRoutes.home;
 
       if (!isLoggedIn && !isAuthRoute) return AppRoutes.welcome;
+
+      // Session with no verified phone landing on an authenticated route
+      // (home, deep link, etc.) — force the phone-capture flow. Auth screens
+      // and the transient routes above are already excluded; SignUpScreen
+      // owns its own attachPhone flow, and the OTP / reset / complete-phone
+      // screens are exempt because they're transient.
+      if (isLoggedIn && !fullyVerified && !isAuthRoute) {
+        return AppRoutes.completePhone;
+      }
       return null;
     },
     routes: [
@@ -216,6 +231,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _fadePage(
           key: state.pageKey,
           child: const ResetPasswordScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.completePhone,
+        pageBuilder: (context, state) => _fadePage(
+          key: state.pageKey,
+          child: const CompletePhoneScreen(),
         ),
       ),
       // ── Document preview (outside shell — full-screen, any feature) ──

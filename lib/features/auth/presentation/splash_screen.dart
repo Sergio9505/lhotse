@@ -142,11 +142,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       return;
     }
 
-    // Session exists, no phone confirmed, no pending — attachPhone failed
-    // at some point. Treat as unauthenticated so /welcome takes over.
-    await ref.read(authRepositoryProvider).signOut();
-    if (!mounted) return;
-    context.go(AppRoutes.welcome);
+    // Session exists, no phone confirmed, no pending change — either an
+    // admin-created user or a pre-feature signup that never captured a
+    // phone. Send them through phone capture before reaching home.
+    context.go(AppRoutes.completePhone);
   }
 
   Future<void> _warmUp(bool authed) async {

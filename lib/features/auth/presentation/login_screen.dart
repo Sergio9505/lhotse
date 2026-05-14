@@ -72,15 +72,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
           return;
         }
-        // Account in limbo — sign out so /welcome takes over and surface
-        // a clear message.
-        await repo.signOut();
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          _errorMessage =
-              'Tu cuenta no se completó. Vuelve a registrarte o contacta con soporte.';
-        });
+        // Session without a verified phone (admin-created user or a
+        // pre-feature signup that never reached the OTP step). Send them
+        // through phone capture instead of dead-ending — the screen will
+        // attachPhone + push them into the existing OTP verify flow.
+        context.go(AppRoutes.completePhone);
         return;
       }
 

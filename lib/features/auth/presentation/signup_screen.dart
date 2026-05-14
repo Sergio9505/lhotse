@@ -108,6 +108,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       );
       setState(() => _isLoading = false);
     } on AuthException catch (e) {
+      assert(() {
+        debugPrint(
+          '[SignUp] AuthException: code=${e.statusCode} msg="${e.message}"',
+        );
+        return true;
+      }());
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -131,6 +137,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   String _mapAuthError(String message) {
     final msg = message.toLowerCase();
+    // Phone collision first — Supabase returns "User with this phone has
+    // already been registered" for attachPhone conflicts, which also matches
+    // the generic email-collision string. We disambiguate by requiring the
+    // `phone` keyword to be present before claiming "teléfono en uso".
+    final phoneAlreadyTaken = msg.contains('phone') &&
+        (msg.contains('already') ||
+            msg.contains('exists') ||
+            msg.contains('taken') ||
+            msg.contains('in use') ||
+            msg.contains('duplicate'));
+    if (phoneAlreadyTaken) {
+      return 'Ese teléfono ya está vinculado a otra cuenta.';
+    }
     if (msg.contains('already registered') ||
         msg.contains('user already') ||
         msg.contains('already exists')) {
@@ -154,10 +173,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (msg.contains('sms') &&
         (msg.contains('provider') || msg.contains('disabled'))) {
       return 'No se puede enviar el SMS. Inténtalo más tarde.';
-    }
-    if (msg.contains('phone') &&
-        (msg.contains('exists') || msg.contains('taken'))) {
-      return 'Ese teléfono ya está vinculado a otra cuenta.';
     }
     return 'Error al crear la cuenta. Inténtalo de nuevo.';
   }
