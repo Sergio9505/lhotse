@@ -1931,3 +1931,46 @@ The premium solution is a `SECURITY DEFINER` RPC `public.get_pending_phone()` (m
 - `lhotse_admin/components/forms/brand-form.tsx` — tres slots de upload con copy distintivo.
 - `lhotse_admin/scripts/upload-logos-detail.ts` — one-shot que pobló las 15 marcas iniciales.
 - Migration: `docs/sql/migrations/20260513184807_brand_logo_asset_detail.sql`.
+
+## ADR-66: Self-service account deletion — RPC SECURITY DEFINER + CASCADE/SET NULL split
+
+**Date:** 2026-05-17
+**Status:** Accepted
+
+**Context:** Apple App Store y Google Play exigen un mecanismo in-app para eliminar la cuenta. La app tenía botón de logout pero ningún flujo de borrado. Limitación de Supabase: `DELETE FROM auth.users` requiere `service_role` — no es invocable desde una sesión `authenticated` directa.
+
+**Decision:**
+
+1. **RPC `public.delete_my_account()`** en `SECURITY DEFINER` (migración `20260517130000_delete_my_account_rpc.sql`). Sin parámetros; ejecuta `DELETE FROM auth.users WHERE id = auth.uid()` y deja que las FKs aguas abajo hagan el trabajo. `REVOKE` de `anon`/`PUBLIC` + `GRANT EXECUTE TO authenticated` + `SET search_path = public, auth`.
+
+2. **Política de FKs aguas abajo — split CASCADE vs SET NULL:**
+   - **CASCADE (personal/PII)**: `user_profiles`, `notifications`, `notification_preferences`, `user_requests`, `user_onboarding`, `documents`, y todas las tablas de `auth.*` (sessions, identities, mfa_factors, etc.).
+   - **SET NULL (histórico contractual)**: `purchase_contracts`, `coinvestment_contracts`, `fixed_income_contracts`, `rental_contracts` (configurado en migración `20260429161455_user_delete_set_null_contracts.sql`). El asset histórico se preserva con `user_id = NULL`; el ex-user pierde toda trazabilidad personal.
+
+3. **UI**: `_DeleteAccountButton` en `profile_screen.dart` debajo del logout (color `AppColors.danger`, icon `trash`). Abre `showDeleteAccountSheet` — modal con descripción explícita, checkbox de acknowledgement y botón rojo "ELIMINAR MI CUENTA". `enableDrag: false`/`isDismissible: false` para evitar dismiss accidental sobre acción irreversible.
+
+**Rationale:**
+- **Por qué RPC y no Edge Function**: el patrón canónico ya en uso en la app es RPC `SECURITY DEFINER` (ver `get_pending_phone`). Edge Functions sólo se usan para integraciones externas (signed video URLs). Una RPC tiene la ventaja de leer `auth.uid()` directamente del JWT firmado sin pasar headers manualmente.
+- **Por qué CASCADE en `documents`**: los documentos del scope `investor` son PII personal (KYC, declaraciones, contratos firmados). Mantenerlos huérfanos tras "derecho al olvido" sería inconsistente con la política de privacidad. Los documentos de scope `project`/`asset` son admin-uploaded (no afectados).
+- **Por qué SET NULL en contratos**: la trazabilidad del activo (qué unidad, qué precio, qué fechas) es información contable y legal que la empresa debe conservar incluso si el inversor desaparece. Anonimizar el `user_id` cumple "olvido" sin destruir el histórico contractual.
+- **Por qué un único `DELETE FROM auth.users` y no un script con N pasos**: las FKs declarativas son el contrato más robusto. Un script imperativo podría dejar el estado inconsistente si falla a mitad (sin transacción explícita); el cascade es atómico y verificable con `pg_constraint`.
+
+**Security model — only the caller can delete themselves:**
+1. Sin parámetros — caller no puede pasar `user_id` ajeno.
+2. `WHERE id = auth.uid()` — el body usa la `uid` del JWT del caller; `SECURITY DEFINER` no la sobreescribe.
+3. `auth.uid() IS NULL → 42501` — anon bloqueado en duro.
+4. `REVOKE anon` + `GRANT authenticated` — sólo sesiones con JWT pueden invocar.
+5. JWT firmado por GoTrue's `JWT_SECRET` — impersonación infeasible sin el secret.
+
+**Consequences:**
+- (+) Cumple store policy.
+- (+) Un solo DELETE atómico — sin script imperativo que pueda dejar estado parcial.
+- (+) Histórico contractual preservado anonimizado sin esfuerzo manual.
+- (-) Si en el futuro añadimos tablas con FK al user, hay que decidir explícitamente CASCADE vs SET NULL (no hay default automático "correcto").
+
+**Implementation pointers:**
+- Migration: `docs/sql/migrations/20260517130000_delete_my_account_rpc.sql`.
+- Repository: `lib/features/auth/data/auth_repository.dart` (`deleteMyAccount()`).
+- Sheet: `lib/features/profile/presentation/widgets/delete_account_sheet.dart`.
+- Button: `lib/features/profile/presentation/profile_screen.dart` (`_DeleteAccountButton`).
+- Prior FK migration: `docs/sql/migrations/20260429161455_user_delete_set_null_contracts.sql`.

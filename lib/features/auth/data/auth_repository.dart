@@ -27,6 +27,20 @@ class AuthRepository {
 
   Future<void> signOut() => _client.auth.signOut();
 
+  /// Self-service account deletion (App Store / Play Store compliance).
+  /// Calls the SECURITY DEFINER RPC that runs
+  /// `DELETE FROM auth.users WHERE id = auth.uid()` — downstream cascades
+  /// wipe user-side rows (profile, notifications, requests, onboarding,
+  /// documents, sessions) and SET NULL the four contract tables, so the
+  /// asset history stays anonymised. Once the RPC returns the DB session
+  /// is already invalid (auth.sessions CASCADE); we call signOut to clear
+  /// the local SDK state and the router's auth listener redirects to
+  /// /welcome.
+  Future<void> deleteMyAccount() async {
+    await _client.rpc<dynamic>('delete_my_account');
+    await _client.auth.signOut();
+  }
+
   // ── Phone OTP ──
   //
   // Two distinct flows share the OTP screen:

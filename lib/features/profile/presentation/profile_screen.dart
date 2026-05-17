@@ -15,6 +15,7 @@ import '../../auth/data/auth_repository.dart';
 import '../data/avatar_repository.dart';
 import '../data/user_requests_provider.dart';
 import 'widgets/change_password_sheet.dart';
+import 'widgets/delete_account_sheet.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -101,19 +102,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             const SizedBox(height: AppSpacing.xl),
 
-            // Lhotse Private banner — hidden for VIP users (already have it).
-            if (ref.watch(currentUserRoleProvider) != UserRole.investorVip)
+            // Lhotse Private banner — only standard investors can request VIP;
+            // viewers and VIPs don't see it.
+            if (ref.watch(currentUserRoleProvider) == UserRole.investor)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: _PrivateBanner(),
               ),
 
-            const SizedBox(height: AppSpacing.xxl),
+            const SizedBox(height: AppSpacing.xl),
 
-            // Logout
-            const _LogoutButton(),
-
+            // Sesión — logout + account deletion (store-compliance) as menu
+            // items, aligned with the rest of the screen's grid.
+            const _SectionLabel(title: 'SESIÓN'),
             const SizedBox(height: AppSpacing.md),
+            _MenuItem(
+              icon: PhosphorIconsThin.signOut,
+              label: 'Cerrar sesión',
+              showChevron: false,
+              onTap: () => ref.read(authRepositoryProvider).signOut(),
+            ),
+            _MenuItem(
+              icon: PhosphorIconsThin.trash,
+              label: 'Eliminar cuenta',
+              showChevron: false,
+              color: AppColors.danger,
+              onTap: () => showDeleteAccountSheet(context, ref),
+            ),
+
+            const SizedBox(height: AppSpacing.xxl),
 
             // Version
             if (_versionLabel.isNotEmpty)
@@ -428,11 +445,20 @@ class _MenuItem extends StatefulWidget {
     required this.icon,
     required this.label,
     this.onTap,
+    this.showChevron = true,
+    this.color,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
+
+  /// `false` para acciones terminales que no navegan (logout, eliminar cuenta).
+  final bool showChevron;
+
+  /// Override del color para icon + label. Si es `null`, usa
+  /// `AppColors.textPrimary`. Útil para acciones destructivas.
+  final Color? color;
 
   @override
   State<_MenuItem> createState() => _MenuItemState();
@@ -443,6 +469,7 @@ class _MenuItemState extends State<_MenuItem> {
 
   @override
   Widget build(BuildContext context) {
+    final color = widget.color ?? AppColors.textPrimary;
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -464,22 +491,21 @@ class _MenuItemState extends State<_MenuItem> {
               PhosphorIcon(
                 widget.icon,
                 size: 20,
-                color: AppColors.textPrimary,
+                color: color,
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(
                   widget.label,
-                  style: AppTypography.bodyReading.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppTypography.bodyReading.copyWith(color: color),
                 ),
               ),
-              const PhosphorIcon(
-                PhosphorIconsThin.caretRight,
-                size: 14,
-                color: AppColors.accentMuted,
-              ),
+              if (widget.showChevron)
+                const PhosphorIcon(
+                  PhosphorIconsThin.caretRight,
+                  size: 14,
+                  color: AppColors.accentMuted,
+                ),
             ],
           ),
         ),
@@ -585,38 +611,3 @@ class _PrivateBanner extends ConsumerWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Logout button
-// ---------------------------------------------------------------------------
-
-class _LogoutButton extends ConsumerWidget {
-  const _LogoutButton();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => ref.read(authRepositoryProvider).signOut(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const PhosphorIcon(
-              PhosphorIconsThin.signOut,
-              size: 14,
-              color: AppColors.accentMuted,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              'CERRAR SESIÓN',
-              style: AppTypography.labelCompact.copyWith(
-                color: AppColors.accentMuted,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
