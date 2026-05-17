@@ -17,11 +17,12 @@ extension UserRequestTypeX on UserRequestType {
       };
 }
 
-/// Whether the current user has ever submitted a request of [type].
-/// The CTA UI switches to its "EN ESTUDIO" disabled state once true.
-/// Status (pending / completed / declined) is intentionally ignored —
-/// from the user's point of view, the request stays under review
-/// regardless of internal operator workflow.
+/// Whether the current user has an **active** request of [type] — i.e. one
+/// in `pending` or `completed`. `declined` rows are treated as inexistent
+/// so the operator can reopen the CTA by declining; the user can then
+/// submit again (a fresh row is inserted, the declined one stays as
+/// history for audit). The CTA UI switches to its "EN ESTUDIO" disabled
+/// state when this returns true.
 final userRequestExistsProvider = FutureProvider.family
     .autoDispose<bool, UserRequestType>((ref, type) async {
   final userId = ref.watch(currentUserIdProvider).valueOrNull;
@@ -32,14 +33,18 @@ final userRequestExistsProvider = FutureProvider.family
       .select('id')
       .eq('user_id', userId)
       .eq('type', type.apiValue)
+      .neq('status', 'declined')
       .maybeSingle();
   return row != null;
 });
 
-/// Submits a request. If one already exists for (user, type) the UNIQUE
-/// constraint rejects with code `23505` — swallowed; the existence
-/// provider re-fetches and the UI remains locked. Any other error
-/// re-throws to the caller for UI handling.
+/// Submits a request. Uniqueness is partial: only active rows (`pending` or
+/// `completed`) collide. If an active row already exists for (user, type)
+/// the partial UNIQUE index rejects with code `23505` — swallowed; the
+/// existence provider re-fetches and the UI remains locked. If only a
+/// `declined` row exists (or no row at all), the INSERT succeeds and a
+/// fresh `pending` row is created — past declines stay as history. Any
+/// other error re-throws to the caller for UI handling.
 Future<void> submitUserRequest(WidgetRef ref, UserRequestType type) async {
   final userId = ref.read(currentUserIdProvider).valueOrNull;
   if (userId == null) return;
