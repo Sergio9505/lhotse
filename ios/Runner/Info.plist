@@ -45,6 +45,8 @@
 		<string>Lhotse necesita acceso a la cámara para actualizar tu foto de perfil.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Lhotse necesita acceso a tu biblioteca de fotos para actualizar tu foto de perfil.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Algunas funciones integradas pueden solicitar tu ubicación. Lhotse no recopila ni almacena estos datos.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
