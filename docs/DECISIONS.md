@@ -1637,7 +1637,7 @@ Removed:
 ## ADR-57: Splash — CustomPainter draw animation replaces SVG + pulse
 
 **Date:** 2026-05-07
-**Status:** Accepted (current implementation: v6.3)
+**Status:** Superseded by ADR-67 (2026-05-19) — replaced by a pre-rendered MP4 intro
 
 **Context.** The original splash rendered `assets/images/lhotse_logo.svg` via `SvgPicture.asset` with a sinusoidal pulse and a global fade-in/out. `flutter_svg` cannot animate stroke-dashoffset, and Rive/Lottie would add a non-trivial dependency for a one-screen effect. Replaced with a single `AnimationController` driving a `CustomPainter` (`_IsotypePainter`) and a `_Wordmark` widget — the isotype path is hardcoded in viewBox coordinates (25×22) and scaled at paint time. A second 500 ms `AnimationController` handles the fade-out before navigation. Trade-off: isotype path is duplicated in Dart vs. SVG file (if the brand mark changes, both must be updated).
 
@@ -1974,3 +1974,39 @@ The premium solution is a `SECURITY DEFINER` RPC `public.get_pending_phone()` (m
 - Sheet: `lib/features/profile/presentation/widgets/delete_account_sheet.dart`.
 - Button: `lib/features/profile/presentation/profile_screen.dart` (`_DeleteAccountButton`).
 - Prior FK migration: `docs/sql/migrations/20260429161455_user_delete_set_null_contracts.sql`.
+
+## ADR-67: Intro video MP4 replaces the CustomPainter splash animation
+
+**Date:** 2026-05-19
+**Status:** Accepted (supersedes ADR-57)
+
+**Context.** ADR-57 implemented the splash as a hand-coded `CustomPainter` narrating the ascent of the Lhotse isotype (dual stroke trace, fill wipe, wordmark settle, haptic) over 7.35 s on flat black. It shipped at v6.5 and had been through six visual iterations. The client subsequently delivered a pre-rendered intro (`introLhotse.mp4`, 1080×1920, H.264/AAC, 8 s, ~1.5 MB) that embodies the same "ascent to the summit" metaphor with motion design that exceeds what is feasible in Dart `CustomPainter` (typography, particle/atmosphere work, paced cinematic timing). The brand narrative survives intact — only the rendering technique changes.
+
+**Decision.** Replace the entire CustomPainter animation with `VideoPlayer` playing the MP4 from `assets/videos/intro_lhotse.mp4`, full-bleed and muted. Routing logic, native splash, and provider warm-up are preserved verbatim.
+
+**Implementation (`lib/features/auth/presentation/splash_screen.dart`).**
+
+| Aspect | Choice |
+|---|---|
+| Player | `video_player: ^2.9.1` (already in pubspec for `lhotse_welcome.mp4`) |
+| Fit | `FittedBox(fit: BoxFit.cover)` wrapping `SizedBox(width/height = video size)` over a black Scaffold. The straight `BoxFit.cover` on `VideoPlayer` is unreliable on 9:19.5 phones — `FittedBox` is the canonical workaround |
+| Audio | `setVolume(0)` — consistent with `welcome_screen.dart`'s background video |
+| Loop | `setLooping(false)` — single-shot |
+| Native splash | Unchanged. `lhotse_splash.png` is already a pure black image and frame 0 of the video is also black, so the ~100 ms native → video transition has no visible pop |
+| End-of-video detection | Listener on `VideoPlayerController` checking `position >= duration` — guarded by a `_navigated` flag to ignore duplicate ticks |
+| Post-video transition | 500 ms fade (`AnimationController`) before `context.go`. Kept from ADR-57 — a hard cut from a polished 8 s intro to the welcome screen felt abrupt |
+| Haptic | **Removed.** The `HapticFeedback.lightImpact()` in ADR-57 was load-bearing because it landed exactly on the wordmark-settle / fill-complete frame. On the MP4 it fires arbitrarily at video-end with no narrative anchor — it became vestigial |
+| Initialize-failure fallback | If `VideoPlayerController.initialize()` throws (corrupt asset, unsupported codec), the screen skips the fade and navigates immediately. A broken intro must never block boot |
+| Routing | Untouched from ADR-63 — `welcome` / `home` / `otp-verify (isResume)` / `complete-phone` |
+| Provider warm-up | Untouched — brands, projects, news, assets, document categories (and contracts + portfolio when authed) run in parallel during the 8 s video |
+
+**Removed code.** `_IsotypePainter`, `_Wordmark`, `_remap`, `_animCtrl`, all `_kStroke*` / `_kFill*` / `_kWordmark*` constants, the `_strokeLeft` / `_strokeRight` / `_logo` viewBox paths, the haptic one-shot listener and `_hapticFired` flag, and the `flutter/services.dart` import. Net diff: `+80 / −279` lines.
+
+**Why this is not a regression of ADR-57.**
+- The brand metaphor ("ascent to the summit") is preserved — moved from runtime-rendered Dart paths to client-delivered motion design.
+- ADR-57's "no letter-by-letter stagger / no vertical slide / dual ascending strokes / width-matched wordmark" rules were composition rules for the Dart animation; the MP4 is governed by its own delivered cut, so the rules no longer apply.
+- The decision to keep the fade-out and warm-up is informed by ADR-57's framing (no jarring cut, never block boot on cosmetics).
+
+**Trade-off.** The animation is now a binary asset — visual changes require re-rendering and re-bundling the MP4 (vs. tweaking a curve in Dart). Bundle size grows by ~1.5 MB. Acceptable: motion design fidelity > Dart-editability for a one-shot intro that the brand stakeholder owns end-to-end.
+
+**File touched.** `lib/features/auth/presentation/splash_screen.dart` (rewritten). Asset added: `assets/videos/intro_lhotse.mp4`. No pubspec changes (deps and asset folder already declared).
