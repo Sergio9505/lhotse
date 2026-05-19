@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/data/news_provider.dart';
@@ -10,9 +9,7 @@ import '../../../core/domain/news_item_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
-import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_play_button.dart';
-import '../../../core/widgets/lhotse_section_label.dart';
 import 'widgets/fullscreen_video_player.dart';
 
 class NewsDetailScreen extends ConsumerStatefulWidget {
@@ -99,7 +96,6 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
     final newsAsync = ref.watch(newsByIdProvider(widget.newsId));
     // Prefer the caller-supplied snapshot on the first frame so the Hero
     // tag exists when Flutter starts the flight.
-    final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
     final news = newsAsync.valueOrNull ?? widget.initialNews;
     final signedVideoUrl = news?.videoUrl?.isNotEmpty == true
         ? ref.watch(playableVideoUrlProvider(news!.videoUrl!)).valueOrNull
@@ -123,25 +119,6 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     _heroHeight = MediaQuery.of(context).size.height * 0.55;
-
-    // "MÁS DE {brand}" — strict brand match. Ordering: same project first
-    // (preserve context), then the rest of the brand by date descending
-    // (newsProvider already returns DESC). Hidden when brandId is null
-    // (standalone news without project_id). brandId / brand are populated
-    // via the project→brand join in news_provider._newsSelect.
-    final relatedNews = news.brandId == null
-        ? const <NewsItemData>[]
-        : () {
-            final sameBrand = allNews.where(
-              (n) => n.brandId == news.brandId && n.id != news.id,
-            );
-            return [
-              if (news.projectId != null)
-                ...sameBrand.where((n) => n.projectId == news.projectId),
-              ...sameBrand.where((n) =>
-                  news.projectId == null || n.projectId != news.projectId),
-            ].take(3).toList();
-          }();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone
@@ -290,44 +267,6 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                       height: 1.7,
                     ),
                   ),
-                ),
-              ),
-
-            // =========================================================
-            // 5. RELACIONADAS
-            // =========================================================
-            if (relatedNews.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppSpacing.xxl),
-                    LhotseSectionLabel(
-                      label: 'MÁS DE ${((news.brand ?? '')).toUpperCase()}',
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    SizedBox(
-                      height: 160,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg),
-                        itemCount: relatedNews.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(width: AppSpacing.sm),
-                        itemBuilder: (context, i) => GestureDetector(
-                          onTap: () =>
-                              context.push('/news/${relatedNews[i].id}'),
-                          child: LhotseNewsCard.compact(
-                            title: relatedNews[i].title,
-                            imageUrl: relatedNews[i].imageUrl,
-                            videoUrl: relatedNews[i].videoUrl,
-                            subtitle: DateFormat('d MMM yyyy').format(relatedNews[i].date),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
 
