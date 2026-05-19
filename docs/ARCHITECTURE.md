@@ -9,6 +9,7 @@ This project uses **pure RLS + RLS isolation tests** as the authorization model 
 - **User-scoped views do NOT expose `user_id`** — row isolation is enforced by the RLS policies on the base tables, amplified by `security_invoker = true` on every view.
 - **Client code does NOT filter by `user_id`** — no `.eq('user_id', ...)` anywhere. Providers still watch `currentUserIdProvider.distinct()` to force re-fetch on auth change.
 - **Row isolation is verified by `docs/sql/tests/rls_user_isolation.sql`** — run on every user-scoped migration. Fails loud (assertion error) if policies leak.
+- **Admin role expansion**: the RLS policies on `purchase_contracts`, `coinvestment_contracts` and `fixed_income_contracts` evaluate `auth.uid() = user_id OR is_admin()`. Admins read every row platform-wide — deliberate, because the admin Server Action depends on it for audience resolution (see § Notifications). The investor app surfaces this as if it were the admin's own portfolio: Strategy renders the totals of the entire platform when the logged-in user is an admin. This is **not** a leak — it's the same `is_admin()` helper that gates storage writes and `user_requests` CRUD. The `rls_user_isolation.sql` test validates that **non-admin** users remain scoped.
 - **Principle**: redundant client-side filters don't add security; they mask RLS bugs. The integration test is the real guardrail.
 
 ## Data principles
@@ -63,7 +64,7 @@ Every `CREATE/ALTER VIEW` ends with:
 ALTER VIEW <name> SET (security_invoker = true);
 NOTIFY pgrst, 'reload schema';
 ```
-No exceptions. RLS must apply to the calling user.
+No exceptions. RLS must apply to the calling user — including the admin policy (`is_admin()`), which **expands** what the user can read but does not bypass the RLS layer (see § Security model).
 
 ### 12. Authorization canonical source is RLS (see ADR-36)
 User-scoped views do NOT expose `user_id` as a column. Client code does NOT filter by `user_id`. Isolation is verified via `docs/sql/tests/rls_user_isolation.sql` on every user-scoped migration. Redundant client filters mask RLS bugs silently — don't add them.
