@@ -32,7 +32,7 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 | Viewer | Home, Brands, Search, Profile | Registered but not investing. Can browse projects, news, and brand info |
 | Investor | All of Viewer + Investments | Active client. Sees own investment data segmented by brand/project |
 | Investor VIP | All of Investor + Premium features | Premium tier. Additional features TBD |
-| (Admin) | — | Not in this app. Managed separately |
+| Admin | Same as Investor VIP on the client | Operational role stored as `role = 'admin'` in `user_profiles`, used by RLS helpers (`is_admin()`) for storage write access, `user_requests` and `user_onboarding`. On the Flutter client it is normalised to `investor_vip` at `UserProfile.fromJson` so an admin who is also an investor sees their own portfolio (RLS still scopes data by `user_id`). The admin distinction lives in the DB, not the UI |
 
 ### Identity fields
 - `full_name` — required at signup.

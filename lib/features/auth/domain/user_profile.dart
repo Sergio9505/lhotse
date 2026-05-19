@@ -19,6 +19,15 @@ abstract class UserProfile with _$UserProfile {
     @JsonKey(name: 'member_since') DateTime? memberSince,
   }) = _UserProfile;
 
-  factory UserProfile.fromJson(Map<String, dynamic> json) =>
-      _$UserProfileFromJson(json);
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    // `admin` is operational metadata in the DB (used by RLS policies via
+    // `is_admin()` for storage, user_requests, user_onboarding). On the
+    // client we treat admins as VIP investors: same Strategy access, gold
+    // badge, all VIP-gated features. Normalised here, at the boundary, so
+    // `UserRole` never sees a value that shouldn't gate UI.
+    final normalised = json['role'] == 'admin'
+        ? {...json, 'role': 'investor_vip'}
+        : json;
+    return _$UserProfileFromJson(normalised);
+  }
 }
