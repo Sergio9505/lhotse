@@ -41,7 +41,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final AnimationController _animCtrl;
   late final AnimationController _fadeOutCtrl;
 
-  static const int _animMs = 6850;
+  static const int _animMs = 5850;
   static const int _fadeOutMs = 500;
   static const int _kStrokeStartMs = 400;
   static const int _kStrokeEndMs = 2200;

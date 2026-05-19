@@ -270,7 +270,7 @@ Regla del sistema — el contexto de reproducción determina el tratamiento del 
 **Brand metaphor**: Lhotse is the 4th highest mountain in the world. The splash narrates ascent in three beats — two strokes ascend simultaneously from the base toward the summit, converging there ("the architecture is drawn"); a 150 ms beat marks the outline complete; the silhouette then crossfades into a solid mass that wipes upward from the base ("the architecture is consacrated"). Final wordmark settles below with a tracking-out animation; a soft haptic punctuates the moment of arrival.
 
 - **Background**: `AppColors.primary` (flat black). The atmospheric gradient explored in v5 was reverted at the client's preference for the austere architectural reading.
-- **Duration**: ~7.35 s total — 6.85 s animation + 0.5 s fade-out before navigation.
+- **Duration**: ~6.35 s total — 5.85 s animation + 0.5 s fade-out before navigation. (Hold tightened from 2.5 s to 1.5 s — the wordmark "LHOTSE / GROUP" is already at full opacity at t=4350 ms, so the hold only sustains the composition for reading; the narrative beats — stroke, fill settle, haptic, wordmark fade — are untouched.)
 - **Sequence**:
 
 | Window (ms) | Action | Curve |
@@ -281,8 +281,8 @@ Regla del sistema — el contexto de reproducción determina el tratamiento del 
 | 2350 → 4350 | Crossfade (2.0 s): stroke opacity 1→0 (`easeInCubic`) while the fill ascends bottom-to-top via `clipRect` (`easeOutQuart`). The fill is intentionally slower than the trace — the climactic consacration is contemplated. Last ~30 % of the fill (the narrow peak zone) settles in ~600 ms with visible deceleration | stroke `easeInCubic` / fill `easeOutQuart` |
 | 3650 → 4350 | Wordmark **static fade** (0.7 s) — timed so opacity reaches 100 % exactly at t=4350 ms (fill complete). Silhouette, wordmark, letter-spacing settle, and haptic all peak in the same instant — reads as "you've reached the summit: here is Lhotse". Letter-spacing settle factor `0.78 + 0.22 × opacity`. No vertical slide | `Curves.easeOut` |
 | ~4350 | **Haptic feedback** (`HapticFeedback.lightImpact`) fires once at the simultaneous arrival of fill + wordmark + settle. Only perceptible on physical device | — |
-| 4350 → 6850 | Hold (~2.5 s) — fully legible composition sustained | — |
-| 6850 → 7350 | Fade-out → `context.go` | `Curves.easeIn` |
+| 4350 → 5850 | Hold (~1.5 s) — composition sustained for reading | — |
+| 5850 → 6350 | Fade-out → `context.go` | `Curves.easeIn` |
 
 - **Composition**: vertical centered — isotype (160×141 pt canvas) above, 32 pt gap, wordmark below.
 - **Isotype canvas**: `CustomPaint` with paths in viewBox `25×22` (Y=0 is summit). Three static paths: `_logo` (closed silhouette, used for fill), `_strokeLeft` and `_strokeRight` (open paths, used for the dual-ascending stroke trace). The painter has three fields: `strokeProgress`, `strokeOpacity`, `fillProgress`. Hard clip edge — consistent with "sharp edges everywhere".
