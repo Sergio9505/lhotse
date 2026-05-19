@@ -1978,7 +1978,7 @@ The premium solution is a `SECURITY DEFINER` RPC `public.get_pending_phone()` (m
 ## ADR-67: Intro video MP4 replaces the CustomPainter splash animation
 
 **Date:** 2026-05-19
-**Status:** Accepted (supersedes ADR-57)
+**Status:** Superseded by ADR-69 (was: Accepted, supersedes ADR-57)
 
 **Context.** ADR-57 implemented the splash as a hand-coded `CustomPainter` narrating the ascent of the Lhotse isotype (dual stroke trace, fill wipe, wordmark settle, haptic) over 7.35 s on flat black. It shipped at v6.5 and had been through six visual iterations. The client subsequently delivered a pre-rendered intro (`introLhotse.mp4`, 1080×1920, H.264/AAC, 8 s, ~1.5 MB) that embodies the same "ascent to the summit" metaphor with motion design that exceeds what is feasible in Dart `CustomPainter` (typography, particle/atmosphere work, paced cinematic timing). The brand narrative survives intact — only the rendering technique changes.
 
@@ -2089,4 +2089,26 @@ builder: (context, child) {
 - Application point: `lib/app/app.dart` (builder de `MaterialApp.router`).
 - Strategy heros: `lib/features/investments/presentation/investments_screen.dart` (L1) y `brand_investments_screen.dart` (L2) — derivan `titleHeight`/`amountMax`/`collapsedAmountY` con `MediaQuery.textScalerOf(context).scale(...)`.
 - Badge renta fija: `brand_investments_screen.dart` — `ConstrainedBox(minWidth/minHeight: 56) + IntrinsicWidth`.
+
+## ADR-69: Rollback al CustomPainter intro tras evaluación del MP4
+
+**Date:** 2026-05-19
+**Status:** Accepted (supersedes ADR-67; restores ADR-57)
+
+**Context.** ADR-67 reemplazó el `CustomPainter` v6.5 (ADR-57) por un MP4 pre-renderizado entregado por el cliente. Tras evaluar la versión MP4 se decide volver a la animación `CustomPainter`: el control fino sobre las curvas, el haptic sincronizado con el wordmark-settle y la posibilidad de iterar el diseño en Dart (sin re-renderizar y re-bundlear un binario) tienen más valor que la fidelidad de motion design del MP4.
+
+**Decision.** Restaurar `splash_screen.dart` al estado del commit padre de `287b8d6` (`CustomPainter` v6.5 íntegro: `_IsotypePainter`, `_Wordmark`, `_animCtrl`, `_kStroke*` / `_kFill*` / `_kWordmark*` constants, listener del haptic + `_hapticFired`). El asset `assets/videos/intro_lhotse.mp4` se elimina del repo (~1.5 MB liberados). La declaración `- assets/videos/` en `pubspec.yaml` se conserva porque `lhotse_welcome.mp4` sigue activo en `welcome_screen.dart`.
+
+**Trade-offs.**
+- (+) Composición editorial controlable en Dart — cambios visuales sin recompilar binarios ni re-bundlear MP4.
+- (+) Haptic re-incorporado: vuelve el beat narrativo en el momento exacto de fill + wordmark + settle (t=4350 ms).
+- (+) Bundle ~1.5 MB más ligero.
+- (−) El motion design fino del MP4 (typography work, partículas atmosféricas) ya no está. Decisión consciente: la narrativa de ascenso vive en el `CustomPainter`; si en el futuro el cliente quiere una cinemática de marca más rica, hace sentido como pieza separada (no como splash).
+
+**Reverts (cómo se ejecutó).**
+- Code: `git checkout 287b8d6^ -- lib/features/auth/presentation/splash_screen.dart`.
+- Asset: `git rm assets/videos/intro_lhotse.mp4`.
+- Docs: `DESIGN_SYSTEM.md` § Splash Screen restaurado al texto previo a ADR-67; ADR-67 marcado `Superseded by ADR-69` con cuerpo intacto como historial.
+
+**Files touched.** `lib/features/auth/presentation/splash_screen.dart`, `docs/DESIGN_SYSTEM.md`, `docs/DECISIONS.md` (este archivo). Asset removed: `assets/videos/intro_lhotse.mp4`. `pubspec.yaml` no tocado.
 
