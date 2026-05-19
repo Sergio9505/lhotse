@@ -2010,3 +2010,83 @@ The premium solution is a `SECURITY DEFINER` RPC `public.get_pending_phone()` (m
 **Trade-off.** The animation is now a binary asset — visual changes require re-rendering and re-bundling the MP4 (vs. tweaking a curve in Dart). Bundle size grows by ~1.5 MB. Acceptable: motion design fidelity > Dart-editability for a one-shot intro that the brand stakeholder owns end-to-end.
 
 **File touched.** `lib/features/auth/presentation/splash_screen.dart` (rewritten). Asset added: `assets/videos/intro_lhotse.mp4`. No pubspec changes (deps and asset folder already declared).
+
+## ADR-68: Dynamic Type handled via non-linear `LhotseTextScaler` (curve by fontSize), not a flat clamp
+
+**Date:** 2026-05-19
+**Status:** Accepted
+
+**Context.** Without any text-scaling protection the editorial composition of the app — and the strategy hero in particular — breaks at iOS Dynamic Type ≥ XL and Android Font Scale ≥ 1.2x. The strategy hero's title ("Mi estrategia patrimonial") collides with the total amount because `_HeroDelegate` reserves space using a hardcoded `titleHeight = 88` calibrated for `textScale = 1.0`, while the rendered `Text(fontSize: 44)` grows unchecked with the system scaler. Filas financieras with `width/height: 56` badges of fixed-income mortality dates also overflow. A flat `MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3)` would protect body text but still let `editorialHero 48pt` grow to 62pt, breaking the composition. A second `withClampedTextScaling(1.15)` wrapper around each editorial Text restores the composition but is a convention — easy to forget, fragile when new screens land.
+
+**Decision.** A single custom `TextScaler` (`lib/core/theme/lhotse_text_scaler.dart`) applied globally in `MaterialApp.builder`. The scaler emits a non-linear maxScale **as a continuous function of the fontSize being rendered** — not of the system scale.
+
+Curve:
+
+| `fontSize` | Effective `maxScale` |
+|------------|----------------------|
+| ≤ 14 (body/meta/labels) | 1.30 |
+| 18 (figureRow, figureAmount) | ~1.27 |
+| 24 (editorialKicker) | ~1.22 |
+| 30 (transition) | ~1.18 |
+| ≥ 36 (editorialTitle, editorialHero) | 1.15 |
+
+Between 14 and 36 the curve is `lerp(1.30, 1.15, t)` with `t = (fontSize - 14) / (36 - 14)`. C0-continuous → animations like the strategy hero's `amountSize = 28 + 18 * expandRatio` (which crosses 32pt during scroll) have no visible jumps. Lower bound is fixed at 1.0 — iOS "Smaller Text" is not honoured (editorial composition assumes 1.0 as floor).
+
+```dart
+class LhotseTextScaler extends TextScaler {
+  const LhotseTextScaler.fromSystem(this.systemScale);
+  final double systemScale;
+
+  double _maxScaleFor(double fontSize) {
+    final t = ((fontSize - 14) / (36 - 14)).clamp(0.0, 1.0);
+    return 1.30 + (1.15 - 1.30) * t;
+  }
+
+  @override
+  double scale(double fontSize) =>
+      fontSize * systemScale.clamp(1.0, _maxScaleFor(fontSize));
+}
+```
+
+Applied in `lib/app/app.dart`:
+
+```dart
+builder: (context, child) {
+  final media = MediaQuery.of(context);
+  final systemScale = media.textScaler.scale(14) / 14;
+  return MediaQuery(
+    data: media.copyWith(
+      textScaler: LhotseTextScaler.fromSystem(systemScale),
+    ),
+    child: AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: child ?? const SizedBox.shrink(),
+    ),
+  );
+},
+```
+
+**Layout constants must use the same scaler.** Slivers that derive their `expandedHeight` from typography (`_HeroDelegate`, `_BrandHeroDelegate`) call `MediaQuery.textScalerOf(context).scale(...)` for `titleHeight`, `amountMax`, and `collapsedAmountY` adjustments. Because the `Text` and the layout consult the same `LhotseTextScaler`, **divergence is impossible by construction** — this eliminates the class of bug where text grows but reserved space doesn't.
+
+**Brand assets and chrome do not scale.** `LhotseMark`, `BrandWordmark`, isotypes are brand signatures; bottom-nav icons / bell / back arrow are navigation glyphs. Flutter's `Icon` widget doesn't respond to the text scaler when `size` is set, so chrome stays fixed.
+
+**Rationale.** This is what iOS Dynamic Type does natively: at AX5 body grows ×3.1 but `title1` only ×1.9. The motivation for accessibility scaling is to make small text legible; large editorial text is already legible and growing it breaks composition. JPM Private Bank, Apple Wallet, Robinhood Premium ship the same heuristic.
+
+**Why a fontSize-driven curve instead of a flat clamp + an "editorial" wrapper widget:**
+- The wrapper (`LhotseEditorialText`) would be a convention. New screens would forget to use it.
+- The scaler is a property of the system; every `Text` and `RichText` in the app — present and future — gets the right behaviour automatically.
+- Continuous curve → smooth animations across the 14–36 range (e.g. hero amount sliding from 28 → 46pt during scroll).
+
+**Trade-offs.**
+- (+) Cualquier `Text` futuro respeta la curva sin intervención del developer.
+- (+) Garantía matemática de que el layout reserva el espacio exacto que el render ocupa (mismo scaler en ambos lados).
+- (+) AX5 + clamp aún produce una pantalla coherente — no se rompe la composición.
+- (−) AX1–AX5 no escalan el cuerpo más allá de 1.30× ni el editorial más de 1.15×. Decisión consciente: la composición editorial es load-bearing para la identidad de Lhotse; el clamp es el contrato con accesibilidad.
+- (−) "Smaller Text" (iOS) se ignora — los heros se verían vacíos a 0.82×.
+
+**Implementation pointers.**
+- Scaler: `lib/core/theme/lhotse_text_scaler.dart`.
+- Application point: `lib/app/app.dart` (builder de `MaterialApp.router`).
+- Strategy heros: `lib/features/investments/presentation/investments_screen.dart` (L1) y `brand_investments_screen.dart` (L2) — derivan `titleHeight`/`amountMax`/`collapsedAmountY` con `MediaQuery.textScalerOf(context).scale(...)`.
+- Badge renta fija: `brand_investments_screen.dart` — `ConstrainedBox(minWidth/minHeight: 56) + IntrinsicWidth`.
+

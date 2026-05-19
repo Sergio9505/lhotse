@@ -35,9 +35,15 @@ class InvestmentsScreen extends ConsumerWidget {
 
     final totalFormatted =
         _eurFormat.format(total);
+    final scaler = MediaQuery.textScalerOf(context);
+    final titleHeight = scaler.scale(88);
+    final amountMax = scaler.scale(46);
     final collapsedHeight = topPadding + HeroLayout.collapsedHeight;
     final expandedHeight = topPadding +
-        HeroLayout.expandedHeight(titleHeight: 88, amountMax: 46);
+        HeroLayout.expandedHeight(
+          titleHeight: titleHeight,
+          amountMax: amountMax,
+        );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -175,15 +181,27 @@ class _HeroDelegate extends SliverPersistentHeaderDelegate {
     // Amount slides from bottom-left (expanded) to chrome-band center
     // (collapsed). Fixed-padding interpolation keeps the collapsed cifra
     // optically centred between logo and bell.
+    //
+    // Title is 2 lines × 44pt × line-height 1.0 = 88pt tall at scale 1.0.
+    // Both `titleHeight` and `amountMax` are scaled with the same
+    // `MediaQuery.textScalerOf` (LhotseTextScaler) the Text uses, so the
+    // layout reserves the exact space the rendered glyphs occupy.
+    final scaler = MediaQuery.textScalerOf(context);
+    final titleHeight = scaler.scale(88);
+    final amountMax = scaler.scale(46);
     final amountTopExpanded = topPadding +
-        HeroLayout.expandedAmountY(titleHeight: 88, amountMax: 46);
-    final amountTopCollapsed = topPadding + HeroLayout.collapsedAmountY;
+        HeroLayout.expandedAmountY(
+          titleHeight: titleHeight,
+          amountMax: amountMax,
+        );
+    // Keep collapsed amount optically centred in the chrome band: shift
+    // upward by half the extra height the scaled glyphs introduce.
+    final collapsedAmountExtra = scaler.scale(28) - 28;
+    final amountTopCollapsed =
+        topPadding + HeroLayout.collapsedAmountY - collapsedAmountExtra / 2;
     final amountTop = amountTopCollapsed +
         (amountTopExpanded - amountTopCollapsed) * expandRatio;
-    // Title is 2 lines × 44pt × line-height 1.0 = 88pt tall; sits one
-    // `titleAmountGap` above the amount so the pair reads as a grouped
-    // editorial block.
-    final titleTop = amountTop - 88 - HeroLayout.titleAmountGap;
+    final titleTop = amountTop - titleHeight - HeroLayout.titleAmountGap;
 
     return Container(
       color: AppColors.background,

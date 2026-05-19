@@ -11,6 +11,7 @@ import '../core/data/projects_provider.dart';
 import '../core/data/supabase_provider.dart';
 import '../core/notifications/onesignal_service.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/lhotse_text_scaler.dart';
 import '../features/investments/data/investments_provider.dart';
 import '../features/notifications/data/notifications_provider.dart';
 import 'router.dart';
@@ -104,10 +105,21 @@ class _LhotseAppState extends ConsumerState<LhotseApp>
       theme: AppTheme.light,
       themeMode: ThemeMode.light,
       routerConfig: router,
-      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.dark,
-        child: child ?? const SizedBox.shrink(),
-      ),
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        // Reverse-engineer the system scale factor from the inherited
+        // TextScaler. Works for both linear and non-linear system scalers.
+        final systemScale = media.textScaler.scale(14) / 14;
+        return MediaQuery(
+          data: media.copyWith(
+            textScaler: LhotseTextScaler.fromSystem(systemScale),
+          ),
+          child: AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle.dark,
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
     );
   }
 }

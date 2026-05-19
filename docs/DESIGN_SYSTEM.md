@@ -99,7 +99,9 @@ Tier guideline para iconos. No es un set rígido (los call-sites siguen pasando 
 
 **Jerarquía editorial**: editorial covers 48pt (`editorialHero` base) → editorialTitle 36pt → cards uppercase 24pt → headers 18pt / inputs 18pt → bodyEmphasis 16pt → bodyReading 14pt → labels 12pt → micro labels 10pt. Pesos: w300 editorial (heros mixed case), w500 values/emphasis/CTAs, w400 reading/inputs/annotations.
 
-**Strategy/Investments hero — reglas en `HeroLayout` (`lib/core/theme/app_layout.dart`)**: tokens compartidos por L1 (`InvestmentsScreen`) y L2 (`BrandInvestmentsScreen`). La regla central: `expandedHeight` se DERIVA de la tipografía vía `HeroLayout.expandedHeight(titleHeight, amountMax)` — hardcodear `maxExtent` con un valor que no encaje con el tamaño del título y del amount produce huecos vacíos dentro del hero (bug). Tokens: `chromeTopInset = 16` (status bar buffer), `chromeRowHeight = 44`, `aboveTitle = 42`, `titleAmountGap = 20`, `belowAmount = 34`, `collapsedHeight = 80` (minExtent), `collapsedAmountY = 28`. Resultados: L1 con titleHeight=88 (44pt × 2 líneas) + amountMax=46 → expandedHeight = **290**. L2 con titleHeight=72 (36pt × 2 líneas) + amountMax=42 → expandedHeight = **270**. La jerarquía L1 > L2 vive en la **tipografía** (editorialHero 44pt vs editorialTitle 36pt, amount 28→46 vs 24→42), no en hardcodear alturas. Para detail screens (project/news/coinversion) sigue aplicando `editorialHero` 48pt como cover de su propia jerarquía editorial.
+**Strategy/Investments hero — reglas en `HeroLayout` (`lib/core/theme/app_layout.dart`)**: tokens compartidos por L1 (`InvestmentsScreen`) y L2 (`BrandInvestmentsScreen`). La regla central: `expandedHeight` se DERIVA de la tipografía vía `HeroLayout.expandedHeight(titleHeight, amountMax)` — hardcodear `maxExtent` con un valor que no encaje con el tamaño del título y del amount produce huecos vacíos dentro del hero (bug). Tokens: `chromeTopInset = 16` (status bar buffer), `chromeRowHeight = 44`, `aboveTitle = 42`, `titleAmountGap = 20`, `belowAmount = 34`, `collapsedHeight = 80` (minExtent), `collapsedAmountY = 28`. Resultados base (textScale 1.0): L1 con titleHeight=88 (44pt × 2 líneas) + amountMax=46 → expandedHeight = **290**. L2 con titleHeight=72 (36pt × 2 líneas) + amountMax=42 → expandedHeight = **270**. La jerarquía L1 > L2 vive en la **tipografía** (editorialHero 44pt vs editorialTitle 36pt, amount 28→46 vs 24→42), no en hardcodear alturas. Para detail screens (project/news/coinversion) sigue aplicando `editorialHero` 48pt como cover de su propia jerarquía editorial.
+
+**Dynamic Type integration (ADR-68).** `titleHeight`, `amountMax` y la compensación de `collapsedAmountY` se escalan con `MediaQuery.textScalerOf(context).scale(...)` antes de pasarse a `HeroLayout` — el mismo `LhotseTextScaler` global aplicado al `Text` del título reserva el espacio exacto que los glifos ocupan. Anti-pattern: usar `88` / `46` / `72` / `42` literales en cualquier cálculo del delegate produce colisión título↔monto al primer Dynamic Type > 1.0x. Ver `_HeroDelegate.build` y `_BrandHeroDelegate.build` para el patrón canónico (`final scaler = MediaQuery.textScalerOf(context); final titleHeight = scaler.scale(88); ...`).
 
 **Hero `totalAmount` — semántica decidida**: la cifra grande del hero (L1 patrimonio total + L2 por brand) representa **capital invertido activo** — suma de `purchaseValue` (CD) / `amount` (RF + coinv) sobre contratos `!isCompleted`. **Excluye** contratos finalizados (capital ya recuperado, no en activo) y **excluye** ganancia/intereses generados (no se mezclan capital y cash flow en una métrica híbrida). La razón de no incluir generated: en coinv los retornos son estimados hasta el cierre — añadirlos al hero forzaría asteriscar la cifra patrimonial total, mensaje confuso para wealth review. La performance individual (yield, revalorización, intereses cobrados) se surface por card, no en el hero. NAV (capital × revalorización) es candidato roadmap, no estado actual.
 
@@ -200,6 +202,27 @@ To be extracted from Figma as screens are built:
   - **Estados completados** (RF/coinv terminados, FINALIZADAS subhead): `Ganancia +€`. La cifra es gain neto; el capital ya volvió aparte. "Recibido" en completado es ambiguo (puede leerse como total cobrado = capital + gain), `Ganancia` cierra la ambigüedad. Aplica a `_RentaFijaRow` con `isCompleted: true`, a `_CoinvestmentRow` con `isCompleted: true`, y al subhead de FINALIZADAS.
   - **CD completada** sigue legacy con `_AssetRow.returnLabelSpans` mostrando ROI%, no usa `Ganancia` aún — pendiente de migración a `_PurchaseRow` con flag `isCompleted` (ROADMAP)
 - **`Est.` italic prefix para forward-looking** (`_CoinvestmentRow` activo): métricas estimadas (`estimatedReturnPct`, `estimatedDurationMonths`) van precedidas de `Est. ` italic capitalized al inicio de la meta line. Cubre todas las cifras que la siguen por proximidad — no se repite. Reemplaza el patrón fintech `*` + footnote, que es Robinhood/Schwab y no encaja en wealth-luxury voice (T Magazine / Sotheby's / JPM Private muestran la disclosure inline, parte del read, no en footnote oculto)
+- **Badges con texto** (RF mortality badge, etc.): nunca `width/height` fijos cuando contienen texto que escala con Dynamic Type. Patrón canónico: `ConstrainedBox(constraints: BoxConstraints(minWidth: X, minHeight: X)) + IntrinsicWidth + Padding`. Mantiene presencia visual a textScale 1.0 y respira a 1.3x sin overflow interno. Ver el badge mes/año en `_RentaFijaRow` como referencia.
+- **`maxLines: 1` + ellipsis** en filas financieras: aceptable para texto descriptivo (dirección, nombre de proyecto/fase) cuya cola se puede perder. **Prohibido** sobre datos numéricos / cifras / unidades que pierden significado al truncarse — usar `maxLines: 2` o sin límite. Auditar al revisar Dynamic Type: a textScale 1.3 el contenido cabe en menos ancho efectivo.
+
+## Dynamic Type / Font Scale (ADR-68)
+
+Toda la app aplica `LhotseTextScaler` global vía el builder de `MaterialApp.router`. Es un `TextScaler` con curva no-lineal por `fontSize`:
+
+| `fontSize` rendido | maxScale efectivo |
+|--------------------|-------------------|
+| ≤ 14 (body/meta/labels) | 1.30 |
+| 18 (figureRow, figureAmount) | ~1.27 |
+| 24 (editorialKicker) | ~1.22 |
+| ≥ 36 (editorialTitle, editorialHero) | 1.15 |
+
+Continua entre 14 y 36 (`lerp` lineal). Floor 1.0 (no se respeta iOS "Smaller Text"). Esto significa que **cualquier `Text` o `RichText` en la app recibe la curva automáticamente** — no hace falta envolver textos editoriales en ningún widget especial.
+
+**Reglas de implementación**:
+- Cualquier sliver / layout cuyas dimensiones dependan de la tipografía debe usar `MediaQuery.textScalerOf(context).scale(...)` para calcular alturas/anchos reservados, no constantes literales. Si renderiza `Text(fontSize: 44)` × 2 líneas, debe reservar `scaler.scale(88)` de altura.
+- Badges con texto: `IntrinsicWidth + ConstrainedBox(minWidth/minHeight)`. Nunca `width/height` fijos rodeando texto que escala.
+- Brand assets (`LhotseMark`, `BrandWordmark`, isotipos) y chrome (`Icon` con `size` explícito, bottom nav, back arrow) NO escalan — son firmas visuales / glifos de navegación.
+- Tests con `MediaQueryData` default (`textScaler == TextScaler.linear(1.0)`) pasan sin cambios: `LhotseTextScaler.fromSystem(1.0).scale(x) == x` por contrato.
 
 ## Home Feed (SNKRS-inspired)
 - **One content unit per viewport** (100vh). Media top ~65% + beige caption ~35%. Title `editorialHero` Campton Light w300 48pt — same token as archive + detail heroes so the Hero transition lands without size jump. Meta (brand · city · date) `annotation` accentMuted inline with right-aligned textual CTA (VER PROYECTO / LEER / EXPLORAR) in `labelUppercaseSm` + arrow icon.

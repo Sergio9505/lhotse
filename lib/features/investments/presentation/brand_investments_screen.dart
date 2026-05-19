@@ -115,10 +115,16 @@ class BrandInvestmentsScreen extends ConsumerWidget {
         : 'Mis inversiones\nen $brandName';
     final sectionLabel = isCompraDirecta ? 'MIS ACTIVOS' : 'ACTIVAS';
     final topPadding = MediaQuery.of(context).padding.top;
+    final scaler = MediaQuery.textScalerOf(context);
     final totalFormatted = _eurFormat.format(totalAmount);
+    final titleHeight = scaler.scale(72);
+    final amountMax = scaler.scale(42);
     final collapsedHeight = topPadding + HeroLayout.collapsedHeight;
     final expandedHeight = topPadding +
-        HeroLayout.expandedHeight(titleHeight: 72, amountMax: 42);
+        HeroLayout.expandedHeight(
+          titleHeight: titleHeight,
+          amountMax: amountMax,
+        );
 
     // Sort RF by soonest maturity
     if (isRentaFija) {
@@ -479,13 +485,20 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
     final euroSize = 16.0 + (12.0 * expandRatio);
 
     // L2 deriva sus dimensiones del helper HeroLayout (single source of
-    // truth con L1). Tipografía L2: title 36pt × 2 líneas = 72pt height,
-    // amount máx 42pt. La altura resultante (270pt) es la calibrada al
-    // tamaño tipográfico — la jerarquía L1 > L2 vive en la tipografía,
-    // no en hardcodear maxExtent.
-    final expandedAmountY =
-        HeroLayout.expandedAmountY(titleHeight: 72, amountMax: 42);
-    const collapsedAmountY = HeroLayout.collapsedAmountY;
+    // truth con L1). Tipografía L2 base: title 36pt × 2 líneas = 72pt
+    // height, amount máx 42pt. Ambos se escalan con el mismo
+    // LhotseTextScaler que el Text del título usa, para que el layout
+    // reserve el espacio real de los glifos a cualquier Dynamic Type.
+    final scaler = MediaQuery.textScalerOf(context);
+    final titleHeight = scaler.scale(72);
+    final amountMax = scaler.scale(42);
+    final expandedAmountY = HeroLayout.expandedAmountY(
+      titleHeight: titleHeight,
+      amountMax: amountMax,
+    );
+    final collapsedAmountExtra = scaler.scale(24) - 24;
+    final collapsedAmountY =
+        HeroLayout.collapsedAmountY - collapsedAmountExtra / 2;
     final amountTop = topPadding +
         collapsedAmountY +
         ((expandedAmountY - collapsedAmountY) * expandRatio);
@@ -825,40 +838,47 @@ class _RentaFijaRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            color: AppColors.primary,
-            alignment: Alignment.center,
-            child: badgeDate != null
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _kMonths[badgeDate.month - 1],
-                        style: AppTypography.metaUppercase.copyWith(
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+            child: IntrinsicWidth(
+              child: Container(
+                color: AppColors.primary,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 6,
+                ),
+                child: badgeDate != null
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _kMonths[badgeDate.month - 1],
+                            style: AppTypography.metaUppercase.copyWith(
+                              color: AppColors.textOnDark,
+                              letterSpacing: 0.5,
+                              height: 1.0,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${badgeDate.year % 100}',
+                            style: AppTypography.figureAmount.copyWith(
+                              color: AppColors.textOnDark,
+                              height: 1.0,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        '${index ?? 0}',
+                        style: AppTypography.figureRow.copyWith(
                           color: AppColors.textOnDark,
-                          letterSpacing: 0.5,
-                          height: 1.0,
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${badgeDate.year % 100}',
-                        style: AppTypography.figureAmount.copyWith(
-                          color: AppColors.textOnDark,
-
-                          height: 1.0,
-                        ),
-                      ),
-                    ],
-                  )
-                : Text(
-                    '${index ?? 0}',
-                    style: AppTypography.figureRow.copyWith(
-                      color: AppColors.textOnDark,
-                    ),
-                  ),
+              ),
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -1305,7 +1325,7 @@ class _CoinvestmentRowState extends State<_CoinvestmentRow> {
                           color: AppColors.accentMuted,
                           letterSpacing: 0,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ] else if (realizedGain != null) ...[
