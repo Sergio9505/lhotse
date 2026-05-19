@@ -46,7 +46,11 @@ class LhotseTabBarDelegate extends SliverPersistentHeaderDelegate {
           child: Row(
             children: [
               for (int i = 0; i < tabs.length; i++) ...[
-                if (i > 0) const SizedBox(width: AppSpacing.xl),
+                // Inter-tab spacing matches the horizontal padding above so
+                // the last tab respira simétrico al edge derecho cuando el
+                // scroll llega al final (a Dynamic Type alto) o cuando los
+                // tabs caben sin scroll a textScale 1.0.
+                if (i > 0) const SizedBox(width: AppSpacing.lg),
                 LhotseFilterTab(
                   label: tabs[i].text ?? '',
                   isActive: controller.index == i,

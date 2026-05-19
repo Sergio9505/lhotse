@@ -116,9 +116,29 @@ class BrandInvestmentsScreen extends ConsumerWidget {
     final sectionLabel = isCompraDirecta ? 'MIS ACTIVOS' : 'ACTIVAS';
     final topPadding = MediaQuery.of(context).padding.top;
     final scaler = MediaQuery.textScalerOf(context);
+    final screenWidth = MediaQuery.of(context).size.width;
     final totalFormatted = _eurFormat.format(totalAmount);
-    final titleHeight = scaler.scale(72);
+
+    // Hero title wraps to 2 or 3 lines depending on brand name length and
+    // active Dynamic Type. The manual \n in `heroTitle` guarantees ≥ 2
+    // lines (editorial hierarchy for short brands like "Nuve"); long
+    // brands like "Lacomb & Bos" overflow to 3 lines via natural wrap.
+    // Measure once with TextPainter so the layout reserves exactly what
+    // `Text(heroTitle)` paints — the previous constant `scaler.scale(72)`
+    // assumed 2 lines and broke for 3-line cases.
+    final titlePainter = TextPainter(
+      text: TextSpan(
+        text: heroTitle,
+        style: AppTypography.editorialTitle.copyWith(
+          color: AppColors.textPrimary,
+        ),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: scaler,
+    )..layout(maxWidth: screenWidth - AppSpacing.lg * 2);
+    final titleHeight = titlePainter.height;
     final amountMax = scaler.scale(42);
+
     final collapsedHeight = topPadding + HeroLayout.collapsedHeight;
     final expandedHeight = topPadding +
         HeroLayout.expandedHeight(
@@ -146,6 +166,8 @@ class BrandInvestmentsScreen extends ConsumerWidget {
               brandName: brandName,
               totalFormatted: totalFormatted,
               heroTitle: heroTitle,
+              titleHeight: titleHeight,
+              amountMax: amountMax,
               onBack: () => popOrGoHome(context),
             ),
           ),
@@ -430,6 +452,8 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
     required this.brandName,
     required this.totalFormatted,
     required this.heroTitle,
+    required this.titleHeight,
+    required this.amountMax,
     required this.onBack,
   });
 
@@ -439,6 +463,8 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
   final String brandName;
   final String totalFormatted;
   final String heroTitle;
+  final double titleHeight;
+  final double amountMax;
   final VoidCallback onBack;
 
   @override
@@ -485,13 +511,11 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
     final euroSize = 16.0 + (12.0 * expandRatio);
 
     // L2 deriva sus dimensiones del helper HeroLayout (single source of
-    // truth con L1). Tipografía L2 base: title 36pt × 2 líneas = 72pt
-    // height, amount máx 42pt. Ambos se escalan con el mismo
-    // LhotseTextScaler que el Text del título usa, para que el layout
-    // reserve el espacio real de los glifos a cualquier Dynamic Type.
+    // truth con L1). `titleHeight` y `amountMax` se calculan una vez en
+    // el `build` del screen y se pasan por constructor — `titleHeight`
+    // viene del TextPainter (mide el render real, no asume 2 líneas) y
+    // `amountMax` aplica el LhotseTextScaler activo.
     final scaler = MediaQuery.textScalerOf(context);
-    final titleHeight = scaler.scale(72);
-    final amountMax = scaler.scale(42);
     final expandedAmountY = HeroLayout.expandedAmountY(
       titleHeight: titleHeight,
       amountMax: amountMax,
@@ -603,7 +627,10 @@ class _BrandHeroDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _BrandHeroDelegate oldDelegate) =>
       expandedHeight != oldDelegate.expandedHeight ||
-      totalFormatted != oldDelegate.totalFormatted;
+      titleHeight != oldDelegate.titleHeight ||
+      amountMax != oldDelegate.amountMax ||
+      totalFormatted != oldDelegate.totalFormatted ||
+      heroTitle != oldDelegate.heroTitle;
 }
 
 // ── Asset row ─────────────────────────────────────────────────────────────────
