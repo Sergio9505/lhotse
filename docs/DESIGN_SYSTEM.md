@@ -268,27 +268,17 @@ Regla del sistema — el contexto de reproducción determina el tratamiento del 
 
 ## Splash Screen
 
-**Brand metaphor**: Lhotse is the 4th highest mountain in the world. The splash narrates ascent in three beats — two strokes ascend simultaneously from the base toward the summit, converging there ("the architecture is drawn"); a 150 ms beat marks the outline complete; the silhouette then crossfades into a solid mass that wipes upward from the base ("the architecture is consacrated"). Final wordmark settles below with a tracking-out animation; a soft haptic punctuates the moment of arrival.
+**Brand metaphor**: Lhotse is the 4th highest mountain in the world. The splash narrates ascent toward the summit — the central brand metaphor "investing with this firm = reaching the economic summit". Motion design + typography work are owned by the client and ship as a single MP4 (ADR-72).
 
-- **Background**: `AppColors.primary` (flat black). The atmospheric gradient explored in v5 was reverted at the client's preference for the austere architectural reading.
-- **Duration**: ~6.35 s total — 5.85 s animation + 0.5 s fade-out before navigation. (Hold tightened from 2.5 s to 1.5 s — the wordmark "LHOTSE / GROUP" is already at full opacity at t=4350 ms, so the hold only sustains the composition for reading; the narrative beats — stroke, fill settle, haptic, wordmark fade — are untouched.)
-- **Sequence**:
-
-| Window (ms) | Action | Curve |
-|---|---|---|
-| 0 → 400 | Black settle — anticipation | — |
-| 400 → 2200 | Stroke trace (1.8 s): two open paths (`_strokeLeft`, `_strokeRight`) ascend simultaneously from base-left, sharing `strokeProgress`. Left path: long left-exterior diagonal up to summit. Right path: base + right exterior + valley roof + summit-right inner + summit. Both end at the summit — full outline covered with no descending segments | `Curves.easeOutCubic` |
-| 2200 → 2350 | **Beat (150 ms)** — outline complete at full opacity; no fill yet. Cinematic punctuation between "drawn" and "consacrated" | — |
-| 2350 → 4350 | Crossfade (2.0 s): stroke opacity 1→0 (`easeInCubic`) while the fill ascends bottom-to-top via `clipRect` (`easeOutQuart`). The fill is intentionally slower than the trace — the climactic consacration is contemplated. Last ~30 % of the fill (the narrow peak zone) settles in ~600 ms with visible deceleration | stroke `easeInCubic` / fill `easeOutQuart` |
-| 3650 → 4350 | Wordmark **static fade** (0.7 s) — timed so opacity reaches 100 % exactly at t=4350 ms (fill complete). Silhouette, wordmark, letter-spacing settle, and haptic all peak in the same instant — reads as "you've reached the summit: here is Lhotse". Letter-spacing settle factor `0.78 + 0.22 × opacity`. No vertical slide | `Curves.easeOut` |
-| ~4350 | **Haptic feedback** (`HapticFeedback.lightImpact`) fires once at the simultaneous arrival of fill + wordmark + settle. Only perceptible on physical device | — |
-| 4350 → 5850 | Hold (~1.5 s) — composition sustained for reading | — |
-| 5850 → 6350 | Fade-out → `context.go` | `Curves.easeIn` |
-
-- **Composition**: vertical centered — isotype (160×141 pt canvas) above, 32 pt gap, wordmark below.
-- **Isotype canvas**: `CustomPaint` with paths in viewBox `25×22` (Y=0 is summit). Three static paths: `_logo` (closed silhouette, used for fill), `_strokeLeft` and `_strokeRight` (open paths, used for the dual-ascending stroke trace). The painter has three fields: `strokeProgress`, `strokeOpacity`, `fillProgress`. Hard clip edge — consistent with "sharp edges everywhere".
-- **Wordmark style**: width-matched to 160 pt via `TextPainter` measurement at build time. "LHOTSE" scales to span the full 160 pt; "GROUP" uses the same computed `fontSize` and `letterSpacing` — naturally narrower and centered (luxury multi-line lock-up convention: JPM Private Bank, Cartier). During fade-in, `letterSpacing` is multiplied by a settle factor `0.78 + 0.22 × opacity` so the tracking relaxes from 22 % tight to its final value as opacity reaches 1. **No vertical slide** — the wordmark appears static in position, fading in as ink onto paper. Local splash override; `AppTypography.splashWordmark` (24 pt base) is unchanged and still consumed by `welcome_screen.dart` for its horizontal lock-up with CTA.
-- **Implementation**: `lib/features/auth/presentation/splash_screen.dart`. Provider warm-up runs in parallel — does not block the animation timing. Haptic feedback is fired via a one-shot listener on `_animCtrl` (guarded by a `_hapticFired` flag). Restored from MP4 via ADR-69 (supersedes ADR-67).
+- **Rendering**: `VideoPlayer` over a black `Scaffold` playing `assets/videos/intro_lhotse.mp4` full-bleed (`FittedBox(fit: BoxFit.cover)`).
+- **Audio**: **muted** — `setVolume(0)` after `initialize()`, consistent with `lhotse_welcome.mp4`.
+- **Looping**: `setLooping(false)` — single-shot intro.
+- **Native splash bridge**: `flutter_native_splash` paints `assets/images/lhotse_splash.png` (pure black) until the video controller is initialized. Frame 0 of the MP4 is also black, so the native → video transition has no visible pop.
+- **Transition**: listener on `VideoPlayerController` checks `position >= duration` and triggers a 500 ms `AnimationController` fade-out before `context.go(...)`. A hard cut from a polished 8 s intro to the welcome screen feels abrupt — the 500 ms fade smooths the seam.
+- **Routing** (post fade-out): `welcome` (no session) / `home` (session with `phoneConfirmedAt`) / `otp-verify isResume: true` (session, pending phone via `get_pending_phone()`) / `complete-phone` (session, no pending phone). Preserved from ADR-63.
+- **Provider warm-up**: brands, projects, news, assets, document categories (+ contracts and portfolio when authed) run in parallel during the video. The MP4 is the cover for the network round-trip.
+- **Resilience**: if `VideoPlayerController.initialize()` throws (corrupt asset, unsupported codec) the screen skips the fade and navigates immediately. A broken intro must never block boot.
+- **Implementation**: `lib/features/auth/presentation/splash_screen.dart`. See ADR-72 (supersedes ADR-57, ADR-67, ADR-69).
 
 ## VIP Projects
 - `PRIVATE` chip top-right of the hero image — **fill black** (`AppColors.primary`), white caption w500 letterSpacing 1.5. Coexists with the outline phase chip top-left; the fill/outline contrast creates automatic hierarchy.

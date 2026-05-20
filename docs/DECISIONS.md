@@ -1635,55 +1635,7 @@ Removed:
 - (-) Edge Function must be deployed and `BUNNY_SECURITY_KEY` secret set before video plays in production.
 
 ## ADR-57: Splash — CustomPainter draw animation replaces SVG + pulse
-
-**Date:** 2026-05-07
-**Status:** Superseded by ADR-67 (2026-05-19) — replaced by a pre-rendered MP4 intro
-
-**Context.** The original splash rendered `assets/images/lhotse_logo.svg` via `SvgPicture.asset` with a sinusoidal pulse and a global fade-in/out. `flutter_svg` cannot animate stroke-dashoffset, and Rive/Lottie would add a non-trivial dependency for a one-screen effect. Replaced with a single `AnimationController` driving a `CustomPainter` (`_IsotypePainter`) and a `_Wordmark` widget — the isotype path is hardcoded in viewBox coordinates (25×22) and scaled at paint time. A second 500 ms `AnimationController` handles the fade-out before navigation. Trade-off: isotype path is duplicated in Dart vs. SVG file (if the brand mark changes, both must be updated).
-
-**Brand metaphor (load-bearing).** Lhotse is the 4th highest mountain in the world. The central narrative is "investing with this firm = reaching the economic summit". The isotype is a stylised mountain peak. The splash *narrates ascent* — it does not "draw a logo".
-
-### Current implementation (v6.5)
-
-Total duration ~7.35 s (6.85 s animation + 0.5 s fade-out).
-
-| Window (ms) | Action |
-|---|---|
-| 0 → 400 | Black settle |
-| 400 → 2200 | **Stroke trace (1.8 s)** — two open paths (`_strokeLeft`, `_strokeRight`) ascend simultaneously from base-left, sharing `strokeProgress`, converging at the summit. No descending segments. `Curves.easeOutCubic` |
-| 2200 → 2350 | **Beat (150 ms)** — outline complete at full opacity, no fill yet. Cinematic punctuation between "drawn" and "consacrated" |
-| 2350 → 4350 | **Crossfade (2.0 s)** — stroke opacity 1→0 (`easeInCubic`) while the fill ascends bottom-to-top via `clipRect` (`easeOutQuart`). Fill is intentionally longer than the stroke trace — the climax is contemplated |
-| 3650 → 4350 | **Wordmark static fade (0.7 s)** — timed so opacity 100 %, letter-spacing 1.0, and the haptic all arrive exactly at t=4350 ms (fill complete). Silhouette + wordmark + settle + haptic peak in the same instant — single moment of "you've reached the summit: here is Lhotse". Letter-spacing settle factor `0.78 + 0.22 × opacity`. No vertical slide |
-| ~4350 | **Haptic** `HapticFeedback.lightImpact()` fires once at the simultaneous arrival (one-shot listener on `_animCtrl`, guarded by `_hapticFired`). Physical device only |
-| 4350 → 6850 | Hold (2.5 s) |
-| 6850 → 7350 | Fade-out → `context.go` |
-
-**Composition.** Vertical centered — isotype canvas 160×141 pt above, 32 pt gap, wordmark below. Background: `AppColors.primary` (flat black).
-
-**Wordmark.** Width-matched to 160 pt via `TextPainter` measurement at build time. "LHOTSE" scales to span 160 pt; "GROUP" inherits the same `fontSize` and `letterSpacing` (naturally narrower, centered — luxury multi-line lock-up convention from JPM Private Bank, Cartier). Local override of `AppTypography.splashWordmark` in splash only; `welcome_screen.dart` continues to use the 24 pt token base for its horizontal lock-up with CTA.
-
-**Stroke caps.** `StrokeCap.round` (radius 0.175 viewBox units, ~1.1 pt) closes the angular gap where the two stroke paths converge at the summit — separate `drawPath` calls cannot form a miter join, so butt caps would leave the apex partially uncovered.
-
-### Design rules (survivors of the iteration journey)
-
-These constraints emerged through revision and define the boundaries of acceptable changes:
-
-- **No spark, glow, or halo on the trace tip** — fintech onboarding / AI startup vocabulary. Rejected against Hermès, Sotheby's, JPM PB references.
-- **No letter-by-letter wordmark stagger** — Apple keynote / corporate intro convention.
-- **No vertical slide on the wordmark** — generic UI motion (Stripe dashboards, fintech). Luxury wordmarks (Hermès, JPM PB, Brunello Cucinelli) appear static and let the fade and tracking carry the elegance.
-- **Flat black background** — explored a navy gradient (v5) for atmosphere; reverted at client preference for the austere architectural reading. Trade-off: "flat B&W = fintech sterile" risk consciously accepted.
-- **Dual ascending strokes** — single trace over the closed outline necessarily included descending segments (the silhouette has horizontal base, valley roof, descending interior). Two simultaneous paths converging at the summit cover the full outline with no descents.
-- **Fill duration ≥ stroke duration** — the climax (consacration) is contemplated, not rushed. v6.3 has fill 2.0 s > stroke 1.8 s.
-- **Width-matched wordmark** — "LHOTSE" spans the isotype canvas width, proportional balance between the two brand elements.
-- **Single source of truth for `splashWordmark` typography** — same Campton w600 / ls 2.0 / height 1.0 token used in both splash and welcome; splash overrides only the rendered size via the width-match calculation.
-
-### Iteration history (for context)
-
-The current implementation is the result of multiple visual reviews. Earlier explorations included: Remotion-style draw + spark + letter stagger (v1), pure ascending wipe (v2), dual ascending exterior edges with crossfade (v3 / v3.1), single horizon line + wipe (v4 / v4.1), and "horizonte real" with navy gradient and rising horizon-as-actor (v5). Each was rejected for specific reasons captured as design rules above. v6 returned to stroke + fill on flat black; v6.1 added the dual-stroke mechanic, beat, letter-spacing settle, and haptic; v6.2 fixed the summit cap with `StrokeCap.round`; v6.3 extended the fill and removed the wordmark slide; v6.4 overlapped the wordmark fade-in with the last 500 ms of the fill; v6.5 syncs the wordmark to peak exactly at fill-complete (silhouette, wordmark, letter-spacing settle, and haptic all arrive in the same instant) and uses the freed time to extend the hold to 2.5 s.
-
-**Operational note.** If repeat-launch use feels excessive, recommended trim order: hold 2.0 s → 1.5 s (−500 ms, total 6.85 s); then trace 1.8 → 1.6 s (−200 ms, total 6.65 s).
-
----
+**Status:** Superseded by ADR-72. Full body in git history of this file.
 
 ## ADR-58: Asset surface fields remodel + pool→elevator (refines ADR-33)
 
@@ -1976,40 +1928,7 @@ The premium solution is a `SECURITY DEFINER` RPC `public.get_pending_phone()` (m
 - Prior FK migration: `docs/sql/migrations/20260429161455_user_delete_set_null_contracts.sql`.
 
 ## ADR-67: Intro video MP4 replaces the CustomPainter splash animation
-
-**Date:** 2026-05-19
-**Status:** Superseded by ADR-69 (was: Accepted, supersedes ADR-57)
-
-**Context.** ADR-57 implemented the splash as a hand-coded `CustomPainter` narrating the ascent of the Lhotse isotype (dual stroke trace, fill wipe, wordmark settle, haptic) over 7.35 s on flat black. It shipped at v6.5 and had been through six visual iterations. The client subsequently delivered a pre-rendered intro (`introLhotse.mp4`, 1080×1920, H.264/AAC, 8 s, ~1.5 MB) that embodies the same "ascent to the summit" metaphor with motion design that exceeds what is feasible in Dart `CustomPainter` (typography, particle/atmosphere work, paced cinematic timing). The brand narrative survives intact — only the rendering technique changes.
-
-**Decision.** Replace the entire CustomPainter animation with `VideoPlayer` playing the MP4 from `assets/videos/intro_lhotse.mp4`, full-bleed and muted. Routing logic, native splash, and provider warm-up are preserved verbatim.
-
-**Implementation (`lib/features/auth/presentation/splash_screen.dart`).**
-
-| Aspect | Choice |
-|---|---|
-| Player | `video_player: ^2.9.1` (already in pubspec for `lhotse_welcome.mp4`) |
-| Fit | `FittedBox(fit: BoxFit.cover)` wrapping `SizedBox(width/height = video size)` over a black Scaffold. The straight `BoxFit.cover` on `VideoPlayer` is unreliable on 9:19.5 phones — `FittedBox` is the canonical workaround |
-| Audio | `setVolume(0)` — consistent with `welcome_screen.dart`'s background video |
-| Loop | `setLooping(false)` — single-shot |
-| Native splash | Unchanged. `lhotse_splash.png` is already a pure black image and frame 0 of the video is also black, so the ~100 ms native → video transition has no visible pop |
-| End-of-video detection | Listener on `VideoPlayerController` checking `position >= duration` — guarded by a `_navigated` flag to ignore duplicate ticks |
-| Post-video transition | 500 ms fade (`AnimationController`) before `context.go`. Kept from ADR-57 — a hard cut from a polished 8 s intro to the welcome screen felt abrupt |
-| Haptic | **Removed.** The `HapticFeedback.lightImpact()` in ADR-57 was load-bearing because it landed exactly on the wordmark-settle / fill-complete frame. On the MP4 it fires arbitrarily at video-end with no narrative anchor — it became vestigial |
-| Initialize-failure fallback | If `VideoPlayerController.initialize()` throws (corrupt asset, unsupported codec), the screen skips the fade and navigates immediately. A broken intro must never block boot |
-| Routing | Untouched from ADR-63 — `welcome` / `home` / `otp-verify (isResume)` / `complete-phone` |
-| Provider warm-up | Untouched — brands, projects, news, assets, document categories (and contracts + portfolio when authed) run in parallel during the 8 s video |
-
-**Removed code.** `_IsotypePainter`, `_Wordmark`, `_remap`, `_animCtrl`, all `_kStroke*` / `_kFill*` / `_kWordmark*` constants, the `_strokeLeft` / `_strokeRight` / `_logo` viewBox paths, the haptic one-shot listener and `_hapticFired` flag, and the `flutter/services.dart` import. Net diff: `+80 / −279` lines.
-
-**Why this is not a regression of ADR-57.**
-- The brand metaphor ("ascent to the summit") is preserved — moved from runtime-rendered Dart paths to client-delivered motion design.
-- ADR-57's "no letter-by-letter stagger / no vertical slide / dual ascending strokes / width-matched wordmark" rules were composition rules for the Dart animation; the MP4 is governed by its own delivered cut, so the rules no longer apply.
-- The decision to keep the fade-out and warm-up is informed by ADR-57's framing (no jarring cut, never block boot on cosmetics).
-
-**Trade-off.** The animation is now a binary asset — visual changes require re-rendering and re-bundling the MP4 (vs. tweaking a curve in Dart). Bundle size grows by ~1.5 MB. Acceptable: motion design fidelity > Dart-editability for a one-shot intro that the brand stakeholder owns end-to-end.
-
-**File touched.** `lib/features/auth/presentation/splash_screen.dart` (rewritten). Asset added: `assets/videos/intro_lhotse.mp4`. No pubspec changes (deps and asset folder already declared).
+**Status:** Superseded by ADR-72. Full body in git history of this file.
 
 ## ADR-68: Dynamic Type handled via non-linear `LhotseTextScaler` (curve by fontSize), not a flat clamp
 
@@ -2091,26 +2010,7 @@ builder: (context, child) {
 - Badge renta fija: `brand_investments_screen.dart` — `ConstrainedBox(minWidth/minHeight: 56) + IntrinsicWidth`.
 
 ## ADR-69: Rollback al CustomPainter intro tras evaluación del MP4
-
-**Date:** 2026-05-19
-**Status:** Accepted (supersedes ADR-67; restores ADR-57)
-
-**Context.** ADR-67 reemplazó el `CustomPainter` v6.5 (ADR-57) por un MP4 pre-renderizado entregado por el cliente. Tras evaluar la versión MP4 se decide volver a la animación `CustomPainter`: el control fino sobre las curvas, el haptic sincronizado con el wordmark-settle y la posibilidad de iterar el diseño en Dart (sin re-renderizar y re-bundlear un binario) tienen más valor que la fidelidad de motion design del MP4.
-
-**Decision.** Restaurar `splash_screen.dart` al estado del commit padre de `287b8d6` (`CustomPainter` v6.5 íntegro: `_IsotypePainter`, `_Wordmark`, `_animCtrl`, `_kStroke*` / `_kFill*` / `_kWordmark*` constants, listener del haptic + `_hapticFired`). El asset `assets/videos/intro_lhotse.mp4` se elimina del repo (~1.5 MB liberados). La declaración `- assets/videos/` en `pubspec.yaml` se conserva porque `lhotse_welcome.mp4` sigue activo en `welcome_screen.dart`.
-
-**Trade-offs.**
-- (+) Composición editorial controlable en Dart — cambios visuales sin recompilar binarios ni re-bundlear MP4.
-- (+) Haptic re-incorporado: vuelve el beat narrativo en el momento exacto de fill + wordmark + settle (t=4350 ms).
-- (+) Bundle ~1.5 MB más ligero.
-- (−) El motion design fino del MP4 (typography work, partículas atmosféricas) ya no está. Decisión consciente: la narrativa de ascenso vive en el `CustomPainter`; si en el futuro el cliente quiere una cinemática de marca más rica, hace sentido como pieza separada (no como splash).
-
-**Reverts (cómo se ejecutó).**
-- Code: `git checkout 287b8d6^ -- lib/features/auth/presentation/splash_screen.dart`.
-- Asset: `git rm assets/videos/intro_lhotse.mp4`.
-- Docs: `DESIGN_SYSTEM.md` § Splash Screen restaurado al texto previo a ADR-67; ADR-67 marcado `Superseded by ADR-69` con cuerpo intacto como historial.
-
-**Files touched.** `lib/features/auth/presentation/splash_screen.dart`, `docs/DESIGN_SYSTEM.md`, `docs/DECISIONS.md` (este archivo). Asset removed: `assets/videos/intro_lhotse.mp4`. `pubspec.yaml` no tocado.
+**Status:** Superseded by ADR-72. Full body in git history of this file.
 
 ## ADR-70: News hero supports multi-image carousel — `hero_media` jsonb shape, `image_url` kept as cover
 
@@ -2155,4 +2055,30 @@ El widget `NewsHeroCarousel` se extrae a `lib/core/widgets/media_hero_carousel.d
 **Files touched.**
 - App: `docs/sql/migrations/20260520130000_news_rename_gallery_to_hero.sql` (rename), `docs/sql/migrations/20260520140000_projects_hero_media.sql` (nuevo + recrea `projects_with_metrics`), `lib/core/domain/news_item_data.dart` (helper reuse), `lib/core/domain/project_data.dart` (nuevo campo `imageUrls`), `lib/core/utils/hero_media_parser.dart` (nuevo), `lib/core/widgets/media_hero_carousel.dart` (extraído de `NewsHeroCarousel`), `lib/features/home/presentation/widgets/news_hero_carousel.dart` (eliminado), `lib/features/home/presentation/news_detail_screen.dart`, `lib/features/home/presentation/project_detail_screen.dart`, `docs/DOMAIN.md`, `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` (este archivo).
 - Admin: `lib/db/database.types.ts`, `lib/schemas/news.ts`, `lib/schemas/project.ts`, `app/(admin)/news/actions.ts`, `app/(admin)/projects/actions.ts`, `components/forms/news-form.tsx`, `components/forms/project-form.tsx`.
+
+## ADR-72: Splash final — MP4 muteado (`introLhotse.mp4`)
+
+**Date:** 2026-05-20
+**Status:** Accepted (supersedes ADR-57, ADR-67, ADR-69)
+
+**Context.** El splash ha vivido cuatro iteraciones: SVG + pulse → CustomPainter v6.5 (ADR-57) → MP4 v1 entregado por el cliente (ADR-67) → rollback al CustomPainter (ADR-69) → MP4 v2 actual. Cada vuelta ha sido un trade-off entre "control fino en Dart con haptic sincronizado al wordmark-settle" y "motion design cinemático fuera del alcance de un `CustomPainter`". El cliente entrega una nueva versión del MP4 (`introLhotse.mp4`, ~1.5 MB) que considera definitiva.
+
+**Decision.** El splash reproduce `assets/videos/intro_lhotse.mp4` full-bleed y **muteado** (`setVolume(0)`, mismo patrón que `lhotse_welcome.mp4`). `flutter_native_splash` (PNG negro `lhotse_splash.png`) cubre el arranque nativo hasta que el `VideoPlayerController` está inicializado; el frame 0 negro del MP4 y el Scaffold negro hacen la transición invisible. Listener sobre el controller detecta `position >= duration` y dispara un fade-out de 500 ms antes de `context.go(...)`. Si `initialize()` lanza (asset corrupto, codec no soportado), navegamos directo sin fade — un splash roto no bloquea boot. Routing (welcome / home / OTP resume / complete-phone, ADR-63) y warm-up de providers en paralelo durante el video se conservan.
+
+**Trade-offs.**
+- (+) Fidelidad de motion design del MP4 (typography work, atmósfera) supera lo factible en `CustomPainter`.
+- (+) Vídeo muteado: cero fricción auditiva, alineado con el otro vídeo embebido (`lhotse_welcome.mp4`).
+- (+) Una sola fuente decisional viva sobre splash (este ADR). ADR-57/67/69 quedan reducidos a tombstones (ver `git log -p docs/DECISIONS.md` para sus cuerpos originales).
+- (−) Cambios visuales requieren re-render del MP4 (no Dart). Aceptado: el cliente posee el motion end-to-end.
+- (−) Bundle pesa ~1.5 MB más.
+- (−) El haptic sincronizado con wordmark-settle de la era CustomPainter ya no existe — no hay frame narrativamente anclado donde dispararlo.
+
+**Implementation.**
+- Asset: `assets/videos/intro_lhotse.mp4` (1.5 MB).
+- File: `lib/features/auth/presentation/splash_screen.dart` (`VideoPlayerController.asset(_introAsset)` + `setVolume(0)` + `setLooping(false)` + listener fin-de-vídeo + fade-out 500 ms + fallback).
+- Pubspec: sin cambios (`- assets/videos/` ya declarado por `lhotse_welcome.mp4`).
+- Native splash (PNG negro): sin cambios.
+- Routing y warm-up de providers: intactos respecto a ADR-63.
+
+**Iteration history.** Cuerpos completos de ADR-57 (CustomPainter v6.5 — dual stroke trace + fill wipe + wordmark settle + haptic), ADR-67 (MP4 v1) y ADR-69 (rollback al CustomPainter) viven en `git log -p docs/DECISIONS.md`. Los IDs se mantienen como tombstones de una línea para no romper la numeración secuencial y conservar la trazabilidad.
 
