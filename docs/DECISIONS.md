@@ -2082,3 +2082,40 @@ El widget `NewsHeroCarousel` se extrae a `lib/core/widgets/media_hero_carousel.d
 
 **Iteration history.** Cuerpos completos de ADR-57 (CustomPainter v6.5 — dual stroke trace + fill wipe + wordmark settle + haptic), ADR-67 (MP4 v1) y ADR-69 (rollback al CustomPainter) viven en `git log -p docs/DECISIONS.md`. Los IDs se mantienen como tombstones de una línea para no romper la numeración secuencial y conservar la trazabilidad.
 
+## ADR-73: RGPD-grade consent capture — `consent_log` append-only + `/accept-consent` gate + signup checkbox
+
+**Date:** 2026-05-20
+**Status:** Accepted
+
+**Context.** El signup público hacía aceptación implícita ("al crear cuenta aceptas…") y el admin no cubría marketing en absoluto. RGPD Art. 7.1 (consent demostrable) + Art. 5.2 (accountability) + Considerando 32 (marketing como opt-in separable) exigen:
+1. Aceptación explícita y separable de T&C/Privacy vs marketing.
+2. Demostrable: cada decisión registrada con fecha + dispositivo.
+3. Revocable: retirar tan fácil como dar.
+
+Además, los usuarios creados desde el admin no tienen forma de "haber tildado" nada — necesitan un gate en su primer login.
+
+**Decision.** Sistema de tres piezas:
+
+1. **Tabla append-only `consent_log`** (migración 20260520180000) con `consent_type` ∈ {`terms_and_conditions`, `privacy_policy`, `marketing`}, `granted BOOLEAN`, `document_version`, `platform`, `os_version`, `app_version`, `user_agent`, `ip_address INET`, `created_at`. RLS: el user lee sus propias filas, admin lee todas, INSERTs solo vía RPC `record_consent` (SECURITY DEFINER que rellena IP + user-agent desde `request.headers` de PostgREST) o vía trigger `handle_new_user`. **Las filas nunca se borran** — revocar es insertar `granted=false`, no DELETE.
+
+2. **Vista `latest_user_consents`** pivota el log al estado actual (una fila por user con `terms_accepted/at`, `privacy_accepted/at`, `marketing_accepted/at`). Tras un bug de permisos (20260520200000), la view se reescribió para **no depender de `auth.users`**: usa `auth.uid()` + subqueries a `consent_log` directamente — el rol `authenticated` no tiene grant SELECT sobre `auth.users`, así que el FROM original devolvía 0 filas y causaba un loop en el gate.
+
+3. **Captura en 3 puntos del flow**:
+   - **Signup público**: dos checkboxes editorial (`LegalConsentCheckbox` required gating el submit + `MarketingConsentCheckbox` opcional). Metadata se manda en `auth.signUp(data: {document_version_terms, document_version_privacy, platform, os_version, app_version, marketing_consent})`. El trigger `handle_new_user` lee el meta y, **sólo si `document_version_terms IS NOT NULL`** (señal de signup público con consents reales), inserta las 3 filas iniciales en `consent_log`. Sin este signal (admin-created), no inserta nada — el user acepta más tarde en el gate.
+   - **`/accept-consent`** (route transient): pantalla con los mismos dos checkboxes que ejecuta los 3 `record_consent` al pulsar CONTINUAR. El helper `routeAfterAuth` (en splash, login, otp-verify) detecta consents missing y redirige aquí ANTES de `/home` o `/onboarding`. `PopScope(canPop:false)` bloquea back gesture.
+   - **Notificaciones screen → COMUNICACIONES**: toggle bidireccional para grant/revoke marketing. Cada tap escribe un evento en `consent_log` (el grant original no se borra; el último evento por tipo es el estado vigente).
+
+**Trade-offs.**
+- (+) Audit-grade demostrable: cada acto humano queda con timestamp + IP + dispositivo. Un auditor pide y se le muestra el histórico completo.
+- (+) Reversible sin perder historial: la columna del estado actual la calcula la view, no se duplica en `user_profiles`. No hay drift posible.
+- (+) Cero fabrication para admin-created users: la condición `meta_doc_tc IS NOT NULL` en el trigger es la frontera entre "se aceptó explícitamente" y "lo creó un tercero".
+- (+) Gate UNA vez: usuarios pre-existentes al consent_log ven `/accept-consent` en su primer login post-deploy; los demás flujos no lo ven.
+- (−) Tres puntos donde se escribe `consent_log` (trigger, RPC en accept-consent, RPC en notificaciones) — la lógica de "qué meterse" vive en tres sitios. Acoplado pero atomizado por `consent_type`.
+- (−) `audience-picker` del admin NO filtra por `marketing_accepted` aún. Operacionalmente un broadcast promocional hoy llegaría a usuarios que han revocado. Follow-up apuntado: filtrar `WHERE marketing_accepted=true` desde la view en la query del audience picker.
+
+**Files touched (cronología).**
+- `docs/sql/migrations/20260520180000_consent_log.sql` (tabla + RLS + view + RPC + trigger).
+- `docs/sql/migrations/20260520190000_handle_new_user_skip_admin_consent.sql` (trigger condicional).
+- `docs/sql/migrations/20260520200000_latest_user_consents_self_only.sql` (bug-fix view, drop `FROM auth.users`).
+- App: `lib/core/utils/consent_metadata.dart`, `lib/features/auth/data/auth_repository.dart` (`signUp` + `recordConsent`), `lib/features/auth/data/consent_provider.dart`, `lib/features/auth/data/route_after_auth.dart`, `lib/features/auth/presentation/widgets/consent_checkboxes.dart`, `lib/features/auth/presentation/signup_screen.dart`, `lib/features/auth/presentation/accept_consent_screen.dart`, `lib/features/profile/presentation/notifications_screen.dart` (sección COMUNICACIONES), splash/login/otp-verify (call sites de `routeAfterAuth`).
+

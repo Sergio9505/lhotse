@@ -40,6 +40,12 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - `phone` — **required** at signup (E.164, e.g. `+34600000000`). Verified by SMS OTP before the account reaches the app shell. Same number is used as the recovery factor (see ADR-63 + CONVENTIONS § Auth Flow).
 - `avatar_url`, `city`, `country` — optional, edited from Profile.
 
+### Consent fields (RGPD audit-grade — ADR-73)
+- **Source of truth**: tabla `consent_log` (append-only). Cada grant/revoke es una fila con `consent_type` ∈ {`terms_and_conditions`, `privacy_policy`, `marketing`}, `granted BOOLEAN`, `document_version`, `platform`, `os_version`, `app_version`, `user_agent`, `ip_address`, `created_at`. **Las filas nunca se borran** — revocar es un INSERT con `granted=false`.
+- **Estado actual**: view `latest_user_consents` (self-only por `auth.uid()`) — una fila por session con la última decisión por tipo.
+- **Captura** en tres puntos: (a) signup público escribe los 3 events via trigger `handle_new_user` (solo si la metadata trae `document_version_terms`); (b) `/accept-consent` route fuerza aceptación a admin-created users + pre-existing antes de entrar al app (`routeAfterAuth` lo decide); (c) toggle bidireccional en Notificaciones → COMUNICACIONES.
+- **Tipos**: `terms_and_conditions` y `privacy_policy` son **required** al crear cuenta (gating del botón CONTINUAR + gate del `/accept-consent`). `marketing` es **opt-in** separable per Considerando 32.
+
 ## Features
 
 ### Home (Inicio)
@@ -118,13 +124,17 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - **Admin compose** (`lhotse_admin` `/notifications`): the type and the linked entity are picked together — no separate "deep link" toggle. Audience modes: `role` (any/viewer/investor/investor_vip/admin), `entity` (project or brand → resolves contractor user_ids), `manual` (user picker). Listing aggregates via the `notification_broadcast_history` view; expand row → drawer with recipient list + read status.
 - **Permission UX**: custom soft-ask sheet (`PushSoftAskSheet`) shown before the OS dialog — never `UIAlertController`/`AlertDialog`. Cap of 2 soft-asks per device (persisted in `shared_preferences`); if user taps "Más tarde" the OS dialog isn't fired so the permission stays `notDetermined` and we can ask later in the feed. Recovery banner when `denied` opens system Settings via `requestPermission(fallbackToSettings: true)`; dismiss has a 7-day cooldown. See ADR-64 for the full review-defensible rationale.
 - **Title + body**: each notification has a required `title` and an optional `body` (max 300 chars). The push lock-screen layout uses `headings` (title bold) + `contents` (body) when body is present; without body it falls back to a single-line push with `contents = title`. OneSignal requires `en` as a localization fallback on every localized field, so the wrapper duplicates the Spanish string in `{ en, es }` — same content under both keys (the app is Spanish-only). In-app feed shows title + body on two lines under the icon; meta (BRAND · PROJECT · TIME) follows below.
+- **Preferences screen** (`notifications_screen.dart`) — cuatro secciones:
+  - **INVERSIONES** y **GENERAL**: toggles que persisten en `notification_preferences` (tabla aparte, opt-out de subcategorías).
+  - **COMUNICACIONES → Comunicaciones comerciales**: toggle bidireccional escrito en `consent_log` vía `record_consent('marketing', ...)`. Vive aquí en vez de en Datos personales porque es una preferencia de comunicación, no identidad (ADR-73).
+  - **CANALES**: push/email enablement.
+- **Pendiente operacional** (no en ADR-73): el `audience-picker` del admin no filtra hoy por `marketing_accepted`. Cuando se envíen broadcasts promocionales, deben hacer `WHERE marketing_accepted=true` desde `latest_user_consents`. Los broadcasts transaccionales (Art. 6.1.b — ejecución de contrato) no requieren ese filtro.
 
 ### Profile (Mi Perfil)
 - User info (name, email, photo)
-- Account settings
+- Account settings (link a "Datos personales" — solo identidad: Nombre + Apellidos + Phone + País + Ciudad. Sin consents — esos viven en Notificaciones, ADR-73)
 - Role-specific info (investment summary for investors)
-- Legal (terms, privacy)
-- Support / contact
+- **Legal / Soporte** — Términos, Privacidad y Soporte se embeben vía `LegalWebViewScreen` (in-app WebView con `flutter_inappwebview`) apuntando a `lhotsegroup.com/es/terminos-y-condiciones-aplicacion-movil/`, `/en/privacy-policy/` y `/es/soporte-app/`. Las rutas viven en `_kPublicLegalRoutes` — accesibles también sin sesión (los enlaces inline del signup consent checkbox las abren antes de tener cuenta).
 - Logout
 
 ## Onboarding capture
