@@ -40,6 +40,8 @@ class ProjectData {
     this.imageUrls = const [],
     this.videoUrl,
     this.virtualTourUrl,
+    this.virtualTourThumbnailUrl,
+    this.progressTourThumbnailUrl,
     required this.tagline,
     required this.description,
     this.galleryMedia = const [],
@@ -88,6 +90,16 @@ class ProjectData {
 
   final String? videoUrl;
   final String? virtualTourUrl;
+
+  /// Optional editable thumbnail for the commercial virtual tour entry
+  /// point (`VirtualTourSection`). Falls back to [imageUrl] when null
+  /// (preserves historical behaviour for rows with no thumbnail set).
+  final String? virtualTourThumbnailUrl;
+
+  /// Optional editable thumbnail for the progress (avance de obra) tour
+  /// shown in the L3 coinversion AVANCE tab. Falls back to [imageUrl] when
+  /// null.
+  final String? progressTourThumbnailUrl;
 
   String get location => '$city, $country';
 
@@ -157,6 +169,8 @@ class ProjectData {
               : const <String>[]),
       videoUrl: row['video_url'] as String?,
       virtualTourUrl: row['virtual_tour_url'] as String?,
+      virtualTourThumbnailUrl: row['virtual_tour_thumbnail_url'] as String?,
+      progressTourThumbnailUrl: row['progress_tour_thumbnail_url'] as String?,
       tagline: row['tagline'] as String? ?? '',
       description: row['description'] as String? ?? '',
       galleryMedia: _parseGalleryMedia(row['gallery_media']),

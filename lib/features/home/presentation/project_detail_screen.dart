@@ -329,7 +329,11 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 child: Padding(
                   padding: const EdgeInsets.only(top: AppSpacing.xxl),
                   child: VirtualTourSection(
-                    imageUrl: project.imageUrl!,
+                    // Editable per-tour thumbnail (ADR-71 follow-up). Falls
+                    // back to the project cover when the editor hasn't
+                    // uploaded a specific tour thumbnail yet.
+                    imageUrl:
+                        project.virtualTourThumbnailUrl ?? project.imageUrl!,
                     tourUrl: project.virtualTourUrl!,
                   ),
                 ),

@@ -196,6 +196,12 @@ class _CoinversionDetailScreenState
         phases.where((p) => p.isCompleted).length;
     final renderMedia = projectDetail?.renderMedia ?? const <MediaItem>[];
     final progressTourUrl = projectDetail?.progressTourUrl;
+    // Editable per-tour thumbnails (fallback to project cover) — see the
+    // VirtualTourSection call sites below in _AvanceTab and _ProyectoTab.
+    final progressTourImageUrl =
+        projectDetail?.progressTourThumbnailUrl ?? projectImageUrl;
+    final virtualTourImageUrl =
+        projectDetail?.virtualTourThumbnailUrl ?? projectImageUrl;
     final assetFloorPlanUrl = projectDetail?.assetFloorPlanUrl;
     final assetInfo = projectDetail?.assetInfo ?? const <AssetInfoEntry>[];
     final economicAnalysis =
@@ -413,7 +419,7 @@ class _CoinversionDetailScreenState
                     phases: phases,
                     currentPhaseIndex: currentPhaseIndex,
                     progressTourUrl: progressTourUrl,
-                    tourImageUrl: projectImageUrl,
+                    tourImageUrl: progressTourImageUrl,
                     news: relatedNews,
                     cardWidth: screenWidth * 0.75,
                   ),
@@ -426,7 +432,7 @@ class _CoinversionDetailScreenState
                     renderMedia: renderMedia,
                     cardWidth: screenWidth * 0.75,
                     virtualTourUrl: projectDetail?.virtualTourUrl,
-                    tourImageUrl: projectImageUrl,
+                    tourImageUrl: virtualTourImageUrl,
                   ),
                   bottomPadding: bottomPadding,
                 ),

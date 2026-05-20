@@ -43,6 +43,8 @@ class CoinvestmentProjectDetails {
     this.useLightOverlay = true,
     this.videoUrl,
     this.virtualTourUrl,
+    this.virtualTourThumbnailUrl,
+    this.progressTourThumbnailUrl,
   });
 
   final String projectId;
@@ -76,6 +78,14 @@ class CoinvestmentProjectDetails {
   final bool useLightOverlay;
   final String? videoUrl;
   final String? virtualTourUrl;
+
+  /// Optional editable thumbnail for the commercial virtual tour entry
+  /// in the PROYECTO tab. Falls back to `projectImageUrl` when null.
+  final String? virtualTourThumbnailUrl;
+
+  /// Optional editable thumbnail for the progress (avance de obra) tour
+  /// entry in the AVANCE tab. Falls back to `projectImageUrl` when null.
+  final String? progressTourThumbnailUrl;
 
   /// Physical description of the asset (shown on ACTIVO tab).
   List<AssetInfoEntry> get assetInfo {
@@ -197,6 +207,10 @@ class CoinvestmentProjectDetails {
       useLightOverlay: json['project_use_light_overlay'] as bool? ?? true,
       videoUrl: json['video_url'] as String?,
       virtualTourUrl: json['virtual_tour_url'] as String?,
+      virtualTourThumbnailUrl:
+          json['virtual_tour_thumbnail_url'] as String?,
+      progressTourThumbnailUrl:
+          json['progress_tour_thumbnail_url'] as String?,
     );
   }
 }

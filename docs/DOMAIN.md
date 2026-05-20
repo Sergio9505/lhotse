@@ -68,6 +68,8 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - `projects.video_url` (TEXT NULL) — independiente del carrusel. **Video wins** en el hero: si está presente, el detalle reproduce vídeo inline muteado (`LhotseVideoPlayer`, DESIGN_SYSTEM § Video System) y el carrusel queda oculto. Idéntico contrato a news pero con autoplay inline (vs poster de news, ADR-62).
 - `projects.gallery_media` (JSONB) — **galería post-cierre** ("Proyecto terminado" en el admin). Sección distinta del scroll de detalle (`project_detail_screen.dart` § GALERÍA). NO confundir con `hero_media`.
 - `projects.render_media` (JSONB) — renders + mockups pre-obra. Sección del scroll diferenciada de `gallery_media`.
+- `projects.virtual_tour_thumbnail_url` (TEXT NULL) — thumbnail editable para el card 16:9 del **tour virtual comercial** (`VirtualTourSection` en project detail + L3 coinversión PROYECTO). Si es null el cliente cae a `image_url` (preserva comportamiento histórico).
+- `projects.progress_tour_thumbnail_url` (TEXT NULL) — análogo para el **tour de avance de obra** (L3 coinversión AVANCE). Misma regla de fallback a `image_url`.
 
 ### Firmas (formerly Marcas)
 - List of all brands within Lhotse Group (Myttas, Lacomb & Bos, Vellte, NUVE, Domorato, Andhy, Ciclo, Renta Fija)
