@@ -8,9 +8,8 @@ import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/domain/news_item_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
-import '../../../core/widgets/lhotse_image.dart';
-import '../../../core/widgets/lhotse_play_button.dart';
 import 'widgets/fullscreen_video_player.dart';
+import 'widgets/news_hero_carousel.dart';
 
 class NewsDetailScreen extends ConsumerStatefulWidget {
   const NewsDetailScreen({
@@ -171,6 +170,9 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
               ),
               flexibleSpace: FlexibleSpaceBar(
                 background: GestureDetector(
+                  // Tap only opens the fullscreen player when the news has a
+                  // video. With a multi-image gallery the carousel owns the
+                  // gesture surface (horizontal swipe).
                   onTap: signedVideoUrl != null
                       ? () => _openVideoPlayer(
                             signedVideoUrl,
@@ -178,43 +180,15 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                             news.imageUrl,
                           )
                       : null,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Hero(
-                        tag: 'news-hero-${news.id}',
-                        child: LhotseImage.poster(
-                          videoUrl: news.videoUrl,
-                          imageUrl: news.imageUrl,
-                        ),
-                      ),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.center,
-                            colors: [Color(0x66000000), Colors.transparent],
-                          ),
-                        ),
-                      ),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment(0, 0.2),
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Color(0x8C1F1916),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // ADR-62: play overlay invites the user to open the
-                      // fullscreen viewer with audio. News video never
-                      // autoplays inline.
-                      if (signedVideoUrl != null)
-                        const LhotsePlayButton(size: 64),
-                    ],
+                  child: NewsHeroCarousel(
+                    news: news,
+                    signedVideoUrl: signedVideoUrl,
+                    onOpenVideo: () => _openVideoPlayer(
+                      signedVideoUrl ?? '',
+                      news.videoUrl,
+                      news.imageUrl,
+                    ),
+                    heroGone: _heroGone,
                   ),
                 ),
               ),

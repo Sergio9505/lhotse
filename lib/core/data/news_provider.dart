@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/news_item_data.dart';
 import 'supabase_provider.dart';
 
+// `*` covers the new `gallery_media` jsonb column added by
+// 20260520120000_news_gallery_media.sql — no manual list to maintain.
 const _newsSelect = '''
   *,
   project:projects(brand_id, brand:brands(name), projectAsset:assets(city)),

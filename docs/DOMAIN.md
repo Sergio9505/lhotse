@@ -57,6 +57,11 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - `news.type` (`project | press`) — primary classification, drives the `PROYECTOS / PRENSA` chips.
 - `news.subtype` (TEXT NULL, ortogonal a `type`) — subclasificación open-ended. Hoy solo `'progress'` (avance de obra): noticias excluidas del archivo global de Noticias (`BrandsScreen` sub-tab Noticias) y visibles solo en el L3 Avance del proyecto vinculado. `NULL` = noticia genérica. Independiente de `type`: `type=project, subtype=progress` es avance de obra; `type=project, subtype=null` es comercial del proyecto y sí aparece en el archivo. La CHECK constraint deja crecer la lista (`milestone`, `commercial`, etc.) sin renombrar.
 
+#### News media model (ADR-70)
+- `news.gallery_media` (JSONB array of `{type:'image'|'video', url}`, NOT NULL DEFAULT `[]`) — ordered hero gallery. Same shape as `assets.gallery_media` / `projects.gallery_media`. Today the admin form restricts uploads to `type='image'`; the schema is symmetric to leave room for a future image+video carousel.
+- `news.image_url` (TEXT NULL) — denormalized cover, equal to `gallery_media[0].url` for image entries. Read by every list-row consumer (`LhotseNewsCard` in feed, archive, L3 lists). The admin action keeps both fields in sync on save so list queries do not need to project the jsonb.
+- `news.video_url` (TEXT NULL) — independent of `gallery_media`. **Video wins** in the hero (ADR-62 + ADR-70): if `video_url` is set the detail renders the single-frame poster with the play overlay and the gallery is ignored — the carrusel solo aparece cuando `video_url IS NULL`.
+
 ### Firmas (formerly Marcas)
 - List of all brands within Lhotse Group (Myttas, Lacomb & Bos, Vellte, NUVE, Domorato, Andhy, Ciclo, Renta Fija)
 - Each brand shown as card with cover image + SVG logo + name

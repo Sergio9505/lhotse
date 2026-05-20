@@ -41,6 +41,7 @@ class NewsItemData {
     this.region,
     this.subtitle,
     this.imageUrl,
+    this.imageUrls = const [],
     this.videoUrl,
     required this.date,
     required this.type,
@@ -70,7 +71,21 @@ class NewsItemData {
   final String? region;
 
   final String? subtitle;
+
+  /// Cover image used by every list-row consumer (`LhotseNewsCard`, feed,
+  /// archive, L3 coinversion). Denormalized from `gallery_media[0]` so list
+  /// queries do not need to project the full jsonb array. Always kept in
+  /// sync by the admin form on save.
   final String? imageUrl;
+
+  /// Ordered hero gallery (image-only). Empty when the news has no media or
+  /// when only a legacy `image_url` exists (in that case it gets promoted
+  /// into a single-element list at deserialization time). Drives the
+  /// PageView in `NewsDetailScreen`'s hero when `videoUrl == null` and
+  /// `imageUrls.length > 1`. Per ADR-62, `videoUrl` takes precedence over
+  /// this list in the hero.
+  final List<String> imageUrls;
+
   final String? videoUrl;
   final DateTime date;
   final NewsType type;
@@ -96,6 +111,8 @@ class NewsItemData {
       row['asset'] as Map<String, dynamic>?;
 
   factory NewsItemData.fromSupabaseRow(Map<String, dynamic> row) {
+    final imageUrl = row['image_url'] as String?;
+    final imageUrls = _imageUrlsFromGallery(row['gallery_media']);
     return NewsItemData(
       id: row['id'] as String,
       title: row['title'] as String,
@@ -111,7 +128,12 @@ class NewsItemData {
           (_projectOf(row)?['projectAsset']
               as Map<String, dynamic>?)?['city']) as String?,
       subtitle: row['subtitle'] as String?,
-      imageUrl: row['image_url'] as String?,
+      imageUrl: imageUrl,
+      imageUrls: imageUrls.isNotEmpty
+          ? imageUrls
+          : (imageUrl != null && imageUrl.isNotEmpty
+              ? <String>[imageUrl]
+              : const <String>[]),
       videoUrl: row['video_url'] as String?,
       date: DateTime.parse(row['date'] as String),
       type: NewsTypeX.fromString(row['type'] as String? ?? ''),
@@ -119,5 +141,21 @@ class NewsItemData {
       body: row['body'] as String?,
       useLightOverlay: row['use_light_overlay'] as bool? ?? true,
     );
+  }
+
+  /// Extract the ordered `image`-type URLs from a `gallery_media` jsonb
+  /// array. Tolerates malformed rows (non-array, non-object elements,
+  /// missing `type`/`url`) by skipping them — the DB CHECK guards the
+  /// happy path, this is just defensive parsing.
+  static List<String> _imageUrlsFromGallery(Object? raw) {
+    if (raw is! List) return const <String>[];
+    final out = <String>[];
+    for (final entry in raw) {
+      if (entry is! Map) continue;
+      if (entry['type'] != 'image') continue;
+      final url = entry['url'];
+      if (url is String && url.isNotEmpty) out.add(url);
+    }
+    return out;
   }
 }
