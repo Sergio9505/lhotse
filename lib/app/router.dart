@@ -35,10 +35,9 @@ import '../features/documents/presentation/document_preview_screen.dart';
 import '../features/onboarding/presentation/onboarding_done_screen.dart';
 import '../features/onboarding/presentation/onboarding_host.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
-import '../features/profile/presentation/legal_text_screen.dart';
+import '../features/profile/presentation/legal_webview_screen.dart';
 import '../features/profile/presentation/notifications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
-import '../features/profile/presentation/support_screen.dart';
 import '../features/search/presentation/search_screen.dart';
 import 'shell_screen.dart';
 
@@ -475,16 +474,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.profileSupport,
               pageBuilder: (context, state) => _fadePage(
                 key: state.pageKey,
-                child: const SupportScreen(),
+                child: const LegalWebViewScreen(
+                  url: 'https://lhotsegroup.com/es/soporte-app/',
+                ),
               ),
             ),
             GoRoute(
               path: AppRoutes.profileTerms,
               pageBuilder: (context, state) => _fadePage(
                 key: state.pageKey,
-                child: const LegalTextScreen(
-                  title: 'TÉRMINOS Y CONDICIONES',
-                  body: LegalContent.terms,
+                child: const LegalWebViewScreen(
+                  url:
+                      'https://lhotsegroup.com/es/terminos-y-condiciones-aplicacion-movil/',
                 ),
               ),
             ),
@@ -492,9 +493,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.profilePrivacy,
               pageBuilder: (context, state) => _fadePage(
                 key: state.pageKey,
-                child: const LegalTextScreen(
-                  title: 'POLÍTICA DE PRIVACIDAD',
-                  body: LegalContent.privacy,
+                child: const LegalWebViewScreen(
+                  url: 'https://lhotsegroup.com/en/privacy-policy/',
                 ),
               ),
             ),
