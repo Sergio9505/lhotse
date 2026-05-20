@@ -1,11 +1,8 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../app/router.dart';
 import '../../../core/theme/app_theme.dart';
@@ -13,6 +10,7 @@ import '../../../core/utils/consent_metadata.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../data/auth_repository.dart';
 import 'otp_verify_screen.dart';
+import 'widgets/consent_checkboxes.dart';
 import 'widgets/lhotse_auth_field.dart';
 import 'widgets/lhotse_phone_field.dart';
 import 'widgets/lhotse_submit_button.dart';
@@ -352,7 +350,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     // RGPD allows this aggregation as long as both are
                     // necessary for the service and the user can read
                     // both — links open the embedded webview).
-                    _LegalConsentCheckbox(
+                    LegalConsentCheckbox(
                       value: _legalAccepted,
                       onChanged: (v) => setState(() => _legalAccepted = v),
                       onTermsTap: () => context.push(AppRoutes.profileTerms),
@@ -365,7 +363,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     // Optional consent — opt-in for marketing
                     // communications (RGPD requires this to be separable
                     // from the T&C aceptado).
-                    _MarketingConsentCheckbox(
+                    MarketingConsentCheckbox(
                       value: _marketingConsent,
                       onChanged: (v) => setState(() => _marketingConsent = v),
                     ),
@@ -403,146 +401,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 }
 
-// ── Consent checkboxes ───────────────────────────────────────────────────────
-
-/// Editorial checkbox row — 18×18 caja, tick `PhosphorIconsThin.check` cuando
-/// on, fila completa tappable, sin Material `Checkbox` (rompe la voz
-/// Hermès/Sotheby's con el ripple).
-class _ConsentCheckboxRow extends StatelessWidget {
-  const _ConsentCheckboxRow({
-    required this.value,
-    required this.onChanged,
-    required this.child,
-  });
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => onChanged(!value),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            width: 18,
-            height: 18,
-            margin: const EdgeInsets.only(top: 2),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: value
-                    ? AppColors.textPrimary
-                    : AppColors.textPrimary.withValues(alpha: 0.4),
-                width: value ? 1.0 : 0.5,
-              ),
-              color: value ? AppColors.textPrimary : Colors.transparent,
-            ),
-            child: value
-                ? const PhosphorIcon(
-                    PhosphorIconsThin.check,
-                    size: 14,
-                    color: AppColors.textOnDark,
-                  )
-                : null,
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(child: child),
-        ],
-      ),
-    );
-  }
-}
-
-/// Legal consent — required. Links open the embedded WebView for the
-/// terms + privacy pages (lhotsegroup.com).
-class _LegalConsentCheckbox extends StatelessWidget {
-  const _LegalConsentCheckbox({
-    required this.value,
-    required this.onChanged,
-    required this.onTermsTap,
-    required this.onPrivacyTap,
-  });
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  final VoidCallback onTermsTap;
-  final VoidCallback onPrivacyTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final body = AppTypography.annotationParagraph.copyWith(
-      color: value ? AppColors.textPrimary : AppColors.accentMuted,
-    );
-    final link = body.copyWith(
-      color: AppColors.textPrimary,
-      decoration: TextDecoration.underline,
-      decorationThickness: 0.5,
-    );
-
-    return _ConsentCheckboxRow(
-      value: value,
-      onChanged: onChanged,
-      child: RichText(
-        text: TextSpan(
-          style: body,
-          children: [
-            const TextSpan(text: 'He leído y acepto los '),
-            TextSpan(
-              text: 'Términos',
-              style: link,
-              recognizer: _Tap(onTermsTap),
-            ),
-            const TextSpan(text: ' y la '),
-            TextSpan(
-              text: 'Política de Privacidad',
-              style: link,
-              recognizer: _Tap(onPrivacyTap),
-            ),
-            const TextSpan(text: ' de Lhotse Group.'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Marketing consent — optional (RGPD Considerando 32). Default off.
-class _MarketingConsentCheckbox extends StatelessWidget {
-  const _MarketingConsentCheckbox({
-    required this.value,
-    required this.onChanged,
-  });
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ConsentCheckboxRow(
-      value: value,
-      onChanged: onChanged,
-      child: Text(
-        'Quiero recibir comunicaciones sobre nuevos proyectos e '
-        'invitaciones VIP.',
-        style: AppTypography.annotationParagraph.copyWith(
-          color: value ? AppColors.textPrimary : AppColors.accentMuted,
-        ),
-      ),
-    );
-  }
-}
-
-// Lightweight TapGestureRecognizer wrapper kept inline to avoid an extra
-// import surface in the screen file.
-class _Tap extends TapGestureRecognizer {
-  _Tap(VoidCallback onTap) {
-    this.onTap = onTap;
-  }
-}
+// Consent checkboxes moved to widgets/consent_checkboxes.dart (shared
+// with the onboarding consent step).
 
 /// Live indicator that sits under the "Repetir contraseña" field. Stays
 /// hidden until the user has typed at least one character in the confirm
