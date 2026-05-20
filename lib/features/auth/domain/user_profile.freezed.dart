@@ -11,33 +11,30 @@ part of 'user_profile.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-
 /// @nodoc
 mixin _$UserProfile {
 
- String get id;@JsonKey(name: 'full_name') String? get fullName; String? get email; String? get phone;@JsonKey(name: 'avatar_url') String? get avatarUrl; String? get city; String? get country; UserRole get role;@JsonKey(name: 'member_since') DateTime? get memberSince;
+ String get id; String? get firstName; String? get lastName; String? get fullName; String? get email; String? get phone; String? get avatarUrl; String? get city; String? get country; UserRole get role; DateTime? get memberSince;
 /// Create a copy of UserProfile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $UserProfileCopyWith<UserProfile> get copyWith => _$UserProfileCopyWithImpl<UserProfile>(this as UserProfile, _$identity);
 
-  /// Serializes this UserProfile to a JSON map.
-  Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.city, city) || other.city == city)&&(identical(other.country, country) || other.country == country)&&(identical(other.role, role) || other.role == role)&&(identical(other.memberSince, memberSince) || other.memberSince == memberSince));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.firstName, firstName) || other.firstName == firstName)&&(identical(other.lastName, lastName) || other.lastName == lastName)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.city, city) || other.city == city)&&(identical(other.country, country) || other.country == country)&&(identical(other.role, role) || other.role == role)&&(identical(other.memberSince, memberSince) || other.memberSince == memberSince));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
-int get hashCode => Object.hash(runtimeType,id,fullName,email,phone,avatarUrl,city,country,role,memberSince);
+int get hashCode => Object.hash(runtimeType,id,firstName,lastName,fullName,email,phone,avatarUrl,city,country,role,memberSince);
 
 @override
 String toString() {
-  return 'UserProfile(id: $id, fullName: $fullName, email: $email, phone: $phone, avatarUrl: $avatarUrl, city: $city, country: $country, role: $role, memberSince: $memberSince)';
+  return 'UserProfile(id: $id, firstName: $firstName, lastName: $lastName, fullName: $fullName, email: $email, phone: $phone, avatarUrl: $avatarUrl, city: $city, country: $country, role: $role, memberSince: $memberSince)';
 }
 
 
@@ -48,7 +45,7 @@ abstract mixin class $UserProfileCopyWith<$Res>  {
   factory $UserProfileCopyWith(UserProfile value, $Res Function(UserProfile) _then) = _$UserProfileCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'full_name') String? fullName, String? email, String? phone,@JsonKey(name: 'avatar_url') String? avatarUrl, String? city, String? country, UserRole role,@JsonKey(name: 'member_since') DateTime? memberSince
+ String id, String? firstName, String? lastName, String? fullName, String? email, String? phone, String? avatarUrl, String? city, String? country, UserRole role, DateTime? memberSince
 });
 
 
@@ -65,10 +62,12 @@ class _$UserProfileCopyWithImpl<$Res>
 
 /// Create a copy of UserProfile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fullName = freezed,Object? email = freezed,Object? phone = freezed,Object? avatarUrl = freezed,Object? city = freezed,Object? country = freezed,Object? role = null,Object? memberSince = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? firstName = freezed,Object? lastName = freezed,Object? fullName = freezed,Object? email = freezed,Object? phone = freezed,Object? avatarUrl = freezed,Object? city = freezed,Object? country = freezed,Object? role = null,Object? memberSince = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,fullName: freezed == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
+as String,firstName: freezed == firstName ? _self.firstName : firstName // ignore: cast_nullable_to_non_nullable
+as String?,lastName: freezed == lastName ? _self.lastName : lastName // ignore: cast_nullable_to_non_nullable
+as String?,fullName: freezed == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
 as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
@@ -161,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'full_name')  String? fullName,  String? email,  String? phone, @JsonKey(name: 'avatar_url')  String? avatarUrl,  String? city,  String? country,  UserRole role, @JsonKey(name: 'member_since')  DateTime? memberSince)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? firstName,  String? lastName,  String? fullName,  String? email,  String? phone,  String? avatarUrl,  String? city,  String? country,  UserRole role,  DateTime? memberSince)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserProfile() when $default != null:
-return $default(_that.id,_that.fullName,_that.email,_that.phone,_that.avatarUrl,_that.city,_that.country,_that.role,_that.memberSince);case _:
+return $default(_that.id,_that.firstName,_that.lastName,_that.fullName,_that.email,_that.phone,_that.avatarUrl,_that.city,_that.country,_that.role,_that.memberSince);case _:
   return orElse();
 
 }
@@ -182,10 +181,10 @@ return $default(_that.id,_that.fullName,_that.email,_that.phone,_that.avatarUrl,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'full_name')  String? fullName,  String? email,  String? phone, @JsonKey(name: 'avatar_url')  String? avatarUrl,  String? city,  String? country,  UserRole role, @JsonKey(name: 'member_since')  DateTime? memberSince)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? firstName,  String? lastName,  String? fullName,  String? email,  String? phone,  String? avatarUrl,  String? city,  String? country,  UserRole role,  DateTime? memberSince)  $default,) {final _that = this;
 switch (_that) {
 case _UserProfile():
-return $default(_that.id,_that.fullName,_that.email,_that.phone,_that.avatarUrl,_that.city,_that.country,_that.role,_that.memberSince);case _:
+return $default(_that.id,_that.firstName,_that.lastName,_that.fullName,_that.email,_that.phone,_that.avatarUrl,_that.city,_that.country,_that.role,_that.memberSince);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +201,10 @@ return $default(_that.id,_that.fullName,_that.email,_that.phone,_that.avatarUrl,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'full_name')  String? fullName,  String? email,  String? phone, @JsonKey(name: 'avatar_url')  String? avatarUrl,  String? city,  String? country,  UserRole role, @JsonKey(name: 'member_since')  DateTime? memberSince)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? firstName,  String? lastName,  String? fullName,  String? email,  String? phone,  String? avatarUrl,  String? city,  String? country,  UserRole role,  DateTime? memberSince)?  $default,) {final _that = this;
 switch (_that) {
 case _UserProfile() when $default != null:
-return $default(_that.id,_that.fullName,_that.email,_that.phone,_that.avatarUrl,_that.city,_that.country,_that.role,_that.memberSince);case _:
+return $default(_that.id,_that.firstName,_that.lastName,_that.fullName,_that.email,_that.phone,_that.avatarUrl,_that.city,_that.country,_that.role,_that.memberSince);case _:
   return null;
 
 }
@@ -214,21 +213,23 @@ return $default(_that.id,_that.fullName,_that.email,_that.phone,_that.avatarUrl,
 }
 
 /// @nodoc
-@JsonSerializable()
+
 
 class _UserProfile implements UserProfile {
-  const _UserProfile({required this.id, @JsonKey(name: 'full_name') this.fullName, this.email, this.phone, @JsonKey(name: 'avatar_url') this.avatarUrl, this.city, this.country, this.role = UserRole.viewer, @JsonKey(name: 'member_since') this.memberSince});
-  factory _UserProfile.fromJson(Map<String, dynamic> json) => _$UserProfileFromJson(json);
+  const _UserProfile({required this.id, this.firstName, this.lastName, this.fullName, this.email, this.phone, this.avatarUrl, this.city, this.country, this.role = UserRole.viewer, this.memberSince});
+  
 
 @override final  String id;
-@override@JsonKey(name: 'full_name') final  String? fullName;
+@override final  String? firstName;
+@override final  String? lastName;
+@override final  String? fullName;
 @override final  String? email;
 @override final  String? phone;
-@override@JsonKey(name: 'avatar_url') final  String? avatarUrl;
+@override final  String? avatarUrl;
 @override final  String? city;
 @override final  String? country;
 @override@JsonKey() final  UserRole role;
-@override@JsonKey(name: 'member_since') final  DateTime? memberSince;
+@override final  DateTime? memberSince;
 
 /// Create a copy of UserProfile
 /// with the given fields replaced by the non-null parameter values.
@@ -236,23 +237,20 @@ class _UserProfile implements UserProfile {
 @pragma('vm:prefer-inline')
 _$UserProfileCopyWith<_UserProfile> get copyWith => __$UserProfileCopyWithImpl<_UserProfile>(this, _$identity);
 
-@override
-Map<String, dynamic> toJson() {
-  return _$UserProfileToJson(this, );
-}
+
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.city, city) || other.city == city)&&(identical(other.country, country) || other.country == country)&&(identical(other.role, role) || other.role == role)&&(identical(other.memberSince, memberSince) || other.memberSince == memberSince));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.firstName, firstName) || other.firstName == firstName)&&(identical(other.lastName, lastName) || other.lastName == lastName)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.city, city) || other.city == city)&&(identical(other.country, country) || other.country == country)&&(identical(other.role, role) || other.role == role)&&(identical(other.memberSince, memberSince) || other.memberSince == memberSince));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
-int get hashCode => Object.hash(runtimeType,id,fullName,email,phone,avatarUrl,city,country,role,memberSince);
+int get hashCode => Object.hash(runtimeType,id,firstName,lastName,fullName,email,phone,avatarUrl,city,country,role,memberSince);
 
 @override
 String toString() {
-  return 'UserProfile(id: $id, fullName: $fullName, email: $email, phone: $phone, avatarUrl: $avatarUrl, city: $city, country: $country, role: $role, memberSince: $memberSince)';
+  return 'UserProfile(id: $id, firstName: $firstName, lastName: $lastName, fullName: $fullName, email: $email, phone: $phone, avatarUrl: $avatarUrl, city: $city, country: $country, role: $role, memberSince: $memberSince)';
 }
 
 
@@ -263,7 +261,7 @@ abstract mixin class _$UserProfileCopyWith<$Res> implements $UserProfileCopyWith
   factory _$UserProfileCopyWith(_UserProfile value, $Res Function(_UserProfile) _then) = __$UserProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'full_name') String? fullName, String? email, String? phone,@JsonKey(name: 'avatar_url') String? avatarUrl, String? city, String? country, UserRole role,@JsonKey(name: 'member_since') DateTime? memberSince
+ String id, String? firstName, String? lastName, String? fullName, String? email, String? phone, String? avatarUrl, String? city, String? country, UserRole role, DateTime? memberSince
 });
 
 
@@ -280,10 +278,12 @@ class __$UserProfileCopyWithImpl<$Res>
 
 /// Create a copy of UserProfile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fullName = freezed,Object? email = freezed,Object? phone = freezed,Object? avatarUrl = freezed,Object? city = freezed,Object? country = freezed,Object? role = null,Object? memberSince = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? firstName = freezed,Object? lastName = freezed,Object? fullName = freezed,Object? email = freezed,Object? phone = freezed,Object? avatarUrl = freezed,Object? city = freezed,Object? country = freezed,Object? role = null,Object? memberSince = freezed,}) {
   return _then(_UserProfile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,fullName: freezed == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
+as String,firstName: freezed == firstName ? _self.firstName : firstName // ignore: cast_nullable_to_non_nullable
+as String?,lastName: freezed == lastName ? _self.lastName : lastName // ignore: cast_nullable_to_non_nullable
+as String?,fullName: freezed == fullName ? _self.fullName : fullName // ignore: cast_nullable_to_non_nullable
 as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
 as String?,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable

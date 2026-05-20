@@ -35,7 +35,7 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 | Admin | Same as Investor VIP **plus platform-wide read** | Operational role stored as `role = 'admin'` in `user_profiles`. The `is_admin()` RLS helper grants write access to storage (`brand-assets`, `asset-images`, `project-images`, `public-media`, `documents`, `asset-videos`, `project-videos`), CRUD on `user_requests`, read on `user_onboarding`, and — critically — **read on every row** of `purchase_contracts`, `coinvestment_contracts` and `fixed_income_contracts`. The admin Server Action depends on this for audience resolution (see ARCHITECTURE § Notifications). Combined with the client normalisation `admin → investor_vip` at `UserProfile.fromJson`, an admin who logs into the investor app sees Strategy with the totals of the **entire platform** (gold VIP badge, full L2/L3 access). RLS still enforces the policy server-side; the client doesn't gate anything role-specific |
 
 ### Identity fields
-- `full_name` — required at signup.
+- `first_name` (required at signup) + `last_name` (optional — extranjeros con mononym) son las columnas writeables. `full_name` es **GENERATED ALWAYS AS** `CONCAT_WS(' ', first_name, last_name)` y solo lectura — los 10+ readers del admin (lookups, investor pickers, audience-picker, investor-cell, etc.) la consumen sin cambios. Cualquier intento de escribir `full_name` directamente lo rechaza PostgREST.
 - `email` — required at signup, primary credential for login.
 - `phone` — **required** at signup (E.164, e.g. `+34600000000`). Verified by SMS OTP before the account reaches the app shell. Same number is used as the recovery factor (see ADR-63 + CONVENTIONS § Auth Flow).
 - `avatar_url`, `city`, `country` — optional, edited from Profile.

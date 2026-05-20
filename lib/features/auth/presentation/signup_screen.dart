@@ -22,7 +22,8 @@ class SignUpScreen extends ConsumerStatefulWidget {
 }
 
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = LhotsePhoneController();
   final _passwordController = TextEditingController();
@@ -32,7 +33,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -40,12 +42,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   Future<void> _signUp() async {
-    final fullName = _nameController.text.trim();
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final phone = _phoneController.e164;
 
-    if (fullName.isEmpty ||
+    if (firstName.isEmpty ||
         email.isEmpty ||
         password.isEmpty ||
         _phoneController.localNumber.isEmpty) {
@@ -79,7 +82,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       final response = await repo.signUp(
         email: email,
         password: password,
-        fullName: fullName,
+        firstName: firstName,
+        lastName: lastName,
       );
 
       if (!mounted) return;
@@ -222,12 +226,22 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     const SizedBox(height: AppSpacing.xl),
 
                     LhotseAuthField(
-                      label: 'Nombre completo',
-                      controller: _nameController,
+                      label: 'Nombre',
+                      controller: _firstNameController,
                       keyboardType: TextInputType.name,
                       textCapitalization: TextCapitalization.words,
                       textInputAction: TextInputAction.next,
                       autofocus: true,
+                    ),
+
+                    const SizedBox(height: AppSpacing.xl),
+
+                    LhotseAuthField(
+                      label: 'Apellidos',
+                      controller: _lastNameController,
+                      keyboardType: TextInputType.name,
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.next,
                     ),
 
                     const SizedBox(height: AppSpacing.xl),

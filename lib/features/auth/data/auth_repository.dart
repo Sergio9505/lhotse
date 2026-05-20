@@ -17,12 +17,16 @@ class AuthRepository {
   Future<AuthResponse> signUp({
     required String email,
     required String password,
-    required String fullName,
+    required String firstName,
+    required String lastName,
   }) =>
       _client.auth.signUp(
         email: email,
         password: password,
-        data: {'full_name': fullName},
+        // `first_name` / `last_name` keys are consumed by the
+        // `handle_new_user()` trigger which writes them straight into
+        // `user_profiles`. The DB's `full_name` column is generated.
+        data: {'first_name': firstName, 'last_name': lastName},
       );
 
   Future<void> signOut() => _client.auth.signOut();

@@ -23,7 +23,8 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _cityController = TextEditingController();
   final _phoneController = LhotsePhoneController();
   Country _country = kDefaultCountry;
@@ -34,7 +35,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _cityController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -46,7 +48,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_loaded) return;
     _loaded = true;
     final profile = ref.read(currentUserProfileProvider).valueOrNull;
-    _nameController.text = profile?.fullName ?? '';
+    _firstNameController.text = profile?.firstName ?? '';
+    _lastNameController.text = profile?.lastName ?? '';
     _cityController.text = profile?.city ?? '';
 
     // Parse current auth.users.phone (E.164 without '+', e.g. '34680591450')
@@ -124,8 +127,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       //    NOT touched here — email is read-only (managed by support);
       //    phone is owned by auth.users (SoT, ADR-63) and synced to
       //    user_profiles via trg_handle_user_updated on OTP verification.
+      // `full_name` is a GENERATED column — writers must only touch
+      // first_name + last_name. PostgREST rejects any attempt to write
+      // `full_name` directly.
       await ref.read(supabaseClientProvider).from('user_profiles').update({
-        'full_name': _nameController.text.trim(),
+        'first_name': _firstNameController.text.trim(),
+        'last_name': _lastNameController.text.trim(),
         'city': _cityController.text.trim(),
         'country': _country.code,
       }).eq('id', userId);
@@ -223,8 +230,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   const SizedBox(height: AppSpacing.xl),
 
                   LhotseAuthField(
-                    controller: _nameController,
+                    controller: _firstNameController,
                     label: 'Nombre',
+                    keyboardType: TextInputType.name,
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
+                  ),
+
+                  const SizedBox(height: AppSpacing.xl),
+
+                  LhotseAuthField(
+                    controller: _lastNameController,
+                    label: 'Apellidos',
                     keyboardType: TextInputType.name,
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
