@@ -8,6 +8,7 @@ import '../core/domain/asset_data.dart';
 import '../core/domain/brand_data.dart';
 import '../core/domain/news_item_data.dart';
 import '../core/domain/project_data.dart';
+import '../features/auth/presentation/accept_consent_screen.dart';
 import '../features/auth/presentation/complete_phone_screen.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
@@ -72,6 +73,11 @@ abstract final class AppRoutes {
   // Phone capture for sessions that landed without a verified phone (admin-
   // created users / pre-feature signups). Transient — owns its own nav.
   static const completePhone = '/complete-phone';
+  // Consent gate for sessions whose user has no rows in `consent_log`
+  // (admin-created users / pre-feature signups). Transient — owns its
+  // own nav. Inserted by `routeAfterAuth` before any onboarding/home
+  // routing.
+  static const acceptConsent = '/accept-consent';
   // Onboarding (post sign-up, outside shell)
   static const onboarding = '/onboarding';
   static const onboardingDone = '/onboarding/done';
@@ -120,6 +126,7 @@ const _kTransientAuthRoutes = {
   AppRoutes.otpVerify,
   AppRoutes.resetPassword,
   AppRoutes.completePhone,
+  AppRoutes.acceptConsent,
 };
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -233,6 +240,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _fadePage(
           key: state.pageKey,
           child: const CompletePhoneScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.acceptConsent,
+        pageBuilder: (context, state) => _fadePage(
+          key: state.pageKey,
+          child: const AcceptConsentScreen(),
         ),
       ),
       // ── Document preview (outside shell — full-screen, any feature) ──

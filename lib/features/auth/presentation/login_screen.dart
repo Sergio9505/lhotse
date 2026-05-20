@@ -8,6 +8,7 @@ import '../../../app/router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../data/auth_repository.dart';
+import '../data/route_after_auth.dart';
 import 'otp_verify_screen.dart';
 import 'widgets/lhotse_auth_field.dart';
 import 'widgets/lhotse_submit_button.dart';
@@ -80,7 +81,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
 
-      // Fully verified — router redirect handles navigation automatically.
+      // Fully verified — defer to routeAfterAuth so the consent gate +
+      // onboarding completion checks fire before /home. This overrides
+      // the router's auto-redirect of /login → /home for users that
+      // still owe TC/Privacy aceptado.
+      await routeAfterAuth(ref, context);
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {

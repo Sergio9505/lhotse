@@ -14,12 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$OnboardingState {
 
-/// Whether the user has already accepted Terms + Privacy. The
-/// onboarding host renders a consent gate before the first question
-/// when this is false. Initialised from `latest_user_consents` on
-/// controller construction so signup-public users (who consented
-/// during the signup checkbox flow) skip the gate.
- bool get consentAccepted; int get stepIndex; Map<int, Object> get answers; bool get isSaving; String? get error;
+ int get stepIndex; Map<int, Object> get answers; bool get isSaving; String? get error;
 /// Create a copy of OnboardingState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +25,16 @@ $OnboardingStateCopyWith<OnboardingState> get copyWith => _$OnboardingStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OnboardingState&&(identical(other.consentAccepted, consentAccepted) || other.consentAccepted == consentAccepted)&&(identical(other.stepIndex, stepIndex) || other.stepIndex == stepIndex)&&const DeepCollectionEquality().equals(other.answers, answers)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OnboardingState&&(identical(other.stepIndex, stepIndex) || other.stepIndex == stepIndex)&&const DeepCollectionEquality().equals(other.answers, answers)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.error, error) || other.error == error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,consentAccepted,stepIndex,const DeepCollectionEquality().hash(answers),isSaving,error);
+int get hashCode => Object.hash(runtimeType,stepIndex,const DeepCollectionEquality().hash(answers),isSaving,error);
 
 @override
 String toString() {
-  return 'OnboardingState(consentAccepted: $consentAccepted, stepIndex: $stepIndex, answers: $answers, isSaving: $isSaving, error: $error)';
+  return 'OnboardingState(stepIndex: $stepIndex, answers: $answers, isSaving: $isSaving, error: $error)';
 }
 
 
@@ -50,7 +45,7 @@ abstract mixin class $OnboardingStateCopyWith<$Res>  {
   factory $OnboardingStateCopyWith(OnboardingState value, $Res Function(OnboardingState) _then) = _$OnboardingStateCopyWithImpl;
 @useResult
 $Res call({
- bool consentAccepted, int stepIndex, Map<int, Object> answers, bool isSaving, String? error
+ int stepIndex, Map<int, Object> answers, bool isSaving, String? error
 });
 
 
@@ -67,10 +62,9 @@ class _$OnboardingStateCopyWithImpl<$Res>
 
 /// Create a copy of OnboardingState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? consentAccepted = null,Object? stepIndex = null,Object? answers = null,Object? isSaving = null,Object? error = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? stepIndex = null,Object? answers = null,Object? isSaving = null,Object? error = freezed,}) {
   return _then(_self.copyWith(
-consentAccepted: null == consentAccepted ? _self.consentAccepted : consentAccepted // ignore: cast_nullable_to_non_nullable
-as bool,stepIndex: null == stepIndex ? _self.stepIndex : stepIndex // ignore: cast_nullable_to_non_nullable
+stepIndex: null == stepIndex ? _self.stepIndex : stepIndex // ignore: cast_nullable_to_non_nullable
 as int,answers: null == answers ? _self.answers : answers // ignore: cast_nullable_to_non_nullable
 as Map<int, Object>,isSaving: null == isSaving ? _self.isSaving : isSaving // ignore: cast_nullable_to_non_nullable
 as bool,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
@@ -159,10 +153,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool consentAccepted,  int stepIndex,  Map<int, Object> answers,  bool isSaving,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int stepIndex,  Map<int, Object> answers,  bool isSaving,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OnboardingState() when $default != null:
-return $default(_that.consentAccepted,_that.stepIndex,_that.answers,_that.isSaving,_that.error);case _:
+return $default(_that.stepIndex,_that.answers,_that.isSaving,_that.error);case _:
   return orElse();
 
 }
@@ -180,10 +174,10 @@ return $default(_that.consentAccepted,_that.stepIndex,_that.answers,_that.isSavi
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool consentAccepted,  int stepIndex,  Map<int, Object> answers,  bool isSaving,  String? error)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int stepIndex,  Map<int, Object> answers,  bool isSaving,  String? error)  $default,) {final _that = this;
 switch (_that) {
 case _OnboardingState():
-return $default(_that.consentAccepted,_that.stepIndex,_that.answers,_that.isSaving,_that.error);case _:
+return $default(_that.stepIndex,_that.answers,_that.isSaving,_that.error);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +194,10 @@ return $default(_that.consentAccepted,_that.stepIndex,_that.answers,_that.isSavi
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool consentAccepted,  int stepIndex,  Map<int, Object> answers,  bool isSaving,  String? error)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int stepIndex,  Map<int, Object> answers,  bool isSaving,  String? error)?  $default,) {final _that = this;
 switch (_that) {
 case _OnboardingState() when $default != null:
-return $default(_that.consentAccepted,_that.stepIndex,_that.answers,_that.isSaving,_that.error);case _:
+return $default(_that.stepIndex,_that.answers,_that.isSaving,_that.error);case _:
   return null;
 
 }
@@ -215,15 +209,9 @@ return $default(_that.consentAccepted,_that.stepIndex,_that.answers,_that.isSavi
 
 
 class _OnboardingState implements OnboardingState {
-  const _OnboardingState({this.consentAccepted = false, this.stepIndex = 0, final  Map<int, Object> answers = const {}, this.isSaving = false, this.error}): _answers = answers;
+  const _OnboardingState({this.stepIndex = 0, final  Map<int, Object> answers = const {}, this.isSaving = false, this.error}): _answers = answers;
   
 
-/// Whether the user has already accepted Terms + Privacy. The
-/// onboarding host renders a consent gate before the first question
-/// when this is false. Initialised from `latest_user_consents` on
-/// controller construction so signup-public users (who consented
-/// during the signup checkbox flow) skip the gate.
-@override@JsonKey() final  bool consentAccepted;
 @override@JsonKey() final  int stepIndex;
  final  Map<int, Object> _answers;
 @override@JsonKey() Map<int, Object> get answers {
@@ -245,16 +233,16 @@ _$OnboardingStateCopyWith<_OnboardingState> get copyWith => __$OnboardingStateCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OnboardingState&&(identical(other.consentAccepted, consentAccepted) || other.consentAccepted == consentAccepted)&&(identical(other.stepIndex, stepIndex) || other.stepIndex == stepIndex)&&const DeepCollectionEquality().equals(other._answers, _answers)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OnboardingState&&(identical(other.stepIndex, stepIndex) || other.stepIndex == stepIndex)&&const DeepCollectionEquality().equals(other._answers, _answers)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.error, error) || other.error == error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,consentAccepted,stepIndex,const DeepCollectionEquality().hash(_answers),isSaving,error);
+int get hashCode => Object.hash(runtimeType,stepIndex,const DeepCollectionEquality().hash(_answers),isSaving,error);
 
 @override
 String toString() {
-  return 'OnboardingState(consentAccepted: $consentAccepted, stepIndex: $stepIndex, answers: $answers, isSaving: $isSaving, error: $error)';
+  return 'OnboardingState(stepIndex: $stepIndex, answers: $answers, isSaving: $isSaving, error: $error)';
 }
 
 
@@ -265,7 +253,7 @@ abstract mixin class _$OnboardingStateCopyWith<$Res> implements $OnboardingState
   factory _$OnboardingStateCopyWith(_OnboardingState value, $Res Function(_OnboardingState) _then) = __$OnboardingStateCopyWithImpl;
 @override @useResult
 $Res call({
- bool consentAccepted, int stepIndex, Map<int, Object> answers, bool isSaving, String? error
+ int stepIndex, Map<int, Object> answers, bool isSaving, String? error
 });
 
 
@@ -282,10 +270,9 @@ class __$OnboardingStateCopyWithImpl<$Res>
 
 /// Create a copy of OnboardingState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? consentAccepted = null,Object? stepIndex = null,Object? answers = null,Object? isSaving = null,Object? error = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? stepIndex = null,Object? answers = null,Object? isSaving = null,Object? error = freezed,}) {
   return _then(_OnboardingState(
-consentAccepted: null == consentAccepted ? _self.consentAccepted : consentAccepted // ignore: cast_nullable_to_non_nullable
-as bool,stepIndex: null == stepIndex ? _self.stepIndex : stepIndex // ignore: cast_nullable_to_non_nullable
+stepIndex: null == stepIndex ? _self.stepIndex : stepIndex // ignore: cast_nullable_to_non_nullable
 as int,answers: null == answers ? _self._answers : answers // ignore: cast_nullable_to_non_nullable
 as Map<int, Object>,isSaving: null == isSaving ? _self.isSaving : isSaving // ignore: cast_nullable_to_non_nullable
 as bool,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable

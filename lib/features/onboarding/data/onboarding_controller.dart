@@ -1,15 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/utils/consent_metadata.dart';
-import '../../auth/data/auth_repository.dart';
-import '../../auth/data/consent_provider.dart';
 import '../domain/onboarding_questions.dart';
 import 'onboarding_repository.dart';
 import 'onboarding_state.dart';
 
 final onboardingControllerProvider =
     StateNotifierProvider.autoDispose<OnboardingController, OnboardingState>(
-  (ref) => OnboardingController(ref)..hydrate(),
+  (ref) => OnboardingController(ref),
 );
 
 class OnboardingController extends StateNotifier<OnboardingState> {
@@ -18,67 +15,6 @@ class OnboardingController extends StateNotifier<OnboardingState> {
   final Ref _ref;
 
   OnboardingRepository get _repo => _ref.read(onboardingRepositoryProvider);
-
-  /// Read `latest_user_consents` once at construction so the host can
-  /// skip the consent gate for signup-public users who already have
-  /// rows in `consent_log`. Admin-created users land with empty log →
-  /// gate shows. Errors are swallowed: if the fetch fails we default to
-  /// showing the gate (safer than letting the user proceed without
-  /// consent on a flaky network).
-  Future<void> hydrate() async {
-    try {
-      final consents =
-          await _ref.read(currentUserConsentsProvider.future);
-      if (!mounted) return;
-      if (consents.termsAccepted && consents.privacyAccepted) {
-        state = state.copyWith(consentAccepted: true);
-      }
-    } catch (_) {
-      // Default state (consentAccepted=false) leaves the gate up.
-    }
-  }
-
-  /// Called from the in-onboarding consent step. Writes three rows in
-  /// consent_log (TC granted, Privacy granted, Marketing per checkbox)
-  /// via the `record_consent` RPC, then advances past the gate. The
-  /// `currentUserConsentsProvider` is invalidated so any other consumer
-  /// (e.g. edit profile) sees the new state.
-  Future<void> acceptConsents(bool marketingConsent) async {
-    state = state.copyWith(isSaving: true, error: null);
-    try {
-      final meta = await collectConsentMetadata();
-      final repo = _ref.read(authRepositoryProvider);
-      await Future.wait([
-        repo.recordConsent(
-          consentType: 'terms_and_conditions',
-          granted: true,
-          documentVersion:
-              'https://lhotsegroup.com/es/terminos-y-condiciones-aplicacion-movil/',
-          meta: meta,
-        ),
-        repo.recordConsent(
-          consentType: 'privacy_policy',
-          granted: true,
-          documentVersion: 'https://lhotsegroup.com/en/privacy-policy/',
-          meta: meta,
-        ),
-        repo.recordConsent(
-          consentType: 'marketing',
-          granted: marketingConsent,
-          meta: meta,
-        ),
-      ]);
-      _ref.invalidate(currentUserConsentsProvider);
-      if (!mounted) return;
-      state = state.copyWith(consentAccepted: true, isSaving: false);
-    } catch (_) {
-      if (!mounted) return;
-      state = state.copyWith(
-        isSaving: false,
-        error: 'No se pudieron guardar los consentimientos. Inténtalo de nuevo.',
-      );
-    }
-  }
 
   bool get canContinue {
     if (state.isSaving) return false;

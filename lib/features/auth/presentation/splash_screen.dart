@@ -16,6 +16,7 @@ import '../../../core/data/news_provider.dart';
 import '../../../core/data/projects_provider.dart';
 import '../../investments/data/investments_provider.dart';
 import '../data/auth_repository.dart';
+import '../data/route_after_auth.dart';
 import 'otp_verify_screen.dart';
 
 /// First screen after the native bootstrap. Plays the Lhotse brand intro
@@ -106,7 +107,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       return;
     }
     if (user.phoneConfirmedAt != null) {
-      context.go(AppRoutes.home);
+      // Phone OK — but the user may still owe a consent acceptance
+      // (admin-created or pre-feature signup). `routeAfterAuth` decides
+      // between /accept-consent, /onboarding, /home based on the
+      // consent_log + user_onboarding state.
+      await routeAfterAuth(ref, context);
       return;
     }
 

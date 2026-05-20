@@ -10,6 +10,7 @@ import '../../../app/router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../data/auth_repository.dart';
+import '../data/route_after_auth.dart';
 import 'widgets/lhotse_otp_field.dart';
 import 'widgets/lhotse_submit_button.dart';
 
@@ -116,7 +117,10 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
         case OtpPurpose.passwordRecovery:
           context.go(AppRoutes.resetPassword);
         case OtpPurpose.signupVerification:
-          context.go(AppRoutes.onboarding);
+          // routeAfterAuth gates consent + decides between
+          // /accept-consent, /onboarding, /home based on consent_log
+          // and user_onboarding state.
+          await routeAfterAuth(ref, context);
       }
     } on AuthException catch (e) {
       if (mounted) {
