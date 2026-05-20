@@ -27,17 +27,34 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _emailController = TextEditingController();
   final _phoneController = LhotsePhoneController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    // Rebuild on every keystroke in either password field so the
+    // _PasswordMatchHint below reflects live state.
+    _passwordController.addListener(_onPasswordsChanged);
+    _confirmPasswordController.addListener(_onPasswordsChanged);
+  }
+
+  void _onPasswordsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _passwordController.removeListener(_onPasswordsChanged);
+    _confirmPasswordController.removeListener(_onPasswordsChanged);
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -67,6 +84,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       setState(
         () => _errorMessage = 'La contraseña debe tener al menos 8 caracteres.',
       );
+      return;
+    }
+    if (_confirmPasswordController.text != password) {
+      setState(() => _errorMessage = 'Las contraseñas no coinciden.');
       return;
     }
 
@@ -274,8 +295,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       label: 'Contraseña',
                       controller: _passwordController,
                       obscureText: true,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _signUp(),
+                      textInputAction: TextInputAction.next,
                     ),
 
                     const SizedBox(height: 8),
@@ -284,6 +304,22 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       style: AppTypography.annotation.copyWith(
                         color: AppColors.accentMuted,
                       ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.xl),
+
+                    LhotseAuthField(
+                      label: 'Repetir contraseña',
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _signUp(),
+                    ),
+
+                    const SizedBox(height: 8),
+                    _PasswordMatchHint(
+                      password: _passwordController.text,
+                      confirm: _confirmPasswordController.text,
                     ),
 
                     const SizedBox(height: AppSpacing.xxl),
@@ -377,6 +413,28 @@ class _LegalDisclaimer extends StatelessWidget {
 class _Tap extends TapGestureRecognizer {
   _Tap(VoidCallback onTap) {
     this.onTap = onTap;
+  }
+}
+
+/// Live indicator that sits under the "Repetir contraseña" field. Stays
+/// hidden until the user has typed at least one character in the confirm
+/// field — no noise before the user has anything to verify.
+class _PasswordMatchHint extends StatelessWidget {
+  const _PasswordMatchHint({required this.password, required this.confirm});
+
+  final String password;
+  final String confirm;
+
+  @override
+  Widget build(BuildContext context) {
+    if (confirm.isEmpty) return const SizedBox.shrink();
+    final match = password == confirm;
+    return Text(
+      match ? 'Las contraseñas coinciden.' : 'Las contraseñas no coinciden.',
+      style: AppTypography.annotation.copyWith(
+        color: match ? AppColors.accentMuted : AppColors.danger,
+      ),
+    );
   }
 }
 
