@@ -14,6 +14,7 @@ import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/widgets/media_hero_carousel.dart';
 import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/widgets/lhotse_video_player.dart';
 import 'widgets/fullscreen_video_player.dart';
@@ -205,6 +206,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
               ),
               flexibleSpace: FlexibleSpaceBar(
                 background: GestureDetector(
+                  // Tap only opens the fullscreen player when there is a
+                  // resolved signed video URL. With a multi-image carousel
+                  // PageView owns the horizontal gesture surface.
                   onTap: signedVideoUrl != null
                       ? () => _openProjectVideoPlayer(
                             signedVideoUrl,
@@ -212,47 +216,33 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                             project.imageUrl,
                           )
                       : null,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Hero(
-                        tag: 'project-hero-${project.id}',
-                        child: signedVideoUrl != null
-                            ? LhotseVideoPlayer(
-                                key: _videoKey,
-                                videoUrl: signedVideoUrl,
-                                rawVideoUrl: project.videoUrl,
-                                imageUrl: project.imageUrl,
-                                isActive: true,
-                                playDelay: const Duration(milliseconds: 2500),
-                              )
-                            : LhotseImage.poster(
-                                videoUrl: project.videoUrl,
-                                imageUrl: project.imageUrl,
-                              ),
-                      ),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.center,
-                            colors: [Color(0x66000000), Colors.transparent],
-                          ),
-                        ),
-                      ),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment(0, 0.2),
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Color(0x8C1F1916),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: MediaHeroCarousel(
+                    heroTag: 'project-hero-${project.id}',
+                    imageUrls: project.imageUrls,
+                    videoUrl: project.videoUrl,
+                    coverImageUrl: project.imageUrl,
+                    useLightOverlay: project.useLightOverlay,
+                    signedVideoUrl: signedVideoUrl,
+                    onOpenVideo: () => _openProjectVideoPlayer(
+                      signedVideoUrl ?? '',
+                      project.videoUrl,
+                      project.imageUrl,
+                    ),
+                    heroGone: _heroGone,
+                    // Project hero autoplays inline (muted loop) per the
+                    // video system rules — news falls back to the poster
+                    // and only news_detail leaves `videoChild` null
+                    // (ADR-62).
+                    videoChild: signedVideoUrl != null
+                        ? LhotseVideoPlayer(
+                            key: _videoKey,
+                            videoUrl: signedVideoUrl,
+                            rawVideoUrl: project.videoUrl,
+                            imageUrl: project.imageUrl,
+                            isActive: true,
+                            playDelay: const Duration(milliseconds: 2500),
+                          )
+                        : null,
                   ),
                 ),
               ),

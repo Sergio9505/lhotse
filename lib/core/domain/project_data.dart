@@ -1,3 +1,4 @@
+import '../utils/hero_media_parser.dart';
 import 'media_item.dart';
 
 /// Physical stage of a coinvestment project asset.
@@ -36,6 +37,7 @@ class ProjectData {
     required this.city,
     required this.country,
     this.imageUrl,
+    this.imageUrls = const [],
     this.videoUrl,
     this.virtualTourUrl,
     required this.tagline,
@@ -72,7 +74,18 @@ class ProjectData {
   final String architect;
   final String city;
   final String country;
+  /// Cover image read by every list-row consumer (feed card, archive,
+  /// L1/L2/L3 rows, hero shuttle). Denormalized from `hero_media[0]`
+  /// (ADR-71); the admin keeps it in sync on save.
   final String? imageUrl;
+
+  /// Ordered hero gallery (image-only). Drives the PageView in the
+  /// `ProjectDetailScreen` hero when `videoUrl == null` and
+  /// `imageUrls.length > 1`. Per ADR-62 + ADR-71, `videoUrl` always wins
+  /// over this list. Distinct from [galleryMedia] which is the
+  /// post-cierre gallery shown in a dedicated scroll section.
+  final List<String> imageUrls;
+
   final String? videoUrl;
   final String? virtualTourUrl;
 
@@ -124,6 +137,8 @@ class ProjectData {
   factory ProjectData.fromSupabaseRow(Map<String, dynamic> row) {
     final brands = row['brands'] as Map<String, dynamic>?;
     final assets = row['assets'] as Map<String, dynamic>?;
+    final imageUrl = row['image_url'] as String?;
+    final imageUrls = parseHeroMediaImageUrls(row['hero_media']);
 
     return ProjectData(
       id: row['id'] as String,
@@ -134,7 +149,12 @@ class ProjectData {
       architect: row['architect'] as String? ?? '',
       city: assets?['city'] as String? ?? '',
       country: assets?['country'] as String? ?? '',
-      imageUrl: row['image_url'] as String?,
+      imageUrl: imageUrl,
+      imageUrls: imageUrls.isNotEmpty
+          ? imageUrls
+          : (imageUrl != null && imageUrl.isNotEmpty
+              ? <String>[imageUrl]
+              : const <String>[]),
       videoUrl: row['video_url'] as String?,
       virtualTourUrl: row['virtual_tour_url'] as String?,
       tagline: row['tagline'] as String? ?? '',

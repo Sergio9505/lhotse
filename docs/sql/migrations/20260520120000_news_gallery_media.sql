@@ -21,20 +21,16 @@
 -- second migration. Per ADR-62 the hero gives precedence to news.video_url
 -- when set, so gallery_media is purely additive for image-only news.
 
+-- Per-element shape validation (type ∈ {image,video} + non-empty url) is
+-- enforced in the application layer (zod in admin, Dart parser in app).
+-- Postgres CHECK only verifies "it's a jsonb array" because per-element
+-- checks require subqueries, which CHECK does not allow.
 ALTER TABLE news
   ADD COLUMN gallery_media jsonb NOT NULL DEFAULT '[]'::jsonb;
 
 ALTER TABLE news
-  ADD CONSTRAINT news_gallery_media_valid CHECK (
-    jsonb_typeof(gallery_media) = 'array'
-    AND NOT EXISTS (
-      SELECT 1
-      FROM jsonb_array_elements(gallery_media) elem
-      WHERE jsonb_typeof(elem) <> 'object'
-         OR (elem ->> 'type') NOT IN ('image', 'video')
-         OR coalesce(elem ->> 'url', '') = ''
-    )
-  );
+  ADD CONSTRAINT news_gallery_media_is_array
+    CHECK (jsonb_typeof(gallery_media) = 'array');
 
 -- Backfill: existing rows with image_url → single-image gallery.
 UPDATE news

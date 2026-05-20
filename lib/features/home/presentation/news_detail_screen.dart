@@ -8,8 +8,8 @@ import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/domain/news_item_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/widgets/media_hero_carousel.dart';
 import 'widgets/fullscreen_video_player.dart';
-import 'widgets/news_hero_carousel.dart';
 
 class NewsDetailScreen extends ConsumerStatefulWidget {
   const NewsDetailScreen({
@@ -180,8 +180,12 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                             news.imageUrl,
                           )
                       : null,
-                  child: NewsHeroCarousel(
-                    news: news,
+                  child: MediaHeroCarousel(
+                    heroTag: 'news-hero-${news.id}',
+                    imageUrls: news.imageUrls,
+                    videoUrl: news.videoUrl,
+                    coverImageUrl: news.imageUrl,
+                    useLightOverlay: news.useLightOverlay,
                     signedVideoUrl: signedVideoUrl,
                     onOpenVideo: () => _openVideoPlayer(
                       signedVideoUrl ?? '',

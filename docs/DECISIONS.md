@@ -2112,23 +2112,47 @@ builder: (context, child) {
 
 **Files touched.** `lib/features/auth/presentation/splash_screen.dart`, `docs/DESIGN_SYSTEM.md`, `docs/DECISIONS.md` (este archivo). Asset removed: `assets/videos/intro_lhotse.mp4`. `pubspec.yaml` no tocado.
 
-## ADR-70: News hero supports multi-image carousel — `gallery_media` jsonb shape, `image_url` kept as cover
+## ADR-70: News hero supports multi-image carousel — `hero_media` jsonb shape, `image_url` kept as cover
+
+**Date:** 2026-05-20
+**Status:** Accepted (column renamed `gallery_media → hero_media` in 20260520130000 — see ADR-71)
+
+**Context.** Editores piden subir varias imágenes thumbnail por noticia y poder deslizar entre ellas en el hero del detalle. Hoy `news.image_url TEXT` admite una sola URL; 6 consumidores la leen (feed card, archive card, L3 coinversión, home_feed_provider, router, detail). Los heros de `assets` y `projects` ya manejan galerías mixtas vía `gallery_media JSONB[{type,url}]` con `MultiMediaUploadField` del admin.
+
+**Decision.** Añadir columna `news.hero_media JSONB` con shape `{type:'image'|'video', url}` (renombrada desde `gallery_media` en 20260520130000 — ver ADR-71). El form del admin restringe a `type='image'` vía el prop nuevo `acceptedTypes` en `MultiMediaUploadField` (default = ambos, news pasa `['image']`). `news.image_url` se mantiene como portada denormalizada del primer slot imagen — el admin la sobrescribe en cada save desde `hero_media[0].url`, así los 6 list-row consumers siguen leyendo el mismo campo sin tocar nada. El hero del detalle (`lib/core/widgets/media_hero_carousel.dart`, compartido con projects per ADR-71) renderiza `PageView` con dots solo cuando `video_url IS NULL && imageUrls.length > 1`; si hay `video_url` el hero vuelve al single-frame con play overlay (ADR-62 inalterado).
+
+**Trade-offs.**
+- (+) Consistencia cross-entidad: news y projects usan el mismo nombre `hero_media` para la galería del hero (alineado en ADR-71). Admin reutiliza `MultiMediaUploadField` + `uploadFormMediaGallery` sin duplicar componentes.
+- (+) Backward-compat trivial: `image_url` queda como cover, los 6 consumidores siguen funcionando sin migración paralela del modelo en cliente.
+- (+) Hero tag sólo en el slot 0 conserva la transición compartida desde feed/card; los slots 1..n son `LhotseImage` planos.
+- (−) Duplicación cover ↔ `hero_media[0]`. Justificada por principio #1b (list display identity): cinco list-row call-sites leen `image_url`; forzar a cada list query a proyectar `hero_media[0]` server-side sería peor.
+- (−) `hero_media` admite `type='video'` por shape pero el form lo prohíbe hoy. Decisión consciente: news ya tiene su `video_url` dedicado (ADR-62) y mezclar video como slot del carrusel rompería la regla "video manda en el hero". El schema queda simétrico por si en el futuro el carrusel admite video sin nueva migración.
+
+**Files touched.**
+- App: `docs/sql/migrations/20260520120000_news_gallery_media.sql` (nuevo), `docs/sql/migrations/20260520130000_news_rename_gallery_to_hero.sql` (rename), `lib/core/domain/news_item_data.dart`, `lib/core/data/news_provider.dart`, `lib/core/utils/hero_media_parser.dart` (nuevo, compartido con projects), `lib/core/widgets/media_hero_carousel.dart` (nuevo, compartido con projects), `lib/features/home/presentation/news_detail_screen.dart`, `docs/DOMAIN.md`, `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` (este archivo).
+- Admin: `lib/db/database.types.ts`, `lib/schemas/news.ts`, `app/(admin)/news/actions.ts`, `components/forms/news-form.tsx`, `components/forms/fields/multi-media-upload-field.tsx` (prop `acceptedTypes` añadido).
+
+## ADR-71: Project hero supports multi-image carousel — `hero_media` column, separate from `gallery_media`; cross-entity naming alignment
 
 **Date:** 2026-05-20
 **Status:** Accepted
 
-**Context.** Editores piden subir varias imágenes thumbnail por noticia y poder deslizar entre ellas en el hero del detalle. Hoy `news.image_url TEXT` admite una sola URL; 6 consumidores la leen (feed card, archive card, L3 coinversión, home_feed_provider, router, detail). Los heros de `assets` y `projects` ya manejan galerías mixtas vía `gallery_media JSONB[{type,url}]` con `MultiMediaUploadField` del admin.
+**Context.** El cliente pide para projects el mismo carrusel multi-imagen en el hero que acabamos de añadir en news (ADR-70). En el admin del proyecto la "Imagen principal" hoy es un único `ImageUploadField → projects.image_url`. Reutilizar `gallery_media` no funciona: en `projects` esa columna alimenta la sección **"Proyecto terminado"** del scroll (fotografía post-cierre) — un concepto distinto al carrusel del hero. Necesitamos columna nueva y nombre nuevo.
 
-**Decision.** Reutilizar el patrón `gallery_media JSONB` también para noticias en lugar de inventar un `image_urls TEXT[]` paralelo. La columna nueva acepta `{type:'image'|'video', url}` igual que assets/projects, aunque el form del admin restringe hoy a `type='image'` vía un prop nuevo `acceptedTypes` en `MultiMediaUploadField` (default = ambos, news pasa `['image']`). `news.image_url` se mantiene como portada denormalizada del primer slot imagen — el admin la sobrescribe en cada save desde `gallery_media[0].url`, así los 6 list-row consumers siguen leyendo el mismo campo sin tocar nada. El hero del detalle (`features/home/presentation/widgets/news_hero_carousel.dart`) renderiza `PageView` con dots solo cuando `video_url IS NULL && imageUrls.length > 1`; si hay `video_url` el hero vuelve al single-frame con play overlay (ADR-62 inalterado).
+**Decision.** Añadir `projects.hero_media JSONB` (mismo shape `{type:'image'|'video', url}` que `assets.gallery_media` y la `news.gallery_media` que se ship en ADR-70). El form del admin reemplaza la subsección "Imagen principal" (single image required) por un `MultiMediaUploadField acceptedTypes={["image"]}` ligado a `hero_media`; `min(1)` en zod conserva la invariante "todo proyecto tiene portada". `projects.image_url` queda como portada denormalizada (sigue leída por feed/archive/L1/L2/L3/router y hero shuttle) y el admin la deriva de `hero_media[0]` en cada save. `gallery_media` (post-cierre) y `render_media` (renders pre-obra) **no se tocan**: siguen con sus secciones distintas y su columna distinta.
+
+Para alinear vocabulario cross-entidad **renombramos también** `news.gallery_media → news.hero_media` en este mismo PR (la columna se shipó hace apenas un ciclo, sin datos productivos relevantes). Coste de migración bajo, beneficio alto: news y projects comparten ahora el mismo nombre para el mismo rol, sin asimetría histórica.
+
+El widget `NewsHeroCarousel` se extrae a `lib/core/widgets/media_hero_carousel.dart` con params explícitos (`heroTag`, `imageUrls`, `videoUrl`, `coverImageUrl`, `useLightOverlay`, `signedVideoUrl`, `onOpenVideo`, `heroGone`, `videoChild?`) — sin acoplarse a ningún modelo. El nuevo prop opcional `videoChild` permite que projects inyecte `LhotseVideoPlayer` (autoplay muteado per DESIGN_SYSTEM § Video System); news lo deja `null` y cae al poster + play overlay (ADR-62).
 
 **Trade-offs.**
-- (+) Consistencia cross-entidad: assets / projects / news comparten shape `gallery_media`. Admin reutiliza `MultiMediaUploadField` + `uploadFormMediaGallery` sin duplicar componentes.
-- (+) Backward-compat trivial: `image_url` queda como cover, los 6 consumidores siguen funcionando sin migración paralela del modelo en cliente.
-- (+) Hero tag sólo en el slot 0 conserva la transición compartida desde feed/card; los slots 1..n son `LhotseImage` planos.
-- (−) Duplicación cover ↔ `gallery_media[0]`. Justificada por principio #1b (list display identity): cinco list-row call-sites leen `image_url`; forzar a cada list query a proyectar `gallery_media[0]` server-side sería peor.
-- (−) `gallery_media` admite `type='video'` por shape pero el form lo prohíbe hoy. Decisión consciente: news ya tiene su `video_url` dedicado (ADR-62) y mezclar video como slot del carrusel rompería la regla "video manda en el hero". El schema queda simétrico por si en el futuro el carrusel admite video sin nueva migración.
+- (+) Cross-entity consistency: news y projects usan `hero_media` para el carrusel del hero, `image_url` como cover denormalizada. Un solo helper `parseHeroMediaImageUrls`, un solo widget `MediaHeroCarousel`, una sola convención.
+- (+) Separación clara de roles en projects: `hero_media` (carrusel del hero), `gallery_media` (post-cierre), `render_media` (renders pre-obra). Cuatro fuentes de imagen del proyecto, cuatro propósitos, cero solapamiento.
+- (+) `videoChild` opcional preserva la asimetría inline-autoplay (projects) vs poster-only (news, ADR-62) sin que el widget compartido se entere del modelo.
+- (−) Cuatro columnas relacionadas con imagen en `projects` (`image_url`, `hero_media`, `gallery_media`, `render_media`). Riesgo de confusión para futuros editores. Mitigado en docs (DOMAIN § Projects media model) + helper text del admin en cada sección.
+- (−) El rename de news.gallery_media descarta un ciclo de trabajo de hace una hora. Justificado por el coste neto positivo: si dejamos la asimetría, todo desarrollador futuro tropieza con "por qué dos columnas con mismo rol tienen nombres distintos".
 
 **Files touched.**
-- App: `docs/sql/migrations/20260520120000_news_gallery_media.sql` (nuevo), `lib/core/domain/news_item_data.dart`, `lib/core/data/news_provider.dart`, `lib/features/home/presentation/widgets/news_hero_carousel.dart` (nuevo), `lib/features/home/presentation/news_detail_screen.dart`, `docs/DOMAIN.md`, `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` (este archivo).
-- Admin: `lib/db/database.types.ts`, `lib/schemas/news.ts`, `app/(admin)/news/actions.ts`, `components/forms/news-form.tsx`, `components/forms/fields/multi-media-upload-field.tsx` (prop `acceptedTypes` añadido).
+- App: `docs/sql/migrations/20260520130000_news_rename_gallery_to_hero.sql` (rename), `docs/sql/migrations/20260520140000_projects_hero_media.sql` (nuevo + recrea `projects_with_metrics`), `lib/core/domain/news_item_data.dart` (helper reuse), `lib/core/domain/project_data.dart` (nuevo campo `imageUrls`), `lib/core/utils/hero_media_parser.dart` (nuevo), `lib/core/widgets/media_hero_carousel.dart` (extraído de `NewsHeroCarousel`), `lib/features/home/presentation/widgets/news_hero_carousel.dart` (eliminado), `lib/features/home/presentation/news_detail_screen.dart`, `lib/features/home/presentation/project_detail_screen.dart`, `docs/DOMAIN.md`, `docs/DESIGN_SYSTEM.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md` (este archivo).
+- Admin: `lib/db/database.types.ts`, `lib/schemas/news.ts`, `lib/schemas/project.ts`, `app/(admin)/news/actions.ts`, `app/(admin)/projects/actions.ts`, `components/forms/news-form.tsx`, `components/forms/project-form.tsx`.
 

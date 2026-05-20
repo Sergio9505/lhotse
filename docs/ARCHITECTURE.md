@@ -17,7 +17,7 @@ This project uses **pure RLS + RLS isolation tests** as the authorization model 
 ### 1. Single canonical source per concept
 Every field has one owning table. Duplication across views is allowed only in two cases:
 - **(a) Snapshot for immutability** — historical data that must NOT mutate when the source changes (e.g. `notifications.brand_name`, `notifications.project_name`).
-- **(b) Display identity for lists** — small scalar fields the list row needs to render (e.g. `brand_name`, `brand_logo_asset`, `project_image_url` in `<model>_contract_details`, `news.image_url` as the denormalized cover for the news catalog grid alongside `news.gallery_media`).
+- **(b) Display identity for lists** — small scalar fields the list row needs to render (e.g. `brand_name`, `brand_logo_asset`, `project_image_url` in `<model>_contract_details`; `news.image_url` and `projects.image_url` as denormalized covers for catalog grids alongside their `hero_media` jsonb).
 
 Any other duplication requires an explicit justification comment in the migration header.
 

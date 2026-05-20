@@ -1,3 +1,5 @@
+import '../utils/hero_media_parser.dart';
+
 enum NewsType { project, press }
 
 extension NewsTypeX on NewsType {
@@ -73,7 +75,7 @@ class NewsItemData {
   final String? subtitle;
 
   /// Cover image used by every list-row consumer (`LhotseNewsCard`, feed,
-  /// archive, L3 coinversion). Denormalized from `gallery_media[0]` so list
+  /// archive, L3 coinversion). Denormalized from `hero_media[0]` so list
   /// queries do not need to project the full jsonb array. Always kept in
   /// sync by the admin form on save.
   final String? imageUrl;
@@ -112,7 +114,7 @@ class NewsItemData {
 
   factory NewsItemData.fromSupabaseRow(Map<String, dynamic> row) {
     final imageUrl = row['image_url'] as String?;
-    final imageUrls = _imageUrlsFromGallery(row['gallery_media']);
+    final imageUrls = parseHeroMediaImageUrls(row['hero_media']);
     return NewsItemData(
       id: row['id'] as String,
       title: row['title'] as String,
@@ -143,19 +145,4 @@ class NewsItemData {
     );
   }
 
-  /// Extract the ordered `image`-type URLs from a `gallery_media` jsonb
-  /// array. Tolerates malformed rows (non-array, non-object elements,
-  /// missing `type`/`url`) by skipping them — the DB CHECK guards the
-  /// happy path, this is just defensive parsing.
-  static List<String> _imageUrlsFromGallery(Object? raw) {
-    if (raw is! List) return const <String>[];
-    final out = <String>[];
-    for (final entry in raw) {
-      if (entry is! Map) continue;
-      if (entry['type'] != 'image') continue;
-      final url = entry['url'];
-      if (url is String && url.isNotEmpty) out.add(url);
-    }
-    return out;
-  }
 }
