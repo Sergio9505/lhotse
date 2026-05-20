@@ -8,10 +8,8 @@ import '../../../app/router.dart';
 import '../../../core/data/countries.dart';
 import '../../../core/data/supabase_provider.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/consent_metadata.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../auth/data/auth_repository.dart';
-import '../../auth/data/consent_provider.dart';
 import '../../auth/presentation/otp_verify_screen.dart';
 import '../../auth/presentation/widgets/lhotse_auth_field.dart';
 import '../../auth/presentation/widgets/lhotse_country_picker.dart';
@@ -273,10 +271,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     textInputAction: TextInputAction.done,
                   ),
 
-                  const SizedBox(height: AppSpacing.xxl),
-
-                  _MarketingConsentToggle(),
-
                   if (_error != null) ...[
                     const SizedBox(height: AppSpacing.md),
                     Text(
@@ -477,83 +471,5 @@ class _SaveButton extends StatelessWidget {
   }
 }
 
-// ── Marketing consent toggle ─────────────────────────────────────────────────
-
-/// Switch that lets the signed-in user grant or revoke the marketing
-/// consent. State is read from `latest_user_consents` view; toggling
-/// writes a new event to `consent_log` via the `record_consent` RPC
-/// (immediate, no need to press GUARDAR — matches Apple Settings /
-/// Robinhood pattern for consent switches).
-class _MarketingConsentToggle extends ConsumerStatefulWidget {
-  @override
-  ConsumerState<_MarketingConsentToggle> createState() =>
-      _MarketingConsentToggleState();
-}
-
-class _MarketingConsentToggleState
-    extends ConsumerState<_MarketingConsentToggle> {
-  bool _updating = false;
-
-  Future<void> _toggle(bool newValue) async {
-    if (_updating) return;
-    setState(() => _updating = true);
-    try {
-      final meta = await collectConsentMetadata();
-      await ref.read(authRepositoryProvider).recordConsent(
-            consentType: 'marketing',
-            granted: newValue,
-            meta: meta,
-          );
-      // Force the provider to re-fetch so the toggle reflects the new
-      // event (autoDispose lifecycle handles cache invalidation cleanly).
-      ref.invalidate(currentUserConsentsProvider);
-    } catch (_) {
-      // Silent retry path — the user can toggle again. If we ever need
-      // to surface the error, raise an inline message under the row.
-    } finally {
-      if (mounted) setState(() => _updating = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final consents = ref.watch(currentUserConsentsProvider);
-    final granted = consents.valueOrNull?.marketingAccepted ?? false;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'COMUNICACIONES',
-          style: AppTypography.labelUppercaseSm.copyWith(
-            color: AppColors.accentMuted,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.md, top: 2),
-                child: Text(
-                  'Recibir comunicaciones sobre nuevos proyectos e '
-                  'invitaciones VIP.',
-                  style: AppTypography.bodyInput.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-            Switch.adaptive(
-              value: granted,
-              onChanged: _updating ? null : _toggle,
-              activeTrackColor: AppColors.primary,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
+// Marketing consent toggle moved to NotificationsScreen (see
+// COMUNICACIONES section).

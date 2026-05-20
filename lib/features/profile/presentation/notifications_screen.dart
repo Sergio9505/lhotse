@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/consent_metadata.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../auth/data/auth_repository.dart';
+import '../../auth/data/consent_provider.dart';
 import '../data/notification_preferences_provider.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -60,6 +63,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               value: p.documents,
               onChanged: (v) => _toggle(p.copyWith(documents: v)),
             ),
+
+            const SizedBox(height: AppSpacing.xl),
+            const _SectionLabel(title: 'COMUNICACIONES'),
+            const SizedBox(height: AppSpacing.xs),
+            const _MarketingConsentRow(),
 
             const SizedBox(height: AppSpacing.xl),
             const _SectionLabel(title: 'GENERAL'),
@@ -187,6 +195,76 @@ class _ToggleRow extends StatelessWidget {
               ),
             ),
             _Checkbox(value: value),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Marketing consent row ────────────────────────────────────────────────────
+
+/// Row para "Comunicaciones comerciales". A diferencia de `_ToggleRow`
+/// (que persiste en `notification_preferences`), este toggle escribe en
+/// `consent_log` vía la RPC `record_consent`. Cada toggle crea un evento
+/// (grant / revoke) — la fila anterior NUNCA se borra, así el historial
+/// queda completo para auditoría RGPD. El estado mostrado refleja
+/// siempre la última decisión.
+class _MarketingConsentRow extends ConsumerStatefulWidget {
+  const _MarketingConsentRow();
+
+  @override
+  ConsumerState<_MarketingConsentRow> createState() =>
+      _MarketingConsentRowState();
+}
+
+class _MarketingConsentRowState extends ConsumerState<_MarketingConsentRow> {
+  bool _updating = false;
+
+  Future<void> _toggle(bool newValue) async {
+    if (_updating) return;
+    setState(() => _updating = true);
+    try {
+      final meta = await collectConsentMetadata();
+      await ref.read(authRepositoryProvider).recordConsent(
+            consentType: 'marketing',
+            granted: newValue,
+            meta: meta,
+          );
+      ref.invalidate(currentUserConsentsProvider);
+    } catch (_) {
+      // Silent retry — el user puede volver a tocar el toggle. El estado
+      // visible queda en el valor previo de la view tras la invalidación.
+    } finally {
+      if (mounted) setState(() => _updating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final granted = ref
+            .watch(currentUserConsentsProvider)
+            .valueOrNull
+            ?.marketingAccepted ??
+        false;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _updating ? null : () => _toggle(!granted),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: 18),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Comunicaciones comerciales',
+                style: AppTypography.bodyReading.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            _Checkbox(value: granted),
           ],
         ),
       ),
