@@ -122,6 +122,17 @@ const _kBootRoutes = {
 /// authenticated (reset password right after verifyOTP creates a session;
 /// complete-phone for sessions that landed without phone). The screen
 /// itself decides the next destination — the router must not redirect.
+/// Routes whose `LegalWebViewScreen` only embeds external URLs and must
+/// be reachable without authentication — they back the inline links in
+/// the signup consent checkbox + the accept-consent gate. The redirect
+/// returns early on these regardless of session state (different from
+/// `_kAuthRoutes`, which bounces logged-in users back to /home).
+const _kPublicLegalRoutes = {
+  AppRoutes.profileTerms,
+  AppRoutes.profilePrivacy,
+  AppRoutes.profileSupport,
+};
+
 const _kTransientAuthRoutes = {
   AppRoutes.otpVerify,
   AppRoutes.resetPassword,
@@ -147,6 +158,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       // Splash handles its own navigation after warm-up; skip guard.
       if (_kBootRoutes.contains(state.matchedLocation)) return null;
+
+      // Public legal pages — Terms / Privacy / Support web views are
+      // reachable from the signup consent checkbox before the user has
+      // an account. Bypass the auth gate in both directions.
+      if (_kPublicLegalRoutes.contains(state.matchedLocation)) return null;
 
       final user = Supabase.instance.client.auth.currentUser;
       final isLoggedIn = user != null;
