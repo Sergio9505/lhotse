@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/data/supabase_provider.dart';
+import '../../../core/utils/consent_metadata.dart';
 
 class AuthRepository {
   AuthRepository(this._client);
@@ -19,15 +20,49 @@ class AuthRepository {
     required String password,
     required String firstName,
     required String lastName,
+    required bool marketingConsent,
+    required ConsentMetadata meta,
   }) =>
       _client.auth.signUp(
         email: email,
         password: password,
-        // `first_name` / `last_name` keys are consumed by the
-        // `handle_new_user()` trigger which writes them straight into
-        // `user_profiles`. The DB's `full_name` column is generated.
-        data: {'first_name': firstName, 'last_name': lastName},
+        // Metadata keys consumed by `handle_new_user()` trigger:
+        //   - first_name / last_name → user_profiles
+        //   - marketing_consent + document_version_* + platform / os /
+        //     app version → consent_log (3 initial rows: TC + Privacy
+        //     + Marketing, both first two granted=true since the user
+        //     must tick the legal checkbox to even reach signUp).
+        data: {
+          'first_name': firstName,
+          'last_name': lastName,
+          'marketing_consent': marketingConsent,
+          'document_version_terms':
+              'https://lhotsegroup.com/es/terminos-y-condiciones-aplicacion-movil/',
+          'document_version_privacy':
+              'https://lhotsegroup.com/en/privacy-policy/',
+          ...meta.toMap(),
+        },
       );
+
+  /// Append-only consent event (grant or revoke). Called from edit
+  /// profile when the user toggles marketing, or from any future flow
+  /// that updates a consent post-signup. IP + user-agent are populated
+  /// server-side by the `record_consent` RPC.
+  Future<void> recordConsent({
+    required String consentType,
+    required bool granted,
+    required ConsentMetadata meta,
+    String? documentVersion,
+  }) async {
+    await _client.rpc('record_consent', params: {
+      'p_consent_type': consentType,
+      'p_granted': granted,
+      'p_document_version': documentVersion,
+      'p_platform': meta.platform,
+      'p_os_version': meta.osVersion,
+      'p_app_version': meta.appVersion,
+    });
+  }
 
   Future<void> signOut() => _client.auth.signOut();
 

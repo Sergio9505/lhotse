@@ -9,11 +9,17 @@ class LhotseSubmitButton extends StatefulWidget {
     required this.label,
     required this.isLoading,
     required this.onTap,
+    this.enabled = true,
   });
 
   final String label;
   final bool isLoading;
   final VoidCallback onTap;
+
+  /// When false, the button is rendered at 40% opacity and the tap is
+  /// swallowed. Used by signup to gate submit until the legal checkbox
+  /// has been ticked.
+  final bool enabled;
 
   @override
   State<LhotseSubmitButton> createState() => _LhotseSubmitButtonState();
@@ -24,11 +30,11 @@ class _LhotseSubmitButtonState extends State<LhotseSubmitButton> {
 
   @override
   Widget build(BuildContext context) {
+    final blocked = widget.isLoading || !widget.enabled;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown:
-          widget.isLoading ? null : (_) => setState(() => _pressed = true),
-      onTapUp: widget.isLoading
+      onTapDown: blocked ? null : (_) => setState(() => _pressed = true),
+      onTapUp: blocked
           ? null
           : (_) {
               setState(() => _pressed = false);
@@ -37,7 +43,7 @@ class _LhotseSubmitButtonState extends State<LhotseSubmitButton> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 120),
-        opacity: _pressed ? 0.6 : 1.0,
+        opacity: !widget.enabled ? 0.4 : (_pressed ? 0.6 : 1.0),
         child: Container(
           height: 52,
           alignment: Alignment.center,

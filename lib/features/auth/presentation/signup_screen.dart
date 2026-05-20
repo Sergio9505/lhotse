@@ -5,8 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+
 import '../../../app/router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/consent_metadata.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../data/auth_repository.dart';
 import 'otp_verify_screen.dart';
@@ -31,6 +34,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   bool _isLoading = false;
   String? _errorMessage;
+
+  // RGPD consent state. `_legalAccepted` gates the submit button (required:
+  // T&C + privacy as a single tick — both URLs the user can read are
+  // presented in the same checkbox label). `_marketingConsent` is opt-in,
+  // logged in consent_log as `granted = _marketingConsent` regardless of
+  // value. Both controllers persist their state across rebuilds.
+  bool _legalAccepted = false;
+  bool _marketingConsent = false;
 
   @override
   void initState() {
@@ -90,6 +101,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       setState(() => _errorMessage = 'Las contraseñas no coinciden.');
       return;
     }
+    if (!_legalAccepted) {
+      // Defense in depth — the submit button is already disabled while
+      // this flag is false. If we ever land here, surface a clear error.
+      setState(() => _errorMessage =
+          'Debes aceptar los Términos y la Política de Privacidad para continuar.');
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -100,11 +118,16 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       final repo = ref.read(authRepositoryProvider);
 
       // 1) Create the account with email + password — primary identity.
+      // Collect device + app version metadata so the consent_log rows
+      // created by handle_new_user() carry full audit info.
+      final meta = await collectConsentMetadata();
       final response = await repo.signUp(
         email: email,
         password: password,
         firstName: firstName,
         lastName: lastName,
+        marketingConsent: _marketingConsent,
+        meta: meta,
       );
 
       if (!mounted) return;
@@ -324,11 +347,27 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
                     const SizedBox(height: AppSpacing.xxl),
 
-                    // Legal disclaimer — opens existing legal screens
-                    _LegalDisclaimer(
+                    // Required consent — gates the submit button. Both
+                    // T&C and Privacy are bundled into a single tick (the
+                    // RGPD allows this aggregation as long as both are
+                    // necessary for the service and the user can read
+                    // both — links open the embedded webview).
+                    _LegalConsentCheckbox(
+                      value: _legalAccepted,
+                      onChanged: (v) => setState(() => _legalAccepted = v),
                       onTermsTap: () => context.push(AppRoutes.profileTerms),
                       onPrivacyTap: () =>
                           context.push(AppRoutes.profilePrivacy),
+                    ),
+
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Optional consent — opt-in for marketing
+                    // communications (RGPD requires this to be separable
+                    // from the T&C aceptado).
+                    _MarketingConsentCheckbox(
+                      value: _marketingConsent,
+                      onChanged: (v) => setState(() => _marketingConsent = v),
                     ),
 
                     const SizedBox(height: AppSpacing.xl),
@@ -346,6 +385,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     LhotseSubmitButton(
                       label: 'CONTINUAR',
                       isLoading: _isLoading,
+                      enabled: _legalAccepted,
                       onTap: _signUp,
                     ),
 
@@ -363,21 +403,79 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 }
 
-// ── Legal disclaimer ─────────────────────────────────────────────────────────
+// ── Consent checkboxes ───────────────────────────────────────────────────────
 
-class _LegalDisclaimer extends StatelessWidget {
-  const _LegalDisclaimer({
+/// Editorial checkbox row — 18×18 caja, tick `PhosphorIconsThin.check` cuando
+/// on, fila completa tappable, sin Material `Checkbox` (rompe la voz
+/// Hermès/Sotheby's con el ripple).
+class _ConsentCheckboxRow extends StatelessWidget {
+  const _ConsentCheckboxRow({
+    required this.value,
+    required this.onChanged,
+    required this.child,
+  });
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onChanged(!value),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            width: 18,
+            height: 18,
+            margin: const EdgeInsets.only(top: 2),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: value
+                    ? AppColors.textPrimary
+                    : AppColors.textPrimary.withValues(alpha: 0.4),
+                width: value ? 1.0 : 0.5,
+              ),
+              color: value ? AppColors.textPrimary : Colors.transparent,
+            ),
+            child: value
+                ? const PhosphorIcon(
+                    PhosphorIconsThin.check,
+                    size: 14,
+                    color: AppColors.textOnDark,
+                  )
+                : null,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: child),
+        ],
+      ),
+    );
+  }
+}
+
+/// Legal consent — required. Links open the embedded WebView for the
+/// terms + privacy pages (lhotsegroup.com).
+class _LegalConsentCheckbox extends StatelessWidget {
+  const _LegalConsentCheckbox({
+    required this.value,
+    required this.onChanged,
     required this.onTermsTap,
     required this.onPrivacyTap,
   });
 
+  final bool value;
+  final ValueChanged<bool> onChanged;
   final VoidCallback onTermsTap;
   final VoidCallback onPrivacyTap;
 
   @override
   Widget build(BuildContext context) {
     final body = AppTypography.annotationParagraph.copyWith(
-      color: AppColors.accentMuted,
+      color: value ? AppColors.textPrimary : AppColors.accentMuted,
     );
     final link = body.copyWith(
       color: AppColors.textPrimary,
@@ -385,24 +483,54 @@ class _LegalDisclaimer extends StatelessWidget {
       decorationThickness: 0.5,
     );
 
-    return RichText(
-      text: TextSpan(
-        style: body,
-        children: [
-          const TextSpan(text: 'Al crear una cuenta aceptas los '),
-          TextSpan(
-            text: 'Términos',
-            style: link,
-            recognizer: _Tap(onTermsTap),
-          ),
-          const TextSpan(text: ' y la '),
-          TextSpan(
-            text: 'Política de Privacidad',
-            style: link,
-            recognizer: _Tap(onPrivacyTap),
-          ),
-          const TextSpan(text: ' de Lhotse Group.'),
-        ],
+    return _ConsentCheckboxRow(
+      value: value,
+      onChanged: onChanged,
+      child: RichText(
+        text: TextSpan(
+          style: body,
+          children: [
+            const TextSpan(text: 'He leído y acepto los '),
+            TextSpan(
+              text: 'Términos',
+              style: link,
+              recognizer: _Tap(onTermsTap),
+            ),
+            const TextSpan(text: ' y la '),
+            TextSpan(
+              text: 'Política de Privacidad',
+              style: link,
+              recognizer: _Tap(onPrivacyTap),
+            ),
+            const TextSpan(text: ' de Lhotse Group.'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Marketing consent — optional (RGPD Considerando 32). Default off.
+class _MarketingConsentCheckbox extends StatelessWidget {
+  const _MarketingConsentCheckbox({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ConsentCheckboxRow(
+      value: value,
+      onChanged: onChanged,
+      child: Text(
+        'Quiero recibir comunicaciones sobre nuevos proyectos e '
+        'invitaciones VIP.',
+        style: AppTypography.annotationParagraph.copyWith(
+          color: value ? AppColors.textPrimary : AppColors.accentMuted,
+        ),
       ),
     );
   }
