@@ -125,52 +125,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Logo + wordmark — hero visual
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SvgPicture.asset(
-                          'assets/images/lhotse_logo.svg',
-                          height: 36,
+                    // Brand lockup — single SVG asset (isotype + LHOTSE +
+                    // GROUP integrated). Aspect 491.9 / 123.03 ≈ 4:1; both
+                    // width and height passed to sidestep the flutter_svg
+                    // width-inflation gotcha (~/.claude/CLAUDE.md) when the
+                    // parent Column stretches.
+                    Center(
+                      child: SizedBox(
+                        width: 192,
+                        height: 48,
+                        child: SvgPicture.asset(
+                          'assets/images/lhotse_wordmark.svg',
+                          fit: BoxFit.contain,
                           colorFilter: const ColorFilter.mode(
                             Colors.white,
                             BlendMode.srcIn,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          height: 48,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'LHOTSE',
-                                style: AppTypography.splashWordmark.copyWith(
-                                  color: AppColors.textOnDark,
-                                ),
-                                strutStyle: const StrutStyle(
-                                  fontSize: 24,
-                                  height: 1.0,
-                                  forceStrutHeight: true,
-                                ),
-                              ),
-                              Text(
-                                'GROUP',
-                                style: AppTypography.splashWordmark.copyWith(
-                                  color: AppColors.textOnDark,
-                                ),
-                                strutStyle: const StrutStyle(
-                                  fontSize: 24,
-                                  height: 1.0,
-                                  forceStrutHeight: true,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
 
                     const SizedBox(height: 56),
