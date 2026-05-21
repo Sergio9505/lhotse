@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../data/bunny_thumbnail.dart';
 import '../theme/app_theme.dart';
 
 /// Distinguishes the icon shown when a thumbnail is missing or fails to load.
@@ -24,9 +23,7 @@ enum LhotseImagePlaceholder { image, video }
 ///
 /// Supports a runtime [fallbacks] cascade: when [source] errors at load
 /// time, the widget advances through each fallback in order before falling
-/// back to the placeholder icon. Use the [LhotseImage.poster] factory for
-/// the Bunny video poster pattern (`thumbnail.jpg` → `thumbnail_1.jpg` →
-/// explicit DB `image_url` → placeholder).
+/// back to the placeholder icon.
 class LhotseImage extends StatefulWidget {
   const LhotseImage(
     this.source, {
@@ -36,18 +33,16 @@ class LhotseImage extends StatefulWidget {
     this.fallbacks = const [],
   });
 
-  /// Bunny-aware poster builder. Resolves a cascade for videos hosted on
-  /// Bunny Stream:
+  /// Poster builder for any entity that may have a video.
   ///
-  ///   1. `thumbnail.jpg` — curator-picked frame (only exists if someone
-  ///      used "Set as thumbnail" in the Bunny dashboard).
-  ///   2. `thumbnail_1.jpg` — auto-generated frame ~50% of the clip;
-  ///      Bunny produces this for every processed video.
-  ///   3. [imageUrl] — explicit `image_url` column from the DB.
-  ///
-  /// Each step is tried at load time; failure (404, network error) advances
-  /// to the next. When all sources fail or are missing, the standard
-  /// video-style placeholder icon is shown.
+  /// Returns [imageUrl] directly — the admin-curated cover, denormalized
+  /// from `hero_media[0]` on every save (news + projects). The [videoUrl]
+  /// param only drives the placeholder glyph (`video` vs `image`) shown
+  /// when [imageUrl] itself fails to load. No Bunny CDN thumbnail
+  /// fallback: the curated hero gallery first image is the single source
+  /// of truth for posters. The 2.5s inline autoplay on project detail
+  /// (muted loop, `LhotseVideoPlayer`) stays unchanged — a small visual
+  /// swap from poster → first video frame at autoplay time is acceptable.
   factory LhotseImage.poster({
     Key? key,
     required String? videoUrl,
@@ -55,27 +50,13 @@ class LhotseImage extends StatefulWidget {
     BoxFit fit = BoxFit.cover,
   }) {
     final hasVideo = videoUrl != null && videoUrl.isNotEmpty;
-    final candidates = <String>[];
-    if (hasVideo) {
-      final custom = bunnyThumbnailUrlFor(videoUrl);
-      final auto = bunnyAutoFrameUrlFor(videoUrl, frame: 1);
-      if (custom != null) candidates.add(custom);
-      if (auto != null) candidates.add(auto);
-    }
-    if (imageUrl != null && imageUrl.isNotEmpty) candidates.add(imageUrl);
-
-    final primary = candidates.isNotEmpty ? candidates.first : null;
-    final rest = candidates.length > 1
-        ? candidates.sublist(1)
-        : const <String>[];
     return LhotseImage(
-      primary,
+      imageUrl,
       key: key,
       fit: fit,
       placeholder: hasVideo
           ? LhotseImagePlaceholder.video
           : LhotseImagePlaceholder.image,
-      fallbacks: rest,
     );
   }
 

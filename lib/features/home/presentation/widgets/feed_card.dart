@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../../core/data/bunny_thumbnail.dart';
 import '../../../../core/data/playable_video_url_provider.dart';
 import '../../../../core/data/supabase_provider.dart';
 import '../../../../core/domain/asset_data.dart';
@@ -346,17 +345,9 @@ class _FeedContent {
   final String cta;
 
   /// URL whose decode we eagerly warm so the Hero flight lands on a
-  /// pre-decoded bitmap. Mirrors the first source the runtime cascade will
-  /// try.
-  String? get precachePrimary {
-    final v = videoUrl;
-    if (v != null && v.isNotEmpty) {
-      return bunnyThumbnailUrlFor(v)
-          ?? bunnyAutoFrameUrlFor(v)
-          ?? imageUrl;
-    }
-    return imageUrl;
-  }
+  /// pre-decoded bitmap. Mirrors what `LhotseImage.poster` renders —
+  /// `imageUrl` (= `hero_media[0]` denormalized).
+  String? get precachePrimary => imageUrl;
 
   factory _FeedContent.fromProject(ProjectData p, {required String cta}) {
     return _FeedContent(
