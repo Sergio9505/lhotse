@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,6 +60,10 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
   double _dragAnchorX = 0;
   double _dragAnchorOffset = 0;
   Axis? _direction;
+  // Tracks recent pointer positions for velocity-aware snap on release.
+  // Fresh instance per drag — created in onPointerDown with the correct
+  // PointerDeviceKind, discarded in onPointerUp/Cancel.
+  VelocityTracker? _velocityTracker;
 
   @override
   void initState() {
@@ -108,6 +113,27 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
     _carouselAnim.forward(from: 0);
   }
 
+  /// Snap to nearest page based on velocity + position. Mirrors the feel of
+  /// `PageScrollPhysics.createBallisticSimulation`. A fast flick (>300 px/s)
+  /// snaps in the fling direction regardless of position; a slow release
+  /// snaps to the nearest page (50% threshold via `round()`).
+  void _snapWithVelocity(double pageWidth, int count) {
+    final velocity =
+        _velocityTracker?.getVelocity().pixelsPerSecond.dx ?? 0.0;
+    final currentPageF = pageWidth > 0 ? _carouselOffset / pageWidth : 0.0;
+    const flingThreshold = 300.0;
+    int target;
+    if (velocity.abs() > flingThreshold) {
+      // Finger drag right (vx > 0) → offset decreases → floor (prev page).
+      // Finger drag left (vx < 0) → offset increases → ceil (next page).
+      target = velocity > 0 ? currentPageF.floor() : currentPageF.ceil();
+    } else {
+      target = currentPageF.round();
+    }
+    target = target.clamp(0, count - 1);
+    _animateCarouselTo(target.toDouble() * pageWidth, target);
+  }
+
   Future<void> _openVideoPlayer(
     String videoUrl,
     String? rawVideoUrl,
@@ -155,6 +181,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
     _dragAnchorX = e.position.dx;
     _dragAnchorOffset = _carouselOffset;
     _direction = null;
+    _velocityTracker = VelocityTracker.withKind(e.kind);
+    _velocityTracker!.addPosition(e.timeStamp, e.position);
     if (_carouselAnim.isAnimating) _carouselAnim.stop();
   }
 
@@ -165,6 +193,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
     bool hasGallery,
   ) {
     if (e.pointer != _activePointer) return;
+    _velocityTracker?.addPosition(e.timeStamp, e.position);
 
     // Direction lock after `_kHeroSlop` movement.
     if (_direction == null) {
@@ -207,10 +236,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
     _activePointer = null;
 
     if (_direction == Axis.horizontal && hasGallery) {
-      // Snap to nearest page.
-      final page = pageWidth > 0 ? _carouselOffset / pageWidth : 0.0;
-      final target = page.round().clamp(0, count - 1);
-      _animateCarouselTo(target.toDouble() * pageWidth, target);
+      _snapWithVelocity(pageWidth, count);
     } else if (_direction == null) {
       // No significant movement — interpret as tap.
       final duration = e.timeStamp - _pointerStartTime;
@@ -230,17 +256,17 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
       }
     }
     _direction = null;
+    _velocityTracker = null;
   }
 
   void _onPointerCancel(PointerCancelEvent e, double pageWidth, int count) {
     if (e.pointer != _activePointer) return;
     _activePointer = null;
     if (_direction == Axis.horizontal) {
-      final page = pageWidth > 0 ? _carouselOffset / pageWidth : 0.0;
-      final target = page.round().clamp(0, count - 1);
-      _animateCarouselTo(target.toDouble() * pageWidth, target);
+      _snapWithVelocity(pageWidth, count);
     }
     _direction = null;
+    _velocityTracker = null;
   }
 
   @override

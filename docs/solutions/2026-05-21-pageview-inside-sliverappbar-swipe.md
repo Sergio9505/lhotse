@@ -68,8 +68,26 @@ Esto:
 
 Regla general: **si un gesture handler empotrado en un subárbol no se dispara y la causa no es identificable**, mueve el handler al nivel del Scaffold.body. No insistas con técnicas internas más sofisticadas — el árbol bloquea por motivos que no puedes ver.
 
+## Post-script v7 (descartado) y v8 (final) — velocity-aware snap
+
+**Intento v7 (PageView nativo, descartado)**: tras estabilizar el body-level Listener + Stack manual, el usuario reportó "hay que arrastrar mucho para que cambie de imagen" (snap solo posicional, sin la velocity-aware physics del PageView nativo). Probé volver a `PageView.builder` dentro de `MediaHeroCarousel` ahora que está fuera del SliverAppBar, gateando con `physics: canSwipe ? PageScrollPhysics() : NeverScrollableScrollPhysics()`.
+
+**Resultado**: ROMPIÓ el swipe. Causa: el swap dinámico de `physics` durante el drag. Secuencia del bug:
+1. Usuario inicia horizontal swipe. iOS `BouncingScrollPhysics` del outer `CustomScrollView` es sensible — su VDR acepta cuando `|dy| > kTouchSlop (18px)`. Un horizontal swipe humano nunca es 100% horizontal.
+2. Outer VDR acepta → `_scrollController.offset > 0` → `AnimatedBuilder` rebuildea con `canSwipe = false`.
+3. `MediaHeroCarousel` rebuildea con `physics: NeverScrollableScrollPhysics()`.
+4. `Scrollable` interno del PageView ve el cambio → `_setCanDrag(false)` → vacía sus `_gestureRecognizers` → **cancela el HDR mid-drag**.
+
+PageView nativo recibe pointer events correctamente fuera del SliverAppBar, pero el cambio condicional de physics aborta el drag.
+
+**Solución v8 (final)**: revert a Stack manual (v6) y añadir `VelocityTracker` al body-level Listener. `VelocityTracker.withKind(e.kind)` fresh per drag, `addPosition` en cada move, `getVelocity().pixelsPerSecond.dx` en `onPointerUp`. Snap logic: si `|vx| > 300 px/s` → fling (target = velocity > 0 ? floor() : ceil()); si no → `round()` (50% threshold position-based). Reproduce el feel de `PageScrollPhysics.createBallisticSimulation` sin depender del PageView frágil en este árbol. El gate "solo expandido" se evalúa en `_onPointerMove` (no swap de physics) → no cancela el drag in-flight.
+
+Threshold 300 px/s testeado empíricamente; flick rápido y corto avanza inmediatamente.
+
 ## How to avoid next time
 - **Patrón canónico** para gestos en heroes complejos: Listener al nivel `Scaffold.body`, hero como `Positioned` overlay en un Stack, manual translate-on-scroll con `AnimatedBuilder(scrollController)`, manual toolbar overlay con `AnimatedContainer(color: _heroGone ? beige : transparent)`.
+- **Velocity-aware snap manual**: `VelocityTracker` + threshold 300 px/s + fallback a position `round()`. Idéntico feel al PageView nativo sin sus pitfalls en este árbol.
+- **NO intentar gateal el swipe con `physics` dinámico** — el `Scrollable` interno cancela el HDR activo al cambiar physics. Gatear en el handler (`_onPointerMove`) en su lugar.
 - **Diagnóstico rápido**: si añades `print()` en `onPointerDown` de un Listener empotrado y NO se dispara con clean build → el árbol está bloqueando, mueve al Scaffold.body level. No iteres con detector internos.
 - **Verificación end-to-end**: cualquier hero con `imageUrls.length > 1` debe pasar tres tests — (a) swipe horizontal (carrusel avanza con finger-follow + snap, solo cuando completamente expandido), (b) tap-to-video (sobre el hero con vídeo, abre fullscreen), (c) vertical scroll (colapsa hero, dots fade-out, background beige aparece tras el threshold), (d) back button (vuelve atrás sin disparar tap-to-video).
 - **Audit-friendly**: el body content (sliver section gestures, CTAs) sigue funcionando con `translucent` Listener — confirmado por construcción del hit-test propagation.
