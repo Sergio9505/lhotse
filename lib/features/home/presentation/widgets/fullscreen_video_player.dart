@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,9 +10,20 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/lhotse_image.dart';
 
 /// Fullscreen video reproducer. Audio active by default — thumbnails handle
-/// the passive/muted side of the rule. Controls auto-hide 3s after load or
-/// last interaction; tap anywhere on the video toggles them. Pausing or
-/// reaching the end pins the controls visible.
+/// the passive/muted side of the rule.
+///
+/// Premium gesture set:
+/// - **Tap** → toggle controls (close, mute, play/pause, progress). Controls
+///   auto-hide 3s after last interaction. Mount with controls HIDDEN so the
+///   video shows full-bleed immediately.
+/// - **Drag down** → translate the video with the finger. Past 20% of screen
+///   height or velocity > 700 px/s, pop fullscreen. Otherwise snap back
+///   (`easeOutCubic` 220ms).
+/// - **Double-tap right half** → seek +10s. **Double-tap left half** →
+///   seek −10s. Brief circular indicator fades in/out at the corresponding
+///   side.
+///
+/// Pausing or reaching the end pins the controls visible via `_onVideoEvent`.
 class FullscreenVideoPlayer extends StatefulWidget {
   const FullscreenVideoPlayer({
     super.key,
@@ -41,13 +53,32 @@ class FullscreenVideoPlayer extends StatefulWidget {
   State<FullscreenVideoPlayer> createState() => _FullscreenVideoPlayerState();
 }
 
-class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
+class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer>
+    with SingleTickerProviderStateMixin {
+  static const double _kDismissDistanceFraction = 0.2;
+  static const double _kDismissVelocity = 700.0;
+  static const Duration _kSnapBackDuration = Duration(milliseconds: 220);
+  static const Duration _kSeekStep = Duration(seconds: 10);
+  static const Duration _kSeekIndicatorDuration =
+      Duration(milliseconds: 500);
+
   VideoPlayerController? _controller;
   bool _ready = false;
   bool _failed = false;
   bool _muted = false;
-  bool _controlsVisible = true;
+  bool _controlsVisible = false;
   Timer? _hideTimer;
+
+  // Drag-to-dismiss
+  double _dismissDragOffset = 0;
+  double _snapBackFrom = 0;
+  late final AnimationController _snapBackAnim;
+
+  // Double-tap seek
+  Offset? _doubleTapPosition;
+  String? _seekIndicatorText;
+  Alignment _seekIndicatorAlignment = Alignment.centerRight;
+  Timer? _seekIndicatorTimer;
 
   @override
   void initState() {
@@ -57,6 +88,10 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+    _snapBackAnim = AnimationController(
+      vsync: this,
+      duration: _kSnapBackDuration,
+    )..addListener(_onSnapBackTick);
     _init();
   }
 
@@ -79,7 +114,6 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
         _controller = c;
         _ready = true;
       });
-      _armHideTimer();
     } catch (_) {
       if (!mounted) return;
       setState(() => _failed = true);
@@ -148,11 +182,82 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
     }
   }
 
+  // ------ Drag-to-dismiss ------
+
+  void _onVerticalDragUpdate(DragUpdateDetails d) {
+    if (_snapBackAnim.isAnimating) _snapBackAnim.stop();
+    final next =
+        (_dismissDragOffset + d.delta.dy).clamp(0.0, double.infinity);
+    if (next == _dismissDragOffset) return;
+    setState(() => _dismissDragOffset = next);
+  }
+
+  void _onVerticalDragEnd(DragEndDetails d) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final velocity = d.primaryVelocity ?? 0;
+    final shouldDismiss = _dismissDragOffset >
+            screenHeight * _kDismissDistanceFraction ||
+        velocity > _kDismissVelocity;
+    if (shouldDismiss) {
+      _close();
+    } else {
+      _snapBackFrom = _dismissDragOffset;
+      _snapBackAnim.forward(from: 0);
+    }
+  }
+
+  void _onVerticalDragCancel() {
+    if (_dismissDragOffset == 0) return;
+    _snapBackFrom = _dismissDragOffset;
+    _snapBackAnim.forward(from: 0);
+  }
+
+  void _onSnapBackTick() {
+    final t = Curves.easeOutCubic.transform(_snapBackAnim.value);
+    setState(() => _dismissDragOffset = _snapBackFrom * (1 - t));
+  }
+
+  // ------ Double-tap seek ------
+
+  void _onDoubleTapDown(TapDownDetails d) {
+    _doubleTapPosition = d.globalPosition;
+  }
+
+  void _onDoubleTap() {
+    final c = _controller;
+    if (c == null || _doubleTapPosition == null) return;
+    final width = MediaQuery.of(context).size.width;
+    final isLeft = _doubleTapPosition!.dx < width / 2;
+    final currentMs = c.value.position.inMilliseconds;
+    final stepMs = _kSeekStep.inMilliseconds;
+    final durationMs = c.value.duration.inMilliseconds;
+    final targetMs = isLeft
+        ? math.max(0, currentMs - stepMs)
+        : math.min(durationMs, currentMs + stepMs);
+    c.seekTo(Duration(milliseconds: targetMs));
+    _showSeekIndicator(isLeft);
+  }
+
+  void _showSeekIndicator(bool isLeft) {
+    _seekIndicatorTimer?.cancel();
+    setState(() {
+      _seekIndicatorText = isLeft ? '−10s' : '+10s';
+      _seekIndicatorAlignment =
+          isLeft ? Alignment.centerLeft : Alignment.centerRight;
+    });
+    _seekIndicatorTimer = Timer(_kSeekIndicatorDuration, () {
+      if (!mounted) return;
+      setState(() => _seekIndicatorText = null);
+    });
+  }
+
   @override
   void dispose() {
     SystemChrome.setPreferredOrientations(
         const [DeviceOrientation.portraitUp]);
     _hideTimer?.cancel();
+    _seekIndicatorTimer?.cancel();
+    _snapBackAnim.dispose();
     _controller?.removeListener(_onVideoEvent);
     _controller?.dispose();
     super.dispose();
@@ -176,65 +281,119 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
         child: Scaffold(
           backgroundColor: AppColors.primary,
           body: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (_failed) ...[
-              LhotseImage.poster(
-                videoUrl: widget.rawVideoUrl ?? widget.videoUrl,
-                imageUrl: widget.imageUrl,
-              ),
-              const DecoratedBox(
-                decoration: BoxDecoration(color: Color(0x99000000)),
-              ),
-              Center(
-                child: Text(
-                  'Vídeo no disponible',
-                  style: AppTypography.bodyReading.copyWith(
-                    color: AppColors.textOnDark,
+            fit: StackFit.expand,
+            children: [
+              if (_failed) ...[
+                LhotseImage.poster(
+                  videoUrl: widget.rawVideoUrl ?? widget.videoUrl,
+                  imageUrl: widget.imageUrl,
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(color: Color(0x99000000)),
+                ),
+                Center(
+                  child: Text(
+                    'Vídeo no disponible',
+                    style: AppTypography.bodyReading.copyWith(
+                      color: AppColors.textOnDark,
+                    ),
                   ),
                 ),
-              ),
-            ] else if (!_ready) ...[
-              LhotseImage.poster(
-                videoUrl: widget.rawVideoUrl ?? widget.videoUrl,
-                imageUrl: widget.imageUrl,
-              ),
-              const DecoratedBox(
-                decoration: BoxDecoration(color: Color(0x99000000)),
-              ),
-            ] else ...[
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _toggleControls,
-                child: Center(
-                  child: AspectRatio(
-                    aspectRatio: _controller!.value.aspectRatio,
-                    child: VideoPlayer(_controller!),
+              ] else if (!_ready) ...[
+                LhotseImage.poster(
+                  videoUrl: widget.rawVideoUrl ?? widget.videoUrl,
+                  imageUrl: widget.imageUrl,
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(color: Color(0x99000000)),
+                ),
+              ] else ...[
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _toggleControls,
+                  onDoubleTapDown: _onDoubleTapDown,
+                  onDoubleTap: _onDoubleTap,
+                  onVerticalDragUpdate: _onVerticalDragUpdate,
+                  onVerticalDragEnd: _onVerticalDragEnd,
+                  onVerticalDragCancel: _onVerticalDragCancel,
+                  child: Transform.translate(
+                    offset: Offset(0, _dismissDragOffset),
+                    child: Center(
+                      child: AspectRatio(
+                        aspectRatio: _controller!.value.aspectRatio,
+                        child: VideoPlayer(_controller!),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              _ControlsOverlay(
-                visible: _controlsVisible,
-                controller: _controller!,
-                muted: _muted,
-                topOffset: topOffset,
-                bottomPadding: bottomPadding,
-                onClose: _close,
-                onToggleMute: _toggleMute,
-                onTogglePlayPause: _togglePlayPause,
-              ),
+                // Seek indicator overlay — fades in/out at left/right edge
+                // when the user double-taps. Stays in the tree always so the
+                // AnimatedOpacity fade-out is smooth.
+                IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: _seekIndicatorText != null ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 180),
+                    child: Align(
+                      alignment: _seekIndicatorAlignment,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xl),
+                        child: Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withValues(alpha: 0.55),
+                          ),
+                          alignment: Alignment.center,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              PhosphorIcon(
+                                _seekIndicatorAlignment ==
+                                        Alignment.centerLeft
+                                    ? PhosphorIconsThin.arrowFatLineLeft
+                                    : PhosphorIconsThin.arrowFatLineRight,
+                                size: 28,
+                                color: AppColors.textOnDark,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _seekIndicatorText ?? '',
+                                style: AppTypography.labelUppercaseSm
+                                    .copyWith(
+                                  color: AppColors.textOnDark,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                _ControlsOverlay(
+                  visible: _controlsVisible,
+                  controller: _controller!,
+                  muted: _muted,
+                  topOffset: topOffset,
+                  bottomPadding: bottomPadding,
+                  onClose: _close,
+                  onToggleMute: _toggleMute,
+                  onTogglePlayPause: _togglePlayPause,
+                ),
+              ],
+              if (_failed || !_ready)
+                Positioned(
+                  top: topOffset,
+                  right: AppSpacing.sm,
+                  child: _ChromeButton(
+                    icon: PhosphorIconsThin.x,
+                    onTap: _close,
+                  ),
+                ),
             ],
-            if (_failed || !_ready)
-              Positioned(
-                top: topOffset,
-                right: AppSpacing.sm,
-                child: _ChromeButton(
-                  icon: PhosphorIconsThin.x,
-                  onTap: _close,
-                ),
-              ),
-          ],
-        ),
+          ),
         ),
       ),
     );
