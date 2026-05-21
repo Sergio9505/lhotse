@@ -36,7 +36,7 @@ import '../features/documents/presentation/document_preview_screen.dart';
 import '../features/onboarding/presentation/onboarding_done_screen.dart';
 import '../features/onboarding/presentation/onboarding_host.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
-import '../features/profile/presentation/legal_webview_screen.dart';
+import '../features/profile/presentation/embedded_webview_screen.dart';
 import '../features/profile/presentation/notifications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/search/presentation/search_screen.dart';
@@ -122,7 +122,7 @@ const _kBootRoutes = {
 /// authenticated (reset password right after verifyOTP creates a session;
 /// complete-phone for sessions that landed without phone). The screen
 /// itself decides the next destination — the router must not redirect.
-/// Routes whose `LegalWebViewScreen` only embeds external URLs and must
+/// Routes whose `EmbeddedWebViewScreen` only embeds external URLs and must
 /// be reachable without authentication — they back the inline links in
 /// the signup consent checkbox + the accept-consent gate. The redirect
 /// returns early on these regardless of session state (different from
@@ -504,7 +504,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.profileSupport,
               pageBuilder: (context, state) => _fadePage(
                 key: state.pageKey,
-                child: const LegalWebViewScreen(
+                child: const EmbeddedWebViewScreen(
                   url: 'https://lhotsegroup.com/es/soporte-app/',
                 ),
               ),
@@ -513,7 +513,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.profileTerms,
               pageBuilder: (context, state) => _fadePage(
                 key: state.pageKey,
-                child: const LegalWebViewScreen(
+                child: const EmbeddedWebViewScreen(
                   url:
                       'https://lhotsegroup.com/es/terminos-y-condiciones-aplicacion-movil/',
                 ),
@@ -523,7 +523,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: AppRoutes.profilePrivacy,
               pageBuilder: (context, state) => _fadePage(
                 key: state.pageKey,
-                child: const LegalWebViewScreen(
+                child: const EmbeddedWebViewScreen(
                   url: 'https://lhotsegroup.com/en/privacy-policy/',
                 ),
               ),

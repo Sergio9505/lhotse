@@ -5,25 +5,28 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 
 /// Embeds an external URL inside the app rather than redirecting to Safari /
-/// Chrome. Used by the three legal/support entries in Profile (terms,
-/// privacy, support) to surface the canonical pages on `lhotsegroup.com`
-/// without yanking the user out of the app shell.
+/// Chrome. Used by:
+/// - The three legal/support entries in Profile (terms, privacy, support) to
+///   surface the canonical pages on `lhotsegroup.com` without yanking the
+///   user out of the app shell.
+/// - The bottom CTA of `NewsDetailScreen` when the news has no associated
+///   project but has an `external_url` (e.g. World of Interiors article).
 ///
 /// No title text in the chrome — the embedded page owns its own heading
 /// (Apple Settings, Sotheby's, Robinhood and JPM Private Bank all keep
 /// their in-app webviews chrome-light for the same reason; doubling the
 /// page title in a native bar reads as redundancy and breaks the
 /// editorial restraint of the wealth voice).
-class LegalWebViewScreen extends StatefulWidget {
-  const LegalWebViewScreen({super.key, required this.url});
+class EmbeddedWebViewScreen extends StatefulWidget {
+  const EmbeddedWebViewScreen({super.key, required this.url});
 
   final String url;
 
   @override
-  State<LegalWebViewScreen> createState() => _LegalWebViewScreenState();
+  State<EmbeddedWebViewScreen> createState() => _EmbeddedWebViewScreenState();
 }
 
-class _LegalWebViewScreenState extends State<LegalWebViewScreen> {
+class _EmbeddedWebViewScreenState extends State<EmbeddedWebViewScreen> {
   bool _ready = false;
   bool _failed = false;
 

@@ -49,6 +49,7 @@ class NewsItemData {
     required this.type,
     this.subtype,
     this.body,
+    this.externalUrl,
     this.useLightOverlay = true,
   });
 
@@ -99,6 +100,14 @@ class NewsItemData {
   final NewsSubtype? subtype;
 
   final String? body;
+
+  /// External article URL when the news is press-style (no associated project).
+  /// Surfaced by the bottom CTA in `NewsDetailScreen` — opened embedded in-app
+  /// via `flutter_inappwebview` (`EmbeddedWebViewScreen`), never via the
+  /// system browser. When `projectId != null` this field is ignored (CTA
+  /// navigates to the project detail instead).
+  final String? externalUrl;
+
   final bool useLightOverlay;
 
   /// Whether to show a play-button overlay on the news media. Derived from
@@ -141,6 +150,7 @@ class NewsItemData {
       type: NewsTypeX.fromString(row['type'] as String? ?? ''),
       subtype: NewsSubtypeX.fromString(row['subtype'] as String?),
       body: row['body'] as String?,
+      externalUrl: row['external_url'] as String?,
       useLightOverlay: row['use_light_overlay'] as bool? ?? true,
     );
   }

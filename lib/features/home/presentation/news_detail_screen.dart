@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/data/news_provider.dart';
@@ -10,6 +11,7 @@ import '../../../core/domain/news_item_data.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/media_hero_carousel.dart';
+import '../../profile/presentation/embedded_webview_screen.dart';
 import 'widgets/fullscreen_video_player.dart';
 
 const double _kHeroSlop = 8.0;
@@ -379,6 +381,56 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
                             style: AppTypography.bodyReading.copyWith(
                               color: AppColors.textPrimary,
                               height: 1.7,
+                            ),
+                          ),
+                        ),
+                      ),
+                    // =====================================================
+                    // CTA — DESCUBRIR PROYECTO / LEER NOTICIA COMPLETA
+                    // =====================================================
+                    // Project association wins when both fields are present
+                    // (commercial detail is more valuable than the source
+                    // article). The external URL is opened EMBEDDED in-app
+                    // via EmbeddedWebViewScreen (same pattern as the legal
+                    // pages in Profile) — never via the system browser.
+                    if (news.projectId != null ||
+                        news.externalUrl?.isNotEmpty == true)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.xxl,
+                            AppSpacing.lg,
+                            AppSpacing.md,
+                          ),
+                          child: GestureDetector(
+                            onTap: () {
+                              if (news.projectId != null) {
+                                context.push('/projects/${news.projectId}');
+                              } else {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => EmbeddedWebViewScreen(
+                                      url: news.externalUrl!,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16),
+                              color: AppColors.primary,
+                              child: Center(
+                                child: Text(
+                                  news.projectId != null
+                                      ? 'DESCUBRIR PROYECTO'
+                                      : 'LEER NOTICIA COMPLETA',
+                                  style: AppTypography.labelUppercaseMd
+                                      .copyWith(
+                                          color: AppColors.textOnDark),
+                                ),
+                              ),
                             ),
                           ),
                         ),
