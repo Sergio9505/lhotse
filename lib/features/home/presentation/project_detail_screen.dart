@@ -609,46 +609,63 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                     bottom: false,
                     child: SizedBox(
                       height: kToolbarHeight,
-                      child: Stack(
+                      // Standard toolbar layout: backButton + Expanded title +
+                      // 44px right spacer for symmetric centering. `Expanded`
+                      // constrains the title width so `maxLines: 1` +
+                      // `TextOverflow.ellipsis` actually clip long titles
+                      // instead of overlapping the back button.
+                      child: Row(
                         children: [
-                          Positioned(
-                            left: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: 44,
-                            child: _heroGone
-                                ? const LhotseBackButton.onSurface()
-                                : LhotseBackButton.overImage(
-                                    useLightOverlay:
-                                        project.useLightOverlay,
-                                  ),
-                          ),
-                          Center(
-                            child: AnimatedOpacity(
-                              opacity: _showCollapsedTitle ? 1.0 : 0.0,
-                              duration: const Duration(milliseconds: 200),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    project.name.toUpperCase(),
-                                    style: AppTypography.titleUppercase
-                                        .copyWith(
-                                      color: AppColors.textPrimary,
+                          _heroGone
+                              ? const LhotseBackButton.onSurface()
+                              : LhotseBackButton.overImage(
+                                  useLightOverlay:
+                                      project.useLightOverlay,
+                                ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.sm),
+                              child: AnimatedOpacity(
+                                opacity:
+                                    _showCollapsedTitle ? 1.0 : 0.0,
+                                duration:
+                                    const Duration(milliseconds: 200),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      project.name.toUpperCase(),
+                                      style: AppTypography.titleUppercase
+                                          .copyWith(
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    project.brand.toUpperCase(),
-                                    style: AppTypography.labelUppercaseSm
-                                        .copyWith(
-                                      color: AppColors.accentMuted,
-                                    ),
-                                  ),
-                                ],
+                                    if (project.brand.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        project.brand.toUpperCase(),
+                                        style: AppTypography
+                                            .labelUppercaseSm
+                                            .copyWith(
+                                          color: AppColors.accentMuted,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
+                          const SizedBox(width: 44),
                         ],
                       ),
                     ),
