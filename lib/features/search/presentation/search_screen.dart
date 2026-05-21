@@ -25,7 +25,6 @@ import '../../../core/widgets/lhotse_search_field.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 import '../../../core/widgets/project_access_gate.dart';
-import '../../home/presentation/widgets/project_showcase_card.dart';
 import '../../investments/data/investments_provider.dart';
 import '../../investments/domain/coinvestment_contract_data.dart';
 import '../../investments/domain/fixed_income_contract_data.dart';
@@ -45,14 +44,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchController = TextEditingController();
   String _query = '';
   final List<String> _recentSearches = [];
-
-  static const _trendingTags = [
-    'Madrid Centro',
-    'Dubai',
-    'Vellte',
-    'Residencial',
-    'Marbella',
-  ];
 
   @override
   void dispose() {
@@ -91,6 +82,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           .join(' ');
       return haystack.contains(q);
     }).toList();
+  }
+
+  /// Idle "DESTACADOS" selection: projects open to investment that the
+  /// current user can actually access (filters out VIP-locked ones for
+  /// non-VIP roles). Falls back to the first three projects of the list
+  /// when the filter produces nothing — the section is never empty as
+  /// long as `projects` itself has rows.
+  List<ProjectData> _selectFeatured(List<ProjectData> projects) {
+    final accessible = projects
+        .where((p) => p.isFundraisingOpen && !isProjectLocked(ref, p))
+        .take(3)
+        .toList();
+    if (accessible.isNotEmpty) return accessible;
+    return projects.take(3).toList();
   }
 
   List<DocumentData> _searchDocsDirect(List<DocumentData> docs) {
@@ -401,10 +406,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   )
                 : _IdleContent(
                     recentSearches: _recentSearches,
-                    featuredProjects:
-                        projects.where((p) => p.isVip).take(3).toList(),
+                    featuredProjects: _selectFeatured(projects),
                     onTagTap: _onTagTap,
-                    trendingTags: _trendingTags,
                   ),
           ),
         ],
@@ -420,13 +423,11 @@ class _IdleContent extends StatelessWidget {
     required this.recentSearches,
     required this.featuredProjects,
     required this.onTagTap,
-    required this.trendingTags,
   });
 
   final List<String> recentSearches;
   final List<ProjectData> featuredProjects;
   final ValueChanged<String> onTagTap;
-  final List<String> trendingTags;
 
   @override
   Widget build(BuildContext context) {
@@ -441,12 +442,6 @@ class _IdleContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
         ],
-        _TagSection(
-          title: 'TENDENCIAS',
-          tags: trendingTags,
-          onTap: onTagTap,
-        ),
-        const SizedBox(height: AppSpacing.xl),
         _FeaturedSection(projects: featuredProjects),
       ],
     );
@@ -518,31 +513,21 @@ class _TrendingChip extends StatelessWidget {
   }
 }
 
-class _FeaturedSection extends ConsumerWidget {
+class _FeaturedSection extends StatelessWidget {
   const _FeaturedSection({required this.projects});
 
   final List<ProjectData> projects;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     if (projects.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const LhotseSectionLabel(label: 'DESTACADOS'),
         const SizedBox(height: AppSpacing.md),
-        for (int i = 0; i < projects.length; i++) ...[
-          ProjectShowcaseCard(
-            project: projects[i],
-            isLocked: isProjectLocked(ref, projects[i]),
-            onTap: () => context.push(
-              '/projects/${projects[i].id}',
-              extra: projects[i],
-            ),
-          ),
-          if (i < projects.length - 1)
-            const SizedBox(height: AppSpacing.lg),
-        ],
+        for (final project in projects)
+          _ProjectResultItem(project: project),
       ],
     );
   }
@@ -658,6 +643,7 @@ class _AssetResultItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = asset.address ?? asset.location;
     final secondary = asset.address != null ? asset.location : null;
+    final thumbSize = MediaQuery.textScalerOf(context).scale(16) / 16 * 64;
     return GestureDetector(
       onTap: () {
         onTap?.call();
@@ -670,8 +656,8 @@ class _AssetResultItem extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 64,
-              height: 64,
+              width: thumbSize,
+              height: thumbSize,
               child: asset.thumbnailImage != null
                   ? LhotseImage(asset.thumbnailImage!)
                   : Container(
@@ -692,10 +678,10 @@ class _AssetResultItem extends StatelessWidget {
                 children: [
                   Text(
                     primary,
-                    style: AppTypography.bodyReading.copyWith(
+                    style: AppTypography.bodyRow.copyWith(
                       color: AppColors.textPrimary,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (secondary != null && secondary.isNotEmpty) ...[
@@ -730,6 +716,7 @@ class _BrandResultItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(16) / 16;
     return GestureDetector(
       onTap: () {
         onTap?.call();
@@ -744,7 +731,7 @@ class _BrandResultItem extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 56,
+              width: 56 * scale,
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: BrandWordmark(
@@ -763,8 +750,9 @@ class _BrandResultItem extends StatelessWidget {
             Expanded(
               child: Text(
                 brand.tagline ?? brand.name.toUpperCase(),
-                style: AppTypography.annotation
-                    .copyWith(color: AppColors.accentMuted),
+                style: AppTypography.bodyRow.copyWith(
+                  color: AppColors.accentMuted,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -789,6 +777,7 @@ class _ProjectResultItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final thumbSize = MediaQuery.textScalerOf(context).scale(16) / 16 * 64;
     return GestureDetector(
       onTap: () {
         onTap?.call();
@@ -801,8 +790,8 @@ class _ProjectResultItem extends ConsumerWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 64,
-              height: 64,
+              width: thumbSize,
+              height: thumbSize,
               child: LhotseImage(project.imageUrl),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -812,10 +801,10 @@ class _ProjectResultItem extends ConsumerWidget {
                 children: [
                   Text(
                     project.name,
-                    style: AppTypography.bodyReading.copyWith(
+                    style: AppTypography.bodyRow.copyWith(
                       color: AppColors.textPrimary,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),

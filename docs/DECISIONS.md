@@ -2119,3 +2119,28 @@ Además, los usuarios creados desde el admin no tienen forma de "haber tildado" 
 - `docs/sql/migrations/20260520200000_latest_user_consents_self_only.sql` (bug-fix view, drop `FROM auth.users`).
 - App: `lib/core/utils/consent_metadata.dart`, `lib/features/auth/data/auth_repository.dart` (`signUp` + `recordConsent`), `lib/features/auth/data/consent_provider.dart`, `lib/features/auth/data/route_after_auth.dart`, `lib/features/auth/presentation/widgets/consent_checkboxes.dart`, `lib/features/auth/presentation/signup_screen.dart`, `lib/features/auth/presentation/accept_consent_screen.dart`, `lib/features/profile/presentation/notifications_screen.dart` (sección COMUNICACIONES), splash/login/otp-verify (call sites de `routeAfterAuth`).
 
+---
+
+## ADR-74: Buscador como herramienta — densidad uniforme idle/active, sin Tendencias
+
+**Date:** 2026-05-21
+**Status:** Accepted
+
+**Context:** El idle de `SearchScreen` arrastraba tres patrones que se peleaban entre sí: (1) chips de TENDENCIAS hardcoded (`Madrid Centro`, `Dubai`, `Vellte`…) sin tracking ni analítica, ruido sin signal; (2) sección DESTACADOS con `ProjectShowcaseCard` 3:2 + 36pt + Hero flight — densidad de catálogo curado (Firmas, archives) plantada en una pantalla cuyo propósito es ser herramienta navegable; (3) filas de resultados activos con título `bodyReading` 14pt, fijas a thumb 64×64 sin escalar con Dynamic Type — el design system declara explícitamente `bodyRow` 16pt para "search result rows" (`app_typography.dart`), así que el código violaba su propia intención.
+
+**Decision:** Tres movimientos coordinados que tratan el buscador como **herramienta** (no catálogo):
+1. **Eliminar TENDENCIAS** por completo. Sin pretender resucitarla como analytics-driven hasta que haya señal real.
+2. **DESTACADOS pasa a la misma densidad** que un search-result — reusa `_ProjectResultItem` en lugar de `ProjectShowcaseCard`. Contenido: tres proyectos `isFundraisingOpen == true && !isProjectLocked(ref, p)` (accesibles al rol del user — no destacar VIP-only a un viewer); fallback a los primeros tres del list si el filtro deja vacío (la sección nunca queda vacía). Etiqueta sigue siendo `DESTACADOS`, coherente con `RECIENTES`.
+3. **Sizing de las tres rows de resultado (`_ProjectResultItem`, `_AssetResultItem`, `_BrandResultItem`)**: título `bodyReading` 14pt → `bodyRow` 16pt (lo que la theme ya prescribía). Thumbnail `64` fijo → `MediaQuery.textScalerOf(context).scale(16) / 16 * 64` — escala proporcional al título, igual que se hace en slivers (ADR-68 LhotseTextScaler). `maxLines: 1` → `maxLines: 2` para absorber wrap a Dynamic Type alto.
+
+**Consequences:**
+- (+) **Pantalla coherente**: idle y active comparten la misma rejilla tipográfica/dimensional. La disonancia "showcase enorme vs filas compactas" desaparece. El header DESTACADOS sigue cumpliendo función (categorización), pero no impone un lenguaje editorial sobre una pantalla funcional.
+- (+) **Dynamic Type robusto**: con scale 1.3x el título crece a ≈20.6pt y el thumb a ≈82pt — proporción preservada. Antes el texto crecía y el thumb se quedaba pequeño.
+- (+) **Cero invención**: usa tokens existentes (`bodyRow`), reusa widgets existentes (`_ProjectResultItem`), reutiliza `isProjectLocked` para el gating de DESTACADOS. El cambio es de **alineación**, no de incorporar nuevos componentes.
+- (+) **Catálogo curado intacto**: `ProjectShowcaseCard` sigue siendo el lenguaje de Firmas y archives. El buscador no es catálogo — distinción semántica clara entre contextos.
+- (−) Para usuarios sin recientes y con muy pocos proyectos abiertos, la sección DESTACADOS muestra siempre lo mismo (fallback a primeros tres). Es aceptable: el dataset Lhotse es pequeño y los proyectos rotan con baja frecuencia.
+
+**Files touched:**
+- `lib/features/search/presentation/search_screen.dart` (eliminación de trending + refactor de `_FeaturedSection` + sizing en las tres `_*ResultItem` + helper `_selectFeatured`).
+- `docs/DOMAIN.md`, `docs/DESIGN_SYSTEM.md`, `docs/ROADMAP.md` (afirmaciones falseadas por el cambio).
+

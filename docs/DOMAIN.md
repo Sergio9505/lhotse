@@ -94,9 +94,9 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 
 ### Search (Buscar)
 - Global search across projects, brands, and investment documents
-- Idle state: trending tags (locations, brands, categories) + collections (brand grid)
-- Active state: results grouped by type (projects, documents)
-- Documents section: investment documents per user — placeholder UI, documents table exists in Supabase (model_type + model_id pattern)
+- Idle state: recent searches (if any) + DESTACADOS section with three accessible projects open for investment (filter falls back to the first three projects of the list when none are open/accessible — the section is never empty)
+- Active state: results grouped by type (firmas, proyectos, activos, documentos)
+- Result rows + DESTACADOS rows share the same widget — uniform density. Title uses `bodyRow` 16pt; thumbnail size scales with the text scaler (Dynamic Type-safe)
 
 ### Investments (Estrategia)
 - **Investor/VIP only** — viewers see CTA or locked state
@@ -163,8 +163,8 @@ All stored values are English keys (e.g. `grow_wealth`, `recurring`, `under_25k`
 App Shell (BottomNav: 5 tabs)
 ├── Inicio (Home feed)   → Project Detail; News Detail (opens FullscreenVideoPlayer if hasPlayButton)
 ├── Firmas               → Brand Detail → Project Detail
-├── Buscar               → idle: CATÁLOGO tab (All Projects) · NOTICIAS tab (All News) · trending tags · collections
-│                       → active: search Results → Any Detail
+├── Buscar               → idle: RECIENTES (recent search chips, if any) · DESTACADOS (3 accessible open-for-investment projects)
+│                       → active: results grouped by type (firmas / proyectos / activos / documentos) → Any Detail
 ├── Estrategia           → Brand Investments → Investment Detail (typed: compraDirecta / coinversión / rentaFija)
 └── Perfil               → Settings, Legal, Support
 ```
