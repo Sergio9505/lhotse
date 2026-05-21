@@ -4,30 +4,27 @@ import '../theme/app_theme.dart';
 import 'lhotse_image.dart';
 import 'lhotse_play_button.dart';
 
-/// Hero media for `news_detail_screen.dart` and `project_detail_screen.dart`
-/// (and any future entity whose detail screen wants a multi-image hero).
+/// Pure renderer for the detail screens' hero media. Has THREE rendering
+/// modes derived from the input props:
 ///
-/// Three rendering modes, derived from the input params:
-///
-///   1. `videoUrl` set            → single-frame poster + `LhotsePlayButton`
-///      (no carousel, no dots). Tap is handled by the caller via the
-///      `onOpenVideo` callback wired through a `GestureDetector` around
-///      this widget. Per ADR-62, video always wins over a multi-image
-///      gallery.
-///   2. `imageUrls.length > 1`    → `PageView` carousel with dots; slot 0
-///      is wrapped in `Hero(tag: heroTag)` so the shared-element
-///      transition from feed/card still lands smoothly. Subsequent slots
-///      are plain images without Hero tags.
-///   3. otherwise                 → single image (or video poster
+///   1. `videoUrl` non-null            → static poster + optional play
+///      overlay (single Hero, no gallery, no internal gestures).
+///   2. `imageUrls.length > 1`         → Stack of `Positioned` images
+///      with `left: i * pageWidth - galleryOffset`. Slot 0 wrapped in
+///      `Hero(tag: heroTag)` for the shared-element transition. Dots
+///      indicator driven by `galleryIndex`.
+///   3. otherwise                      → single image (or video poster
 ///      fallback) identical to the pre-carousel behaviour.
 ///
-/// Top + bottom gradients sit on top of every slot so the back button and
-/// the collapsed title stay readable on bright media.
+/// **Gestures are NOT handled here.** Both tap-to-fullscreen (video mode)
+/// and horizontal swipe (gallery mode) are owned by a `Listener` at the
+/// detail screen's `Scaffold.body` level — empirically, gesture handlers
+/// embedded inside this widget did not receive pointer events in this
+/// tree across five different architectures (see `docs/solutions/2026-05-21-pageview-inside-sliverappbar-swipe.md`).
 ///
-/// Per ADR-70 (news) and ADR-71 (projects). The widget owns zero domain
-/// knowledge — all decisions live in the params, so it is reusable for
-/// any entity that exposes `imageUrls` + `videoUrl`.
-class MediaHeroCarousel extends StatefulWidget {
+/// Per ADR-70 (news) and ADR-71 (projects). Zero domain knowledge — all
+/// decisions live in the props.
+class MediaHeroCarousel extends StatelessWidget {
   const MediaHeroCarousel({
     super.key,
     required this.heroTag,
@@ -36,13 +33,14 @@ class MediaHeroCarousel extends StatefulWidget {
     required this.coverImageUrl,
     required this.useLightOverlay,
     required this.signedVideoUrl,
-    required this.onOpenVideo,
     required this.heroGone,
+    this.galleryOffset = 0,
+    this.galleryIndex = 0,
     this.videoChild,
   });
 
   /// Hero tag for the shared-element transition. Applied only to slot 0
-  /// of the carousel (or to the single image / video poster) so the
+  /// of the gallery (or to the single image / video poster) so the
   /// flight from feed/card always lands on the first frame.
   final String heroTag;
 
@@ -65,17 +63,22 @@ class MediaHeroCarousel extends StatefulWidget {
 
   /// Signed playback URL (when resolved). Toggles the play overlay's
   /// visibility — the play button only shows once playback is actually
-  /// possible.
+  /// possible. The actual tap-to-fullscreen is handled by the screen's
+  /// `Listener` at `Scaffold.body` level.
   final String? signedVideoUrl;
-
-  /// Wired to the `GestureDetector` in the caller. The widget itself
-  /// never opens the fullscreen player; the caller decides where the
-  /// tap surface lives.
-  final VoidCallback onOpenVideo;
 
   /// Mirrors the detail screen's `_heroGone` flag — used to fade the
   /// dots indicator out as the user scrolls past the hero.
   final bool heroGone;
+
+  /// Current horizontal scroll offset of the gallery in pixels, owned
+  /// by the screen's State and animated externally. Drives the
+  /// `left: i * pageWidth - galleryOffset` of each `Positioned` image.
+  final double galleryOffset;
+
+  /// Current page index of the gallery. Drives the dots indicator's
+  /// active dot.
+  final int galleryIndex;
 
   /// Optional inline video widget rendered in place of the poster when
   /// [videoUrl] is set. Projects use this to embed `LhotseVideoPlayer`
@@ -85,85 +88,78 @@ class MediaHeroCarousel extends StatefulWidget {
   final Widget? videoChild;
 
   @override
-  State<MediaHeroCarousel> createState() => _MediaHeroCarouselState();
-}
-
-class _MediaHeroCarouselState extends State<MediaHeroCarousel> {
-  final _controller = PageController();
-  int _index = 0;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onPageChanged(int i) {
-    if (i != _index) setState(() => _index = i);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final hasVideo = widget.videoUrl != null && widget.videoUrl!.isNotEmpty;
-    final hasGallery = !hasVideo && widget.imageUrls.length > 1;
+    final hasVideo = videoUrl != null && videoUrl!.isNotEmpty;
+    final hasGallery = !hasVideo && imageUrls.length > 1;
 
     if (hasVideo) {
-      // Inline video (project pattern) when `videoChild` is supplied; the
-      // caller owns the player widget so MediaHeroCarousel does not need
-      // to depend on LhotseVideoPlayer + playable url providers.
-      // Otherwise (news pattern, ADR-62) fall back to the static poster +
-      // play overlay; the caller wires tap-to-fullscreen via the
-      // surrounding GestureDetector.
-      final showPoster = widget.videoChild == null;
-      final body = widget.videoChild ??
+      final showPoster = videoChild == null;
+      final body = videoChild ??
           LhotseImage.poster(
-            videoUrl: widget.videoUrl,
-            imageUrl: widget.coverImageUrl,
+            videoUrl: videoUrl,
+            imageUrl: coverImageUrl,
           );
       return _Frame(
-        useLightOverlay: widget.useLightOverlay,
-        showPlay: showPoster && widget.signedVideoUrl != null,
-        child: Hero(tag: widget.heroTag, child: body),
+        useLightOverlay: useLightOverlay,
+        showPlay: showPoster && signedVideoUrl != null,
+        child: Hero(tag: heroTag, child: body),
       );
     }
 
     if (!hasGallery) {
       return _Frame(
-        useLightOverlay: widget.useLightOverlay,
+        useLightOverlay: useLightOverlay,
         showPlay: false,
         child: Hero(
-          tag: widget.heroTag,
+          tag: heroTag,
           child: LhotseImage.poster(
             videoUrl: null,
             imageUrl:
-                widget.imageUrls.isNotEmpty ? widget.imageUrls.first : widget.coverImageUrl,
+                imageUrls.isNotEmpty ? imageUrls.first : coverImageUrl,
           ),
         ),
       );
     }
 
     return _Frame(
-      useLightOverlay: widget.useLightOverlay,
+      useLightOverlay: useLightOverlay,
       showPlay: false,
       footer: _Dots(
-        count: widget.imageUrls.length,
-        index: _index,
-        useLightOverlay: widget.useLightOverlay,
-        visible: !widget.heroGone,
+        count: imageUrls.length,
+        index: galleryIndex,
+        useLightOverlay: useLightOverlay,
+        visible: !heroGone,
       ),
-      child: PageView.builder(
-        controller: _controller,
-        onPageChanged: _onPageChanged,
-        itemCount: widget.imageUrls.length,
-        itemBuilder: (context, i) {
-          final image = LhotseImage.poster(
-            videoUrl: null,
-            imageUrl: widget.imageUrls[i],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final pageWidth = constraints.maxWidth;
+          final count = imageUrls.length;
+          return ClipRect(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                for (var i = 0; i < count; i++)
+                  Positioned(
+                    left: i * pageWidth - galleryOffset,
+                    top: 0,
+                    bottom: 0,
+                    width: pageWidth,
+                    child: i == 0
+                        ? Hero(
+                            tag: heroTag,
+                            child: LhotseImage.poster(
+                              videoUrl: null,
+                              imageUrl: imageUrls[i],
+                            ),
+                          )
+                        : LhotseImage.poster(
+                            videoUrl: null,
+                            imageUrl: imageUrls[i],
+                          ),
+                  ),
+              ],
+            ),
           );
-          if (i == 0) {
-            return Hero(tag: widget.heroTag, child: image);
-          }
-          return image;
         },
       ),
     );
