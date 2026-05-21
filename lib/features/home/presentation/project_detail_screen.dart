@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/news_provider.dart';
@@ -650,36 +649,11 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                           ],
                         ),
                       ),
-                    if (project.brochureUrl != null)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            AppSpacing.xxl,
-                            AppSpacing.lg,
-                            bottomPadding + AppSpacing.xl,
-                          ),
-                          child: GestureDetector(
-                            onTap: () => launchUrl(
-                              Uri.parse(project.brochureUrl!),
-                              mode: LaunchMode.externalApplication,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 16),
-                              color: AppColors.primary,
-                              child: Center(
-                                child: Text(
-                                  'DESCARGAR FOLLETO',
-                                  style: AppTypography.labelUppercaseMd
-                                      .copyWith(
-                                          color: AppColors.textOnDark),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: bottomPadding + AppSpacing.xl,
                       ),
+                    ),
                   ],
                 ),
               ),

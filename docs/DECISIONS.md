@@ -2144,3 +2144,30 @@ Además, los usuarios creados desde el admin no tienen forma de "haber tildado" 
 - `lib/features/search/presentation/search_screen.dart` (eliminación de trending + refactor de `_FeaturedSection` + sizing en las tres `_*ResultItem` + helper `_selectFeatured`).
 - `docs/DOMAIN.md`, `docs/DESIGN_SYSTEM.md`, `docs/ROADMAP.md` (afirmaciones falseadas por el cambio).
 
+---
+
+## ADR-75: Eliminar feature "folleto" — DROP completo (app + admin + DB)
+
+**Date:** 2026-05-21
+**Status:** Accepted
+
+**Context:** El project detail screen cerraba con un CTA full-width "DESCARGAR FOLLETO" que abría un PDF en navegador externo (`url_launcher`). La infraestructura abarcaba tres capas: la columna `projects.brochure_url` en DB, el campo `PdfUploadField` en el form del admin (subida al bucket `public-media/projects/brochures/`), y el lectura/render en la app Flutter (`ProjectData.brochureUrl` + CTA en `project_detail_screen.dart`). Decisión de producto: el folleto deja de formar parte del proyecto comercial — la historia se cuenta en la app misma (tagline + description + galerías + tour virtual + noticias relevantes). El PDF era ruido editorial duplicado.
+
+**Decision:** DROP completo en las tres capas — no se conserva la columna en DB, ni el campo en el admin, ni la lectura en la app. Una historia menos que mantener:
+
+1. **App** (`project_detail_screen.dart`): el bloque condicional `if (project.brochureUrl != null)` queda reemplazado por un `SliverToBoxAdapter` con `SizedBox(height: bottomPadding + AppSpacing.xl)` que preserva el remate inferior (el CTA era el único sliver que aplicaba el bottom safe area). Import `url_launcher` se elimina — quedaba huérfano.
+2. **Model** (`ProjectData`): `brochureUrl` field + constructor param + lectura en `fromSupabaseRow` se eliminan.
+3. **Admin** (`project-form.tsx` + `project.ts` Zod + `actions.ts` + `database.types.ts`): el `FieldGroup`, la validación, el `uploadFormImage` y el tipo TypeScript se eliminan.
+4. **DB** (migración `20260521160000_drop_projects_brochure_url`): `DROP VIEW projects_with_metrics; ALTER TABLE projects DROP COLUMN brochure_url; CREATE VIEW projects_with_metrics AS … (idéntica menos esa columna); ALTER VIEW SET (security_invoker = true); NOTIFY pgrst, 'reload schema'`. La view no se puede mantener cuando se dropea una columna referenciada — recreación es la vía limpia, no `CASCADE`.
+
+**Consequences:**
+- (+) **Cero columna huérfana**: aplica `feedback_no_unrequested_ops` desde la otra dirección — el user pidió eliminar del admin, lo que implica que no se persistiría más → conservar la columna sería deuda muerta. Drop alineado con `ARCHITECTURE.md` principio #4 ("no speculative fields").
+- (+) **El CTA al final ya no era el cierre editorial natural**. La pantalla cierra ahora con NOTICIAS RELEVANTES (cuando hay) o GALERÍA (cuando hay) o description (mínimo). Estructura más respirada.
+- (+) **Una dependencia npm/pub menos en uso**: `url_launcher` queda solo activo en otras pantallas (no se desinstala — sigue lazy-disponible si se necesita en el futuro).
+- (−) **Storage cleanup pendiente**: los PDFs ya subidos a `public-media/projects/brochures/` quedan como blobs huérfanos. Sus URLs públicas no están enlazadas desde ningún lado, pero el bucket es público y un agente con la URL exacta puede descargarlas. La limpieza es una operación manual de Storage (fuera de scope de migración DDL).
+- (−) **Rollback no trivial**: si en el futuro se decide restaurar el folleto, hay que reinstaurar columna + view + Zod + form + action + model + CTA. La migración deja el SQL rollback documentado en el header.
+
+**Files touched:**
+- `lib/features/home/presentation/project_detail_screen.dart`, `lib/core/domain/project_data.dart`, `docs/sql/migrations/20260521160000_drop_projects_brochure_url.sql`, `docs/DESIGN_SYSTEM.md`.
+- (Admin repo) `components/forms/project-form.tsx`, `lib/schemas/project.ts`, `app/(admin)/projects/actions.ts`, `lib/db/database.types.ts`.
+

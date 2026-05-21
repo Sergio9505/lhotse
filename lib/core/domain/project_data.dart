@@ -63,7 +63,6 @@ class ProjectData {
     this.usableSurfaceM2,
     this.hasElevator,
     this.floorPlanUrl,
-    this.brochureUrl,
     this.assetId,
     this.useLightOverlay = true,
   });
@@ -133,7 +132,6 @@ class ProjectData {
   final double? usableSurfaceM2;
   final bool? hasElevator;
   final String? floorPlanUrl;
-  final String? brochureUrl;
   final String? assetId;
   final bool useLightOverlay;
 
@@ -194,7 +192,6 @@ class ProjectData {
       usableSurfaceM2: (assets?['usable_surface_m2'] as num?)?.toDouble(),
       hasElevator: assets?['has_elevator'] as bool?,
       floorPlanUrl: assets?['floor_plan_url'] as String?,
-      brochureUrl: row['brochure_url'] as String?,
       assetId: row['asset_id'] as String?,
       useLightOverlay: row['use_light_overlay'] as bool? ?? true,
     );
