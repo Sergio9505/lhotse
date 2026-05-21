@@ -2,19 +2,25 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/news_provider.dart';
 import '../../../core/data/projects_provider.dart';
+import '../../../core/domain/news_item_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/data/supabase_provider.dart';
 import 'widgets/vip_lock_sheet.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
+import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/media_hero_carousel.dart';
 import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/widgets/lhotse_video_player.dart';
@@ -22,6 +28,7 @@ import 'widgets/fullscreen_video_player.dart';
 import 'widgets/virtual_tour_section.dart';
 
 const _kMaxVisibleGallery = 5;
+const _kMaxVisibleRelatedNews = 3;
 const double _kHeroSlop = 8.0;
 const Duration _kHeroTapMax = Duration(milliseconds: 300);
 const double _kFullyExpandedTolerance = 4.0;
@@ -179,6 +186,45 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     await _videoKey.currentState?.resumeFrom(result ?? start);
   }
 
+  /// Bottom sheet with all news linked to this project. Mirrors the
+  /// `showAllGallery` pattern but with `LhotseNewsCard` (full 3:2
+  /// editorial card, not compact) stacked vertically. Each card keeps
+  /// its `heroTag` so the shared-element flight to news_detail still
+  /// lands smoothly from the sheet.
+  void _showAllRelatedNews(
+    BuildContext context,
+    List<NewsItemData> news,
+  ) {
+    showLhotseBottomSheet(
+      context: context,
+      title: 'NOTICIAS RELEVANTES',
+      itemCount: news.length,
+      listPadding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        MediaQuery.of(context).padding.bottom + AppSpacing.md,
+      ),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.lg),
+      itemBuilder: (sheetContext, i) {
+        final n = news[i];
+        return LhotseNewsCard(
+          title: n.title,
+          imageUrl: n.imageUrl,
+          videoUrl: n.videoUrl,
+          heroTag: 'news-hero-${n.id}',
+          brand: n.brand,
+          date: DateFormat('d MMM yyyy', 'es_ES').format(n.date),
+          type: n.type.label,
+          onTap: () {
+            Navigator.of(sheetContext).pop();
+            context.push('/news/${n.id}', extra: n);
+          },
+        );
+      },
+    );
+  }
+
   // ===========================================================================
   // BODY-LEVEL POINTER HANDLERS
   // ===========================================================================
@@ -321,6 +367,19 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     _heroHeight = mq.size.height * 0.55;
     final pageWidth = mq.size.width;
     final imageCount = project.imageUrls.length;
+
+    // News linked to this project, excluding work-in-progress updates
+    // (subtype='progress' lives in the L3 Avance tab of coinversions —
+    // here in the commercial detail we surface only editorial/press
+    // news, consistent with the global archive rule).
+    final allNews =
+        ref.watch(newsProvider).valueOrNull ?? const <NewsItemData>[];
+    final relatedNews = allNews
+        .where((n) =>
+            n.projectId == project.id &&
+            n.subtype != NewsSubtype.progress)
+        .toList();
+
     final hasVideo =
         project.videoUrl != null && project.videoUrl!.isNotEmpty;
     final hasGallery = !hasVideo && imageCount > 1;
@@ -510,6 +569,79 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                                           ? LhotseImage(item.url)
                                           : VideoThumbnailTile(
                                               url: item.url),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    // =================================================
+                    // NOTICIAS RELEVANTES — carrusel compact horizontal +
+                    // arrow → bottomsheet con todas (limit-3 visible).
+                    // Filtra subtype=progress (avance de obra vive en
+                    // el L3 Avance del coinversion).
+                    // =================================================
+                    if (relatedNews.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: AppSpacing.xxl),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.lg),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'NOTICIAS RELEVANTES',
+                                    style: AppTypography.sectionLabel
+                                        .copyWith(
+                                      color: AppColors.accentMuted,
+                                    ),
+                                  ),
+                                  if (relatedNews.length >
+                                      _kMaxVisibleRelatedNews) ...[
+                                    const SizedBox(width: AppSpacing.sm),
+                                    GestureDetector(
+                                      onTap: () => _showAllRelatedNews(
+                                          context, relatedNews),
+                                      child: PhosphorIcon(
+                                        PhosphorIconsThin.arrowUpRight,
+                                        size: 14,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            SizedBox(
+                              height: 160,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.lg),
+                                itemCount: relatedNews.length >
+                                        _kMaxVisibleRelatedNews
+                                    ? _kMaxVisibleRelatedNews
+                                    : relatedNews.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: AppSpacing.sm),
+                                itemBuilder: (context, i) {
+                                  final n = relatedNews[i];
+                                  return LhotseNewsCard.compact(
+                                    title: n.title,
+                                    imageUrl: n.imageUrl,
+                                    videoUrl: n.videoUrl,
+                                    brand: n.brand,
+                                    subtitle: DateFormat('d MMM', 'es_ES')
+                                        .format(n.date),
+                                    onTap: () => context.push(
+                                      '/news/${n.id}',
+                                      extra: n,
                                     ),
                                   );
                                 },
