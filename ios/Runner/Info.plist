@@ -47,6 +47,8 @@
 		<string>Lhotse necesita acceso a tu biblioteca de fotos para actualizar tu foto de perfil.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Algunas funciones integradas pueden solicitar tu ubicación. Lhotse no recopila ni almacena estos datos.</string>
+		<key>NSFaceIDUsageDescription</key>
+		<string>Lhotse usa Face ID para proteger el acceso a tu información patrimonial.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>

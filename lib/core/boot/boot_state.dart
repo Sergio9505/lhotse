@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../auth/biometric_lock_controller.dart';
 import '../data/supabase_provider.dart';
 
 /// Single source of truth for post-auth routing.
@@ -14,7 +15,8 @@ import '../data/supabase_provider.dart';
 ///   2. Phone verified?     → [BootPendingPhone] if not.
 ///   3. Consents granted?   → [BootPendingConsent] if not.
 ///   4. Onboarding done?    → [BootPendingOnboarding] if not.
-///   5. All good            → [BootReady].
+///   5. Biometric unlock required? → [BootPendingBiometric] if yes.
+///   6. All good            → [BootReady].
 ///
 /// The router redirect reads the current state synchronously and maps it to
 /// the canonical destination route — no async work in the redirect callback.
@@ -48,6 +50,10 @@ class BootPendingConsent extends BootState {
 
 class BootPendingOnboarding extends BootState {
   const BootPendingOnboarding();
+}
+
+class BootPendingBiometric extends BootState {
+  const BootPendingBiometric();
 }
 
 class BootReady extends BootState {
@@ -122,6 +128,25 @@ class BootStateNotifier extends Notifier<BootState> {
       if (onboarding?['completed_at'] == null) {
         _commit(seq, const BootPendingOnboarding());
         return;
+      }
+
+      // Localized check so a benign SharedPreferences error in the biometric
+      // controller can't bounce the user back to the consent gate — the
+      // outer catch fails closed to `BootPendingConsent`, which makes sense
+      // for the consent/onboarding queries above but would be the wrong fail
+      // mode for biometric prefs (a key-value lookup, not compliance).
+      try {
+        await ref.read(biometricLockControllerProvider.future);
+        if (seq != _refreshSeq) return;
+        if (ref
+            .read(biometricLockControllerProvider.notifier)
+            .requiresUnlockNow()) {
+          _commit(seq, const BootPendingBiometric());
+          return;
+        }
+      } catch (e) {
+        debugPrint(
+            '[BootState] biometric prefs unavailable: $e — skipping gate');
       }
 
       _commit(seq, const BootReady());

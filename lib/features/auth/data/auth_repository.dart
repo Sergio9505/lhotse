@@ -1,13 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/auth/biometric_lock_controller.dart';
 import '../../../core/data/supabase_provider.dart';
 import '../../../core/utils/consent_metadata.dart';
 
 class AuthRepository {
-  AuthRepository(this._client);
+  AuthRepository(this._client, this._ref);
 
   final SupabaseClient _client;
+  final Ref _ref;
 
   Future<AuthResponse> signIn({
     required String email,
@@ -64,7 +66,12 @@ class AuthRepository {
     });
   }
 
-  Future<void> signOut() => _client.auth.signOut();
+  Future<void> signOut() async {
+    // Drop the in-memory unlock so a different user logging in on the same
+    // device doesn't inherit the previous user's unlocked state.
+    _ref.read(biometricLockControllerProvider.notifier).invalidateUnlock();
+    await _client.auth.signOut();
+  }
 
   /// Self-service account deletion (App Store / Play Store compliance).
   /// Calls the SECURITY DEFINER RPC that runs
@@ -77,6 +84,7 @@ class AuthRepository {
   /// /welcome.
   Future<void> deleteMyAccount() async {
     await _client.rpc<dynamic>('delete_my_account');
+    _ref.read(biometricLockControllerProvider.notifier).invalidateUnlock();
     await _client.auth.signOut();
   }
 
@@ -148,5 +156,5 @@ class AuthRepository {
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(ref.watch(supabaseClientProvider));
+  return AuthRepository(ref.watch(supabaseClientProvider), ref);
 });

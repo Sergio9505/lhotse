@@ -294,3 +294,17 @@ final myInvestmentsProvider = FutureProvider.autoDispose((ref) async {
 ```
 
 `currentUserProfileProvider` exposes name / role / memberSince from `user_profiles`, wired the same way. `ProfileScreen` calls `AuthRepository.signOut()` on logout — the router guard takes it from there.
+
+### Biometric app lock (Face ID / Touch ID / huella)
+
+Opt-in app-lock built on `local_auth`. Mirrors push notifications: branded soft-ask sheet post-login with a lifetime cap of 2; hard gate post-activation. Lives entirely inside the boot state machine — `BootPendingBiometric` is one more state in the sealed `BootState`, the router redirect handles it declaratively, and the gate screen only calls `bootStateProvider.notifier.refresh()` after unlock. No screen calls `context.go` for biometric routing.
+
+**Single switch, tri-state:** `biometric.enabled.{userId}` in `SharedPreferences` is `null` (never decided → soft-ask eligible), `true` (opt-in → hard gate enforced) or `false` (explicit off → never gates). Per-user namespacing is mandatory; without it User B inherits User A's pref on a shared device. The in-memory `lastUnlockAt` is intentionally NOT persisted — cold start always re-prompts, and 5 minutes in background invalidates it.
+
+**Sign-out must invalidate.** `AuthRepository.signOut()` and `deleteMyAccount()` call `biometricLockControllerProvider.notifier.invalidateUnlock()` before the Supabase signOut. This is what stops a different user from inheriting the previous unlocked state on the same device.
+
+**Android requires `FlutterFragmentActivity`.** The `MainActivity` in `android/app/src/main/kotlin/.../MainActivity.kt` extends `FlutterFragmentActivity`, not `FlutterActivity`. Without this `local_auth` crashes at runtime when it tries to show the BiometricPrompt because the standard `FlutterActivity` doesn't carry a FragmentManager.
+
+**Copy lives in `lib/features/auth/presentation/biometric_*`.** Formal "usted" tone, no exclamations, no fear-mongering. Reasons passed to the OS prompt (`localizedReason`) are short and action-oriented; the branded framing lives in our own UI behind the system sheet.
+
+See **ADR-77** for the full rationale and load-bearing rules.

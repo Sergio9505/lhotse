@@ -79,6 +79,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onTap: () => context.push('/profile/notifications'),
             ),
             _MenuItem(
+              icon: PhosphorIconsThin.fingerprint,
+              label: 'Seguridad',
+              onTap: () => context.push('/profile/security'),
+            ),
+            _MenuItem(
               icon: PhosphorIconsThin.chatCircle,
               label: 'Contacto y Soporte',
               onTap: () => context.push('/profile/support'),

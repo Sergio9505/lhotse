@@ -8,6 +8,8 @@
     <!-- Android 12 and below -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <!-- Biometric authentication (Face ID / fingerprint) for app lock -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
         android:label="lhotse"

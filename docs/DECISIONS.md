@@ -2220,3 +2220,57 @@ Cada parche introdujo el siguiente bug. La causa raíz era estructural: **la dec
 3. `FutureProvider.autoDispose` + `ref.read(provider.future)` sin listener vivo = bomba de relojería. Usa Notifier non-autoDispose o mantén `ref.listenManual` durante el read.
 4. `ref.watch(StreamProvider)` dentro del cuerpo de un `FutureProvider` que necesita completar = race. Usa `ref.read(sdkSource).currentSession` síncronamente; reactividad post-build via `ref.listen` o explicit `refresh()`.
 
+
+## ADR-77: Biometric gate vía BootStateNotifier + soft-ask post-login
+
+**Date:** 2026-05-23
+**Status:** Accepted
+
+**Context:** El Home y el tab Estrategia exponen capital invertido, IRR, próximos pagos y feed editorial privado en cuanto el usuario pasa el `BootReady`. Si el móvil cambia de manos desbloqueado, cualquiera ve la cartera. El estándar premium en banca privada (JPM Private Bank, Sotheby's, Revolut) es exigir biometría tras el unlock del SO. La app no almacena ningún dato biométrico — `local_auth` delega 100% al Secure Enclave / TEE.
+
+**Decision:** Añadir un sexto estado al sealed `BootState`: `BootPendingBiometric`, integrado en el state machine de ADR-76. La activación se ofrece vía un **soft-ask branded** post-login: bottom sheet con CTA único "Activar" + dismiss por swipe abajo (patrón canónico de `request_info_sheet.dart` / `vip_lock_sheet.dart` para opt-ins de baja fricción), hard cap 2 lifetime, sin penalizar reintentos. Apple HIG lo acepta — Face ID a nivel de app no es system permission sino feature toggle interno reversible desde Perfil > Seguridad. Cero pantalla nueva en el cold-start gate flow para usuarios que no opten-in. Body del sheet centrado en el "por qué" (qué protege en términos del usuario, no propiedades técnicas de la biometría): *"Le pediremos Face ID al abrir Lhotse y tras unos minutos sin actividad, para que su cartera mantenga su privacidad."*
+
+**Modelo único `enabled` (tri-state, per-user en SharedPreferences):**
+- `null` → nunca decidido. El soft-ask aparece en Home (hasta cap 2).
+- `true` → opt-in activo. Hard gate al cold start y tras 5 min en background.
+- `false` → explícitamente off. Cero gates. El usuario lo reactiva desde Perfil > Seguridad.
+
+**Vías a `enabled = true`:**
+1. Tap "Activar" en el soft-ask + Face ID OK.
+2. Toggle on en Perfil > Seguridad + Face ID OK.
+
+**Vías a `enabled = false`:**
+1. Toggle off en Settings.
+2. Gate detecta `notAvailable` (usuario quitó biometría del SO entre sesiones) → fail-open: persiste `false` + entra. El usuario puede re-activar cuando reconfigure el SO.
+
+**Reglas load-bearing:**
+- **Per-user namespacing en prefs**: `biometric.enabled.{userId}` y `biometric.softAskCount.{userId}` — si un User A enabled=true se almacena globalmente, User B en el mismo dispositivo hereda la pref. Cuelga sus preferencias del session userId leído sincrónicamente vía `client.auth.currentSession?.user.id` (regla [[currentUserIdProvider]] — sin `ref.watch` en stream que pueda emitir mid-build).
+- **`lastUnlockAt` en memoria, NO persistido**: cold start fuerza re-auth. Persistir un timestamp sería un agujero (sobrevive a force-quit).
+- **`_lastUnlockAt = null` en `onAuthStateChange`**: cuando un usuario distinto inicia sesión en el mismo proceso, debe limpiarse el unlock heredado. Hecho dentro del listener en `BiometricLockController.build()`.
+- **Catch localizado en `BootStateNotifier.refresh()`**: un fallo cargando `SharedPreferences` NO debe bouncear al usuario a `BootPendingConsent` (el fail-mode genérico de ADR-76). La biometría es key-value, no compliance; si falla, fail-open a `BootReady`. Catch envuelve solo el await del controller.
+- **Captura del destino antes del gate**: el redirect del router llama `capturePendingDestination(loc)` al desviar a `/biometric-gate`. El case `BootReady` restaura ese destino al consumir el pending — si el gate apareció mid-sesión en `/investments`, post-unlock vuelve a `/investments` (no a `/home`).
+- **No commitear `BootLoading` mid-refresh**: misma regla que ADR-76. El estado anterior se mantiene hasta el commit final del biometric check.
+- **Lifecycle observer ignora `resumed` sin `paused` previo**: iOS NO emite `paused` cuando muestra el system prompt de Face ID (es un overlay, no backgrounding). Solo emite `inactive` → `resumed`. Cualquier fallback tipo "si no hay timestamp previo, asume 24h" invalida el `_lastUnlockAt` que el gate acaba de setear y bucle infinito de gate. Patrón canónico (Apple Wallet, 1Password, BBVA): trackear `paused` para set `_backgroundedAt`, ignorar `inactive`, hacer `bg == null → return` en `resumed`. Cold start NO invoca el callback en iOS (inicialización va en `initState`/`build`, NO en el observer). Aplica a cualquier futuro gate que dependa de lifecycle (KYC, subscription, etc.).
+
+**Consequences:**
+- (+) **Coherente con push**: misma UX, mismo cap, mismo bottom sheet — el usuario aprende el patrón una vez.
+- (+) **Zero-friction quando el usuario dice no**: cancelar el soft-ask la primera vez NO bloquea ni re-pregunta agresivamente (hasta cap 2). Respeta agencia.
+- (+) **Bank-grade cuando dice sí**: hard gate post-activación sin escape valve más allá de "cerrar sesión". Es lo que Apple Wallet y Revolut hacen.
+- (+) **Extensible al patrón ADR-76**: añadir biometric fue 1 estado nuevo + 1 case en el switch + 1 check en `refresh()`. Cero screens tocados (excepto los que ya conocían el ciclo).
+- (+) **Cero almacenamiento biométrico**: no impacta App Privacy nutrition label. iOS / Android delegate IS the security boundary.
+- (−) **`AuthRepository` ahora toma `Ref`**: necesario para invalidar el unlock en `signOut()` y `deleteMyAccount()` sin tocar 10 call sites. Refactor mínimo, contrato del provider intacto.
+- (−) **`local_auth` requiere `FlutterFragmentActivity` en Android**: cambio en MainActivity.kt obligatorio. Sin esto, BiometricPrompt crashea al primer uso.
+
+**Files touched:**
+- Nuevo: `lib/core/auth/biometric_service.dart`, `lib/core/auth/biometric_lock_controller.dart`, `lib/core/data/preferences_provider.dart`, `lib/features/auth/presentation/biometric_gate_screen.dart`, `lib/features/auth/presentation/biometric_soft_ask_sheet.dart`, `lib/features/profile/presentation/security_settings_screen.dart`.
+- Modificados: `lib/core/boot/boot_state.dart` (+ estado + check en refresh), `lib/app/router.dart` (+ ruta + redirect case + restore-destination), `lib/app/app.dart` (invalidate unlock + refresh tras 5min background), `lib/features/home/presentation/home_screen.dart` (trigger soft-ask), `lib/features/profile/presentation/profile_screen.dart` (fila Seguridad), `lib/features/auth/data/auth_repository.dart` (invalidate en signOut + deleteMyAccount).
+- Plataforma: `pubspec.yaml` (+ `local_auth: ^2.3.0`), `ios/Runner/Info.plist` (+ `NSFaceIDUsageDescription`), `android/app/src/main/AndroidManifest.xml` (+ `USE_BIOMETRIC`), `android/.../MainActivity.kt` (FlutterActivity → FlutterFragmentActivity).
+
+**Para futuros gates (KYC, suspensión, subscription, etc.):**
+Sigue el mismo patrón. 4 pasos:
+1. Añadir estado al sealed `BootState` (e.g. `BootPendingKyc`).
+2. Añadir check en `BootStateNotifier.refresh()` en el orden correcto.
+3. Añadir case en el switch del redirect (con captura de destino si se quiere restore).
+4. Crear screen de gate que llama `bootStateProvider.notifier.refresh()` tras resolver. Cero `context.go()` para routing — el router transita solo.
+
+

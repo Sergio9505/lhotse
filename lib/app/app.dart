@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/auth/biometric_lock_controller.dart';
+import '../core/boot/boot_state.dart';
 import '../core/data/assets_provider.dart';
 import '../core/data/brands_provider.dart';
 import '../core/data/document_categories_provider.dart';
@@ -53,9 +55,18 @@ class _LhotseAppState extends ConsumerState<LhotseApp>
 
     final bg = _backgroundedAt;
     _backgroundedAt = null;
-    final elapsed = bg != null
-        ? DateTime.now().difference(bg)
-        : const Duration(hours: 24); // app killed → treat as very long
+
+    // No preceding `paused` → o es cold start en iOS (callback nunca fire en
+    // el estado inicial), o un system overlay que solo emite `inactive` (Face
+    // ID prompt, control center, notification center, llamada entrante). En
+    // ningún caso ha habido backgrounding real. Critical: si NO early-return
+    // aquí, el `invalidateUnlock()` del bloque ≥5min borra el `_lastUnlockAt`
+    // que el BiometricGateScreen acaba de setear tras una auth OK → la boot
+    // machine vuelve a `BootPendingBiometric` → router redirige otra vez al
+    // gate → bucle infinito. Ver post-mortem en el plan de Face ID.
+    if (bg == null) return;
+
+    final elapsed = DateTime.now().difference(bg);
 
     // Always: notifications + profile (change in minutes)
     ref.invalidate(notificationsProvider);
@@ -65,7 +76,12 @@ class _LhotseAppState extends ConsumerState<LhotseApp>
     // ≥ 5 min: investor positions + payments + documents + news.
     //   Data that reflects investment activity — admin uploads docs, coupons
     //   get paid, mortgage balances move. A stale L2 hides new cash flow.
+    //   Also drops the in-memory biometric unlock so the boot state machine
+    //   re-flips to `BootPendingBiometric` for opted-in users — router then
+    //   redirects to /biometric-gate without any screen-level orchestration.
     if (elapsed >= const Duration(minutes: 5)) {
+      ref.read(biometricLockControllerProvider.notifier).invalidateUnlock();
+      ref.read(bootStateProvider.notifier).refresh();
       ref.invalidate(newsProvider);
       ref.invalidate(userPortfolioProvider);
       ref.invalidate(userPortfolioEntryProvider);

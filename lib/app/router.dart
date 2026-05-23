@@ -7,7 +7,9 @@ import '../core/domain/asset_data.dart';
 import '../core/domain/brand_data.dart';
 import '../core/domain/news_item_data.dart';
 import '../core/domain/project_data.dart';
+import '../core/auth/biometric_lock_controller.dart';
 import '../features/auth/presentation/accept_consent_screen.dart';
+import '../features/auth/presentation/biometric_gate_screen.dart';
 import '../features/auth/presentation/complete_phone_screen.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
@@ -38,6 +40,7 @@ import '../features/profile/presentation/edit_profile_screen.dart';
 import '../features/profile/presentation/embedded_webview_screen.dart';
 import '../features/profile/presentation/notifications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/profile/presentation/security_settings_screen.dart';
 import '../features/search/presentation/search_screen.dart';
 import 'shell_screen.dart';
 
@@ -76,6 +79,10 @@ abstract final class AppRoutes {
   // (admin-created users / pre-feature signups). Reached when the boot
   // state machine resolves to BootPendingConsent.
   static const acceptConsent = '/accept-consent';
+  // Biometric unlock gate. Reached when the boot state machine resolves to
+  // BootPendingBiometric (user opted in to Face ID / Touch ID / fingerprint
+  // and cold-start / 5-min-background invalidated the in-memory unlock).
+  static const biometricGate = '/biometric-gate';
   // Onboarding (post sign-up, outside shell)
   static const onboarding = '/onboarding';
   static const onboardingDone = '/onboarding/done';
@@ -99,6 +106,7 @@ abstract final class AppRoutes {
   static const profileSupport = '/profile/support';
   static const profileTerms = '/profile/terms';
   static const profilePrivacy = '/profile/privacy';
+  static const profileSecurity = '/profile/security';
   static const documentPreview = '/document-preview';
   static const documentById = '/documents/:id';
 }
@@ -130,6 +138,35 @@ const _kTransientAuthRoutes = {
 };
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Capture the user's current location before bouncing them to the biometric
+/// gate so [BootReady] can restore it after a successful unlock. Without
+/// this, every gate would land the user on Home regardless of where they
+/// were heading (deep links, /investments mid-session timeout, etc.).
+String _captureAndRedirectToBiometricGate(Ref ref, String loc) {
+  ref
+      .read(biometricLockControllerProvider.notifier)
+      .capturePendingDestination(loc);
+  return AppRoutes.biometricGate;
+}
+
+/// Post-`BootReady` redirect helper. Handles three transitions:
+///   - auth/consent screens → home (the user shouldn't sit on a /login
+///     screen once they're authed),
+///   - biometric gate → captured pending destination (or home),
+///   - everything else → stay put.
+String? _bootReadyRedirect(Ref ref, String loc) {
+  if (_kAuthRoutes.contains(loc) || loc == AppRoutes.acceptConsent) {
+    return AppRoutes.home;
+  }
+  if (loc == AppRoutes.biometricGate) {
+    final dest = ref
+        .read(biometricLockControllerProvider.notifier)
+        .consumePendingDestination();
+    return dest ?? AppRoutes.home;
+  }
+  return null;
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Bridge BootState → GoRouter.refreshListenable. Any change in the boot
@@ -175,10 +212,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 loc == AppRoutes.onboardingDone)
             ? null
             : AppRoutes.onboarding,
-        BootReady() => (_kAuthRoutes.contains(loc) ||
-                loc == AppRoutes.acceptConsent)
-            ? AppRoutes.home
-            : null,
+        BootPendingBiometric() => loc == AppRoutes.biometricGate
+            ? null
+            : _captureAndRedirectToBiometricGate(ref, loc),
+        BootReady() => _bootReadyRedirect(ref, loc),
       };
     },
     routes: [
@@ -249,6 +286,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _fadePage(
           key: state.pageKey,
           child: const AcceptConsentScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.biometricGate,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: BiometricGateScreen(),
         ),
       ),
       // ── Document preview (outside shell — full-screen, any feature) ──
@@ -484,6 +527,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               pageBuilder: (context, state) => _fadePage(
                 key: state.pageKey,
                 child: const NotificationsScreen(),
+              ),
+            ),
+            GoRoute(
+              path: AppRoutes.profileSecurity,
+              pageBuilder: (context, state) => _fadePage(
+                key: state.pageKey,
+                child: const SecuritySettingsScreen(),
               ),
             ),
             GoRoute(

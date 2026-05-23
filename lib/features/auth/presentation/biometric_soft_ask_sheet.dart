@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/notifications/onesignal_service.dart';
+import '../../../core/auth/biometric_lock_controller.dart';
 import '../../../core/theme/app_theme.dart';
 
-/// Custom pre-permission bottom sheet shown before triggering the OS-level
-/// push permission dialog.
+/// Branded pre-permission sheet for the Face ID / Touch ID / fingerprint
+/// opt-in, mirroring [`push_soft_ask_sheet.dart`] one-to-one: same fond,
+/// same CTA shapes, same lifetime cap (2). Returns `true` when the user
+/// completed activation (system prompt accepted), `false` otherwise.
 ///
-/// Apple HIG explicitly advises against using `UIAlertController` for this
-/// step: the OS dialog should appear once and clearly attributable to the
-/// system. Our soft-ask owns the editorial framing and the symmetric
-/// "Activar / Más tarde" decision; only "Activar" elevates to the real
-/// system dialog. "Más tarde" closes without consuming the OS-side ask, so
-/// the permission stays `notDetermined` and we can ask again later.
-///
-/// Returns `true` if the user accepted (system dialog granted) and `false`
-/// otherwise. Either way the soft-ask count is incremented, contributing
-/// to the lifetime cap (see [OneSignalService.canShowSoftAsk]).
-Future<bool> showPushSoftAsk(BuildContext context) async {
-  OneSignalService.softAskShownThisSession = true;
+/// Unlike push, biometric is not a system "permission" — the OS doesn't
+/// expose a tri-state. So the gating lives entirely in our controller:
+/// `enabled` flips to `true` only on a successful unlock; cancel / "Más
+/// tarde" leave it as `null` (re-eligible until cap).
+Future<bool> showBiometricSoftAsk(BuildContext context, WidgetRef ref) async {
+  await ref
+      .read(biometricLockControllerProvider.notifier)
+      .markSoftAskShown();
+  if (!context.mounted) return false;
   final result = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
@@ -26,33 +26,31 @@ Future<bool> showPushSoftAsk(BuildContext context) async {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
     ),
-    builder: (_) => const _PushSoftAskContent(),
+    builder: (_) => const _BiometricSoftAskContent(),
   );
   return result ?? false;
 }
 
-class _PushSoftAskContent extends StatefulWidget {
-  const _PushSoftAskContent();
+class _BiometricSoftAskContent extends ConsumerStatefulWidget {
+  const _BiometricSoftAskContent();
 
   @override
-  State<_PushSoftAskContent> createState() => _PushSoftAskContentState();
+  ConsumerState<_BiometricSoftAskContent> createState() =>
+      _BiometricSoftAskContentState();
 }
 
-class _PushSoftAskContentState extends State<_PushSoftAskContent> {
+class _BiometricSoftAskContentState
+    extends ConsumerState<_BiometricSoftAskContent> {
   bool _busy = false;
-
-  Future<void> _close(bool accepted) async {
-    await OneSignalService.incrementSoftAskCount();
-    if (!mounted) return;
-    Navigator.of(context).pop(accepted);
-  }
 
   Future<void> _onActivate() async {
     if (_busy) return;
     setState(() => _busy = true);
-    final granted = await OneSignalService.requestPermission();
+    final ok = await ref
+        .read(biometricLockControllerProvider.notifier)
+        .activate(reason: 'Verificar su identidad');
     if (!mounted) return;
-    await _close(granted);
+    Navigator.of(context).pop(ok);
   }
 
   @override
@@ -83,7 +81,7 @@ class _PushSoftAskContentState extends State<_PushSoftAskContent> {
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
-              'Active las notificaciones.',
+              'Active Face ID.',
               style: AppTypography.editorialTitle.copyWith(
                 color: AppColors.textPrimary,
                 height: 1.1,
@@ -91,8 +89,8 @@ class _PushSoftAskContentState extends State<_PushSoftAskContent> {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Le avisaremos cuando haya nuevas oportunidades, documentos '
-              'disponibles o cambios relevantes en su cartera.',
+              'Le pediremos Face ID al abrir Lhotse y tras unos minutos sin '
+              'actividad, para que su cartera mantenga su privacidad.',
               style: AppTypography.bodyReading.copyWith(
                 color: AppColors.accentMuted,
                 height: 1.45,
@@ -103,12 +101,6 @@ class _PushSoftAskContentState extends State<_PushSoftAskContent> {
               label: 'Activar',
               busy: _busy,
               onTap: _onActivate,
-            ),
-            const SizedBox(height: AppSpacing.sm + 4),
-            _SecondaryCta(
-              label: 'Más tarde',
-              enabled: !_busy,
-              onTap: () => _close(false),
             ),
           ],
         ),
@@ -157,39 +149,3 @@ class _PrimaryCta extends StatelessWidget {
   }
 }
 
-class _SecondaryCta extends StatelessWidget {
-  const _SecondaryCta({
-    required this.label,
-    required this.onTap,
-    this.enabled = true,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          border: Border.all(
-            color: AppColors.textPrimary.withValues(alpha: 0.12),
-            width: 0.5,
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: AppTypography.bodyEmphasis.copyWith(
-            color: AppColors.textPrimary.withValues(alpha: enabled ? 1 : 0.4),
-          ),
-        ),
-      ),
-    );
-  }
-}
