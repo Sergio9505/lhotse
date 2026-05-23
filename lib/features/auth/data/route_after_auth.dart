@@ -39,7 +39,10 @@ Future<void> routeAfterAuth(WidgetRef ref, BuildContext context) async {
     return;
   }
 
-  final userId = ref.read(currentUserIdProvider).valueOrNull;
+  // Stream-fast path with synchronous fallback for the post-signin window
+  // where currentUserIdProvider has not yet emitted (see consent_provider).
+  final userId = ref.read(currentUserIdProvider).valueOrNull ??
+      ref.read(supabaseClientProvider).auth.currentSession?.user.id;
   if (userId == null) {
     context.go(AppRoutes.welcome);
     return;

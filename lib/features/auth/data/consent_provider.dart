@@ -49,8 +49,13 @@ final currentUserConsentsProvider =
     FutureProvider.autoDispose<LatestConsents>((ref) async {
   // Watch the auth-state stream so the provider invalidates on
   // login/logout — matches the per-user provider pattern used elsewhere
-  // (see CLAUDE.md gotcha).
-  final userId = ref.watch(currentUserIdProvider).valueOrNull;
+  // (see CLAUDE.md gotcha). Falls back to `currentSession` synchronously
+  // for the cold-start / immediate-post-signin window where the stream
+  // has not yet broadcast its first event — without this fallback,
+  // routeAfterAuth briefly sees LatestConsents.none() and gates the user
+  // back to /accept-consent even though their consents are persisted.
+  final userId = ref.watch(currentUserIdProvider).valueOrNull ??
+      ref.watch(supabaseClientProvider).auth.currentSession?.user.id;
   if (userId == null) return LatestConsents.none();
 
   final data = await ref
