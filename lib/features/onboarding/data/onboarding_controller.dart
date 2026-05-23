@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/boot/boot_state.dart';
 import '../domain/onboarding_questions.dart';
 import 'onboarding_repository.dart';
 import 'onboarding_state.dart';
@@ -57,6 +58,12 @@ class OnboardingController extends StateNotifier<OnboardingState> {
       await _repo.upsertAnswer(q.column, value);
       if (state.stepIndex == kOnboardingQuestions.length - 1) {
         await _repo.markCompleted();
+        // Recompute boot state so the router knows the user is now Ready.
+        // OnboardingDoneScreen's final `context.go(/)` will then route to
+        // /home; without this refresh the router would bounce back to
+        // /onboarding (still seeing BootPendingOnboarding from the stale
+        // state machine).
+        await _ref.read(bootStateProvider.notifier).refresh();
       }
       state = state.copyWith(
         stepIndex: state.stepIndex + 1,

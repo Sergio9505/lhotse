@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../core/data/supabase_provider.dart';
+import '../core/boot/boot_state.dart';
 import '../core/domain/asset_data.dart';
 import '../core/domain/brand_data.dart';
 import '../core/domain/news_item_data.dart';
@@ -74,9 +73,8 @@ abstract final class AppRoutes {
   // created users / pre-feature signups). Transient — owns its own nav.
   static const completePhone = '/complete-phone';
   // Consent gate for sessions whose user has no rows in `consent_log`
-  // (admin-created users / pre-feature signups). Transient — owns its
-  // own nav. Inserted by `routeAfterAuth` before any onboarding/home
-  // routing.
+  // (admin-created users / pre-feature signups). Reached when the boot
+  // state machine resolves to BootPendingConsent.
   static const acceptConsent = '/accept-consent';
   // Onboarding (post sign-up, outside shell)
   static const onboarding = '/onboarding';
@@ -105,6 +103,7 @@ abstract final class AppRoutes {
   static const documentById = '/documents/:id';
 }
 
+/// Routes shown when the user is signed out (welcome + auth forms).
 const _kAuthRoutes = {
   AppRoutes.welcome,
   AppRoutes.login,
@@ -112,88 +111,75 @@ const _kAuthRoutes = {
   AppRoutes.forgotPassword,
 };
 
-/// Routes that bypass the auth redirect (splash decides destination itself).
-const _kBootRoutes = {
-  AppRoutes.splash,
-};
-
-/// Transient routes inside a multi-step flow (OTP, reset password, complete
-/// phone). They are accessible both unauthenticated (OTP verify) and
-/// authenticated (reset password right after verifyOTP creates a session;
-/// complete-phone for sessions that landed without phone). The screen
-/// itself decides the next destination — the router must not redirect.
-/// Routes whose `EmbeddedWebViewScreen` only embeds external URLs and must
-/// be reachable without authentication — they back the inline links in
-/// the signup consent checkbox + the accept-consent gate. The redirect
-/// returns early on these regardless of session state (different from
-/// `_kAuthRoutes`, which bounces logged-in users back to /home).
+/// Public legal pages (terms/privacy/support web views) reachable from the
+/// signup consent checkbox before the user has an account. Bypass the gate
+/// in every boot state.
 const _kPublicLegalRoutes = {
   AppRoutes.profileTerms,
   AppRoutes.profilePrivacy,
   AppRoutes.profileSupport,
 };
 
+/// Transient routes inside a multi-step flow (OTP, reset password, complete
+/// phone). The owning screen drives navigation; the router only allows them
+/// when the current boot state is compatible.
 const _kTransientAuthRoutes = {
   AppRoutes.otpVerify,
   AppRoutes.resetPassword,
   AppRoutes.completePhone,
-  AppRoutes.acceptConsent,
 };
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // Bridge: Supabase auth events → GoRouter refreshListenable. We refresh on
-  // every auth event (not just userId changes) because the signup 2FA guard
-  // depends on phone_confirmed_at, which mutates without changing userId.
-  final authNotifier = ValueNotifier<int>(0);
-  ref.listen(authStateProvider, (_, next) {
-    authNotifier.value++;
-  });
+  // Bridge BootState → GoRouter.refreshListenable. Any change in the boot
+  // state machine triggers the redirect to re-evaluate.
+  final bootNotifier = ValueNotifier<int>(0);
+  ref.listen(bootStateProvider, (_, _) => bootNotifier.value++);
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
-    refreshListenable: authNotifier,
+    refreshListenable: bootNotifier,
     redirect: (context, state) {
-      // Splash handles its own navigation after warm-up; skip guard.
-      if (_kBootRoutes.contains(state.matchedLocation)) return null;
+      final loc = state.matchedLocation;
 
-      // Public legal pages — Terms / Privacy / Support web views are
-      // reachable from the signup consent checkbox before the user has
-      // an account. Bypass the auth gate in both directions.
-      if (_kPublicLegalRoutes.contains(state.matchedLocation)) return null;
+      // Splash + legal pages own their own lifecycle — no router
+      // interference. SplashScreen plays the brand video + fade in full,
+      // then explicitly hands off via `context.go(...)`; the router
+      // re-evaluates at that point with the final bootState. Without this
+      // early-return the router would teleport the user out of /splash the
+      // moment bootState != Loading, killing the intro video.
+      if (loc == AppRoutes.splash) return null;
+      if (_kPublicLegalRoutes.contains(loc)) return null;
 
-      final user = Supabase.instance.client.auth.currentUser;
-      final isLoggedIn = user != null;
-      final isAuthRoute = _kAuthRoutes.contains(state.matchedLocation);
-      final isTransient =
-          _kTransientAuthRoutes.contains(state.matchedLocation);
+      final boot = ref.read(bootStateProvider);
 
-      // Transient routes own their navigation (OTP verify, reset password).
-      if (isTransient) return null;
-
-      // Only fully verified users are bounced off auth routes. A logged-in
-      // session with phoneConfirmedAt == null is mid-signup (between the
-      // signedIn event of signUp and verifyPhoneChangeOtp); the SignUpScreen
-      // owns navigation in that window. Detection of "pending OTP at app
-      // start / re-login" is async and lives in SplashScreen and LoginScreen
-      // via the get_pending_phone() RPC — the SDK does not expose
-      // auth.users.phone_change.
-      final fullyVerified = isLoggedIn && user.phoneConfirmedAt != null;
-      if (fullyVerified && isAuthRoute) return AppRoutes.home;
-
-      if (!isLoggedIn && !isAuthRoute) return AppRoutes.welcome;
-
-      // Session with no verified phone landing on an authenticated route
-      // (home, deep link, etc.) — force the phone-capture flow. Auth screens
-      // and the transient routes above are already excluded; SignUpScreen
-      // owns its own attachPhone flow, and the OTP / reset / complete-phone
-      // screens are exempt because they're transient.
-      if (isLoggedIn && !fullyVerified && !isAuthRoute) {
-        return AppRoutes.completePhone;
-      }
-      return null;
+      return switch (boot) {
+        // Any non-splash route during initial loading bounces back to
+        // splash; in practice this can't happen because /splash is the
+        // initialLocation and nothing else navigates to /splash.
+        BootLoading() => AppRoutes.splash,
+        BootSignedOut() => (_kAuthRoutes.contains(loc) ||
+                _kTransientAuthRoutes.contains(loc))
+            ? null
+            : AppRoutes.welcome,
+        BootPendingPhone() => (loc == AppRoutes.signup ||
+                loc == AppRoutes.completePhone ||
+                loc == AppRoutes.otpVerify)
+            ? null
+            : AppRoutes.completePhone,
+        BootPendingConsent() =>
+            loc == AppRoutes.acceptConsent ? null : AppRoutes.acceptConsent,
+        BootPendingOnboarding() => (loc == AppRoutes.onboarding ||
+                loc == AppRoutes.onboardingDone)
+            ? null
+            : AppRoutes.onboarding,
+        BootReady() => (_kAuthRoutes.contains(loc) ||
+                loc == AppRoutes.acceptConsent)
+            ? AppRoutes.home
+            : null,
+      };
     },
     routes: [
       // ── Boot ──

@@ -4,22 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
+import '../../../core/boot/boot_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/consent_metadata.dart';
 import '../../../core/widgets/lhotse_mark.dart';
 import '../data/auth_repository.dart';
-import '../data/route_after_auth.dart';
 import 'widgets/consent_checkboxes.dart';
 import 'widgets/lhotse_submit_button.dart';
 
-/// Gate that fires post-auth (from `routeAfterAuth`) when
-/// `latest_user_consents` says the user has not granted Terms +
-/// Privacy. Renders the same two consent checkboxes the public signup
-/// uses, but on its own dedicated route. Back gesture is disabled — the
-/// only way past this screen is to tilde the legal checkbox and tap
-/// CONTINUAR, which writes three rows to `consent_log` via the RPC and
-/// then defers to `routeAfterAuth` for the next destination (home if
-/// onboarding already complete, /onboarding otherwise).
+/// Gate that fires when the router sees `BootPendingConsent`. Renders the
+/// same two consent checkboxes the public signup uses, but on its own
+/// dedicated route. Back gesture is disabled — the only way past this
+/// screen is to tilde the legal checkbox and tap CONTINUAR, which writes
+/// three rows to `consent_log` via the RPC and then refreshes the boot
+/// state machine; the router then redirects to /onboarding or /home.
 class AcceptConsentScreen extends ConsumerStatefulWidget {
   const AcceptConsentScreen({super.key});
 
@@ -64,7 +62,7 @@ class _AcceptConsentScreenState extends ConsumerState<AcceptConsentScreen> {
         ),
       ]);
       if (!mounted) return;
-      await routeAfterAuth(ref, context);
+      await ref.read(bootStateProvider.notifier).refresh();
     } catch (_) {
       if (!mounted) return;
       setState(() {

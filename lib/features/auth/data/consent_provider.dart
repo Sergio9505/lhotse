@@ -3,8 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/data/supabase_provider.dart';
 
 /// Current consent state for the signed-in user — derived from
-/// `latest_user_consents` view (pivot of the consent_log audit table).
-/// Used by `edit_profile_screen` to seed the marketing toggle.
+/// `latest_user_consents` view.
+///
+/// Used **only** by the marketing toggle in `notifications_screen` (and any
+/// future profile-level consent UI). Routing/gating decisions live in
+/// `BootStateNotifier` (`lib/core/boot/boot_state.dart`), which queries the
+/// same view for its own purposes but with `ref.read` semantics — this
+/// provider is for **rendering** the current marketing flag, not for
+/// driving navigation.
 class LatestConsents {
   const LatestConsents({
     required this.termsAccepted,
@@ -45,25 +51,27 @@ class LatestConsents {
   }
 }
 
+/// Reads consent state synchronously from `currentSession` (no `ref.watch`
+/// on a StreamProvider — that would cause mid-build rebuilds when the
+/// stream emits its initial event, orphaning the future. See git history
+/// for the diagnosed Riverpod stale-build bug).
+///
+/// NOT autoDispose: callers (`notifications_screen`) `ref.invalidate` +
+/// `ref.watch` after writes; autoDispose would cause mid-await disposal
+/// when no listener is active.
 final currentUserConsentsProvider =
-    FutureProvider.autoDispose<LatestConsents>((ref) async {
-  // Watch the auth-state stream so the provider invalidates on
-  // login/logout — matches the per-user provider pattern used elsewhere
-  // (see CLAUDE.md gotcha). Falls back to `currentSession` synchronously
-  // for the cold-start / immediate-post-signin window where the stream
-  // has not yet broadcast its first event — without this fallback,
-  // routeAfterAuth briefly sees LatestConsents.none() and gates the user
-  // back to /accept-consent even though their consents are persisted.
-  final userId = ref.watch(currentUserIdProvider).valueOrNull ??
-      ref.watch(supabaseClientProvider).auth.currentSession?.user.id;
+    FutureProvider<LatestConsents>((ref) async {
+  final userId =
+      ref.read(supabaseClientProvider).auth.currentSession?.user.id;
   if (userId == null) return LatestConsents.none();
 
   final data = await ref
-      .watch(supabaseClientProvider)
+      .read(supabaseClientProvider)
       .from('latest_user_consents')
       .select()
       .eq('user_id', userId)
-      .maybeSingle();
+      .maybeSingle()
+      .timeout(const Duration(seconds: 8));
 
   return data != null ? LatestConsents.fromJson(data) : LatestConsents.none();
 });

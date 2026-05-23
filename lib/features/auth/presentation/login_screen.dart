@@ -5,10 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/router.dart';
+import '../../../core/boot/boot_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../data/auth_repository.dart';
-import '../data/route_after_auth.dart';
 import 'otp_verify_screen.dart';
 import 'widgets/lhotse_auth_field.dart';
 import 'widgets/lhotse_submit_button.dart';
@@ -81,11 +81,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
 
-      // Fully verified — defer to routeAfterAuth so the consent gate +
-      // onboarding completion checks fire before /home. This overrides
-      // the router's auto-redirect of /login → /home for users that
-      // still owe TC/Privacy aceptado.
-      await routeAfterAuth(ref, context);
+      // Fully verified — refresh the boot state machine; the router
+      // redirect will then route to /home, /accept-consent, or /onboarding
+      // depending on the user's persisted state.
+      await ref.read(bootStateProvider.notifier).refresh();
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {

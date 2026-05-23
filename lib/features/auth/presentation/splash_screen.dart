@@ -4,24 +4,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../app/router.dart';
+import '../../../core/boot/boot_state.dart';
 import '../../../core/data/assets_provider.dart';
 import '../../../core/data/brands_provider.dart';
 import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
 import '../../../core/data/news_provider.dart';
 import '../../../core/data/projects_provider.dart';
+import '../../../core/data/supabase_provider.dart';
 import '../../investments/data/investments_provider.dart';
-import '../data/auth_repository.dart';
-import '../data/route_after_auth.dart';
-import 'otp_verify_screen.dart';
 
 /// First screen after the native bootstrap. Plays the Lhotse brand intro
-/// video full-bleed and muted, then routes to welcome / home / OTP capture
-/// based on auth state. Provider warm-up runs in parallel during playback.
+/// video full-bleed and muted (always in full, regardless of how quickly the
+/// boot state machine resolves — it's a brand asset, not a loader), then
+/// hands off navigation to the router by jumping to `/`. The router redirect
+/// reads `bootStateProvider` and decides the actual destination
+/// (`/welcome`, `/home`, `/accept-consent`, etc.).
+///
+/// The boot state machine ([BootStateNotifier]) computes consent / onboarding
+/// state in parallel with the video so by the time the video + fade finish,
+/// the answer is usually already cached.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -33,6 +38,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   static const String _introAsset = 'assets/videos/intro_lhotse.mp4';
   static const int _fadeOutMs = 500;
+  static const Duration _bootWaitTimeout = Duration(seconds: 30);
 
   late final VideoPlayerController _videoCtrl;
   late final AnimationController _fadeOutCtrl;
@@ -53,7 +59,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _videoCtrl = VideoPlayerController.asset(_introAsset);
     _videoCtrl.addListener(_onVideoTick);
 
-    final user = Supabase.instance.client.auth.currentUser;
+    // Touch the boot state provider so it starts computing immediately, in
+    // parallel with the video. The router redirect reads it later.
+    ref.read(bootStateProvider);
+
+    final user = ref.read(supabaseClientProvider).auth.currentUser;
     unawaited(_warmUp(user != null));
 
     unawaited(_bootVideo());
@@ -69,9 +79,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       _removeNativeSplash();
       await _videoCtrl.play();
     } catch (_) {
-      // Asset corrupt, codec unsupported, etc. Don't block boot — route now.
+      // Asset corrupt, codec unsupported, etc. Don't block boot — hand off
+      // immediately, router decides what to render.
       _removeNativeSplash();
-      _completeAndNavigate(skipFade: true);
+      _handOff(skipFade: true);
     }
   }
 
@@ -88,11 +99,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final duration = v.duration;
     if (duration <= Duration.zero) return;
     if (v.position >= duration) {
-      _completeAndNavigate();
+      _handOff();
     }
   }
 
-  Future<void> _completeAndNavigate({bool skipFade = false}) async {
+  Future<void> _handOff({bool skipFade = false}) async {
     if (_navigated) return;
     _navigated = true;
 
@@ -101,39 +112,34 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     }
     if (!mounted) return;
 
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      context.go(AppRoutes.welcome);
-      return;
-    }
-    if (user.phoneConfirmedAt != null) {
-      // Phone OK — but the user may still owe a consent acceptance
-      // (admin-created or pre-feature signup). `routeAfterAuth` decides
-      // between /accept-consent, /onboarding, /home based on the
-      // consent_log + user_onboarding state.
-      await routeAfterAuth(ref, context);
-      return;
-    }
-
-    // Logged in but phone unverified → try to resume the OTP flow via
-    // get_pending_phone() (auth.users.phone_change, not exposed by the SDK).
-    final pendingPhone =
-        await ref.read(authRepositoryProvider).getPendingPhone();
+    // Wait for the boot state machine to resolve (or 30s safety timeout).
+    // The vast majority of the time this completes instantly — the consent +
+    // onboarding queries had the full video duration to run in background.
+    await _waitForBootStateReady();
     if (!mounted) return;
 
-    if (pendingPhone != null && pendingPhone.isNotEmpty) {
-      context.go(
-        AppRoutes.otpVerify,
-        extra: OtpVerifyArgs(
-          phone: pendingPhone,
-          purpose: OtpPurpose.signupVerification,
-          isResume: true,
-        ),
-      );
-      return;
-    }
+    // Hand off to the router; the redirect callback in `routerProvider`
+    // reads `bootStateProvider` and routes to the canonical destination.
+    context.go(AppRoutes.home);
+  }
 
-    context.go(AppRoutes.completePhone);
+  Future<void> _waitForBootStateReady() {
+    final current = ref.read(bootStateProvider);
+    if (current is! BootLoading) return Future.value();
+
+    final completer = Completer<void>();
+    final sub = ref.listenManual<BootState>(bootStateProvider, (_, next) {
+      if (next is! BootLoading && !completer.isCompleted) {
+        completer.complete();
+      }
+    });
+    return completer.future
+        .timeout(_bootWaitTimeout, onTimeout: () {
+      // Safety net: if the state machine never escapes Loading (network
+      // hang past the 8s inner timeout + retries, broken DB, etc.), let the
+      // router decide what to do with whatever state is there. The
+      // fail-closed in BootStateNotifier should have caught it already.
+    }).whenComplete(sub.close);
   }
 
   Future<void> _safe(Future<Object?> future) async {
