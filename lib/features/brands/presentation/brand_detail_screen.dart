@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/data/brands_provider.dart';
 import '../../../core/domain/brand_data.dart';
@@ -8,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/brand_wordmark.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../profile/presentation/embedded_webview_screen.dart';
 
 class BrandDetailScreen extends ConsumerStatefulWidget {
   const BrandDetailScreen({
@@ -295,18 +295,20 @@ class _WebCta extends StatelessWidget {
 
   final String? websiteUrl;
 
-  Future<void> _launch() async {
-    if (websiteUrl == null) return;
-    final uri = Uri.parse(websiteUrl!);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+  void _open(BuildContext context) {
+    final url = websiteUrl;
+    if (url == null || url.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => EmbeddedWebViewScreen(url: url),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _launch,
+      onTap: () => _open(context),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         color: AppColors.primary,
