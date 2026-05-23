@@ -195,6 +195,65 @@ final userPortfolioProvider =
       .toList();
 });
 
+/// Set of `project_id` where the current user holds **any** contract —
+/// coinvestment direct, or purchase resolved via `projects.asset_id`.
+/// Status is ignored: signed, pending, cancelled and exited all count.
+///
+/// Fixed-income contracts are NOT included: their offerings are tied to a
+/// brand, not to a project, so they never overlap with the
+/// fundraising-open project set surfaced in "Nuevas oportunidades".
+///
+/// **Why query the base tables instead of the `user_*` views?** The views
+/// (`user_coinvestments`, `user_direct_purchases`) rely on RLS to do the
+/// per-user filtering, and the admin role has `is_admin() = true` which
+/// grants read-all on contracts (intentional — that's how Strategy
+/// surfaces platform-wide totals to operators logging into the investor
+/// app, see DOMAIN.md § User Roles). For this provider we need a strictly
+/// per-user set (we're filtering "Nuevas oportunidades" for THIS user, not
+/// computing aggregates), so we hit the base tables with an explicit
+/// `eq('user_id', userId)` to neutralise the admin read-all override.
+///
+/// Consumers: `_NewOpportunitiesSection` in `investments_screen.dart`
+/// uses this to hide rows for projects the user already participates in.
+final userContractedProjectIdsProvider =
+    FutureProvider<Set<String>>((ref) async {
+  final userId = ref.watch(currentUserIdProvider).valueOrNull;
+  if (userId == null) return const {};
+  final client = ref.watch(supabaseClientProvider);
+
+  // (1) Coinvestment — project_id is on the contract row.
+  final coinvRows = await client
+      .from('coinvestment_contracts')
+      .select('project_id')
+      .eq('user_id', userId);
+  final coinvIds = (coinvRows as List<dynamic>)
+      .map((r) => (r as Map<String, dynamic>)['project_id'] as String?)
+      .whereType<String>()
+      .toSet();
+
+  // (2) Purchase — only asset_id on the contract; resolve to project via
+  // the projects.asset_id FK in a single follow-up batch query.
+  final purchaseRows = await client
+      .from('purchase_contracts')
+      .select('asset_id')
+      .eq('user_id', userId);
+  final assetIds = (purchaseRows as List<dynamic>)
+      .map((r) => (r as Map<String, dynamic>)['asset_id'] as String?)
+      .whereType<String>()
+      .toList(growable: false);
+
+  final purchaseIds = assetIds.isEmpty
+      ? <String>{}
+      : ((await client
+                  .from('projects')
+                  .select('id')
+                  .inFilter('asset_id', assetIds)) as List<dynamic>)
+          .map((r) => (r as Map<String, dynamic>)['id'] as String)
+          .toSet();
+
+  return coinvIds.union(purchaseIds);
+});
+
 // ── Coinvestment sub-data (scenarios + phases) ───────────────────────────────
 
 final projectScenariosProvider =

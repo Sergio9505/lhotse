@@ -9,11 +9,21 @@ class LhotseBottomSheetBody extends StatelessWidget {
   const LhotseBottomSheetBody({
     super.key,
     required this.title,
+    this.titleStyle,
     this.header,
     required this.bodyBuilder,
   });
 
   final String title;
+
+  /// Override for the title typography. Default (null) renders the title
+  /// with `titleUppercaseLg` — appropriate for section labels (DOCUMENTOS,
+  /// PAÍS, LHOTSE PRIVATE, NOTIFICACIONES). For sheets whose title is a
+  /// proper noun (project / news / brand name), pass the editorial token
+  /// instead (`editorialTitle` mixed-case) so the entity reads as itself
+  /// rather than as a category header.
+  final TextStyle? titleStyle;
+
   final Widget? header;
   final Widget Function(double bottomPadding) bodyBuilder;
 
@@ -46,9 +56,10 @@ class LhotseBottomSheetBody extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 title,
-                style: AppTypography.titleUppercaseLg.copyWith(
-                  color: AppColors.textPrimary,
-                ),
+                style: titleStyle ??
+                    AppTypography.titleUppercaseLg.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
               ),
             ),
           ),

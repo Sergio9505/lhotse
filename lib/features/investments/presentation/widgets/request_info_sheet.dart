@@ -23,6 +23,9 @@ void showRequestInfoSheet(BuildContext context, ProjectData project) {
     ),
     builder: (_) => LhotseBottomSheetBody(
       title: project.name,
+      titleStyle: AppTypography.editorialTitle.copyWith(
+        color: AppColors.textPrimary,
+      ),
       bodyBuilder: (bottomPadding) => _RequestInfoSheetBody(
         project: project,
         bottomPadding: bottomPadding,

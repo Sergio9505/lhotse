@@ -140,7 +140,17 @@ class _NewOpportunitiesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final projects =
         ref.watch(openRoundProjectsProvider).valueOrNull ?? const [];
-    if (projects.isEmpty) {
+    // Hide rows for projects where the user already has a contract — those
+    // aren't "new" opportunities for them. Loading/error of the contracted
+    // set falls back to an empty filter (show all): decoration latency is
+    // acceptable; the row disappears on the next frame when the provider
+    // resolves.
+    final contracted =
+        ref.watch(userContractedProjectIdsProvider).valueOrNull ?? const {};
+    final visible = projects
+        .where((p) => !contracted.contains(p.id))
+        .toList(growable: false);
+    if (visible.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
@@ -168,13 +178,13 @@ class _NewOpportunitiesSection extends ConsumerWidget {
               ),
             );
           }
-          final project = projects[i - 1];
+          final project = visible[i - 1];
           return _OpportunityRow(
             project: project,
-            isLast: i - 1 == projects.length - 1,
+            isLast: i - 1 == visible.length - 1,
           );
         },
-        childCount: projects.length + 1,
+        childCount: visible.length + 1,
       ),
     );
   }
