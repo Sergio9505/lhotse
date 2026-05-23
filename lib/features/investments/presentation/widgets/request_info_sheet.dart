@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -48,9 +47,6 @@ class _RequestInfoSheetBody extends ConsumerWidget {
             .valueOrNull ??
         false;
 
-    final bodyText = exists
-        ? 'Hemos recibido tu solicitud. Te haremos llegar el dosier y los próximos pasos en cuanto la procesemos.'
-        : 'Recibirás un dosier con el plan financiero, el calendario de obra y las modalidades de entrada disponibles para esta oportunidad.';
     final label = exists ? 'SOLICITUD EN ESTUDIO' : 'SOLICITAR INFORMACIÓN';
 
     Future<void> onTap() async {
@@ -114,41 +110,24 @@ class _RequestInfoSheetBody extends ConsumerWidget {
               ),
             ),
           ],
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            bodyText,
-            style: AppTypography.annotationParagraph.copyWith(
-              color: AppColors.accentMuted,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Container(
-            height: 0.5,
-            color: AppColors.textPrimary.withValues(alpha: 0.08),
-          ),
           const SizedBox(height: AppSpacing.xl),
           GestureDetector(
-            onTap: exists ? null : onTap,
             behavior: HitTestBehavior.opaque,
-            child: Opacity(
+            onTap: exists ? null : onTap,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 120),
               opacity: exists ? 0.6 : 1.0,
-              child: Row(
-                children: [
-                  Text(
-                    label,
-                    style: AppTypography.labelUppercaseMd.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
+              child: Container(
+                height: 52,
+                alignment: Alignment.center,
+                color: AppColors.primary,
+                child: Text(
+                  label,
+                  style: AppTypography.labelUppercaseMd.copyWith(
+                    color: Colors.white,
+                    letterSpacing: 1.2,
                   ),
-                  if (!exists) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    const PhosphorIcon(
-                      PhosphorIconsThin.arrowRight,
-                      size: 14,
-                      color: AppColors.textPrimary,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
