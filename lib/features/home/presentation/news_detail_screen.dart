@@ -104,6 +104,24 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
     setState(() {
       _carouselOffset = _animFrom + (_animTo - _animFrom) * t;
     });
+    if (_carouselAnim.isCompleted) {
+      _normalizeCarousel();
+    }
+  }
+
+  void _normalizeCarousel() {
+    final pageWidth = _lastPageWidth;
+    final count = _lastImageCount;
+    if (pageWidth <= 0 || count <= 1) return;
+    final totalWidth = count * pageWidth;
+    final wrapped = _carouselOffset.remainder(totalWidth);
+    final normalized = wrapped < 0 ? wrapped + totalWidth : wrapped;
+    final newIndex = ((_carouselIndex % count) + count) % count;
+    if (normalized == _carouselOffset && newIndex == _carouselIndex) return;
+    setState(() {
+      _carouselOffset = normalized;
+      _carouselIndex = newIndex;
+    });
   }
 
   void _animateCarouselTo(double target, int targetIndex) {
@@ -114,6 +132,11 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
     }
     _carouselAnim.forward(from: 0);
   }
+
+  // Cached at build time so the post-settle normalizer can fold offset/index
+  // back into [0, totalWidth) / [0, count) without re-querying layout.
+  double _lastPageWidth = 0;
+  int _lastImageCount = 0;
 
   /// Snap to nearest page based on velocity + position. Mirrors the feel of
   /// `PageScrollPhysics.createBallisticSimulation`. A fast flick (>300 px/s)
@@ -132,7 +155,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
     } else {
       target = currentPageF.round();
     }
-    target = target.clamp(0, count - 1);
+    // No clamp — looping allows the target index to fall outside [0, count-1].
+    // The renderer wraps via modulo; we normalize at settle end.
     _animateCarouselTo(target.toDouble() * pageWidth, target);
   }
 
@@ -218,8 +242,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
     if (scrollOffset > _kFullyExpandedTolerance) return;
 
     final delta = e.position.dx - _dragAnchorX;
-    final next =
-        (_dragAnchorOffset - delta).clamp(0.0, (count - 1) * pageWidth);
+    // No clamp — looping is unbounded in both directions.
+    final next = _dragAnchorOffset - delta;
     if (next == _carouselOffset) return;
     setState(() => _carouselOffset = next);
   }
@@ -303,6 +327,8 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen>
     _heroHeight = mq.size.height * 0.55;
     final pageWidth = mq.size.width;
     final imageCount = news.imageUrls.length;
+    _lastPageWidth = pageWidth;
+    _lastImageCount = imageCount;
     final hasVideo = news.videoUrl != null && news.videoUrl!.isNotEmpty;
     final hasGallery = !hasVideo && imageCount > 1;
 

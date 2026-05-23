@@ -196,7 +196,12 @@ class _MediaGalleryViewerState extends State<_MediaGalleryViewer> {
       DeviceOrientation.landscapeRight,
     ]);
     _currentPage = widget.initialIndex;
-    _pageController = PageController(initialPage: widget.initialIndex);
+    // Center virtual range so the user can swipe both ways indefinitely
+    // (mirrors the `home_screen.dart` feed pattern).
+    final centered = widget.items.length > 1
+        ? widget.items.length * 5000 + widget.initialIndex
+        : widget.initialIndex;
+    _pageController = PageController(initialPage: centered);
   }
 
   @override
@@ -223,11 +228,13 @@ class _MediaGalleryViewerState extends State<_MediaGalleryViewer> {
               physics: isZoomed
                   ? const NeverScrollableScrollPhysics()
                   : const BouncingScrollPhysics(),
-              itemCount: widget.items.length,
-              onPageChanged: (i) => setState(() => _currentPage = i),
+              itemCount: widget.items.length > 1 ? null : widget.items.length,
+              onPageChanged: (i) => setState(
+                  () => _currentPage = i % widget.items.length),
               itemBuilder: (context, i) {
-                final item = widget.items[i];
-                final isActive = i == _currentPage;
+                final idx = i % widget.items.length;
+                final item = widget.items[idx];
+                final isActive = idx == _currentPage;
                 return item.type == MediaType.video
                     ? _VideoPage(item: item, isActive: isActive)
                     : _ImagePage(

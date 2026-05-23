@@ -34,7 +34,6 @@ final _eurFormat = NumberFormat('#,##0', 'es_ES');
 final _dateFormat = DateFormat('MM/yyyy');
 
 const _kHeroHeight = 200.0;
-const _kMaxVisibleGallery = 5;
 
 // Shell widget — prefers the contract passed via router extra (common path
 // from L2), falls back to `purchaseContractByIdProvider` only on deep-link.
@@ -561,7 +560,7 @@ class _AssetTab extends StatelessWidget {
                     color: AppColors.accentMuted,
                   ),
                 ),
-                if (galleryMedia.length > _kMaxVisibleGallery) ...[
+                if (galleryMedia.length >= 2) ...[
                   const SizedBox(width: AppSpacing.sm),
                   GestureDetector(
                     onTap: () =>
@@ -583,18 +582,19 @@ class _AssetTab extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding:
                   const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: galleryMedia.length > _kMaxVisibleGallery
-                  ? _kMaxVisibleGallery
+              itemCount: galleryMedia.length > 1
+                  ? galleryMedia.length * 1000
                   : galleryMedia.length,
               separatorBuilder: (_, _) =>
                   const SizedBox(width: AppSpacing.sm),
               itemBuilder: (context, i) {
-                final item = galleryMedia[i];
+                final idx = i % galleryMedia.length;
+                final item = galleryMedia[idx];
                 return GestureDetector(
                   onTap: () => showMediaGallery(
                       context,
                       items: galleryMedia,
-                      initialIndex: i),
+                      initialIndex: idx),
                   child: Container(
                     width: cardWidth,
                     decoration: const BoxDecoration(

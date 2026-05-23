@@ -126,7 +126,8 @@ class MediaHeroCarousel extends StatelessWidget {
       showPlay: false,
       footer: _Dots(
         count: imageUrls.length,
-        index: galleryIndex,
+        index: ((galleryIndex % imageUrls.length) + imageUrls.length) %
+            imageUrls.length,
         useLightOverlay: useLightOverlay,
         visible: !heroGone,
       ),
@@ -134,29 +135,39 @@ class MediaHeroCarousel extends StatelessWidget {
         builder: (context, constraints) {
           final pageWidth = constraints.maxWidth;
           final count = imageUrls.length;
+          final totalWidth = count * pageWidth;
+          // Normalize offset into [0, totalWidth) so wrap-around clones at
+          // ±totalWidth keep the visible slot covered no matter how far the
+          // parent has dragged.
+          final wrapped =
+              totalWidth > 0 ? galleryOffset.remainder(totalWidth) : 0.0;
+          final normalizedOffset = wrapped < 0 ? wrapped + totalWidth : wrapped;
+          final activeSlot = ((galleryIndex % count) + count) % count;
           return ClipRect(
             child: Stack(
               fit: StackFit.expand,
               children: [
-                for (var i = 0; i < count; i++)
-                  Positioned(
-                    left: i * pageWidth - galleryOffset,
-                    top: 0,
-                    bottom: 0,
-                    width: pageWidth,
-                    child: i == 0
-                        ? Hero(
-                            tag: heroTag,
-                            child: LhotseImage.poster(
+                for (final ring in const [-1, 0, 1])
+                  for (var i = 0; i < count; i++)
+                    Positioned(
+                      left:
+                          i * pageWidth - normalizedOffset + ring * totalWidth,
+                      top: 0,
+                      bottom: 0,
+                      width: pageWidth,
+                      child: (ring == 0 && i == activeSlot)
+                          ? Hero(
+                              tag: heroTag,
+                              child: LhotseImage.poster(
+                                videoUrl: null,
+                                imageUrl: imageUrls[i],
+                              ),
+                            )
+                          : LhotseImage.poster(
                               videoUrl: null,
                               imageUrl: imageUrls[i],
                             ),
-                          )
-                        : LhotseImage.poster(
-                            videoUrl: null,
-                            imageUrl: imageUrls[i],
-                          ),
-                  ),
+                    ),
               ],
             ),
           );

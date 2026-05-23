@@ -31,7 +31,6 @@ import '../domain/completed_contract_data.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 const _kHeroHeight = 200.0;
-const _kMaxVisibleGallery = 5;
 
 class CompletedDetailScreen extends ConsumerStatefulWidget {
   const CompletedDetailScreen({super.key, required this.data});
@@ -475,7 +474,7 @@ class _ActivoTab extends StatelessWidget {
                     color: AppColors.accentMuted,
                   ),
                 ),
-                if (galleryMedia.length > _kMaxVisibleGallery) ...[
+                if (galleryMedia.length >= 2) ...[
                   const SizedBox(width: AppSpacing.sm),
                   GestureDetector(
                     onTap: () =>
@@ -497,18 +496,19 @@ class _ActivoTab extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding:
                   const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: galleryMedia.length > _kMaxVisibleGallery
-                  ? _kMaxVisibleGallery
+              itemCount: galleryMedia.length > 1
+                  ? galleryMedia.length * 1000
                   : galleryMedia.length,
               separatorBuilder: (_, _) =>
                   const SizedBox(width: AppSpacing.sm),
               itemBuilder: (context, i) {
-                final item = galleryMedia[i];
+                final idx = i % galleryMedia.length;
+                final item = galleryMedia[idx];
                 return GestureDetector(
                   onTap: () => showMediaGallery(
                       context,
                       items: galleryMedia,
-                      initialIndex: i),
+                      initialIndex: idx),
                   child: Container(
                     width: cardWidth,
                     decoration: const BoxDecoration(

@@ -45,7 +45,6 @@ final _eurFormat = NumberFormat('#,##0', 'es_ES');
 // ---------------------------------------------------------------------------
 
 const _kHeroHeight = 200.0;
-const _kMaxVisibleGallery = 5;
 
 
 class CoinversionDetailScreen extends ConsumerStatefulWidget {
@@ -186,7 +185,6 @@ class _CoinversionDetailScreenState
     final allNews = ref.watch(newsProvider).valueOrNull ?? const [];
     final relatedNews = allNews
         .where((n) => n.projectId == c.projectId)
-        .take(_kMaxVisibleNews)
         .toList();
 
     final projectLocation = c.projectLocation;
@@ -567,17 +565,18 @@ class _AvanceTab extends StatelessWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: news.length > _kMaxVisibleNews
-                ? _kMaxVisibleNews
-                : news.length,
+            itemCount: news.length > 1 ? news.length * 1000 : news.length,
             separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
-            itemBuilder: (context, i) => LhotseNewsCard.compact(
-              title: news[i].title,
-              imageUrl: news[i].imageUrl,
-              videoUrl: news[i].videoUrl,
-              subtitle: DateFormat('d MMM').format(news[i].date),
-              onTap: () => context.push('/news/${news[i].id}'),
-            ),
+            itemBuilder: (context, i) {
+              final n = news[i % news.length];
+              return LhotseNewsCard.compact(
+                title: n.title,
+                imageUrl: n.imageUrl,
+                videoUrl: n.videoUrl,
+                subtitle: DateFormat('d MMM').format(n.date),
+                onTap: () => context.push('/news/${n.id}'),
+              );
+            },
           ),
         ),
         ],
@@ -672,9 +671,7 @@ class _ProyectoTab extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           _InvestmentGallery(
-            renderMedia: renderMedia.length > _kMaxVisibleGallery
-                ? renderMedia.sublist(0, _kMaxVisibleGallery)
-                : renderMedia,
+            renderMedia: renderMedia,
             progressMedia: const [],
             selectedTab: 0,
             onTabChanged: (_) {},
@@ -703,7 +700,7 @@ class _GallerySectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasMore = items.length > _kMaxVisibleGallery;
+    final hasMore = items.length >= 2;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
@@ -1398,11 +1395,17 @@ class _InvestmentGallery extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding:
                 const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: items.length,
+            itemCount: items.length > 1 ? items.length * 1000 : items.length,
             separatorBuilder: (_, _) =>
                 const SizedBox(width: AppSpacing.sm),
-            itemBuilder: (context, i) => _GalleryCard(
-                width: cardWidth, item: items[i], items: items, index: i),
+            itemBuilder: (context, i) {
+              final idx = i % items.length;
+              return _GalleryCard(
+                  width: cardWidth,
+                  item: items[idx],
+                  items: items,
+                  index: idx);
+            },
           ),
         ),
       ],
@@ -1626,8 +1629,6 @@ class _PremiumExpandableTileState extends State<_PremiumExpandableTile>
 }
 
 // _showAllNews removed — news is now passed as a parameter from the parent widget
-
-const _kMaxVisibleNews = 3;
 
 
 // Documents loaded from Supabase via documentsProvider

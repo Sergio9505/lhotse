@@ -13,8 +13,6 @@ import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 
-const _kMaxVisibleGallery = 5;
-
 /// Detail view for a single asset. Shows the asset hero image, address as
 /// editorial title, brand+city byline (from the owning project), gallery, and
 /// floor plan. No specs, no description — strictly the editorial scope.
@@ -276,8 +274,7 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                               color: AppColors.accentMuted,
                             ),
                           ),
-                          if (detail.galleryMedia.length >
-                              _kMaxVisibleGallery) ...[
+                          if (detail.galleryMedia.length >= 2) ...[
                             const SizedBox(width: AppSpacing.sm),
                             GestureDetector(
                               onTap: () => showAllGallery(
@@ -299,19 +296,20 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg),
-                        itemCount:
-                            detail.galleryMedia.length > _kMaxVisibleGallery
-                                ? _kMaxVisibleGallery
-                                : detail.galleryMedia.length,
+                        itemCount: detail.galleryMedia.length > 1
+                            ? detail.galleryMedia.length * 1000
+                            : detail.galleryMedia.length,
                         separatorBuilder: (_, _) =>
                             const SizedBox(width: AppSpacing.sm),
                         itemBuilder: (context, i) {
-                          final item = detail.galleryMedia[i];
+                          final count = detail.galleryMedia.length;
+                          final idx = i % count;
+                          final item = detail.galleryMedia[idx];
                           return GestureDetector(
                             onTap: () => showMediaGallery(
                                 context,
                                 items: detail.galleryMedia,
-                                initialIndex: i),
+                                initialIndex: idx),
                             child: Container(
                               width: screenWidth * 0.75,
                               decoration: const BoxDecoration(

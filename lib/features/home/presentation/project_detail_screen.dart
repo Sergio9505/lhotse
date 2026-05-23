@@ -26,8 +26,6 @@ import '../../../core/widgets/lhotse_video_player.dart';
 import 'widgets/fullscreen_video_player.dart';
 import 'widgets/virtual_tour_section.dart';
 
-const _kMaxVisibleGallery = 5;
-const _kMaxVisibleRelatedNews = 3;
 const double _kHeroSlop = 8.0;
 const Duration _kHeroTapMax = Duration(milliseconds: 300);
 const double _kFullyExpandedTolerance = 4.0;
@@ -125,6 +123,28 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     setState(() {
       _carouselOffset = _animFrom + (_animTo - _animFrom) * t;
     });
+    // When the snap completes, fold the offset back into [0, totalWidth) and
+    // the index into [0, count) to keep them bounded across long loop chains.
+    // The renderer's modulo math is identical before/after — visually nothing
+    // changes; this only protects against floating-point drift over time.
+    if (_carouselAnim.isCompleted) {
+      _normalizeCarousel();
+    }
+  }
+
+  void _normalizeCarousel() {
+    final pageWidth = _lastPageWidth;
+    final count = _lastImageCount;
+    if (pageWidth <= 0 || count <= 1) return;
+    final totalWidth = count * pageWidth;
+    final wrapped = _carouselOffset.remainder(totalWidth);
+    final normalized = wrapped < 0 ? wrapped + totalWidth : wrapped;
+    final newIndex = ((_carouselIndex % count) + count) % count;
+    if (normalized == _carouselOffset && newIndex == _carouselIndex) return;
+    setState(() {
+      _carouselOffset = normalized;
+      _carouselIndex = newIndex;
+    });
   }
 
   void _animateCarouselTo(double target, int targetIndex) {
@@ -135,6 +155,11 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     }
     _carouselAnim.forward(from: 0);
   }
+
+  // Captured at the start of each build of the hero gallery — used by the
+  // settle normalization once the snap animation ends.
+  double _lastPageWidth = 0;
+  int _lastImageCount = 0;
 
   /// Snap to nearest page based on velocity + position. Mirrors the feel of
   /// `PageScrollPhysics.createBallisticSimulation`. A fast flick (>300 px/s)
@@ -151,7 +176,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     } else {
       target = currentPageF.round();
     }
-    target = target.clamp(0, count - 1);
+    // No clamp — looping allows the target to fall outside [0, count-1].
+    // The renderer wraps via modulo; we normalize at settle end.
     _animateCarouselTo(target.toDouble() * pageWidth, target);
   }
 
@@ -270,8 +296,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     if (scrollOffset > _kFullyExpandedTolerance) return;
 
     final delta = e.position.dx - _dragAnchorX;
-    final next =
-        (_dragAnchorOffset - delta).clamp(0.0, (count - 1) * pageWidth);
+    // No clamp — looping is unbounded in both directions.
+    final next = _dragAnchorOffset - delta;
     if (next == _carouselOffset) return;
     setState(() => _carouselOffset = next);
   }
@@ -366,6 +392,10 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     _heroHeight = mq.size.height * 0.55;
     final pageWidth = mq.size.width;
     final imageCount = project.imageUrls.length;
+    // Cache for the post-settle normalizer (the animation tick has no access
+    // to layout — these are the latest known dims when the gesture settles).
+    _lastPageWidth = pageWidth;
+    _lastImageCount = imageCount;
 
     // News linked to this project, excluding work-in-progress updates
     // (subtype='progress' lives in the L3 Avance tab of coinversions —
@@ -516,8 +546,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                                       color: AppColors.accentMuted,
                                     ),
                                   ),
-                                  if (project.galleryMedia.length >
-                                      _kMaxVisibleGallery) ...[
+                                  if (project.galleryMedia.length >= 2) ...[
                                     const SizedBox(width: AppSpacing.sm),
                                     GestureDetector(
                                       onTap: () => showAllGallery(context,
@@ -539,19 +568,20 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.lg),
-                                itemCount: project.galleryMedia.length >
-                                        _kMaxVisibleGallery
-                                    ? _kMaxVisibleGallery
+                                itemCount: project.galleryMedia.length > 1
+                                    ? project.galleryMedia.length * 1000
                                     : project.galleryMedia.length,
                                 separatorBuilder: (_, _) =>
                                     const SizedBox(width: AppSpacing.sm),
                                 itemBuilder: (context, i) {
-                                  final item = project.galleryMedia[i];
+                                  final count = project.galleryMedia.length;
+                                  final idx = i % count;
+                                  final item = project.galleryMedia[idx];
                                   return GestureDetector(
                                     onTap: () => showMediaGallery(
                                       context,
                                       items: project.galleryMedia,
-                                      initialIndex: i,
+                                      initialIndex: idx,
                                     ),
                                     child: Container(
                                       width: screenWidth * 0.75,
@@ -600,8 +630,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                                       color: AppColors.accentMuted,
                                     ),
                                   ),
-                                  if (relatedNews.length >
-                                      _kMaxVisibleRelatedNews) ...[
+                                  if (relatedNews.length >= 2) ...[
                                     const SizedBox(width: AppSpacing.sm),
                                     GestureDetector(
                                       onTap: () => _showAllRelatedNews(
@@ -623,14 +652,13 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.lg),
-                                itemCount: relatedNews.length >
-                                        _kMaxVisibleRelatedNews
-                                    ? _kMaxVisibleRelatedNews
+                                itemCount: relatedNews.length > 1
+                                    ? relatedNews.length * 1000
                                     : relatedNews.length,
                                 separatorBuilder: (_, _) =>
                                     const SizedBox(width: AppSpacing.sm),
                                 itemBuilder: (context, i) {
-                                  final n = relatedNews[i];
+                                  final n = relatedNews[i % relatedNews.length];
                                   return LhotseNewsCard.compact(
                                     title: n.title,
                                     imageUrl: n.imageUrl,
