@@ -159,7 +159,7 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                         child: Row(
                           children: [
                             LhotseFilterChip(
-                              label: 'PROYECTOS',
+                              label: 'GRUPO',
                               isActive: _activeType == NewsType.project,
                               onTap: () => _setType(
                                 _activeType == NewsType.project
