@@ -22,6 +22,19 @@
 - Invalidate providers on mutations: `ref.invalidate(provider)`
 - Per-user providers: watch auth state stream when Supabase is connected
 
+### Riverpod foot-guns (load-bearing — do not "clean up" without reading ADR-76)
+Surfaced repeatedly in the post-auth routing saga. Each rule prevents a specific reproduced bug:
+
+1. **`FutureProvider.autoDispose` + `ref.read(provider.future)` without a live listener** — the provider becomes disposable mid-await; if the async resolves after the frame ends, Riverpod throws `Bad state: provider was disposed during loading state`. Either drop `.autoDispose` (preferred for one-shot reads from imperative code) or keep `.autoDispose` and wrap the read with `final sub = ref.listenManual(provider, (_,__){}); try { await ref.read(provider.future); } finally { sub.close(); }`.
+
+2. **`ref.watch(StreamProvider)` inside a `FutureProvider.build`** — if the stream emits during the build (`currentUserIdProvider` emits `initialSession` a microtask after subscription), Riverpod marks the build stale and **discards the result**. The `provider.future` captured by an outer `await` ends up orphaned. Read auth identity synchronously inside the FutureProvider body via `client.auth.currentSession?.user.id`; use `ref.listen` (no build-time dep) if you need to react to changes.
+
+3. **Async post-auth navigation from screens races against the router**. If a screen does `await routeAfterAuth(...)` after `signIn`, the `refreshListenable` fires sync the moment the auth event lands and the router re-evaluates BEFORE your await resolves — whichever path the router picks first wins, your async `context.go(...)` becomes a no-op. **Solution**: post-auth routing lives entirely in `BootStateNotifier` (`lib/core/boot/boot_state.dart`); screens only call `ref.read(bootStateProvider.notifier).refresh()` after their action. The router redirect is a pure declarative switch on `BootState`. See ADR-76.
+
+4. **Do NOT commit `BootLoading` mid-`refresh()`** in the boot state machine — the router would bounce the user to `/splash` between every transition (post-consent → onboarding, post-onboarding → home), replaying the brand intro video each time. The previous state stays committed until the async query resolves; `BootLoading` is reserved exclusively for the very first `build()` of `BootStateNotifier` on cold start.
+
+5. **`/splash` self-governs**: early-return for `loc == AppRoutes.splash` in the router redirect. The splash widget owns video + fade timing and hands off via `context.go('/')` when ready. Without this early-return, the moment `bootState != Loading` the router teleports the user out of splash, killing the intro video.
+
 ## Models (Freezed)
 - `abstract class Foo with _$Foo`
 - `@freezed` annotation

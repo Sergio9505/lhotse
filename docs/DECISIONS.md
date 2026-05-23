@@ -2171,3 +2171,52 @@ Además, los usuarios creados desde el admin no tienen forma de "haber tildado" 
 - `lib/features/home/presentation/project_detail_screen.dart`, `lib/core/domain/project_data.dart`, `docs/sql/migrations/20260521160000_drop_projects_brochure_url.sql`, `docs/DESIGN_SYSTEM.md`.
 - (Admin repo) `components/forms/project-form.tsx`, `lib/schemas/project.ts`, `app/(admin)/projects/actions.ts`, `lib/db/database.types.ts`.
 
+---
+
+## ADR-76: Boot state machine owns post-auth routing
+
+**Date:** 2026-05-23
+**Status:** Accepted
+
+**Context:** Antes de este ADR, el routing post-auth se calculaba en TRES sitios distintos con timings distintos:
+1. **Router redirect (sync)**: enforced `isLoggedIn` y `phoneConfirmedAt`.
+2. **`routeAfterAuth` (async)**: query DB para consent + onboarding; lo invocaban screens (LoginScreen, OtpVerifyScreen, AcceptConsentScreen, SplashScreen) tras su acción.
+3. **`currentUserConsentsProvider`** (FutureProvider.autoDispose): cacheaba el resultado del consent fetch.
+
+La interacción de los tres produjo cuatro bugs distintos en sucesión (todos commits previos a `2e9cc69`):
+
+1. **Cold-start gate false positive** — `currentUserIdProvider` (StreamProvider) no emitía hasta ~1 microtask post-subscripción. `routeAfterAuth` leía `valueOrNull = null` → falso negativo → gate fire.
+2. **autoDispose mid-await disposal** — `ref.read(currentUserConsentsProvider.future)` sin listener vivo. El provider quedaba disposable mid-await; cuando la query completaba, lanzaba `Bad state: provider was disposed during loading state`. El catch en `routeAfterAuth` interpretaba el error como "consent missing" → gate fire indebido.
+3. **Router race vs routeAfterAuth** — `authNotifier.value++` post-signIn disparaba el redirect callback sincrónicamente. Antes de que `await routeAfterAuth` completara la query async, el router veía `fullyVerified && isAuthRoute` y rebotaba `/login → /home`, bypaseando el consent gate (RGPD violation latente).
+4. **Stale-build invalidation** — `ref.watch(currentUserIdProvider)` dentro del cuerpo del FutureProvider. Cuando el StreamProvider emitía su initial event mid-build, Riverpod marcaba el build como stale y descartaba el resultado. `ref.read(.future)` quedaba awaiteando un future huérfano → spinner colgado infinito en LoginScreen.
+
+Cada parche introdujo el siguiente bug. La causa raíz era estructural: **la decisión de destino post-auth se distribuía en piezas que competían**.
+
+**Decision:** Single boot state machine. Una sola fuente de verdad — `BootStateNotifier` (Riverpod Notifier) en `lib/core/boot/boot_state.dart`. Sealed `BootState` con 6 estados: `Loading`, `SignedOut`, `PendingPhone`, `PendingConsent`, `PendingOnboarding`, `Ready`. Escucha `onAuthStateChange`, recomputa via `refresh()` que evalúa session → phone → consent → onboarding en orden. El router redirect es 100% declarativo: un `switch` sobre el state que mapea a la ruta canónica. Screens post-auth (login, OTP verify, accept-consent submit, onboarding done) sólo llaman `bootStateProvider.notifier.refresh()`; el router redirige solo via `refreshListenable` bridge.
+
+**Reglas load-bearing del diseño:**
+- **Fail-closed en error/timeout**: cualquier TimeoutException o error de query → `BootPendingConsent`. Re-pedir consent es molesto; bypaseo de RGPD por flakiness es inaceptable.
+- **`BootLoading` exclusivamente al cold-start**: `refresh()` NO transita por Loading mid-flight — el estado anterior se mantiene hasta el commit final. Si lo hiciera, el router bombearía al usuario a `/splash` entre transiciones (post-consent → onboarding, post-onboarding → home), re-reproduciendo el video del splash.
+- **`/splash` self-governs**: early-return en el redirect para `/splash`. El splash widget reproduce video + fade en su totalidad y luego hace `context.go('/')`. El router nunca lo preempta.
+- **`_refreshSeq` guard**: refresh() concurrentes (múltiples `onAuthStateChange` events seguidos) sólo commitean el último.
+
+**Consequences:**
+- (+) **Cero races sync/async**: el redirect es síncrono y declarativo; el state machine pre-computa.
+- (+) **Single source of truth**: cualquier consumer (router, screen, debug overlay) lee `bootStateProvider`.
+- (+) **Extensible**: añadir un check nuevo (KYC, suspensión, etc.) = añadir un state al sealed class + un check en `refresh()` + un mapping en el switch del redirect. Sin tocar screens.
+- (+) **Auditable**: toda la lógica de gating vive en una sola función (`refresh`). Tests unitarios triviales con mock client.
+- (+) **`routeAfterAuth` deleted**: 72 líneas borradas. Screens son tontas tras su acción (sólo llaman `refresh()`).
+- (−) **`currentUserConsentsProvider` se conserva slim** para el marketing toggle de `notifications_screen` (rendering, no routing). Es separación de concerns aceptada: la view se queryea dos veces (una para gating, otra para UI) — costo trivial.
+- (−) **Riverpod foot-guns documentados inline** en `boot_state.dart` y `consent_provider.dart`: sin esos comentarios un dev futuro reintroduce los bugs. Tradeoff: comentarios largos pero load-bearing.
+
+**Files touched (commit `2e9cc69`):**
+- Nuevo: `lib/core/boot/boot_state.dart`.
+- Modificados: `lib/app/router.dart` (redirect declarativo + bridge), `lib/features/auth/presentation/splash_screen.dart` (espera bootState != Loading post-video), `login_screen.dart`, `otp_verify_screen.dart`, `accept_consent_screen.dart` (todos llaman `refresh()`), `lib/features/onboarding/data/onboarding_controller.dart` (refresh tras markCompleted), `lib/features/auth/data/consent_provider.dart` (slim, sólo marketing).
+- Eliminado: `lib/features/auth/data/route_after_auth.dart`.
+
+**Reglas para futuros proyectos con este stack (Flutter + Riverpod + Supabase + GoRouter):**
+1. Si una decisión de routing depende de **al menos una fuente async** (DB query, RPC, etc.), centraliza en un Notifier state machine. NO repartas entre router redirect + screen callbacks.
+2. Routes que tengan vida propia (splash, OTP, transient) → early-return en el redirect. No metas su lógica en el switch del state.
+3. `FutureProvider.autoDispose` + `ref.read(provider.future)` sin listener vivo = bomba de relojería. Usa Notifier non-autoDispose o mantén `ref.listenManual` durante el read.
+4. `ref.watch(StreamProvider)` dentro del cuerpo de un `FutureProvider` que necesita completar = race. Usa `ref.read(sdkSource).currentSession` síncronamente; reactividad post-build via `ref.listen` o explicit `refresh()`.
+
