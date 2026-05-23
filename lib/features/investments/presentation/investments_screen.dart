@@ -5,15 +5,20 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../../core/data/open_round_projects_provider.dart';
 import '../../../core/data/supabase_provider.dart';
+import '../../../core/domain/project_data.dart';
 import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_async_list_states.dart';
+import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_mark.dart';
 import '../../../core/widgets/lhotse_notification_bell.dart';
+import '../../home/presentation/widgets/vip_lock_sheet.dart';
 import '../../profile/data/user_requests_provider.dart';
 import '../data/investments_provider.dart';
 import '../domain/portfolio_entry.dart';
+import 'widgets/request_info_sheet.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
@@ -109,11 +114,181 @@ class InvestmentsScreen extends ConsumerWidget {
               ),
             ),
 
+          // "Nuevas oportunidades" — fundraising-open projects, gated
+          // implicitly by the role check at the top of build() (viewer is
+          // already redirected to _ViewerEmptyState). Decoration of the
+          // strategy screen: silently absent on error/empty so it never
+          // breaks the primary content above.
+          const _NewOpportunitiesSection(),
+
           SliverToBoxAdapter(
             child: SizedBox(
                 height: MediaQuery.of(context).padding.bottom + AppSpacing.xl),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Nuevas oportunidades section ──────────────────────────────────────────────
+
+class _NewOpportunitiesSection extends ConsumerWidget {
+  const _NewOpportunitiesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final projects =
+        ref.watch(openRoundProjectsProvider).valueOrNull ?? const [];
+    if (projects.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, i) {
+          if (i == 0) {
+            return const Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.xxl,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
+              child: Text(
+                'Nuevas oportunidades',
+                style: TextStyle(
+                  fontFamily: AppTypography.fontFamily,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.6,
+                  height: 1.0,
+                ),
+              ),
+            );
+          }
+          final project = projects[i - 1];
+          return _OpportunityRow(
+            project: project,
+            isLast: i - 1 == projects.length - 1,
+          );
+        },
+        childCount: projects.length + 1,
+      ),
+    );
+  }
+}
+
+class _OpportunityRow extends ConsumerStatefulWidget {
+  const _OpportunityRow({
+    required this.project,
+    this.isLast = false,
+  });
+
+  final ProjectData project;
+  final bool isLast;
+
+  @override
+  ConsumerState<_OpportunityRow> createState() => _OpportunityRowState();
+}
+
+class _OpportunityRowState extends ConsumerState<_OpportunityRow> {
+  bool _pressed = false;
+
+  void _onTap() {
+    final project = widget.project;
+    // VIP-locked projects: investors without VIP role get the existing
+    // vip_access flow instead of project_info — consistent with how the
+    // rest of the app gates VIP content. Admins are normalised to
+    // investor_vip in the client, so they fall through to the info sheet.
+    final role = ref.read(currentUserRoleProvider);
+    if (project.isVip && role != UserRole.investorVip) {
+      showVipLockSheet(context);
+      return;
+    }
+    showRequestInfoSheet(context, project);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final project = widget.project;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        _onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: _pressed ? 0.5 : 1.0,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          decoration: widget.isLast
+              ? null
+              : BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.textPrimary.withValues(alpha: 0.08),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 64,
+                height: 64,
+                child: LhotseImage.poster(
+                  videoUrl: project.videoUrl,
+                  imageUrl: project.imageUrl,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      project.name.toUpperCase(),
+                      style: AppTypography.labelUppercaseMd.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (project.tagline.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        project.tagline,
+                        style: AppTypography.annotation.copyWith(
+                          color: AppColors.accentMuted,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              PhosphorIcon(
+                PhosphorIconsThin.caretRight,
+                size: 18,
+                color: AppColors.accentMuted,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

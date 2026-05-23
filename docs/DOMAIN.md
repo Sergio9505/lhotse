@@ -109,7 +109,8 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - **Renta Fija**: inline in InvestmentDetailScreen — contract metrics, no L3 detail
 - **Completed detail**: CompletedContractData adapter (maps from either purchase or coinvest)
 - **Alquiler**: rental_contracts + rental_payments. Rental income shown in purchase contract detail (rental_yield_pct derived in view). No separate screen yet.
-- **Opportunities**: removed as a feature (ADR-55 supersedes ADR-52 which superseded ADR-10). No dedicated screen, no `FeedOpportunityItem`, no `user_opportunities` view, no `newOpportunities` preference. Discovery lives inside the curated Home feed alongside projects, news, brands, and assets — the admin picks what goes in `home_feed_items`.
+- **Opportunities (showcase)**: removed as a feature (ADR-55 supersedes ADR-52 which superseded ADR-10). No dedicated screen, no `FeedOpportunityItem`, no `user_opportunities` view, no `newOpportunities` preference. Discovery lives inside the curated Home feed alongside projects, news, brands, and assets — the admin picks what goes in `home_feed_items`.
+- **Nuevas oportunidades (Strategy L1 section)**: dense list at the bottom of `InvestmentsScreen`, listing every project with `is_fundraising_open = true` ordered most-recent first. Read via `openRoundProjectsProvider` (`lib/core/data/open_round_projects_provider.dart`). Gated implicitly by the L1 role check (viewer is redirected to `_ViewerEmptyState` so never sees this section). Distinct from the removed Opportunities showcase: this is **lead capture**, not discovery — tap → `RequestInfoSheet` bottom sheet with CTA "SOLICITAR INFORMACIÓN" that writes a `user_requests` row of `type='project_info'` + `project_id`. VIP-locked projects (`isVip = true`) fall through to the existing `vip_lock_sheet` flow for non-VIP roles.
 
 ### Notifications
 - **Storage**: `notifications` table — one row per recipient per broadcast (no parent table; broadcasts are identified by `broadcast_id`).
@@ -130,6 +131,17 @@ Lhotse Group is a holding company specializing in redefining wealth management a
   - **COMUNICACIONES → Comunicaciones comerciales**: toggle bidireccional escrito en `consent_log` vía `record_consent('marketing', ...)`. Vive aquí en vez de en Datos personales porque es una preferencia de comunicación, no identidad (ADR-73).
   - **CANALES**: push/email enablement.
 - **Pendiente operacional** (no en ADR-73): el `audience-picker` del admin no filtra hoy por `marketing_accepted`. Cuando se envíen broadcasts promocionales, deben hacer `WHERE marketing_accepted=true` desde `latest_user_consents`. Los broadcasts transaccionales (Art. 6.1.b — ejecución de contrato) no requieren ese filtro.
+
+### User requests (solicitudes)
+Stored in `public.user_requests`, one active row per (user, type, project) — operators procesan desde `lhotse_admin` `/requests`. Tres tipos hoy (DB CHECK `user_requests_type_check`):
+
+| `type` | Disparador (app) | Significado |
+|---|---|---|
+| `invest_info` | Viewer pulsa `CONTACTAR` en el empty state de Estrategia | Quiere convertirse en inversor |
+| `vip_access` | Inversor pulsa `SOLICITAR INVITACIÓN` en `vip_lock_sheet` o el banner de Perfil | Quiere upgrade a VIP |
+| `project_info` | Inversor pulsa `SOLICITAR INFORMACIÓN` en `RequestInfoSheet` desde la sección "Nuevas oportunidades" | Quiere dosier de un proyecto concreto (DB CHECK exige `project_id` no nulo y FK válida) |
+
+Estado: `pending | completed | declined`. La unicidad activa es parcial — un partial UNIQUE INDEX sobre `(user_id, type, COALESCE(project_id, sentinel))` con `WHERE status <> 'declined'` permite (a) una única solicitud activa por triple, (b) re-solicitar cuando el admin declina (la fila declined queda como historia de auditoría). Cliente Dart: enum `UserRequestType` + `submitUserRequest(ref, type, {projectId})` en `lib/features/profile/data/user_requests_provider.dart`.
 
 ### Profile (Mi Perfil)
 - User info (name, email, photo)
