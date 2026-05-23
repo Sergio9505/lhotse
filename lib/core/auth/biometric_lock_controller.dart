@@ -142,13 +142,6 @@ class BiometricLockController extends AsyncNotifier<BiometricLockState> {
     ));
   }
 
-  /// User tapped "Más tarde" on the soft-ask. No persisted change to
-  /// `enabled` (stays `null` — eligible to re-prompt until cap). The session
-  /// guard set in [markSoftAskShown] keeps the sheet from re-firing now.
-  void deferSoftAsk() {
-    // No-op; markSoftAskShown already incremented + flipped the session guard.
-  }
-
   // ── Activation / deactivation ────────────────────────────────────────────
 
   /// Fires the OS biometric prompt and, on success, persists `enabled = true`

@@ -2262,7 +2262,7 @@ Cada parche introdujo el siguiente bug. La causa raíz era estructural: **la dec
 - (−) **`local_auth` requiere `FlutterFragmentActivity` en Android**: cambio en MainActivity.kt obligatorio. Sin esto, BiometricPrompt crashea al primer uso.
 
 **Files touched:**
-- Nuevo: `lib/core/auth/biometric_service.dart`, `lib/core/auth/biometric_lock_controller.dart`, `lib/core/data/preferences_provider.dart`, `lib/features/auth/presentation/biometric_gate_screen.dart`, `lib/features/auth/presentation/biometric_soft_ask_sheet.dart`, `lib/features/profile/presentation/security_settings_screen.dart`.
+- Nuevo: `lib/core/auth/biometric_service.dart`, `lib/core/auth/biometric_lock_controller.dart`, `lib/features/auth/presentation/biometric_gate_screen.dart`, `lib/features/auth/presentation/biometric_soft_ask_sheet.dart`, `lib/features/profile/presentation/security_settings_screen.dart`.
 - Modificados: `lib/core/boot/boot_state.dart` (+ estado + check en refresh), `lib/app/router.dart` (+ ruta + redirect case + restore-destination), `lib/app/app.dart` (invalidate unlock + refresh tras 5min background), `lib/features/home/presentation/home_screen.dart` (trigger soft-ask), `lib/features/profile/presentation/profile_screen.dart` (fila Seguridad), `lib/features/auth/data/auth_repository.dart` (invalidate en signOut + deleteMyAccount).
 - Plataforma: `pubspec.yaml` (+ `local_auth: ^2.3.0`), `ios/Runner/Info.plist` (+ `NSFaceIDUsageDescription`), `android/app/src/main/AndroidManifest.xml` (+ `USE_BIOMETRIC`), `android/.../MainActivity.kt` (FlutterActivity → FlutterFragmentActivity).
 
