@@ -113,7 +113,7 @@ Surfaced repeatedly in the post-auth routing saga. Each rule prevents a specific
 - Home screen carousels: `LIMIT 5`, no pagination
 
 ### JSONB rules
-- **Use JSONB** when: data is display-only, variable-shape, never filtered/joined/aggregated individually (gallery_images, render_images, progress_images)
+- **Use JSONB** when: data is display-only, variable-shape, never filtered/joined/aggregated individually (gallery_images, render_images, progress_images, `projects.content` editorial body — see ADR-78)
 - **Use typed columns** when: the schema is known and stable, even if the fields are many (see `projects.purchase_price`, `built_sqm`, `itp_amount`, etc. — ex-`economic_analysis` JSONB, migrated to 10 typed columns + GENERATED `total_cost`. ADR-42)
 - **Use a separate table** when: data needs individual filtering, sorting, or FK relationships (documents, phases, scenarios)
 - JSONB arrays: always default to `'[]'`, never `NULL`

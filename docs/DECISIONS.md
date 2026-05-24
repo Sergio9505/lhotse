@@ -2274,3 +2274,40 @@ Sigue el mismo patrón. 4 pasos:
 4. Crear screen de gate que llama `bootStateProvider.notifier.refresh()` tras resolver. Cero `context.go()` para routing — el router transita solo.
 
 
+## ADR-78: Project detail body — typed content blocks (JSONB) over freeform description
+
+**Status:** Accepted (migration `20260524120000_project_content_blocks.sql`).
+
+**Context.** El cuerpo del detalle de proyecto era un `projects.description TEXT` plano renderizado con `Text(...)` entre el byline y el tour virtual. Sin imágenes intercaladas, sin separación de secciones, sin vídeo embebido on-demand. El cliente pide poder componer el cuerpo desde el admin con título de sección, párrafos, imágenes (única o galería) y vídeo en cualquier orden — sin rich text libre, manteniendo la estética editorial.
+
+**Decision.** Reemplazar `description` por `projects.content jsonb` — array ordenado de bloques tipados. Cinco tipos discriminados por `type` (snake_case): `heading`, `text`, `image`, `gallery`, `video`. Los tokens de render (typography, spacing, full-bleed) son fijos en el cliente — el admin solo decide **qué bloques y en qué orden**. La columna `description` se elimina; cada descripción previa se migra a un único bloque `text`.
+
+El render Flutter es `ProjectContentRenderer` (`lib/features/home/presentation/widgets/project_content_renderer.dart`):
+- `heading` → `editorialSubtitle` 24/w500 mixed (nivel intermedio entre el `editorialHero` 48 del nombre y `bodyReading` 14 del cuerpo; descartado `sectionLabel` 12 UPPER tracked porque colapsaría con las etiquetas de zonas externas "GALERÍA"/"NOTICIAS RELEVANTES")
+- `text` → `bodyReading` 14/w400 line-height 1.7 — replica pixel-fiel la descripción previa
+- `image` → `LhotseImage` full-bleed 3:2; tap → `showMediaGallery`
+- `gallery` → PageView full-bleed 3:2 con dots indicador (`AnimatedContainer`); tap → `showMediaGallery`
+- `video` → `VideoThumbnailTile` 16:9 (mismo patrón que la galería del detail); tap → `showMediaGallery` con audio
+- Inter-bloque: 24px; antes de `heading` no-primero: 48px
+
+El admin (Next.js `lhotse_admin`) gana una subpágina dedicada `/projects/[id]/content` con **split-pane** editor (izquierda) + preview en frame iPhone 390pt (derecha). El preview es pixel-fiel via componentes React que espejan los tokens Flutter (`components/projects/content-preview.tsx`). Drag-and-drop con `@dnd-kit/sortable` (mismo paquete que `brands-reorder-list`). Uploads eager directos a `project-images` / `project-videos`. Cmd+S persiste vía la action server `updateProjectContent` (separada de `updateProject` — el editor de contenido no toca el resto del proyecto).
+
+**Por qué JSONB y no TEXT con marcadores tipo Markdown.** TEXT con sintaxis propietaria parece más simple pero te obliga a inventar parser custom en Dart y TS (frágil con caracteres especiales), pierde el editor visual de bloques (vuelve a textarea), y rompe el patrón ya establecido del repo (`hero_media`, `gallery_media`, `render_media` son todos JSONB ordenados — ADR-71). El "ahorro" es aparente; el coste de mantenimiento es real.
+
+**Por qué dos tipos `image` + `gallery` y no uno solo `images[]`.** Dos imágenes seguidas full-bleed (caso real planteado por el cliente) son dos bloques `image` consecutivos en el flujo de lectura. Una galería agrupada con paginación es un bloque `gallery` con N items. La semántica es distinta y se refleja en el admin como dos botones diferentes — el redactor sabe exactamente qué está componiendo. Simetría con `video` (singular).
+
+**Por qué admin con preview en vivo.** El cuerpo editorial es contenido marketing de proyectos de inversión patrimonial — la composición visual importa tanto como el texto. Un textarea ciego no permite verificar que el orden de bloques + tamaños de imagen + ritmo de párrafos lee bien antes de publicar. El split-pane convierte la edición en composición visual, no descripción.
+
+**Consequences:**
+- (+) Render con tokens fijos = uniformidad editorial sin que el admin pueda romper la jerarquía visual (no hay color picker, no hay font size, no hay alignment).
+- (+) Forward-compatible: añadir un sexto tipo (callout, divider, quote…) es 1 variante en el Freezed union + 1 case en el switch del renderer + 1 editor en el admin + 1 preview component. Cero migraciones.
+- (+) Búsqueda por contenido preservada: `projects_archive_body.dart` itera `project.content` y extrae el texto de los bloques `heading`+`text` para el haystack — no requiere columna derivada en la vista.
+- (+) Consistente con precedente: misma forma JSONB ordenada que `hero_media` / `gallery_media`.
+- (−) El admin debe mantener manualmente la paridad de tokens (`content-preview.tsx` espejo de `app_typography.dart`). Mitigación: lista corta (5 bloques × 3-4 specs), ADR documenta la dependencia, cualquier cambio en typography Flutter actualiza el preview en la misma PR.
+- (−) `content` no se expone en la list view `projects_with_metrics` (principio #2 "Request size ∝ screen needs"). El archive consume la tabla raw `projects` con `select('*')` que ya trae `content` — sin cambio extra.
+
+**Files touched:**
+- DB: `docs/sql/migrations/20260524120000_project_content_blocks.sql` (ADD `content` JSONB, backfill from `description`, DROP `description`, recreate `projects_with_metrics` sin description).
+- Flutter: `lib/core/domain/content_block.dart` (nuevo, Freezed sealed union), `lib/core/domain/project_data.dart` (description → content), `lib/features/home/presentation/widgets/project_content_renderer.dart` (nuevo), `lib/features/home/presentation/project_detail_screen.dart` (integración), `lib/features/brands/presentation/widgets/projects_archive_body.dart` (haystack).
+- Admin: `lib/schemas/content-block.ts` (Zod discriminated union), `app/(admin)/projects/[id]/content/page.tsx` + `actions.ts` (server), `components/projects/content-editor-shell.tsx` + `content-blocks-editor.tsx` + `content-preview.tsx` (split-pane), `components/forms/project-form.tsx` (textarea description → link a `/content`), `lib/schemas/project.ts` (drop description del Zod), `lib/db/database.types.ts` (drop description add content).
+

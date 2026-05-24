@@ -6,6 +6,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../../core/data/brands_provider.dart';
 import '../../../../core/data/projects_provider.dart';
 import '../../../../core/data/supabase_provider.dart';
+import '../../../../core/domain/content_block.dart';
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/domain/user_role.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -24,6 +25,27 @@ enum _ActiveTool { none, brands, search }
 /// the two phases into a single user-facing state. `null` shows everything
 /// (TODOS).
 enum _StatusFilter { inDevelopment, exited }
+
+/// Flattens the text content of a project body (headings + paragraphs) into
+/// a single string for the catalog's client-side search haystack. Media
+/// blocks (image/gallery/video) are intentionally skipped — they carry no
+/// searchable text in the MVP.
+String _contentSearchText(List<ContentBlock> blocks) {
+  final parts = <String>[];
+  for (final block in blocks) {
+    switch (block) {
+      case HeadingBlock(:final text):
+        parts.add(text);
+      case TextBlock(:final text):
+        parts.add(text);
+      case ImageBlock():
+      case GalleryBlock():
+      case VideoBlock():
+        break;
+    }
+  }
+  return parts.join(' ');
+}
 
 /// Reusable projects catalog body (filter bar + card list). Hosted by the
 /// Search tab's idle state as the "CATÁLOGO COMPLETO" archive.
@@ -73,7 +95,7 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
           p.city,
           p.country,
           p.tagline,
-          p.description,
+          _contentSearchText(p.content),
         ].map(normalizeForSearch).join(' ');
         return haystack.contains(q);
       }).toList();

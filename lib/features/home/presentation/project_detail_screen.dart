@@ -13,6 +13,7 @@ import '../../../core/domain/project_data.dart';
 import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/data/supabase_provider.dart';
+import 'widgets/project_content_renderer.dart';
 import 'widgets/vip_lock_sheet.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
@@ -503,17 +504,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                       ),
                     ),
                     SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg),
-                        child: Text(
-                          project.description.replaceAll('**', ''),
-                          style: AppTypography.bodyReading.copyWith(
-                            color: AppColors.textPrimary,
-                            height: 1.7,
-                          ),
-                        ),
-                      ),
+                      child: ProjectContentRenderer(blocks: project.content),
                     ),
                     if (project.virtualTourUrl != null &&
                         project.imageUrl != null)

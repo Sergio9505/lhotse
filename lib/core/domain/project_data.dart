@@ -1,4 +1,5 @@
 import '../utils/hero_media_parser.dart';
+import 'content_block.dart';
 import 'media_item.dart';
 
 /// Physical stage of a coinvestment project asset.
@@ -43,7 +44,7 @@ class ProjectData {
     this.virtualTourThumbnailUrl,
     this.progressTourThumbnailUrl,
     required this.tagline,
-    required this.description,
+    this.content = const [],
     this.galleryMedia = const [],
     this.isVip = false,
     this.isFundraisingOpen = true,
@@ -103,7 +104,13 @@ class ProjectData {
   String get location => '$city, $country';
 
   final String tagline;
-  final String description;
+
+  /// Editorial body of the project detail. Ordered list of typed blocks
+  /// (heading / text / image / gallery / video) rendered by
+  /// `ProjectContentRenderer`. Stored in `projects.content` (jsonb).
+  /// Replaces the old free-text `description` column (migration
+  /// `20260524120000_project_content_blocks.sql`).
+  final List<ContentBlock> content;
   final List<MediaItem> galleryMedia;
   final bool isVip;
 
@@ -144,6 +151,21 @@ class ProjectData {
         .toList();
   }
 
+  static List<ContentBlock> _parseContent(dynamic raw) {
+    if (raw is! List) return const [];
+    final result = <ContentBlock>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      try {
+        result.add(ContentBlock.fromJson(Map<String, Object?>.from(item)));
+      } catch (_) {
+        // Forward-compat: unknown block types or malformed entries are
+        // silently skipped so the rest of the body still renders.
+      }
+    }
+    return result;
+  }
+
   factory ProjectData.fromSupabaseRow(Map<String, dynamic> row) {
     final brands = row['brands'] as Map<String, dynamic>?;
     final assets = row['assets'] as Map<String, dynamic>?;
@@ -170,7 +192,7 @@ class ProjectData {
       virtualTourThumbnailUrl: row['virtual_tour_thumbnail_url'] as String?,
       progressTourThumbnailUrl: row['progress_tour_thumbnail_url'] as String?,
       tagline: row['tagline'] as String? ?? '',
-      description: row['description'] as String? ?? '',
+      content: _parseContent(row['content']),
       galleryMedia: _parseGalleryMedia(row['gallery_media']),
       isVip: row['is_vip'] as bool? ?? false,
       isFundraisingOpen: row['is_fundraising_open'] as bool? ?? true,
