@@ -7,24 +7,35 @@ import '../../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../../core/widgets/lhotse_image.dart';
 
 /// Renders a `ProjectData.content` body as a vertical stack of typed
-/// editorial blocks. Tokens are fixed (typography, spacing, full-bleed) —
+/// editorial blocks. Tokens are fixed (typography, spacing, padding) —
 /// the admin only decides which blocks and in which order.
 ///
-/// Token map (validated against the existing cascade in project_detail_screen):
-///   heading → editorialSubtitle 24 w500 mixed (mid-level between the 48pt
-///             hero name and the 14pt body; chosen over sectionLabel to
-///             avoid collapsing with the UPPER zone-organisers "GALERÍA"
-///             and "NOTICIAS RELEVANTES" later on the screen).
-///   text    → bodyReading 14 w400 h1.7 (literally matches the previous
-///             plain-description render at line 511 of project_detail_screen,
-///             including the h:1.7 override — single-block projects look
-///             identical post-migration).
-///   image   → full-bleed 3:2 LhotseImage; tap → showMediaGallery.
-///   gallery → full-bleed 3:2 PageView with dots indicator; tap → showMediaGallery.
-///   video   → full-bleed 16:9 VideoThumbnailTile; tap → showMediaGallery.
+/// Token map (aligned with the existing language of project_detail_screen):
+///   heading → sectionLabel 12 w400 ls 1.8 UPPER + accentMuted color.
+///             Same token as "TOUR VIRTUAL" / "GALERÍA" / "NOTICIAS
+///             RELEVANTES" so the body's section dividers read as part of
+///             the same zone-organiser vocabulary. `.toUpperCase()` is
+///             applied at render time so the admin types natural casing.
+///   text    → bodyReading 14/w400 h1.7 (pixel-fidel to the previous
+///             plain-description render).
+///   image   → 3:2 LhotseImage with lateral padding `lg`; tap →
+///             showMediaGallery.
+///   gallery → horizontal carousel, cards at 75% screen width, infinite
+///             loop when N≥2, no dots — same pattern as the post-cierre
+///             gallery in project_detail_screen.dart and the L3 Avance
+///             renders. Tap on any card opens the paged viewer at that
+///             index.
+///   video   → 16:9 VideoThumbnailTile with lateral padding `lg`; tap →
+///             showMediaGallery (audio enabled in viewer).
 ///
-/// Inter-block spacing: 24px (lg) by default, 48px (xxl) before any heading
-/// that isn't the first block — gives the title-of-section more air.
+/// Spacing:
+///   - Initial gap before the first block: `xl` (32 px). Combined with the
+///     `md` (16 px) bottom padding of the project header, total breath
+///     between byline and content is 48 px — matches the gap before the
+///     tour virtual / post-cierre gallery sections.
+///   - Between blocks: `lg` (24 px) by default; `xxl` (48 px) before any
+///     `heading` that isn't the first block — gives the section divider
+///     air to read as a separator.
 class ProjectContentRenderer extends StatelessWidget {
   const ProjectContentRenderer({super.key, required this.blocks});
 
@@ -45,9 +56,12 @@ class ProjectContentRenderer extends StatelessWidget {
       children.add(_renderBlock(context, block));
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: children,
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
     );
   }
 
@@ -71,9 +85,9 @@ class _HeadingView extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Text(
-        text,
-        style: AppTypography.editorialSubtitle.copyWith(
-          color: AppColors.textPrimary,
+        text.toUpperCase(),
+        style: AppTypography.sectionLabel.copyWith(
+          color: AppColors.accentMuted,
         ),
       ),
     );
@@ -105,104 +119,19 @@ class _SingleImageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    return GestureDetector(
-      onTap: () => showMediaGallery(
-        context,
-        items: [MediaItem(type: MediaType.image, url: url)],
-        initialIndex: 0,
-      ),
-      child: SizedBox(
-        width: width,
-        height: width * (2 / 3),
-        child: LhotseImage(url),
-      ),
-    );
-  }
-}
-
-class _GalleryView extends StatefulWidget {
-  const _GalleryView({required this.items});
-  final List<ImageItem> items;
-
-  @override
-  State<_GalleryView> createState() => _GalleryViewState();
-}
-
-class _GalleryViewState extends State<_GalleryView> {
-  final PageController _controller = PageController();
-  int _index = 0;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final height = width * (2 / 3);
-
-    final mediaItems = widget.items
-        .map((it) => MediaItem(type: MediaType.image, url: it.url))
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          height: height,
-          child: PageView.builder(
-            controller: _controller,
-            itemCount: widget.items.length,
-            onPageChanged: (i) => setState(() => _index = i),
-            itemBuilder: (context, i) {
-              return GestureDetector(
-                onTap: () => showMediaGallery(
-                  context,
-                  items: mediaItems,
-                  initialIndex: i,
-                ),
-                child: LhotseImage(widget.items[i].url),
-              );
-            },
-          ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: GestureDetector(
+        onTap: () => showMediaGallery(
+          context,
+          items: [MediaItem(type: MediaType.image, url: url)],
+          initialIndex: 0,
         ),
-        if (widget.items.length > 1) ...[
-          const SizedBox(height: AppSpacing.md),
-          _Dots(count: widget.items.length, current: _index),
-        ],
-      ],
-    );
-  }
-}
-
-class _Dots extends StatelessWidget {
-  const _Dots({required this.count, required this.current});
-  final int count;
-  final int current;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(count, (i) {
-        final active = i == current;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          width: active ? 16 : 6,
-          height: 6,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          decoration: BoxDecoration(
-            color: active
-                ? AppColors.textPrimary
-                : AppColors.textPrimary.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(3),
-          ),
-        );
-      }),
+        child: AspectRatio(
+          aspectRatio: 3 / 2,
+          child: LhotseImage(url),
+        ),
+      ),
     );
   }
 }
@@ -213,17 +142,73 @@ class _VideoView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    return GestureDetector(
-      onTap: () => showMediaGallery(
-        context,
-        items: [MediaItem(type: MediaType.video, url: url)],
-        initialIndex: 0,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: GestureDetector(
+        onTap: () => showMediaGallery(
+          context,
+          items: [MediaItem(type: MediaType.video, url: url)],
+          initialIndex: 0,
+        ),
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: VideoThumbnailTile(url: url),
+        ),
       ),
-      child: SizedBox(
-        width: width,
-        height: width * (9 / 16),
-        child: VideoThumbnailTile(url: url),
+    );
+  }
+}
+
+/// Horizontal carousel cloned from the canonical pattern at
+/// project_detail_screen.dart:531-608 (post-cierre gallery) and
+/// _InvestmentGallery in coinversion_detail_screen.dart:1347-1414 (L3
+/// Avance renders). Cards at 75% screen width with a peek of the next,
+/// infinite loop when N≥2 (`itemCount * 1000` + modulo), no dots
+/// indicator. Tap on any card opens `showMediaGallery` at that index.
+class _GalleryView extends StatelessWidget {
+  const _GalleryView({required this.items});
+  final List<ImageItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final count = items.length;
+    final loop = count > 1;
+    final mediaItems = items
+        .map((it) => MediaItem(type: MediaType.image, url: it.url))
+        .toList();
+
+    return SizedBox(
+      height: 200,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        itemCount: loop ? count * 1000 : count,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, i) {
+          final idx = i % count;
+          return GestureDetector(
+            onTap: () => showMediaGallery(
+              context,
+              items: mediaItems,
+              initialIndex: idx,
+            ),
+            child: Container(
+              width: screenWidth * 0.75,
+              decoration: const BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x1A000000),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: LhotseImage(items[idx].url),
+            ),
+          );
+        },
       ),
     );
   }
