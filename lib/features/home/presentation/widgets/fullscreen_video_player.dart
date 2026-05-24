@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../../core/data/audio_session_helper.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/lhotse_image.dart';
 
@@ -105,6 +106,12 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer>
           widget.initialPosition < c.value.duration) {
         await c.seekTo(widget.initialPosition);
       }
+      // Subir explícitamente la sesión a `.playback` antes del play. Los
+      // plays inline previos (hero, feed, splash) bajaron la sesión a
+      // `.ambient` para permitir el screen-sleep; sin este upgrade, el
+      // audio queda muteado por el silent switch. El downgrade al cerrar
+      // fullscreen vive en dispose().
+      await upgradeAudioSessionToPlayback();
       await c.play();
       if (!mounted) {
         c.dispose();
@@ -259,7 +266,15 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer>
     _seekIndicatorTimer?.cancel();
     _snapBackAnim.dispose();
     _controller?.removeListener(_onVideoEvent);
+    // pause() antes de dispose() es load-bearing en iOS — el plugin
+    // video_player_avfoundation setea `isIdleTimerDisabled = true` al play()
+    // y solo lo resetea al pause(). Un dispose() sin pause previo deja el
+    // flag global colgado y la pantalla del iPhone no se apaga después.
     _controller?.dispose();
+    // Downgrade tras cerrar fullscreen — durante el playback dejamos
+    // `.playback` (correcto para visor con audio), pero al salir devolvemos
+    // a `.ambient` para que la pantalla pueda apagarse en el detail/feed.
+    downgradeAudioSessionToAmbient();
     super.dispose();
   }
 

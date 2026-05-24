@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/data/audio_session_helper.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../app/router.dart';
 
@@ -35,6 +36,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       controller.setLooping(true);
       controller.setVolume(0);
       controller.play();
+      // El plugin sube `AVAudioSession.category` a `.playback` en cada
+      // `play()`. Como el welcome video es decorativo y muted, downgrade
+      // inmediato a `.ambient` para que iOS no trate la app como "media
+      // app" y permita auto-lock normal si el user tarda en pulsar
+      // "Iniciar sesión".
+      downgradeAudioSessionToAmbient();
       if (mounted) {
         setState(() {
           _videoController = controller;
@@ -50,7 +57,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   void dispose() {
+    // pause() antes de dispose() es load-bearing en iOS — el plugin
+    // video_player_avfoundation setea `isIdleTimerDisabled = true` al play()
+    // y solo lo resetea al pause(). Un dispose() sin pause previo deja el
+    // flag global colgado y la pantalla del iPhone no se apaga en pantallas
+    // posteriores.
     _videoController?.dispose();
+    // Downgrade tras dispose asegura que la session queda en `.ambient`
+    // al navegar fuera de welcome.
+    downgradeAudioSessionToAmbient();
     super.dispose();
   }
 

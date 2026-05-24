@@ -9,6 +9,7 @@ import 'package:video_player/video_player.dart';
 import '../../../app/router.dart';
 import '../../../core/boot/boot_state.dart';
 import '../../../core/data/assets_provider.dart';
+import '../../../core/data/audio_session_helper.dart';
 import '../../../core/data/brands_provider.dart';
 import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
@@ -78,6 +79,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       setState(() => _ready = true);
       _removeNativeSplash();
       await _videoCtrl.play();
+      // Downgrade `AVAudioSession.category` a `.ambient` — el splash video
+      // es decorativo + breve, no necesita comportamiento de "media app"
+      // iOS. El plugin sube a `.playback` en cada `play()`; sin downgrade
+      // la session queda pegada y iOS mantiene la pantalla activa en
+      // pantallas posteriores de la sesión.
+      downgradeAudioSessionToAmbient();
     } catch (_) {
       // Asset corrupt, codec unsupported, etc. Don't block boot — hand off
       // immediately, router decides what to render.
@@ -174,7 +181,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void dispose() {
     _videoCtrl.removeListener(_onVideoTick);
+    // pause() antes de dispose() es load-bearing en iOS — el plugin
+    // video_player_avfoundation setea `isIdleTimerDisabled = true` al play()
+    // y solo lo resetea al pause(). Un dispose() sin pause previo deja el
+    // flag global colgado y la pantalla del iPhone no se apaga en pantallas
+    // posteriores (feed, etc.).
     _videoCtrl.dispose();
+    // Downgrade asegura que la session queda en `.ambient` para que la
+    // próxima pantalla (welcome o home) permita auto-lock normal — sin
+    // esto iOS mantiene la pantalla activa indefinidamente.
+    downgradeAudioSessionToAmbient();
     _fadeOutCtrl.dispose();
     super.dispose();
   }
