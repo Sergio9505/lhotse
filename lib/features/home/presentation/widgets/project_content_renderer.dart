@@ -182,6 +182,7 @@ class _GalleryView extends StatelessWidget {
     return SizedBox(
       height: 200,
       child: ListView.separated(
+        key: PageStorageKey('content-gallery-${identityHashCode(items)}'),
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         itemCount: loop ? count * 1000 : count,

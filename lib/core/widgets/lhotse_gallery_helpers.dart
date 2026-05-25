@@ -202,6 +202,26 @@ class _MediaGalleryViewerState extends State<_MediaGalleryViewer> {
         ? widget.items.length * 5000 + widget.initialIndex
         : widget.initialIndex;
     _pageController = PageController(initialPage: centered);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _precacheAdjacent(widget.initialIndex);
+    });
+  }
+
+  /// Precache image neighbours so a swipe lands on an already-decoded
+  /// frame — no "loading" flash between gallery items. Videos are
+  /// skipped (their initial frame is fetched by the player itself when
+  /// the page becomes active).
+  void _precacheAdjacent(int center) {
+    final len = widget.items.length;
+    if (len <= 1) return;
+    for (final delta in const [-1, 1]) {
+      final raw = (center + delta) % len;
+      final idx = raw < 0 ? raw + len : raw;
+      final item = widget.items[idx];
+      if (item.type == MediaType.image) {
+        LhotseImage.precache(item.url, context);
+      }
+    }
   }
 
   @override
@@ -229,8 +249,11 @@ class _MediaGalleryViewerState extends State<_MediaGalleryViewer> {
                   ? const NeverScrollableScrollPhysics()
                   : const BouncingScrollPhysics(),
               itemCount: widget.items.length > 1 ? null : widget.items.length,
-              onPageChanged: (i) => setState(
-                  () => _currentPage = i % widget.items.length),
+              onPageChanged: (i) {
+                final next = i % widget.items.length;
+                setState(() => _currentPage = next);
+                _precacheAdjacent(next);
+              },
               itemBuilder: (context, i) {
                 final idx = i % widget.items.length;
                 final item = widget.items[idx];

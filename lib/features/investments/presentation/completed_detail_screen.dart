@@ -9,6 +9,7 @@ import '../../../core/data/document_categories_provider.dart';
 import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/asset_info.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/precache_helpers.dart';
 import '../../../core/utils/open_supabase_doc.dart';
 import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
@@ -146,6 +147,19 @@ class _CompletedDetailScreenState extends ConsumerState<CompletedDetailScreen>
         : purchaseAssetDetail?.galleryMedia ??
             coinvestmentProjectDetail?.renderMedia ??
             const <MediaItem>[];
+
+    // Warm the ImageCache with whatever the resolved gallery exposes, so
+    // horizontal swipe and tap-to-fullscreen never block on a fresh decode.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        precacheImageUrls(context, [
+          imageUrl,
+          ...galleryMedia
+              .where((m) => m.type == MediaType.image)
+              .map((m) => m.url),
+        ]);
+      }
+    });
     final assetInfoEntries = purchaseAssetDetail?.assetInfo ??
         coinvestmentProjectDetail?.assetInfo ??
         const <AssetInfoEntry>[];
@@ -493,6 +507,7 @@ class _ActivoTab extends StatelessWidget {
           SizedBox(
             height: 200,
             child: ListView.separated(
+              key: const PageStorageKey('completed-gallery'),
               scrollDirection: Axis.horizontal,
               padding:
                   const EdgeInsets.symmetric(horizontal: AppSpacing.lg),

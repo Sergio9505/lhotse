@@ -14,6 +14,11 @@ Future<void> main() async {
   // its own frame — avoids a black flash between native and Flutter.
   FlutterNativeSplash.preserve(widgetsBinding: binding);
 
+  // 200 MB memory cache for images (default is 100 MB). Detail screens
+  // precache all media up-front; the higher ceiling avoids LRU evictions
+  // mid-session in apps with many editorial photos per project.
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 200 * 1024 * 1024;
+
   await initializeDateFormatting('es_ES', null);
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);

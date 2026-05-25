@@ -8,9 +8,11 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/data/news_provider.dart';
 import '../../../core/data/projects_provider.dart';
+import '../../../core/domain/content_block.dart';
 import '../../../core/domain/news_item_data.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/domain/user_role.dart';
+import '../../../core/utils/precache_helpers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/data/supabase_provider.dart';
 import 'widgets/project_content_renderer.dart';
@@ -350,8 +352,47 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     _velocityTracker = null;
   }
 
+  List<String?> _collectProjectUrls(ProjectData p) => [
+        p.imageUrl,
+        ...p.imageUrls,
+        ...p.galleryMedia
+            .where((m) => m.type == MediaType.image)
+            .map((m) => m.url),
+        p.floorPlanUrl,
+        p.virtualTourThumbnailUrl,
+        p.progressTourThumbnailUrl,
+        ...p.content.expand<String?>(_contentBlockUrls),
+      ];
+
+  Iterable<String?> _contentBlockUrls(ContentBlock b) => switch (b) {
+        ImageBlock(:final url) => [url],
+        GalleryBlock(:final items) => items.map((i) => i.url),
+        _ => const <String?>[],
+      };
+
   @override
   Widget build(BuildContext context) {
+    // Warm the ImageCache as soon as the project's data lands. Fire and
+    // forget — by the time the user reaches each carousel the bytes are
+    // already decoded, so swipe / tap-to-fullscreen never blocks on a
+    // network roundtrip.
+    ref.listen(projectByIdProvider(widget.projectId), (_, next) {
+      next.whenData((project) {
+        if (project == null) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) precacheImageUrls(context, _collectProjectUrls(project));
+        });
+      });
+    });
+    ref.listen(newsProvider, (_, next) {
+      next.whenData((news) {
+        final related = news.where((n) => n.projectId == widget.projectId);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) precacheImageUrls(context, related.map((n) => n.imageUrl));
+        });
+      });
+    });
+
     final projectAsync = ref.watch(projectByIdProvider(widget.projectId));
     final project = projectAsync.valueOrNull ?? widget.initialProject;
     final signedVideoUrl = project?.videoUrl?.isNotEmpty == true
@@ -616,6 +657,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                             SizedBox(
                               height: 200,
                               child: ListView.separated(
+                                key: const PageStorageKey('project-gallery'),
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.lg),
@@ -700,6 +742,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                             SizedBox(
                               height: 160,
                               child: ListView.separated(
+                                key: const PageStorageKey('project-news'),
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.lg),

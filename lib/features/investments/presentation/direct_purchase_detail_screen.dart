@@ -11,6 +11,7 @@ import '../../../core/data/documents_provider.dart';
 import '../../../core/domain/asset_info.dart' show AssetInfoEntry;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/open_supabase_doc.dart';
+import '../../../core/utils/precache_helpers.dart';
 import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
@@ -189,6 +190,23 @@ class _DirectPurchaseDetailContentState
         : null;
     final rawVideoUrl = assetDetail?.videoUrl;
     final imageUrl = c.assetImageUrl;
+
+    // Warm the ImageCache once asset detail lands. Idempotent — repeat
+    // calls cost nothing if the URL is already in cache.
+    ref.listen(purchaseAssetDetailProvider(c.assetId), (_, next) {
+      next.whenData((detail) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            precacheImageUrls(context, [
+              imageUrl,
+              ...detail.galleryMedia
+                  .where((m) => m.type == MediaType.image)
+                  .map((m) => m.url),
+            ]);
+          }
+        });
+      });
+    });
     // FINANCIACIÓN tab content is lazy — only fetched if the contract has
     // financing AND the tab is rendered.
     final mortgageDetail = c.hasFinancing
@@ -579,6 +597,7 @@ class _AssetTab extends StatelessWidget {
           SizedBox(
             height: 200,
             child: ListView.separated(
+              key: const PageStorageKey('direct-purchase-gallery'),
               scrollDirection: Axis.horizontal,
               padding:
                   const EdgeInsets.symmetric(horizontal: AppSpacing.lg),

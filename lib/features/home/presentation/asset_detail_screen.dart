@@ -7,6 +7,7 @@ import '../../../core/data/asset_detail_provider.dart';
 import '../../../core/domain/asset_data.dart';
 import '../../../core/domain/asset_detail_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/precache_helpers.dart';
 import '../../../core/widgets/floor_plan_viewer.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/domain/media_item.dart';
@@ -88,6 +89,23 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(assetByIdProvider(widget.assetId), (_, next) {
+      next.whenData((detail) {
+        if (detail == null) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            precacheImageUrls(context, [
+              detail.thumbnailImage,
+              ...detail.galleryMedia
+                  .where((m) => m.type == MediaType.image)
+                  .map((m) => m.url),
+              detail.floorPlanUrl,
+            ]);
+          }
+        });
+      });
+    });
+
     final detailAsync = ref.watch(assetByIdProvider(widget.assetId));
     final detail = detailAsync.valueOrNull ?? _skeletonFromInitial();
 
@@ -294,6 +312,7 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                     SizedBox(
                       height: 200,
                       child: ListView.separated(
+                        key: const PageStorageKey('asset-gallery'),
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg),

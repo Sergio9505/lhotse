@@ -16,6 +16,7 @@ import '../../../core/domain/profit_scenario.dart';
 import '../../../core/domain/project_phase.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/open_supabase_doc.dart';
+import '../../../core/utils/precache_helpers.dart';
 import '../../../core/utils/strip_iso_suffix.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
@@ -156,6 +157,38 @@ class _CoinversionDetailScreenState
     final c = widget.contract;
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    // Warm the ImageCache as soon as the project's media lands. Detail
+    // contains renders + progress + project images that the user will
+    // page through; precaching ensures swipe/tap-to-fullscreen never
+    // blocks on a fresh decode.
+    ref.listen(coinvestmentProjectDetailProvider(c.projectId), (_, next) {
+      next.whenData((detail) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            precacheImageUrls(
+              context,
+              [
+                c.projectImageUrl,
+                ...detail.renderMedia
+                    .where((m) => m.type == MediaType.image)
+                    .map((m) => m.url),
+              ],
+            );
+          }
+        });
+      });
+    });
+    ref.listen(newsProvider, (_, next) {
+      next.whenData((news) {
+        final related = news.where((n) => n.projectId == c.projectId);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            precacheImageUrls(context, related.map((n) => n.imageUrl));
+          }
+        });
+      });
+    });
 
     // Brand identity: prefer heroContext (router extra); deep-link falls back
     // to brandByIdProvider.
@@ -563,6 +596,7 @@ class _AvanceTab extends StatelessWidget {
         SizedBox(
           height: 160,
           child: ListView.separated(
+            key: const PageStorageKey('l3-coinversion-news'),
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             itemCount: news.length > 1 ? news.length * 1000 : news.length,
@@ -1392,6 +1426,7 @@ class _InvestmentGallery extends StatelessWidget {
         SizedBox(
           height: 200,
           child: ListView.separated(
+            key: const PageStorageKey('l3-coinversion-gallery'),
             scrollDirection: Axis.horizontal,
             padding:
                 const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
