@@ -42,6 +42,7 @@ class ProjectData {
     this.videoUrl,
     this.virtualTourUrl,
     this.virtualTourThumbnailUrl,
+    this.progressTourUrl,
     this.progressTourThumbnailUrl,
     required this.tagline,
     this.content = const [],
@@ -96,9 +97,14 @@ class ProjectData {
   /// (preserves historical behaviour for rows with no thumbnail set).
   final String? virtualTourThumbnailUrl;
 
-  /// Optional editable thumbnail for the progress (avance de obra) tour
-  /// shown in the L3 coinversion AVANCE tab. Falls back to [imageUrl] when
-  /// null.
+  /// Matterport URL of the progress (avance de obra) tour. Shown in both
+  /// the project detail "ESTADO ACTUAL" section (always when present,
+  /// regardless of phase — it reflects the current state of the project)
+  /// and the L3 coinversion AVANCE tab.
+  final String? progressTourUrl;
+
+  /// Optional editable thumbnail for the progress (avance de obra) tour.
+  /// Falls back to [imageUrl] when null.
   final String? progressTourThumbnailUrl;
 
   String get location => '$city, $country';
@@ -190,6 +196,7 @@ class ProjectData {
       videoUrl: row['video_url'] as String?,
       virtualTourUrl: row['virtual_tour_url'] as String?,
       virtualTourThumbnailUrl: row['virtual_tour_thumbnail_url'] as String?,
+      progressTourUrl: row['progress_tour_url'] as String?,
       progressTourThumbnailUrl: row['progress_tour_thumbnail_url'] as String?,
       tagline: row['tagline'] as String? ?? '',
       content: _parseContent(row['content']),

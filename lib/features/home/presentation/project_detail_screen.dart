@@ -15,12 +15,14 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/data/supabase_provider.dart';
 import 'widgets/project_content_renderer.dart';
 import 'widgets/vip_lock_sheet.dart';
+import '../../../core/widgets/floor_plan_viewer.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
+import '../../../core/widgets/lhotse_section_label.dart';
 import '../../../core/widgets/media_hero_carousel.dart';
 import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/widgets/lhotse_video_player.dart';
@@ -506,6 +508,64 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                     SliverToBoxAdapter(
                       child: ProjectContentRenderer(blocks: project.content),
                     ),
+                    if (project.floorPlanUrl != null)
+                      SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: AppSpacing.xxl),
+                            const LhotseSectionLabel(label: 'PLANO'),
+                            const SizedBox(height: AppSpacing.md),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.lg),
+                              child: GestureDetector(
+                                onTap: () => showFloorPlan(
+                                    context, project.floorPlanUrl!),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: AppSpacing.lg),
+                                  color: AppColors.background,
+                                  child: Stack(
+                                    children: [
+                                      Center(
+                                        child: LhotseImage(
+                                          project.floorPlanUrl!,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                      Positioned(
+                                        right: 0,
+                                        bottom: 0,
+                                        child: PhosphorIcon(
+                                          PhosphorIconsThin.arrowsOut,
+                                          color: AppColors.accentMuted,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (project.progressTourUrl != null &&
+                        project.imageUrl != null)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.only(top: AppSpacing.xxl),
+                          child: VirtualTourSection(
+                            imageUrl: project.progressTourThumbnailUrl ??
+                                project.imageUrl!,
+                            tourUrl: project.progressTourUrl!,
+                            label: 'ESTADO ACTUAL',
+                          ),
+                        ),
+                      ),
                     if (project.virtualTourUrl != null &&
                         project.imageUrl != null)
                       SliverToBoxAdapter(

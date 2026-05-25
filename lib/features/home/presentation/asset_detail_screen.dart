@@ -7,6 +7,7 @@ import '../../../core/data/asset_detail_provider.dart';
 import '../../../core/domain/asset_data.dart';
 import '../../../core/domain/asset_detail_data.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/floor_plan_viewer.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
@@ -349,7 +350,7 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                           horizontal: AppSpacing.lg),
                       child: GestureDetector(
                         onTap: () =>
-                            _showFloorPlan(context, detail.floorPlanUrl!),
+                            showFloorPlan(context, detail.floorPlanUrl!),
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
@@ -392,68 +393,3 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
   }
 }
 
-// ── Floor plan fullscreen ─────────────────────────────────────────────────────
-
-void _showFloorPlan(BuildContext context, String url) {
-  Navigator.of(context).push(
-    PageRouteBuilder(
-      opaque: false,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        final topPadding = MediaQuery.of(context).padding.top;
-        final bottomPadding = MediaQuery.of(context).padding.bottom;
-        return AnimatedBuilder(
-          animation: animation,
-          builder: (context, child) =>
-              Opacity(opacity: animation.value, child: child),
-          child: Scaffold(
-            extendBodyBehindAppBar: true,
-            extendBody: true,
-            backgroundColor: AppColors.background,
-            body: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: SizedBox.expand(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: InteractiveViewer(
-                        maxScale: 4.0,
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            topPadding + kToolbarHeight,
-                            AppSpacing.lg,
-                            bottomPadding + AppSpacing.lg,
-                          ),
-                          child: Image.network(url, fit: BoxFit.contain),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: topPadding + AppSpacing.md,
-                      right: AppSpacing.lg,
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          alignment: Alignment.center,
-                          color:
-                              AppColors.textPrimary.withValues(alpha: 0.08),
-                          child: const PhosphorIcon(
-                            PhosphorIconsThin.x,
-                            color: AppColors.textPrimary,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    ),
-  );
-}
