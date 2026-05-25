@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -563,29 +564,37 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                               child: GestureDetector(
                                 onTap: () => showFloorPlan(
                                     context, project.floorPlanUrl!),
-                                child: ColoredBox(
-                                  color: AppColors.background,
-                                  child: AspectRatio(
-                                    aspectRatio: 3 / 2,
-                                    child: Stack(
-                                      children: [
-                                        Center(
-                                          child: LhotseImage(
-                                            project.floorPlanUrl!,
-                                            fit: BoxFit.contain,
-                                          ),
+                                child: CachedNetworkImage(
+                                  imageUrl: project.floorPlanUrl!,
+                                  width: double.infinity,
+                                  fit: BoxFit.fitWidth,
+                                  placeholder: (_, _) => Container(
+                                    height: 200,
+                                    color: AppColors.surface,
+                                  ),
+                                  errorWidget: (_, _, _) => Container(
+                                    height: 200,
+                                    color: AppColors.surface,
+                                  ),
+                                  imageBuilder: (context, imageProvider) =>
+                                      Stack(
+                                    alignment: Alignment.bottomRight,
+                                    children: [
+                                      Image(
+                                        image: imageProvider,
+                                        width: double.infinity,
+                                        fit: BoxFit.fitWidth,
+                                      ),
+                                      const Padding(
+                                        padding:
+                                            EdgeInsets.all(AppSpacing.sm),
+                                        child: PhosphorIcon(
+                                          PhosphorIconsThin.arrowsOut,
+                                          color: AppColors.accentMuted,
+                                          size: 16,
                                         ),
-                                        Positioned(
-                                          right: 0,
-                                          bottom: 0,
-                                          child: PhosphorIcon(
-                                            PhosphorIconsThin.arrowsOut,
-                                            color: AppColors.accentMuted,
-                                            size: 16,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),

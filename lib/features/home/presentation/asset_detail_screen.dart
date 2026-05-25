@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -370,29 +371,35 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                       child: GestureDetector(
                         onTap: () =>
                             showFloorPlan(context, detail.floorPlanUrl!),
-                        child: ColoredBox(
-                          color: AppColors.background,
-                          child: AspectRatio(
-                            aspectRatio: 3 / 2,
-                            child: Stack(
-                              children: [
-                                Center(
-                                  child: LhotseImage(
-                                    detail.floorPlanUrl!,
-                                    fit: BoxFit.contain,
-                                  ),
+                        child: CachedNetworkImage(
+                          imageUrl: detail.floorPlanUrl!,
+                          width: double.infinity,
+                          fit: BoxFit.fitWidth,
+                          placeholder: (_, _) => Container(
+                            height: 200,
+                            color: AppColors.surface,
+                          ),
+                          errorWidget: (_, _, _) => Container(
+                            height: 200,
+                            color: AppColors.surface,
+                          ),
+                          imageBuilder: (context, imageProvider) => Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              Image(
+                                image: imageProvider,
+                                width: double.infinity,
+                                fit: BoxFit.fitWidth,
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.all(AppSpacing.sm),
+                                child: PhosphorIcon(
+                                  PhosphorIconsThin.arrowsOut,
+                                  color: AppColors.accentMuted,
+                                  size: 16,
                                 ),
-                                Positioned(
-                                  right: 0,
-                                  bottom: 0,
-                                  child: PhosphorIcon(
-                                    PhosphorIconsThin.arrowsOut,
-                                    color: AppColors.accentMuted,
-                                    size: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),

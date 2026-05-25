@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:extended_nested_scroll_view/extended_nested_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -660,22 +661,28 @@ class _ProyectoTab extends StatelessWidget {
                 const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: GestureDetector(
               onTap: () => _showFloorPlan(context, floorPlanUrl!),
-              child: Container(
+              child: CachedNetworkImage(
+                imageUrl: floorPlanUrl!,
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    vertical: AppSpacing.lg),
-                color: AppColors.background,
-                child: Stack(
+                fit: BoxFit.fitWidth,
+                placeholder: (_, _) => Container(
+                  height: 200,
+                  color: AppColors.surface,
+                ),
+                errorWidget: (_, _, _) => Container(
+                  height: 200,
+                  color: AppColors.surface,
+                ),
+                imageBuilder: (context, imageProvider) => Stack(
+                  alignment: Alignment.bottomRight,
                   children: [
-                    Center(
-                      child: LhotseImage(
-                        floorPlanUrl!,
-                        fit: BoxFit.contain,
-                      ),
+                    Image(
+                      image: imageProvider,
+                      width: double.infinity,
+                      fit: BoxFit.fitWidth,
                     ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
+                    const Padding(
+                      padding: EdgeInsets.all(AppSpacing.sm),
                       child: PhosphorIcon(
                         PhosphorIconsThin.arrowsOut,
                         color: AppColors.accentMuted,
