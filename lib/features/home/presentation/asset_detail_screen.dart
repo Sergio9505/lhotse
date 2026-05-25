@@ -351,29 +351,29 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                       child: GestureDetector(
                         onTap: () =>
                             showFloorPlan(context, detail.floorPlanUrl!),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.lg),
+                        child: ColoredBox(
                           color: AppColors.background,
-                          child: Stack(
-                            children: [
-                              Center(
-                                child: LhotseImage(
-                                  detail.floorPlanUrl!,
-                                  fit: BoxFit.contain,
+                          child: AspectRatio(
+                            aspectRatio: 3 / 2,
+                            child: Stack(
+                              children: [
+                                Center(
+                                  child: LhotseImage(
+                                    detail.floorPlanUrl!,
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
-                              ),
-                              Positioned(
-                                right: 0,
-                                bottom: 0,
-                                child: PhosphorIcon(
-                                  PhosphorIconsThin.arrowsOut,
-                                  color: AppColors.accentMuted,
-                                  size: 16,
+                                Positioned(
+                                  right: 0,
+                                  bottom: 0,
+                                  child: PhosphorIcon(
+                                    PhosphorIconsThin.arrowsOut,
+                                    color: AppColors.accentMuted,
+                                    size: 16,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
