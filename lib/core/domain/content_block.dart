@@ -47,6 +47,15 @@ sealed class ContentBlock with _$ContentBlock {
     required String url,
   }) = VideoBlock;
 
+  /// In-flow CTA inserted by the operator. Renders as a black full-width
+  /// button (clone of `_WebCta` in brand detail); tap opens the URL in the
+  /// shared `EmbeddedWebViewScreen` so the user never leaves the app.
+  /// `url` must be `https://…` — validated in the admin's Zod schema.
+  const factory ContentBlock.cta({
+    required String label,
+    required String url,
+  }) = CtaBlock;
+
   factory ContentBlock.fromJson(Map<String, Object?> json) =>
       _$ContentBlockFromJson(json);
 }

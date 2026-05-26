@@ -5,6 +5,7 @@ import '../../../../core/domain/media_item.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../../core/widgets/lhotse_image.dart';
+import '../../../profile/presentation/embedded_webview_screen.dart';
 
 /// Renders a `ProjectData.content` body as a vertical stack of typed
 /// editorial blocks. Tokens are fixed (typography, spacing, padding) —
@@ -72,6 +73,7 @@ class ProjectContentRenderer extends StatelessWidget {
       ImageBlock(:final url) => _SingleImageView(url: url),
       GalleryBlock(:final items) => _GalleryView(items: items),
       VideoBlock(:final url) => _VideoView(url: url),
+      CtaBlock(:final label, :final url) => _CtaView(label: label, url: url),
     };
   }
 }
@@ -153,6 +155,44 @@ class _VideoView extends StatelessWidget {
         child: AspectRatio(
           aspectRatio: 16 / 9,
           child: VideoThumbnailTile(url: url),
+        ),
+      ),
+    );
+  }
+}
+
+/// In-flow CTA. Clones the visual of `_WebCta` in `brand_detail_screen.dart`
+/// (full-width black bg + Campton uppercase white label, no radius). Tap
+/// pushes `EmbeddedWebViewScreen` — same in-app webview used by the brand
+/// CTA, the legal pages in Profile, and external news links. The URL is
+/// constrained to `https://…` by the admin Zod schema; this widget assumes
+/// it valid.
+class _CtaView extends StatelessWidget {
+  const _CtaView({required this.label, required this.url});
+  final String label;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: GestureDetector(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => EmbeddedWebViewScreen(url: url),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          color: AppColors.primary,
+          child: Center(
+            child: Text(
+              label.toUpperCase(),
+              style: AppTypography.labelUppercaseMd.copyWith(
+                color: AppColors.textOnDark,
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -301,6 +301,10 @@ ContentBlock _$ContentBlockFromJson(
           return VideoBlock.fromJson(
             json
           );
+                case 'cta':
+          return CtaBlock.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -359,7 +363,7 @@ extension ContentBlockPatterns on ContentBlock {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( HeadingBlock value)?  heading,TResult Function( TextBlock value)?  text,TResult Function( ImageBlock value)?  image,TResult Function( GalleryBlock value)?  gallery,TResult Function( VideoBlock value)?  video,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( HeadingBlock value)?  heading,TResult Function( TextBlock value)?  text,TResult Function( ImageBlock value)?  image,TResult Function( GalleryBlock value)?  gallery,TResult Function( VideoBlock value)?  video,TResult Function( CtaBlock value)?  cta,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case HeadingBlock() when heading != null:
@@ -367,7 +371,8 @@ return heading(_that);case TextBlock() when text != null:
 return text(_that);case ImageBlock() when image != null:
 return image(_that);case GalleryBlock() when gallery != null:
 return gallery(_that);case VideoBlock() when video != null:
-return video(_that);case _:
+return video(_that);case CtaBlock() when cta != null:
+return cta(_that);case _:
   return orElse();
 
 }
@@ -385,7 +390,7 @@ return video(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( HeadingBlock value)  heading,required TResult Function( TextBlock value)  text,required TResult Function( ImageBlock value)  image,required TResult Function( GalleryBlock value)  gallery,required TResult Function( VideoBlock value)  video,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( HeadingBlock value)  heading,required TResult Function( TextBlock value)  text,required TResult Function( ImageBlock value)  image,required TResult Function( GalleryBlock value)  gallery,required TResult Function( VideoBlock value)  video,required TResult Function( CtaBlock value)  cta,}){
 final _that = this;
 switch (_that) {
 case HeadingBlock():
@@ -393,7 +398,8 @@ return heading(_that);case TextBlock():
 return text(_that);case ImageBlock():
 return image(_that);case GalleryBlock():
 return gallery(_that);case VideoBlock():
-return video(_that);}
+return video(_that);case CtaBlock():
+return cta(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -407,7 +413,7 @@ return video(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( HeadingBlock value)?  heading,TResult? Function( TextBlock value)?  text,TResult? Function( ImageBlock value)?  image,TResult? Function( GalleryBlock value)?  gallery,TResult? Function( VideoBlock value)?  video,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( HeadingBlock value)?  heading,TResult? Function( TextBlock value)?  text,TResult? Function( ImageBlock value)?  image,TResult? Function( GalleryBlock value)?  gallery,TResult? Function( VideoBlock value)?  video,TResult? Function( CtaBlock value)?  cta,}){
 final _that = this;
 switch (_that) {
 case HeadingBlock() when heading != null:
@@ -415,7 +421,8 @@ return heading(_that);case TextBlock() when text != null:
 return text(_that);case ImageBlock() when image != null:
 return image(_that);case GalleryBlock() when gallery != null:
 return gallery(_that);case VideoBlock() when video != null:
-return video(_that);case _:
+return video(_that);case CtaBlock() when cta != null:
+return cta(_that);case _:
   return null;
 
 }
@@ -432,14 +439,15 @@ return video(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String text)?  heading,TResult Function( String text)?  text,TResult Function( String url,  String? alt)?  image,TResult Function( List<ImageItem> items)?  gallery,TResult Function( String url)?  video,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String text)?  heading,TResult Function( String text)?  text,TResult Function( String url,  String? alt)?  image,TResult Function( List<ImageItem> items)?  gallery,TResult Function( String url)?  video,TResult Function( String label,  String url)?  cta,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case HeadingBlock() when heading != null:
 return heading(_that.text);case TextBlock() when text != null:
 return text(_that.text);case ImageBlock() when image != null:
 return image(_that.url,_that.alt);case GalleryBlock() when gallery != null:
 return gallery(_that.items);case VideoBlock() when video != null:
-return video(_that.url);case _:
+return video(_that.url);case CtaBlock() when cta != null:
+return cta(_that.label,_that.url);case _:
   return orElse();
 
 }
@@ -457,14 +465,15 @@ return video(_that.url);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String text)  heading,required TResult Function( String text)  text,required TResult Function( String url,  String? alt)  image,required TResult Function( List<ImageItem> items)  gallery,required TResult Function( String url)  video,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String text)  heading,required TResult Function( String text)  text,required TResult Function( String url,  String? alt)  image,required TResult Function( List<ImageItem> items)  gallery,required TResult Function( String url)  video,required TResult Function( String label,  String url)  cta,}) {final _that = this;
 switch (_that) {
 case HeadingBlock():
 return heading(_that.text);case TextBlock():
 return text(_that.text);case ImageBlock():
 return image(_that.url,_that.alt);case GalleryBlock():
 return gallery(_that.items);case VideoBlock():
-return video(_that.url);}
+return video(_that.url);case CtaBlock():
+return cta(_that.label,_that.url);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -478,14 +487,15 @@ return video(_that.url);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String text)?  heading,TResult? Function( String text)?  text,TResult? Function( String url,  String? alt)?  image,TResult? Function( List<ImageItem> items)?  gallery,TResult? Function( String url)?  video,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String text)?  heading,TResult? Function( String text)?  text,TResult? Function( String url,  String? alt)?  image,TResult? Function( List<ImageItem> items)?  gallery,TResult? Function( String url)?  video,TResult? Function( String label,  String url)?  cta,}) {final _that = this;
 switch (_that) {
 case HeadingBlock() when heading != null:
 return heading(_that.text);case TextBlock() when text != null:
 return text(_that.text);case ImageBlock() when image != null:
 return image(_that.url,_that.alt);case GalleryBlock() when gallery != null:
 return gallery(_that.items);case VideoBlock() when video != null:
-return video(_that.url);case _:
+return video(_that.url);case CtaBlock() when cta != null:
+return cta(_that.label,_that.url);case _:
   return null;
 
 }
@@ -859,6 +869,81 @@ class _$VideoBlockCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? url = null,}) {
   return _then(VideoBlock(
 url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class CtaBlock implements ContentBlock {
+  const CtaBlock({required this.label, required this.url, final  String? $type}): $type = $type ?? 'cta';
+  factory CtaBlock.fromJson(Map<String, dynamic> json) => _$CtaBlockFromJson(json);
+
+ final  String label;
+ final  String url;
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of ContentBlock
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CtaBlockCopyWith<CtaBlock> get copyWith => _$CtaBlockCopyWithImpl<CtaBlock>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$CtaBlockToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CtaBlock&&(identical(other.label, label) || other.label == label)&&(identical(other.url, url) || other.url == url));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,label,url);
+
+@override
+String toString() {
+  return 'ContentBlock.cta(label: $label, url: $url)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CtaBlockCopyWith<$Res> implements $ContentBlockCopyWith<$Res> {
+  factory $CtaBlockCopyWith(CtaBlock value, $Res Function(CtaBlock) _then) = _$CtaBlockCopyWithImpl;
+@useResult
+$Res call({
+ String label, String url
+});
+
+
+
+
+}
+/// @nodoc
+class _$CtaBlockCopyWithImpl<$Res>
+    implements $CtaBlockCopyWith<$Res> {
+  _$CtaBlockCopyWithImpl(this._self, this._then);
+
+  final CtaBlock _self;
+  final $Res Function(CtaBlock) _then;
+
+/// Create a copy of ContentBlock
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? label = null,Object? url = null,}) {
+  return _then(CtaBlock(
+label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

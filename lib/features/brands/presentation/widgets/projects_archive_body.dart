@@ -38,6 +38,8 @@ String _contentSearchText(List<ContentBlock> blocks) {
         parts.add(text);
       case TextBlock(:final text):
         parts.add(text);
+      case CtaBlock(:final label):
+        parts.add(label);
       case ImageBlock():
       case GalleryBlock():
       case VideoBlock():

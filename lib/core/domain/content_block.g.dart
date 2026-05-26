@@ -54,3 +54,15 @@ VideoBlock _$VideoBlockFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$VideoBlockToJson(VideoBlock instance) =>
     <String, dynamic>{'url': instance.url, 'type': instance.$type};
+
+CtaBlock _$CtaBlockFromJson(Map<String, dynamic> json) => CtaBlock(
+  label: json['label'] as String,
+  url: json['url'] as String,
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$CtaBlockToJson(CtaBlock instance) => <String, dynamic>{
+  'label': instance.label,
+  'url': instance.url,
+  'type': instance.$type,
+};
