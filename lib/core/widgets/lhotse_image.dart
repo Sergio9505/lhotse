@@ -10,16 +10,22 @@ import '../theme/app_theme.dart';
 enum LhotseImagePlaceholder { image, video }
 
 /// Smart image widget: uses `Image.asset` for paths starting with `assets/`,
-/// `CachedNetworkImage` (disk + memory cache) for URLs. The disk cache is
-/// what keeps Hero transitions smooth — once an image has been loaded, it
-/// renders instantly on subsequent views regardless of whether the app was
-/// restarted in between. The shared `AppColors.surface` background + fade
-/// keep the transition from ever flashing a white hole.
+/// and `Image(image: CachedNetworkImageProvider(...))` for URLs. Network
+/// path goes through `PaintingBinding.imageCache` (Flutter's built-in
+/// in-memory decoded cache) AND CNI's disk cache — best of both worlds:
+/// disk persistence across restarts + synchronous render on warm-memory
+/// cache hits via `frameBuilder.wasSynchronouslyLoaded`.
 ///
-/// When the source is missing or the load fails, a centered Phosphor icon
-/// over the beige surface signals absence. During an in-flight network load
-/// the surface is rendered plain (no icon) so the icon doesn't flash before
-/// the real image fades in.
+/// Render policy: **instant in every case, no fade-in**. The 180ms fade
+/// pattern (Material 2015) reads as "generic app" in luxury/editorial
+/// contexts. Refs: Sotheby's, Hermès, Apple Photos — images appear in
+/// frame 1, no transition. The premium feel comes from the image itself,
+/// not from animating its entrance.
+///
+/// Cold load (first-time, no cache) shows only the neutral `AppColors.surface`
+/// background; the image replaces it directly when the first frame
+/// arrives. When the source is missing or the load fails, a centered
+/// Phosphor icon over the beige surface signals absence.
 ///
 /// Supports a runtime [fallbacks] cascade: when [source] errors at load
 /// time, the widget advances through each fallback in order before falling
@@ -137,12 +143,19 @@ class _LhotseImageState extends State<LhotseImage> {
         errorBuilder: (_, _, _) => _onError(),
       );
     }
-    return CachedNetworkImage(
-      imageUrl: src,
+    return Image(
+      image: CachedNetworkImageProvider(src),
       fit: widget.fit,
-      fadeInDuration: const Duration(milliseconds: 180),
-      placeholder: (_, _) => Container(color: AppColors.surface),
-      errorWidget: (_, _, _) => _onError(),
+      gaplessPlayback: true,
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        // Memory cache hit: child renders in this frame, no transition.
+        // First frame decoded from disk/network: render directly when it
+        // arrives (no fade). Otherwise show the neutral surface — no
+        // spinner, no animation.
+        if (wasSynchronouslyLoaded || frame != null) return child;
+        return Container(color: AppColors.surface);
+      },
+      errorBuilder: (_, _, _) => _onError(),
     );
   }
 }

@@ -194,6 +194,25 @@ Provider conventions:
 - Icons in `assets/icons/` (prefer SVG)
 - Fonts in `assets/fonts/`
 
+## Images (`LhotseImage`)
+Single entry point for all image rendering: `lib/core/widgets/lhotse_image.dart`. Auto-routes by source prefix: `assets/...` → `Image.asset`; anything else → `Image(image: CachedNetworkImageProvider(...))` (no `CachedNetworkImage` widget directly — see ADR below for why).
+
+**Render policy — INSTANT, no fade-in.** Premium/editorial apps (Sotheby's, Hermès, Apple Photos, MUBI) render images in frame 1 with no transition. The 180ms fade reads as "generic Material app". Implementation: `frameBuilder` with `if (wasSynchronouslyLoaded || frame != null) return child` — child renders immediately on memory cache hit or as soon as first frame decodes. Cold load shows neutral `AppColors.surface` (no spinner, no shimmer, no fade).
+
+**Cache config** (set in `lib/main.dart`):
+- `PaintingBinding.instance.imageCache.maximumSizeBytes = 500 * 1024 * 1024` (500 MB)
+- `PaintingBinding.instance.imageCache.maximumSize = 2000` (count cap matched to byte budget)
+
+Disk cache lives on `cached_network_image`'s side; in-memory decoded cache lives on Flutter's `PaintingBinding.imageCache`. Using `Image(image: CachedNetworkImageProvider(...))` (not the `CachedNetworkImage` widget) wires BOTH layers — disk persistence + synchronous memory hit. This is the load-bearing detail that eliminates the navigation flash.
+
+**Precache pattern** — fire-and-forget at the source, not the destination. `FeedCard._didChangeDependencies` precaches the ±1 neighbor cards' covers (PageView build range), so by the time the user taps, bytes are already decoded. Mirror this pattern for any list/grid with predictable navigation targets. Never `await precacheImage` before `context.push` — it adds a perceptible tap latency for negligible gain.
+
+**Do NOT**:
+- Use `CachedNetworkImage` widget directly (no synchronous cache-hit path; always fades).
+- Set `fadeInDuration` anywhere.
+- Add spinners/shimmer/skeleton placeholders for images.
+- Use `Image.network` (no disk cache → cold cache on every cold start).
+
 ## Scroll + Tabs Patterns
 
 ### When to use each pattern:
