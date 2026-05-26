@@ -1,21 +1,9 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'media_item.dart';
+
 part 'content_block.freezed.dart';
 part 'content_block.g.dart';
-
-/// Single image inside a `gallery` block. Distinct from `MediaItem`
-/// (which is the mixed image|video model used for the post-cierre gallery
-/// and hero media) — gallery blocks accept images only.
-@freezed
-abstract class ImageItem with _$ImageItem {
-  const factory ImageItem({
-    required String url,
-    String? alt,
-  }) = _ImageItem;
-
-  factory ImageItem.fromJson(Map<String, Object?> json) =>
-      _$ImageItemFromJson(json);
-}
 
 /// Editorial body of a project detail. Renders as a vertical stack of
 /// typed blocks (heading / text / image / gallery / video) in fixed
@@ -39,8 +27,12 @@ sealed class ContentBlock with _$ContentBlock {
     String? alt,
   }) = ImageBlock;
 
+  /// Editorial carousel — accepts mixed images and videos. Each item is a
+  /// `MediaItem` (`{ type: 'image'|'video', url }`); legacy items without
+  /// `type` are treated as image by `MediaItem.fromJson`. Videos may be
+  /// hosted on Supabase Storage or pasted as Bunny URLs/GUIDs from admin.
   const factory ContentBlock.gallery({
-    required List<ImageItem> items,
+    required List<MediaItem> items,
   }) = GalleryBlock;
 
   const factory ContentBlock.video({

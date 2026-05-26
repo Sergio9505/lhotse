@@ -11,272 +11,6 @@ part of 'content_block.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-
-/// @nodoc
-mixin _$ImageItem {
-
- String get url; String? get alt;
-/// Create a copy of ImageItem
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$ImageItemCopyWith<ImageItem> get copyWith => _$ImageItemCopyWithImpl<ImageItem>(this as ImageItem, _$identity);
-
-  /// Serializes this ImageItem to a JSON map.
-  Map<String, dynamic> toJson();
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageItem&&(identical(other.url, url) || other.url == url)&&(identical(other.alt, alt) || other.alt == alt));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,url,alt);
-
-@override
-String toString() {
-  return 'ImageItem(url: $url, alt: $alt)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $ImageItemCopyWith<$Res>  {
-  factory $ImageItemCopyWith(ImageItem value, $Res Function(ImageItem) _then) = _$ImageItemCopyWithImpl;
-@useResult
-$Res call({
- String url, String? alt
-});
-
-
-
-
-}
-/// @nodoc
-class _$ImageItemCopyWithImpl<$Res>
-    implements $ImageItemCopyWith<$Res> {
-  _$ImageItemCopyWithImpl(this._self, this._then);
-
-  final ImageItem _self;
-  final $Res Function(ImageItem) _then;
-
-/// Create a copy of ImageItem
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? url = null,Object? alt = freezed,}) {
-  return _then(_self.copyWith(
-url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
-as String,alt: freezed == alt ? _self.alt : alt // ignore: cast_nullable_to_non_nullable
-as String?,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [ImageItem].
-extension ImageItemPatterns on ImageItem {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ImageItem value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _ImageItem() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ImageItem value)  $default,){
-final _that = this;
-switch (_that) {
-case _ImageItem():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ImageItem value)?  $default,){
-final _that = this;
-switch (_that) {
-case _ImageItem() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String url,  String? alt)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _ImageItem() when $default != null:
-return $default(_that.url,_that.alt);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String url,  String? alt)  $default,) {final _that = this;
-switch (_that) {
-case _ImageItem():
-return $default(_that.url,_that.alt);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String url,  String? alt)?  $default,) {final _that = this;
-switch (_that) {
-case _ImageItem() when $default != null:
-return $default(_that.url,_that.alt);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _ImageItem implements ImageItem {
-  const _ImageItem({required this.url, this.alt});
-  factory _ImageItem.fromJson(Map<String, dynamic> json) => _$ImageItemFromJson(json);
-
-@override final  String url;
-@override final  String? alt;
-
-/// Create a copy of ImageItem
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$ImageItemCopyWith<_ImageItem> get copyWith => __$ImageItemCopyWithImpl<_ImageItem>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$ImageItemToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageItem&&(identical(other.url, url) || other.url == url)&&(identical(other.alt, alt) || other.alt == alt));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,url,alt);
-
-@override
-String toString() {
-  return 'ImageItem(url: $url, alt: $alt)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$ImageItemCopyWith<$Res> implements $ImageItemCopyWith<$Res> {
-  factory _$ImageItemCopyWith(_ImageItem value, $Res Function(_ImageItem) _then) = __$ImageItemCopyWithImpl;
-@override @useResult
-$Res call({
- String url, String? alt
-});
-
-
-
-
-}
-/// @nodoc
-class __$ImageItemCopyWithImpl<$Res>
-    implements _$ImageItemCopyWith<$Res> {
-  __$ImageItemCopyWithImpl(this._self, this._then);
-
-  final _ImageItem _self;
-  final $Res Function(_ImageItem) _then;
-
-/// Create a copy of ImageItem
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? url = null,Object? alt = freezed,}) {
-  return _then(_ImageItem(
-url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
-as String,alt: freezed == alt ? _self.alt : alt // ignore: cast_nullable_to_non_nullable
-as String?,
-  ));
-}
-
-
-}
-
 ContentBlock _$ContentBlockFromJson(
   Map<String, dynamic> json
 ) {
@@ -439,7 +173,7 @@ return cta(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String text)?  heading,TResult Function( String text)?  text,TResult Function( String url,  String? alt)?  image,TResult Function( List<ImageItem> items)?  gallery,TResult Function( String url)?  video,TResult Function( String label,  String url)?  cta,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String text)?  heading,TResult Function( String text)?  text,TResult Function( String url,  String? alt)?  image,TResult Function( List<MediaItem> items)?  gallery,TResult Function( String url)?  video,TResult Function( String label,  String url)?  cta,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case HeadingBlock() when heading != null:
 return heading(_that.text);case TextBlock() when text != null:
@@ -465,7 +199,7 @@ return cta(_that.label,_that.url);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String text)  heading,required TResult Function( String text)  text,required TResult Function( String url,  String? alt)  image,required TResult Function( List<ImageItem> items)  gallery,required TResult Function( String url)  video,required TResult Function( String label,  String url)  cta,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String text)  heading,required TResult Function( String text)  text,required TResult Function( String url,  String? alt)  image,required TResult Function( List<MediaItem> items)  gallery,required TResult Function( String url)  video,required TResult Function( String label,  String url)  cta,}) {final _that = this;
 switch (_that) {
 case HeadingBlock():
 return heading(_that.text);case TextBlock():
@@ -487,7 +221,7 @@ return cta(_that.label,_that.url);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String text)?  heading,TResult? Function( String text)?  text,TResult? Function( String url,  String? alt)?  image,TResult? Function( List<ImageItem> items)?  gallery,TResult? Function( String url)?  video,TResult? Function( String label,  String url)?  cta,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String text)?  heading,TResult? Function( String text)?  text,TResult? Function( String url,  String? alt)?  image,TResult? Function( List<MediaItem> items)?  gallery,TResult? Function( String url)?  video,TResult? Function( String label,  String url)?  cta,}) {final _that = this;
 switch (_that) {
 case HeadingBlock() when heading != null:
 return heading(_that.text);case TextBlock() when text != null:
@@ -728,11 +462,11 @@ as String?,
 @JsonSerializable()
 
 class GalleryBlock implements ContentBlock {
-  const GalleryBlock({required final  List<ImageItem> items, final  String? $type}): _items = items,$type = $type ?? 'gallery';
+  const GalleryBlock({required final  List<MediaItem> items, final  String? $type}): _items = items,$type = $type ?? 'gallery';
   factory GalleryBlock.fromJson(Map<String, dynamic> json) => _$GalleryBlockFromJson(json);
 
- final  List<ImageItem> _items;
- List<ImageItem> get items {
+ final  List<MediaItem> _items;
+ List<MediaItem> get items {
   if (_items is EqualUnmodifiableListView) return _items;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_items);
@@ -776,7 +510,7 @@ abstract mixin class $GalleryBlockCopyWith<$Res> implements $ContentBlockCopyWit
   factory $GalleryBlockCopyWith(GalleryBlock value, $Res Function(GalleryBlock) _then) = _$GalleryBlockCopyWithImpl;
 @useResult
 $Res call({
- List<ImageItem> items
+ List<MediaItem> items
 });
 
 
@@ -796,7 +530,7 @@ class _$GalleryBlockCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? items = null,}) {
   return _then(GalleryBlock(
 items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
-as List<ImageItem>,
+as List<MediaItem>,
   ));
 }
 

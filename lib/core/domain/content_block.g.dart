@@ -6,12 +6,6 @@ part of 'content_block.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_ImageItem _$ImageItemFromJson(Map<String, dynamic> json) =>
-    _ImageItem(url: json['url'] as String, alt: json['alt'] as String?);
-
-Map<String, dynamic> _$ImageItemToJson(_ImageItem instance) =>
-    <String, dynamic>{'url': instance.url, 'alt': instance.alt};
-
 HeadingBlock _$HeadingBlockFromJson(Map<String, dynamic> json) =>
     HeadingBlock(text: json['text'] as String, $type: json['type'] as String?);
 
@@ -41,7 +35,7 @@ Map<String, dynamic> _$ImageBlockToJson(ImageBlock instance) =>
 
 GalleryBlock _$GalleryBlockFromJson(Map<String, dynamic> json) => GalleryBlock(
   items: (json['items'] as List<dynamic>)
-      .map((e) => ImageItem.fromJson(e as Map<String, dynamic>))
+      .map((e) => MediaItem.fromJson(e as Map<String, dynamic>))
       .toList(),
   $type: json['type'] as String?,
 );

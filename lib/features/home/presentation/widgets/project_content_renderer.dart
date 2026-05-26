@@ -205,9 +205,14 @@ class _CtaView extends StatelessWidget {
 /// Avance renders). Cards at 75% screen width with a peek of the next,
 /// infinite loop when N≥2 (`itemCount * 1000` + modulo), no dots
 /// indicator. Tap on any card opens `showMediaGallery` at that index.
+///
+/// Items are `MediaItem`s — image cards render `LhotseImage`, video cards
+/// render `VideoThumbnailTile` (auto-shows the Bunny static thumbnail when
+/// the URL is Bunny). The viewer (`showMediaGallery`) handles autoplay on
+/// video items uniformly across all editorial galleries in the app.
 class _GalleryView extends StatelessWidget {
   const _GalleryView({required this.items});
-  final List<ImageItem> items;
+  final List<MediaItem> items;
 
   @override
   Widget build(BuildContext context) {
@@ -215,9 +220,6 @@ class _GalleryView extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final count = items.length;
     final loop = count > 1;
-    final mediaItems = items
-        .map((it) => MediaItem(type: MediaType.image, url: it.url))
-        .toList();
 
     return SizedBox(
       height: 200,
@@ -229,10 +231,11 @@ class _GalleryView extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, i) {
           final idx = i % count;
+          final item = items[idx];
           return GestureDetector(
             onTap: () => showMediaGallery(
               context,
-              items: mediaItems,
+              items: items,
               initialIndex: idx,
             ),
             child: Container(
@@ -246,7 +249,9 @@ class _GalleryView extends StatelessWidget {
                   ),
                 ],
               ),
-              child: LhotseImage(items[idx].url),
+              child: item.type == MediaType.image
+                  ? LhotseImage(item.url)
+                  : VideoThumbnailTile(url: item.url),
             ),
           );
         },

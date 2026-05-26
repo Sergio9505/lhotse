@@ -2532,3 +2532,31 @@ Resultado en `user_portfolio` (verificado): Andhy baja a 397 500€ / 2 contrato
 - DB: UPDATE puntual via Supabase MCP (no archivo de migración).
 - App Flutter: sin cambios — la vista `user_portfolio` ya hace lo correcto.
 
+## ADR-84: ContentBlock `gallery` admite vídeos; bloques `video` y `gallery` aceptan URL Bunny en admin
+
+**Status:** Accepted, 2026-05-26
+**Context:** El bloque `video` del editor de contenido (jsonb `projects.content`) sólo permitía subir archivo a Supabase Storage; el operador no podía pegar una URL/GUID de Bunny como sí permiten otras zonas del admin (`VideoUploadField` en el form principal de proyecto/noticia, `MultiMediaUploadField` en hero/render/galería). Además, el bloque `gallery` editorial era image-only por diseño inicial (ADR-78), pero el operador necesita poder mezclar imágenes y vídeos en el mismo carrusel editorial.
+
+**Decision (dos cambios coordinados):**
+
+1. **Schema del bloque `gallery`**: `items` pasa de `ImageItem[]` (`{ url, alt? }`) a `MediaItem[]` (`{ type: 'image'|'video', url }`). En Dart se reutiliza el `MediaItem` ya existente (compartido con `hero_media`, `gallery_media`, `render_media`); `ImageItem` se elimina del Freezed union. En el Zod del admin, `galleryItem` queda `{ type: z.enum(["image","video"]).default("image"), url: z.string().url() }` — el default da forward-compat con cualquier item legacy `{ url }` sin `type` (espejo del fallback ya presente en `MediaItem.fromJson`).
+
+2. **UX admin de URL Bunny en bloques `video` y vídeo de `gallery`**: nuevo helper `VideoSourcePicker` en `content-blocks-editor.tsx` con tabbed UI ("Subir archivo" ↔ "URL externa"). En modo URL, detecta GUIDs de Bunny y los normaliza con `normalizeBunnyInput()` (helper canónico ya en `lib/video/bunny.ts`). Reutilizado por:
+   - `SingleVideoSlot` (bloque `video`): muestra el picker tabbed cuando `url` está vacío; muestra placeholder con clear button cuando hay URL.
+   - `GalleryBlockEditor`: dos tiles "+" en el grid — "+ Imagen" (mantiene el flujo file-only que ya funcionaba), "+ Vídeo" (toggle que abre el `VideoSourcePicker` debajo del grid). Cada item en el grid se renderiza condicional al `type` (preview imagen vs placeholder vídeo con badge "VÍDEO").
+
+**Cero migración SQL:** verificado vía MCP `jsonb_path_exists` — 0 GalleryBlocks en producción. Cualquier item legacy futuro `{ url }` sin `type` se trata como image en ambos lados (Dart `MediaItem.fromJson` y Zod default).
+
+**Cero cambios runtime en Flutter:** `playableVideoUrlProvider` ya distingue Bunny Stream (`https://vz-…` → firma vía Edge Function `sign_video_url`) / Supabase Storage (relative → `createSignedUrl`) / URL externa (passthrough). `VideoThumbnailTile` ya muestra el thumbnail estático Bunny firmado cuando la URL es Bunny y cae a placeholder gris cuando no. `showMediaGallery` ya acepta `List<MediaItem>` mixto con autoplay en items vídeo. El único cambio en app fue:
+- `GalleryBlock.items` type → `List<MediaItem>` (Freezed regenerado).
+- `_GalleryView` render condicional `LhotseImage` vs `VideoThumbnailTile` por `item.type`.
+
+**Por qué reutilizar `MediaItem` y no inventar un `GalleryItem` propio:** mismo shape `{type, url}`, mismo fallback parsing, mismo viewer downstream (`showMediaGallery` ya consume `MediaItem[]`). Inventar un tipo paralelo añadiría conversión sin valor.
+
+**Por qué NO reutilizar `VideoUploadField` directamente:** está acoplado al patrón FormData del form principal (`<input name="...">` + hidden `_existing`/`_original`). El editor de contenido usa eager upload + onChange callback (cada bloque persiste vía server action que serializa el array completo). Replicar la UX tabbed en un componente nuevo (`VideoSourcePicker`) era más limpio que adaptar el field con bridges.
+
+**Files touched:**
+- App: `lib/core/domain/content_block.dart` (gallery items → MediaItem, drop ImageItem), regenerado `.freezed.dart` + `.g.dart`. `lib/features/home/presentation/widgets/project_content_renderer.dart` (`_GalleryView` switch).
+- Admin: `lib/schemas/content-block.ts` (galleryItem shape). `components/projects/content-blocks-editor.tsx` (refactor `SingleVideoSlot` + `GalleryBlockEditor` + nuevo `VideoSourcePicker` + `AddVideoTile`). `components/projects/content-preview.tsx` (gallery preview render condicional).
+- Sin migración SQL.
+
