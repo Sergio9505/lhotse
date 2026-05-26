@@ -2482,3 +2482,53 @@ El `×10` deja huecos para slot inserts manuales en el futuro (e.g., insertar en
 - App: `lib/core/data/projects_provider.dart`, `lib/core/data/news_provider.dart`, `lib/core/data/open_round_projects_provider.dart` (order chain con sort_order primario + tie-breaker temporal).
 - Admin: `lib/db/database.types.ts` (campo en Row/Insert/Update), `lib/data/sort-order.ts` (helper nuevo), `app/(admin)/projects/actions.ts` (+ default + `reorderProjects`), `app/(admin)/news/actions.ts` (+ default + `reorderNews`), `app/(admin)/projects/reorder/page.tsx` (nuevo), `app/(admin)/news/reorder/page.tsx` (nuevo), `components/projects/projects-reorder-list.tsx` (nuevo), `components/news/news-reorder-list.tsx` (nuevo), botones "Reordenar" en `/projects` y `/news`.
 
+## ADR-83: La firma de un offering/contrato debe matchear su `business_model`
+
+**Status:** Accepted, 2026-05-26
+**Context:** Bug reportado por el operador: "tengo un contrato de renta fija y no me sale en Estrategia, ¿es porque la firma está desactivada?". Diagnóstico:
+- La vista SQL `user_portfolio` (consumida por L1 Estrategia) **NO filtra por `brands.is_visible`** — una firma desactivada no oculta los contratos del inversor. La hipótesis del operador no era la causa.
+- Los 2 únicos `fixed_income_offerings` en prod estaban vinculados a la firma **Andhy** (`business_model='direct_purchase'`), no a la marca dedicada "Renta Fija" (`business_model='fixed_income'`). Como `user_portfolio` agrupa por `(brand_id, business_model)` y el business_model siempre viene de `brands`, los contratos RF de Andhy se sumaban a la fila "Andhy · direct_purchase" en L1. El operador buscaba una fila "Renta Fija" y no la encontraba → atribuyó la causa a la visibility.
+- Causa raíz: el admin permitía asignar offerings RF a cualquier brand, sin restringir por business_model. El operador podía elegir (y eligió) una brand `direct_purchase` para un offering RF.
+
+**Decision.** Adoptar como invariante: **la firma referenciada por un offering/contrato debe matchear el `business_model` correspondiente a ese tipo de contrato**.
+
+| Tipo de contrato/offering | Brand business_model esperado |
+|---|---|
+| `fixed_income_offerings.brand_id` | `fixed_income` |
+| `purchase_contracts.brand_id` | `direct_purchase` |
+| `rental_contracts.brand_id` | `rental` |
+| `coinvestment_contracts` (vía `project_id`) | `coinvestment` (ya enforced por `listProjectLookups`) |
+
+**Implementación — defense-in-depth en dos capas:**
+1. **UI**: selectors del admin pre-filtrados via nueva helper `listBrandLookupsByBusinessModel(businessModel)` (`lhotse_admin/lib/data/lookups.ts`). El operador sólo ve firmas válidas en el `<Combobox>`. Empty-state visible cuando la lista filtrada es vacía ("Aún no hay firmas con modelo …").
+2. **Server**: cada `create*`/`update*` action consulta `brands.business_model` antes del INSERT/UPDATE y rechaza con `fieldErrors.brand_id` si no matchea. Cubre el caso de formData construida manualmente (DevTools, scripts) que bypassea el selector.
+
+Coinvestment ya estaba correcto desde el inicio: filtra `projects` con `brands!inner(business_model).eq('brands.business_model', 'coinvestment')` — patrón canónico reutilizado.
+
+**Por qué NO un CHECK constraint cross-table en BD.** Postgres no soporta CHECKs que crucen tablas sin trigger. Un trigger BEFORE INSERT/UPDATE en `fixed_income_offerings` / `purchase_contracts` / `rental_contracts` que valide el business_model del brand añadiría una capa de seguridad, pero también complejidad operacional (depurar fallos en triggers, mantener `business_model` ↔ business meaning sincronizado si la enum crece). La duplicación de la regla en la action server-side es suficiente — el server es la única superficie que escribe a estas tablas (RLS prohíbe escritura desde clientes que no sean admin).
+
+**Por qué NO una migration SQL.** El bug es de datos + UX, no de schema. Los 2 offerings mal vinculados se corrigen con un UPDATE puntual ejecutado via Supabase MCP (no archivo de migración — no es DDL ni cambio reproducible en otros entornos).
+
+**Datos corregidos:** UPDATE aplicado a `mrwrmigeyatfrzwvfsfe`:
+```sql
+UPDATE fixed_income_offerings
+   SET brand_id = '088030ca-a6af-4499-afa7-9ae3ca905270'  -- Renta Fija
+ WHERE brand_id = 'c1369eb1-8d5d-4b62-a473-b7405340d921'; -- Andhy
+```
+Resultado en `user_portfolio` (verificado): Andhy baja a 397 500€ / 2 contratos, aparece nueva fila "Renta Fija · 300 000€ / 2 contratos".
+
+**Consequences:**
+- (+) Un único patrón en los 4 forms (offerings RF, purchase, rental, coinvestment vía project). Los operadores no pueden corromper la agregación L1 desde el admin.
+- (+) Validación cross-table server-side incluso si alguien construye formData manualmente.
+- (+) Mensaje de error inline en el form ("La firma seleccionada no es de tipo Renta Fija") explicita el invariante al operador.
+- (−) Si se crean nuevas marcas con `business_model='fixed_income'` en el futuro, los offerings podrán asignarse a cualquiera. La regla es business_model match, no FK específica — funciona para arquitecturas multi-emisor (varias firmas RF a la vez).
+- (−) El sweep no cubre `notifications/projects/assets/home-feed` (que también usan `listBrandLookups()` genérico). Esos contextos sí necesitan todas las brands — `notifications` puede dirigirse a cualquier marca, `projects` se asigna a cualquier brand teóricamente (aunque hoy todos son coinversión), `assets` puede pertenecer a brands de varios modelos. Mantener `listBrandLookups()` para esos casos es intencional.
+
+**Files touched:**
+- Admin: `lib/data/lookups.ts` (nueva helper `listBrandLookupsByBusinessModel`).
+- Admin offerings: `app/(admin)/offerings/new/page.tsx`, `app/(admin)/offerings/[id]/page.tsx`, `app/(admin)/offerings/actions.ts`, `components/forms/offering-form.tsx` (empty-state).
+- Admin purchase: `app/(admin)/contracts/purchase/new/page.tsx`, `app/(admin)/contracts/purchase/[id]/page.tsx`, `app/(admin)/contracts/purchase/actions.ts`.
+- Admin rental: `app/(admin)/contracts/rental/new/page.tsx`, `app/(admin)/contracts/rental/[id]/page.tsx`, `app/(admin)/contracts/rental/actions.ts`.
+- DB: UPDATE puntual via Supabase MCP (no archivo de migración).
+- App Flutter: sin cambios — la vista `user_portfolio` ya hace lo correcto.
+
