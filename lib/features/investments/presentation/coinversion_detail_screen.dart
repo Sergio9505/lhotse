@@ -24,6 +24,7 @@ import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/domain/media_item.dart';
 import '../../../core/widgets/lhotse_gallery_helpers.dart';
 import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/widgets/lhotse_project_timeline.dart';
 import '../../../core/widgets/lhotse_tab_scroll_wrapper.dart';
 import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/widgets/lhotse_video_player.dart';
@@ -571,7 +572,7 @@ class _AvanceTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
           const LhotseSectionLabel(label: 'TIEMPOS DEL PROYECTO'),
           const SizedBox(height: AppSpacing.lg),
-          _InvestmentTimeline(phases: phases, currentIndex: currentPhaseIndex),
+          LhotseProjectTimeline(phases: phases, currentIndex: currentPhaseIndex),
         ],
         if (tourUrl != null && tourUrl.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
@@ -1202,181 +1203,6 @@ class _ScenarioMetric extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ===========================================================================
-// Timeline
-// ===========================================================================
-
-class _InvestmentTimeline extends StatelessWidget {
-  const _InvestmentTimeline({
-    required this.phases,
-    required this.currentIndex,
-  });
-
-  final List<ProjectPhase> phases;
-  final int currentIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        children: [
-          // --- Track: single row, perfectly aligned ---
-          SizedBox(
-            height: 20,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                for (int i = 0; i < phases.length; i++) ...[
-                  if (i > 0)
-                    Expanded(
-                      child: Container(
-                        height: 2,
-                        color: i <= currentIndex
-                            ? AppColors.primary
-                            : AppColors.textPrimary
-                                .withValues(alpha: 0.08),
-                      ),
-                    ),
-                  if (i == currentIndex)
-                    _PulsingNode(size: 10)
-                  else
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: i < currentIndex
-                            ? AppColors.primary
-                            : Colors.transparent,
-                        border: i > currentIndex
-                            ? Border.all(
-                                color: AppColors.textPrimary
-                                    .withValues(alpha: 0.15),
-                                width: 1.5)
-                            : null,
-                      ),
-                    ),
-                ],
-              ],
-            ),
-          ),
-          // --- Labels ---
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: phases.indexed.map((entry) {
-              final i = entry.$1;
-              final phase = entry.$2;
-              final isCurrent = i == currentIndex;
-              final isPast = i < currentIndex;
-              final month =
-                  DateFormat('MM/yy').format(phase.startDate).toUpperCase();
-              return Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      phase.name.toUpperCase(),
-                      textAlign: TextAlign.center,
-                      style: AppTypography.labelUppercaseSm.copyWith(
-                        color: isCurrent
-                            ? AppColors.textPrimary
-                            : isPast
-                                ? AppColors.accentMuted
-                                : AppColors.textPrimary
-                                    .withValues(alpha: 0.25),
-                        fontWeight: isCurrent
-                            ? FontWeight.w700
-                            : FontWeight.w400,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    if (isCurrent && phase.title != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        phase.title!,
-                        textAlign: TextAlign.center,
-                        style: AppTypography.annotation.copyWith(
-                          color: AppColors.accentMuted,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    const SizedBox(height: 2),
-                    Text(
-                      month,
-                      textAlign: TextAlign.center,
-                      style: AppTypography.labelUppercaseSm.copyWith(
-                        color: isCurrent
-                            ? AppColors.accentMuted
-                            : AppColors.textPrimary
-                                .withValues(alpha: 0.2),
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PulsingNode extends StatefulWidget {
-  const _PulsingNode({required this.size});
-  final double size;
-  @override
-  State<_PulsingNode> createState() => _PulsingNodeState();
-}
-
-class _PulsingNodeState extends State<_PulsingNode>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    )..repeat(reverse: true);
-    _scale = Tween(begin: 1.0, end: 1.4).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: widget.size + 8,
-      height: widget.size + 8,
-      child: Center(
-        child: AnimatedBuilder(
-          animation: _scale,
-          builder: (context, child) => Transform.scale(
-            scale: _scale.value,
-            child: child,
-          ),
-          child: Container(
-            width: widget.size,
-            height: widget.size,
-            color: AppColors.primary,
-          ),
-        ),
-      ),
     );
   }
 }

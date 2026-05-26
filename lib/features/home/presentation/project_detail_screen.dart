@@ -12,6 +12,7 @@ import '../../../core/data/projects_provider.dart';
 import '../../../core/domain/content_block.dart';
 import '../../../core/domain/news_item_data.dart';
 import '../../../core/domain/project_data.dart';
+import '../../../core/domain/project_phase.dart' as timeline;
 import '../../../core/domain/user_role.dart';
 import '../../../core/utils/precache_helpers.dart';
 import '../../../core/theme/app_theme.dart';
@@ -21,14 +22,15 @@ import 'widgets/vip_lock_sheet.dart';
 import '../../../core/widgets/floor_plan_viewer.dart';
 import '../../../core/widgets/lhotse_back_button.dart';
 import '../../../core/widgets/lhotse_bottom_sheet.dart';
-import '../../../core/domain/media_item.dart';
-import '../../../core/widgets/lhotse_gallery_helpers.dart';
-import '../../../core/widgets/lhotse_image.dart';
+import '../../../core/widgets/lhotse_key_value_list.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
+import '../../../core/widgets/lhotse_project_timeline.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
+import '../../../core/widgets/lhotse_tab_bar_delegate.dart';
 import '../../../core/widgets/media_hero_carousel.dart';
 import '../../../core/data/playable_video_url_provider.dart';
 import '../../../core/widgets/lhotse_video_player.dart';
+import '../../investments/data/investments_provider.dart';
 import 'widgets/fullscreen_video_player.dart';
 import 'widgets/virtual_tour_section.dart';
 
@@ -36,6 +38,20 @@ const double _kHeroSlop = 8.0;
 const Duration _kHeroTapMax = Duration(milliseconds: 300);
 const double _kFullyExpandedTolerance = 4.0;
 const Duration _kCarouselSnapDuration = Duration(milliseconds: 280);
+
+/// Tabs of the commercial project detail. Mirrors the L3 grammar
+/// (Proyecto / Avance / Activo). Finalised projects skip Avance.
+enum _ProjectTab {
+  proyecto,
+  avance,
+  activo;
+
+  String get label => switch (this) {
+        _ProjectTab.proyecto => 'Proyecto',
+        _ProjectTab.avance => 'Avance',
+        _ProjectTab.activo => 'Activo',
+      };
+}
 
 class ProjectDetailScreen extends ConsumerStatefulWidget {
   const ProjectDetailScreen({
@@ -61,10 +77,14 @@ class ProjectDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _scrollController = ScrollController();
   final _videoKey = GlobalKey<LhotseVideoPlayerState>();
   late final AnimationController _carouselAnim;
+
+  // Tabs (length recomputed when project.phase resolves; see _ensureTabController).
+  TabController? _tabController;
+  int _currentTab = 0;
 
   // Hero collapse state
   bool _heroGone = false;
@@ -106,14 +126,35 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
   void dispose() {
     _scrollController.dispose();
     _carouselAnim.dispose();
+    _tabController?.dispose();
     super.dispose();
+  }
+
+  List<_ProjectTab> _visibleTabs(ProjectData project) => [
+        _ProjectTab.proyecto,
+        if (project.phase != ProjectPhase.exited) _ProjectTab.avance,
+        _ProjectTab.activo,
+      ];
+
+  void _ensureTabController(int length) {
+    if (_tabController != null && _tabController!.length == length) return;
+    _tabController?.dispose();
+    final initial = _currentTab.clamp(0, length - 1);
+    _tabController = TabController(length: length, vsync: this, initialIndex: initial)
+      ..addListener(() {
+        if (!mounted) return;
+        if (_tabController!.indexIsChanging) return;
+        if (_tabController!.index == _currentTab) return;
+        setState(() => _currentTab = _tabController!.index);
+      });
+    _currentTab = initial;
   }
 
   void _onScroll() {
     final offset = _scrollController.offset;
-    final heroThreshold = _heroHeight - kToolbarHeight - _topPadding;
-    final heroGone = offset >= heroThreshold;
-    final titleThreshold = _heroHeight + 50.0;
+    final heroSpacer = _heroHeight - _topPadding - kToolbarHeight;
+    final heroGone = offset >= heroSpacer;
+    final titleThreshold = heroSpacer + 50.0;
     final showTitle = offset >= titleThreshold;
 
     if (heroGone != _heroGone || showTitle != _showCollapsedTitle) {
@@ -356,9 +397,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
   List<String?> _collectProjectUrls(ProjectData p) => [
         p.imageUrl,
         ...p.imageUrls,
-        ...p.galleryMedia
-            .where((m) => m.type == MediaType.image)
-            .map((m) => m.url),
         p.floorPlanUrl,
         p.virtualTourThumbnailUrl,
         p.progressTourThumbnailUrl,
@@ -431,7 +469,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     _gateDone = true;
 
     final mq = MediaQuery.of(context);
-    final screenWidth = mq.size.width;
     final bottomPadding = mq.padding.bottom;
     _topPadding = mq.padding.top;
     _heroHeight = mq.size.height * 0.55;
@@ -441,6 +478,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     // to layout — these are the latest known dims when the gesture settles).
     _lastPageWidth = pageWidth;
     _lastImageCount = imageCount;
+
+    final visibleTabs = _visibleTabs(project);
+    _ensureTabController(visibleTabs.length);
 
     // News linked to this project, excluding work-in-progress updates
     // (subtype='progress' lives in the L3 Avance tab of coinversions —
@@ -454,9 +494,18 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
             n.subtype != NewsSubtype.progress)
         .toList();
 
+    final phases = ref
+            .watch(projectPhasesProvider(widget.projectId))
+            .valueOrNull ??
+        const <timeline.ProjectPhase>[];
+    final currentPhaseIndex = phases.isEmpty
+        ? 0
+        : phases.where((p) => p.isCompleted).length.clamp(0, phases.length - 1);
+
     final hasVideo =
         project.videoUrl != null && project.videoUrl!.isNotEmpty;
     final hasGallery = !hasVideo && imageCount > 1;
+    final visibleTopInset = _topPadding + kToolbarHeight;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _heroGone
@@ -485,307 +534,121 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
             children: [
               // =====================================================
               // LAYER 0 — scrollable content
+              //
+              // Shifted down by `visibleTopInset` (status bar + toolbar)
+              // so the pinned tab sliver lands flush under the floating
+              // toolbar. The hero overlay (Layer 1) extends above into
+              // the toolbar area to preserve the edge-to-edge image.
               // =====================================================
-              Positioned.fill(
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: SizedBox(height: _heroHeight),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.lg,
-                          AppSpacing.xl,
-                          AppSpacing.lg,
-                          AppSpacing.md,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              project.name,
-                              style: AppTypography.editorialHero.copyWith(
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            RichText(
-                              overflow: TextOverflow.ellipsis,
-                              text: TextSpan(
-                                style: AppTypography.wordmarkByline,
-                                children: [
-                                  if (project.brand.isNotEmpty) ...[
-                                    TextSpan(
-                                      text: project.brand.toUpperCase(),
-                                      style: const TextStyle(
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    if (project.city.isNotEmpty)
-                                      TextSpan(
-                                        text: '  ·  ',
-                                        style: TextStyle(
-                                          color: AppColors.textPrimary
-                                              .withValues(alpha: 0.4),
-                                        ),
-                                      ),
-                                  ],
-                                  if (project.city.isNotEmpty)
-                                    TextSpan(
-                                      text: project.city,
-                                      style:
-                                          AppTypography.annotation.copyWith(
-                                        color: AppColors.accentMuted,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
+              Positioned(
+                top: visibleTopInset,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: _heroHeight - visibleTopInset,
                         ),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: ProjectContentRenderer(blocks: project.content),
-                    ),
-                    if (project.floorPlanUrl != null)
                       SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: AppSpacing.xxl),
-                            const LhotseSectionLabel(label: 'PLANO'),
-                            const SizedBox(height: AppSpacing.md),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.lg),
-                              child: GestureDetector(
-                                onTap: () => showFloorPlan(
-                                    context, project.floorPlanUrl!),
-                                child: CachedNetworkImage(
-                                  imageUrl: project.floorPlanUrl!,
-                                  width: double.infinity,
-                                  fit: BoxFit.fitWidth,
-                                  placeholder: (_, _) => Container(
-                                    height: 200,
-                                    color: AppColors.surface,
-                                  ),
-                                  errorWidget: (_, _, _) => Container(
-                                    height: 200,
-                                    color: AppColors.surface,
-                                  ),
-                                  imageBuilder: (context, imageProvider) =>
-                                      Stack(
-                                    alignment: Alignment.bottomRight,
-                                    children: [
-                                      Image(
-                                        image: imageProvider,
-                                        width: double.infinity,
-                                        fit: BoxFit.fitWidth,
-                                      ),
-                                      const Padding(
-                                        padding:
-                                            EdgeInsets.all(AppSpacing.sm),
-                                        child: PhosphorIcon(
-                                          PhosphorIconsThin.arrowsOut,
-                                          color: AppColors.accentMuted,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.xl,
+                            AppSpacing.lg,
+                            AppSpacing.md,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                project.name,
+                                style: AppTypography.editorialHero.copyWith(
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (project.progressTourUrl != null &&
-                        project.imageUrl != null)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.only(top: AppSpacing.xxl),
-                          child: VirtualTourSection(
-                            imageUrl: project.progressTourThumbnailUrl ??
-                                project.imageUrl!,
-                            tourUrl: project.progressTourUrl!,
-                            label: 'ESTADO ACTUAL',
-                          ),
-                        ),
-                      ),
-                    if (project.virtualTourUrl != null &&
-                        project.imageUrl != null)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.only(top: AppSpacing.xxl),
-                          child: VirtualTourSection(
-                            imageUrl: project.virtualTourThumbnailUrl ??
-                                project.imageUrl!,
-                            tourUrl: project.virtualTourUrl!,
-                          ),
-                        ),
-                      ),
-                    if (project.galleryMedia.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: AppSpacing.xxl),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.lg),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    'GALERÍA',
-                                    style:
-                                        AppTypography.sectionLabel.copyWith(
-                                      color: AppColors.accentMuted,
-                                    ),
-                                  ),
-                                  if (project.galleryMedia.length >= 2) ...[
-                                    const SizedBox(width: AppSpacing.sm),
-                                    GestureDetector(
-                                      onTap: () => showAllGallery(context,
-                                          'GALERÍA', project.galleryMedia),
-                                      child: PhosphorIcon(
-                                        PhosphorIconsThin.arrowUpRight,
-                                        size: 14,
-                                        color: AppColors.textPrimary,
+                              const SizedBox(height: 12),
+                              RichText(
+                                overflow: TextOverflow.ellipsis,
+                                text: TextSpan(
+                                  style: AppTypography.wordmarkByline,
+                                  children: [
+                                    if (project.brand.isNotEmpty) ...[
+                                      TextSpan(
+                                        text: project.brand.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            SizedBox(
-                              height: 200,
-                              child: ListView.separated(
-                                key: const PageStorageKey('project-gallery'),
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.lg),
-                                itemCount: project.galleryMedia.length > 1
-                                    ? project.galleryMedia.length * 1000
-                                    : project.galleryMedia.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(width: AppSpacing.sm),
-                                itemBuilder: (context, i) {
-                                  final count = project.galleryMedia.length;
-                                  final idx = i % count;
-                                  final item = project.galleryMedia[idx];
-                                  return GestureDetector(
-                                    onTap: () => showMediaGallery(
-                                      context,
-                                      items: project.galleryMedia,
-                                      initialIndex: idx,
-                                    ),
-                                    child: Container(
-                                      width: screenWidth * 0.75,
-                                      decoration: const BoxDecoration(
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Color(0x1A000000),
-                                            blurRadius: 20,
-                                            offset: Offset(0, 8),
+                                      if (project.city.isNotEmpty)
+                                        TextSpan(
+                                          text: '  ·  ',
+                                          style: TextStyle(
+                                            color: AppColors.textPrimary
+                                                .withValues(alpha: 0.4),
                                           ),
-                                        ],
+                                        ),
+                                    ],
+                                    if (project.city.isNotEmpty)
+                                      TextSpan(
+                                        text: project.city,
+                                        style:
+                                            AppTypography.annotation.copyWith(
+                                          color: AppColors.accentMuted,
+                                        ),
                                       ),
-                                      child: item.type == MediaType.image
-                                          ? LhotseImage(item.url)
-                                          : VideoThumbnailTile(
-                                              url: item.url),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    // =================================================
-                    // NOTICIAS RELEVANTES — carrusel compact horizontal +
-                    // arrow → bottomsheet con todas (limit-3 visible).
-                    // Filtra subtype=progress (avance de obra vive en
-                    // el L3 Avance del coinversion).
-                    // =================================================
-                    if (relatedNews.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: AppSpacing.xxl),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.lg),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    'NOTICIAS RELEVANTES',
-                                    style: AppTypography.sectionLabel
-                                        .copyWith(
-                                      color: AppColors.accentMuted,
-                                    ),
-                                  ),
-                                  if (relatedNews.length >= 2) ...[
-                                    const SizedBox(width: AppSpacing.sm),
-                                    GestureDetector(
-                                      onTap: () => _showAllRelatedNews(
-                                          context, relatedNews),
-                                      child: PhosphorIcon(
-                                        PhosphorIconsThin.arrowUpRight,
-                                        size: 14,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
                                   ],
-                                ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            SizedBox(
-                              height: 160,
-                              child: ListView.separated(
-                                key: const PageStorageKey('project-news'),
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.lg),
-                                itemCount: relatedNews.length > 1
-                                    ? relatedNews.length * 1000
-                                    : relatedNews.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(width: AppSpacing.sm),
-                                itemBuilder: (context, i) {
-                                  final n = relatedNews[i % relatedNews.length];
-                                  return LhotseNewsCard.compact(
-                                    title: n.title,
-                                    imageUrl: n.imageUrl,
-                                    videoUrl: n.videoUrl,
-                                    brand: n.brand,
-                                    subtitle: DateFormat('d MMM', 'es_ES')
-                                        .format(n.date),
-                                    onTap: () => context.push(
-                                      '/news/${n.id}',
-                                      extra: n,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: bottomPadding + AppSpacing.xl,
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: LhotseTabBarDelegate(
+                          controller: _tabController!,
+                          tabs: visibleTabs
+                              .map((t) => Tab(text: t.label))
+                              .toList(),
+                        ),
                       ),
-                    ),
-                  ],
+                      SliverToBoxAdapter(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                          child: KeyedSubtree(
+                            key: ValueKey(visibleTabs[_currentTab]),
+                            child: _buildTabContent(
+                              context,
+                              visibleTabs[_currentTab],
+                              project,
+                              relatedNews,
+                              phases,
+                              currentPhaseIndex,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: bottomPadding + AppSpacing.xl,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -798,7 +661,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                   final offset = _scrollController.hasClients
                       ? _scrollController.offset
                       : 0.0;
-                  final translateY = -offset.clamp(0.0, _heroHeight);
+                  final maxTranslate = _heroHeight - visibleTopInset;
+                  final translateY = -offset.clamp(0.0, maxTranslate);
                   return Positioned(
                     left: 0,
                     right: 0,
@@ -913,6 +777,254 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
           ),
         ),
       ),
+    );
+  }
+
+  // ===========================================================================
+  // TAB CONTENT BUILDERS
+  // ===========================================================================
+
+  Widget _buildTabContent(
+    BuildContext context,
+    _ProjectTab tab,
+    ProjectData project,
+    List<NewsItemData> relatedNews,
+    List<timeline.ProjectPhase> phases,
+    int currentPhaseIndex,
+  ) {
+    return switch (tab) {
+      _ProjectTab.proyecto => _buildProyectoTab(context, project, relatedNews),
+      _ProjectTab.avance =>
+        _buildAvanceTab(context, project, phases, currentPhaseIndex),
+      _ProjectTab.activo => _buildActivoTab(context, project),
+    };
+  }
+
+  Widget _buildProyectoTab(
+    BuildContext context,
+    ProjectData project,
+    List<NewsItemData> relatedNews,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ProjectContentRenderer(blocks: project.content),
+        if (relatedNews.isNotEmpty) _buildNewsCarousel(context, relatedNews),
+      ],
+    );
+  }
+
+  Widget _buildAvanceTab(
+    BuildContext context,
+    ProjectData project,
+    List<timeline.ProjectPhase> phases,
+    int currentPhaseIndex,
+  ) {
+    final hasTimeline = phases.isNotEmpty;
+    final hasTour = project.progressTourUrl != null &&
+        project.progressTourUrl!.isNotEmpty &&
+        project.imageUrl != null;
+
+    if (!hasTimeline && !hasTour) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.xxl,
+          AppSpacing.lg,
+          AppSpacing.xxl,
+        ),
+        child: Text(
+          'Sin avances publicados por ahora.',
+          style: AppTypography.bodyReading.copyWith(
+            color: AppColors.accentMuted,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasTimeline) ...[
+          const SizedBox(height: AppSpacing.xl),
+          const LhotseSectionLabel(label: 'TIEMPOS DEL PROYECTO'),
+          const SizedBox(height: AppSpacing.lg),
+          LhotseProjectTimeline(
+            phases: phases,
+            currentIndex: currentPhaseIndex,
+          ),
+        ],
+        if (hasTour) ...[
+          const SizedBox(height: AppSpacing.xxl),
+          VirtualTourSection(
+            imageUrl:
+                project.progressTourThumbnailUrl ?? project.imageUrl!,
+            tourUrl: project.progressTourUrl!,
+            label: 'ESTADO ACTUAL',
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildActivoTab(BuildContext context, ProjectData project) {
+    final assetInfo = project.assetInfo;
+    final hasAssetInfo = assetInfo.isNotEmpty;
+    final hasPlan = project.floorPlanUrl != null;
+    final hasTour = project.virtualTourUrl != null &&
+        project.virtualTourUrl!.isNotEmpty &&
+        project.imageUrl != null;
+
+    if (!hasAssetInfo && !hasPlan && !hasTour) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.xxl,
+          AppSpacing.lg,
+          AppSpacing.xxl,
+        ),
+        child: Text(
+          'Sin información del activo por ahora.',
+          style: AppTypography.bodyReading.copyWith(
+            color: AppColors.accentMuted,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasAssetInfo) ...[
+          const SizedBox(height: AppSpacing.xl),
+          const LhotseSectionLabel(label: 'INFORMACIÓN'),
+          const SizedBox(height: AppSpacing.sm),
+          LhotseKeyValueList(entries: assetInfo),
+        ],
+        if (hasPlan) ...[
+          const SizedBox(height: AppSpacing.xxl),
+          const LhotseSectionLabel(label: 'PLANO'),
+          const SizedBox(height: AppSpacing.md),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: GestureDetector(
+              onTap: () => showFloorPlan(context, project.floorPlanUrl!),
+              child: CachedNetworkImage(
+                imageUrl: project.floorPlanUrl!,
+                width: double.infinity,
+                fit: BoxFit.fitWidth,
+                placeholder: (_, _) => Container(
+                  height: 200,
+                  color: AppColors.surface,
+                ),
+                errorWidget: (_, _, _) => Container(
+                  height: 200,
+                  color: AppColors.surface,
+                ),
+                imageBuilder: (context, imageProvider) => Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    Image(
+                      image: imageProvider,
+                      width: double.infinity,
+                      fit: BoxFit.fitWidth,
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.all(AppSpacing.sm),
+                      child: PhosphorIcon(
+                        PhosphorIconsThin.arrowsOut,
+                        color: AppColors.accentMuted,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+        if (hasTour) ...[
+          const SizedBox(height: AppSpacing.xxl),
+          VirtualTourSection(
+            imageUrl:
+                project.virtualTourThumbnailUrl ?? project.imageUrl!,
+            tourUrl: project.virtualTourUrl!,
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ===========================================================================
+  // NOTICIAS RELEVANTES — carrusel compact horizontal + arrow → bottomsheet
+  // con todas. Filtra subtype=progress (avance de obra vive en el L3 Avance
+  // del coinversion).
+  // ===========================================================================
+  Widget _buildNewsCarousel(
+    BuildContext context,
+    List<NewsItemData> relatedNews,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: AppSpacing.xxl),
+        Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Row(
+            children: [
+              Text(
+                'NOTICIAS RELEVANTES',
+                style: AppTypography.sectionLabel.copyWith(
+                  color: AppColors.accentMuted,
+                ),
+              ),
+              if (relatedNews.length >= 2) ...[
+                const SizedBox(width: AppSpacing.sm),
+                GestureDetector(
+                  onTap: () => _showAllRelatedNews(context, relatedNews),
+                  child: PhosphorIcon(
+                    PhosphorIconsThin.arrowUpRight,
+                    size: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          height: 160,
+          child: ListView.separated(
+            key: const PageStorageKey('project-news'),
+            scrollDirection: Axis.horizontal,
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            itemCount: relatedNews.length > 1
+                ? relatedNews.length * 1000
+                : relatedNews.length,
+            separatorBuilder: (_, _) =>
+                const SizedBox(width: AppSpacing.sm),
+            itemBuilder: (context, i) {
+              final n = relatedNews[i % relatedNews.length];
+              return LhotseNewsCard.compact(
+                title: n.title,
+                imageUrl: n.imageUrl,
+                videoUrl: n.videoUrl,
+                brand: n.brand,
+                subtitle:
+                    DateFormat('d MMM', 'es_ES').format(n.date),
+                onTap: () => context.push(
+                  '/news/${n.id}',
+                  extra: n,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

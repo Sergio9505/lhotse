@@ -1,4 +1,5 @@
 import '../utils/hero_media_parser.dart';
+import 'asset_info.dart';
 import 'content_block.dart';
 import 'media_item.dart';
 
@@ -147,6 +148,45 @@ class ProjectData {
   final String? floorPlanUrl;
   final String? assetId;
   final bool useLightOverlay;
+
+  /// Physical description of the asset, shown on the L1 Activo tab.
+  /// Mirrors the L3 builder in `CoinvestmentProjectDetails.assetInfo` so the
+  /// same property reads identically from both pantallas (commercial vs
+  /// inversor). Cadastral reference is intentionally omitted here — it lives
+  /// only in the L3 contract context.
+  List<AssetInfoEntry> get assetInfo {
+    String m2(double v) => '${v.toStringAsFixed(v % 1 == 0 ? 0 : 1)} m²';
+    return [
+      if (builtSurfaceM2 != null)
+        AssetInfoEntry(
+            label: 'Superficie construida', value: m2(builtSurfaceM2!)),
+      if (terraceM2 != null)
+        AssetInfoEntry(label: 'Terraza', value: m2(terraceM2!)),
+      if (usableSurfaceM2 != null)
+        AssetInfoEntry(
+            label: 'Superficie útil', value: m2(usableSurfaceM2!)),
+      if (bedrooms != null)
+        AssetInfoEntry(label: 'Habitaciones', value: '$bedrooms'),
+      if (bathrooms != null)
+        AssetInfoEntry(label: 'Baños', value: '$bathrooms'),
+      if (floor != null) AssetInfoEntry(label: 'Planta', value: floor!),
+      if (orientation != null)
+        AssetInfoEntry(label: 'Orientación', value: orientation!),
+      if (views != null) AssetInfoEntry(label: 'Vistas', value: views!),
+      if (hasElevator == true)
+        const AssetInfoEntry(label: 'Ascensor', value: 'Sí'),
+      if (parkingSpots != null)
+        AssetInfoEntry(
+            label: 'Garaje',
+            value: parkingSpots == 1 ? '1 plaza' : '$parkingSpots plazas'),
+      if (storageRoom == true)
+        const AssetInfoEntry(label: 'Trastero', value: 'Incluido'),
+      if (yearBuilt != null)
+        AssetInfoEntry(label: 'Año construcción', value: '$yearBuilt'),
+      if (yearRenovated != null)
+        AssetInfoEntry(label: 'Año renovación', value: '$yearRenovated'),
+    ];
+  }
 
   /// Maps a Supabase row from `projects` joined with `brands` and `assets`.
   static List<MediaItem> _parseGalleryMedia(dynamic raw) {
