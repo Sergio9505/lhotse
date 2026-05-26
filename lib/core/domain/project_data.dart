@@ -48,6 +48,7 @@ class ProjectData {
     required this.tagline,
     this.content = const [],
     this.galleryMedia = const [],
+    this.renderMedia = const [],
     this.isVip = false,
     this.isFundraisingOpen = true,
     this.phase = ProjectPhase.preConstruction,
@@ -119,6 +120,15 @@ class ProjectData {
   /// `20260524120000_project_content_blocks.sql`).
   final List<ContentBlock> content;
   final List<MediaItem> galleryMedia;
+
+  /// Pre-construction renders / mockups. Same `MediaItem[]` shape as
+  /// [galleryMedia] but semantically distinct: galleryMedia is post-cierre
+  /// (finished property photos), renderMedia is pre-obra (architect renders,
+  /// 3D mockups, marketing visuals). Surfaced in the Strategy "Nuevos
+  /// proyectos" request-info sheet and in the L3 coinversion detail tabs.
+  /// Stored in `projects.render_media` (jsonb), edited from admin via
+  /// `project-form.tsx`'s "Renders y mockups" section.
+  final List<MediaItem> renderMedia;
   final bool isVip;
 
   /// True while the project accepts new investors. Orthogonal to `phase`:
@@ -241,6 +251,7 @@ class ProjectData {
       tagline: row['tagline'] as String? ?? '',
       content: _parseContent(row['content']),
       galleryMedia: _parseGalleryMedia(row['gallery_media']),
+      renderMedia: _parseGalleryMedia(row['render_media']),
       isVip: row['is_vip'] as bool? ?? false,
       isFundraisingOpen: row['is_fundraising_open'] as bool? ?? true,
       phase: ProjectPhase.fromDb(row['phase'] as String?),
