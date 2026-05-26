@@ -15,6 +15,9 @@ final newsProvider = FutureProvider<List<NewsItemData>>((ref) async {
       .watch(supabaseClientProvider)
       .from('news')
       .select(_newsSelect)
+      // Manual order set by the operator from admin /news/reorder.
+      // `date` DESC as tie-breaker for rows that share sort_order.
+      .order('sort_order', ascending: true)
       .order('date', ascending: false);
   return (data as List<dynamic>)
       .map((e) => NewsItemData.fromSupabaseRow(e as Map<String, dynamic>))

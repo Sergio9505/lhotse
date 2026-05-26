@@ -166,7 +166,7 @@ class _NewOpportunitiesSection extends ConsumerWidget {
                 AppSpacing.lg,
               ),
               child: Text(
-                'Nuevas oportunidades',
+                'Nuevos proyectos',
                 style: TextStyle(
                   fontFamily: AppTypography.fontFamily,
                   fontSize: 28,

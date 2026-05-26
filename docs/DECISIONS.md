@@ -2311,3 +2311,174 @@ El admin (Next.js `lhotse_admin`) gana una subpágina dedicada `/projects/[id]/c
 - Flutter: `lib/core/domain/content_block.dart` (nuevo, Freezed sealed union), `lib/core/domain/project_data.dart` (description → content), `lib/features/home/presentation/widgets/project_content_renderer.dart` (nuevo), `lib/features/home/presentation/project_detail_screen.dart` (integración), `lib/features/brands/presentation/widgets/projects_archive_body.dart` (haystack).
 - Admin: `lib/schemas/content-block.ts` (Zod discriminated union), `app/(admin)/projects/[id]/content/page.tsx` + `actions.ts` (server), `components/projects/content-editor-shell.tsx` + `content-blocks-editor.tsx` + `content-preview.tsx` (split-pane), `components/forms/project-form.tsx` (textarea description → link a `/content`), `lib/schemas/project.ts` (drop description del Zod), `lib/db/database.types.ts` (drop description add content).
 
+## ADR-79: `LhotseImage` — `Image(image: CachedNetworkImageProvider)` + `frameBuilder`, sin fade-in (supersedes ADR-53 image-cache section)
+
+**Status:** Accepted, 2026-05-25
+**Context:** El usuario reportó que cada navegación a una pantalla — incluso vuelta a una ya visitada — mostraba 1–2s de flash en blanco antes de aparecer las imágenes. ADR-53 había introducido `CachedNetworkImage` con `fadeInDuration: 180ms` para resolver el problema previo (Hero ending on undecoded bytes). El disk cache funcionaba, pero el flash persistía.
+
+**Root cause:** `CachedNetworkImage` (widget) usa su propio cache manager interno desacoplado de `PaintingBinding.imageCache`. Cada construcción de widget pasa por un loop async → placeholder → fade 180ms, incluso cuando los bytes ya están decodificados en memoria. No existe camino síncrono de cache hit. Combinado con la transición de página de 200ms, el usuario veía placeholder+fade durante ~300–400ms tras cada navegación.
+
+**Decision:** Refactor a `Image(image: CachedNetworkImageProvider(src))` + `frameBuilder`:
+```dart
+frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
+  if (wasSynchronouslyLoaded || frame != null) return child;
+  return Container(color: AppColors.surface);
+},
+```
+Esto da BOTH disk persistence (vía CNI provider) AND synchronous memory cache (vía `PaintingBinding.imageCache`, que Flutter pobla automáticamente cuando usas `Image` con cualquier `ImageProvider`). En cache hit caliente, `wasSynchronouslyLoaded` es `true` → child renderiza en el mismo frame, sin fade ni placeholder.
+
+Política de render: **instant siempre, cero fade.** Cold load muestra solo `AppColors.surface` (sin spinner). Eliminado `fadeInDuration` del código.
+
+**Por qué cero fade (referencias):** Sotheby's, Hermès, Apple Photos, MUBI, Vogue Runway, Magnum — todas renderizan imágenes en frame 1 sin transición. El fade 180ms es un patrón Material 2015 que hoy se asocia a apps genéricas (e-commerce, social), no a luxury/editorial. La percepción premium viene de la materia (nitidez, composición, tamaño), no de animar la entrada. Animar la aparición de algo que ya estaba en memoria es ruido que le dice al usuario "esto se está cargando" cuando ya estaba.
+
+**Cache config (`lib/main.dart`):**
+```dart
+PaintingBinding.instance.imageCache.maximumSizeBytes = 500 * 1024 * 1024; // 500 MB
+PaintingBinding.instance.imageCache.maximumSize = 2000;                    // match el byte budget
+```
+El count cap (`maximumSize`) se subió de 1000 → 2000 para que la cuota de bytes no se desperdicie evictando por count en sesiones largas con muchas fotos editoriales.
+
+**Bytes ceiling 200 MB → 500 MB (revisión post-deploy):** Tras el refactor a `Image + Provider + frameBuilder`, el usuario observó en Firmas un caso de revisita donde 5/6 thumbnails aparecían instant pero 1 (CasaTessela) tardaba 1-3s en aparecer (confirmado: la imagen sí había cargado completa en sesión previa, era cache miss real). Diagnóstico: heroes fullscreen decodifican a ~17 MB cada uno (1170×2532×4B); tras visitar varios detalles, el budget de 200 MB se exhaustaba y brand thumbnails (~8 MB cada uno) eran LRU-evictados. Al volver a Firmas, esas entries pasaban por el disk cache de CNI → 100-800ms de disk read + decode antes del primer frame.
+
+500 MB es el rango normal para apps premium image-heavy (Pinterest ~500 MB, Instagram 450-800 MB, Apple Photos ~600 MB, MUBI ~320 MB). El techo no es piso: iOS vacía la cache bajo memory pressure vía `didReceiveMemoryWarning` (Flutter respeta). El bundle de la app en disco no cambia — `maximumSizeBytes` es runtime only.
+
+**Por qué 500 MB y no ResizeImage automático:** El problema reportado era específico (1 imagen tras navegación), no sistémico de footprint. Subir un número es reversible en segundos; introducir LayoutBuilder + cacheWidth/cacheHeight en `LhotseImage` añade lógica (calcular tamaño, excluir el viewer fullscreen, riesgo de blurry en edge cases) que solo merece la pena si 500 MB no resolviera el problema. Si en uso real surge eviction recurrente, ResizeImage queda como siguiente paso.
+
+**Por qué no `CachedNetworkImage` + custom `fadeInDuration: 0`:** El widget seguiría haciendo resolve async → frame de placeholder → frame de imagen, sin camino síncrono. Aunque pongas duration 0, el placeholder se ve un frame. La única forma de render síncrono es vía `Image` widget con un `ImageProvider` que enchufe a `PaintingBinding.imageCache` — y `CachedNetworkImageProvider extends ImageProvider`, así que enchufa.
+
+**Por qué no `Image.network`:** No tiene disk cache. Cold start = network round-trip para cada imagen vista en sesiones previas. Perdería el beneficio principal de ADR-53.
+
+**Por qué no LQIP en este sprint:** LQIP (low-quality image placeholder base64) resolvería también el cold-load (primera vez sin disco). Requiere columna `lqip_base64` en `assets/brands/projects/news` y pipeline de generación en el upload del admin. Out of scope; planificado como next-step si el cold load resulta molesto.
+
+**Consequences:**
+- (+) Cache hit = frame 1 sin transición. Resuelve la queja sistémica del usuario.
+- (+) Coherente con voz editorial: imagen aparece, ya está, como una revista.
+- (+) Cero código de animación → más simple, menos surface area para bugs visuales.
+- (+) Mantiene fallback cascade (asset → asset alt → placeholder icon) y el patrón de precache en `FeedCard.didChangeDependencies`.
+- (−) Cold load es "pop" honesto (surface beige → imagen sin transición). En conexiones lentas puede percibirse más jarring que un fade que disimula. Aceptado: prefiere honestidad sobre disfraz; futuro LQIP resuelve.
+- (−) Pierde el `placeholder` widget elaborado de CachedNetworkImage. Aceptado: el placeholder elaborado era parte del problema.
+
+**Files touched:**
+- `lib/core/widgets/lhotse_image.dart` — refactor branch network.
+- `lib/main.dart` — `maximumSize = 2000`.
+- `docs/CONVENTIONS.md` — sección "Images (LhotseImage)" añadida.
+
+## ADR-80: L1 ProjectDetail — tabs (Proyecto / Avance / Activo) sobre overlay hero, no `ExtendedNestedScrollView`
+
+**Status:** Accepted, 2026-05-26
+**Context:** El detalle comercial de proyecto (`ProjectDetailScreen`, accedido desde Inicio y desde Firmas → tab Proyectos) apilaba en vertical hero + título + body jsonb + PLANO + ESTADO ACTUAL + TOUR VIRTUAL + GALERÍA + NOTICIAS RELEVANTES. Mezclaba "qué es el proyecto" con "cómo va la obra" y "info técnica del activo" sin jerarquía, lo que rompía la simetría editorial con L3 (`CoinversionDetailScreen`), donde el inversor ya consume la misma propiedad estructurada en tabs.
+
+**Decision:** Introducir tabs bajo la firma idénticos en gramática a los de L3:
+- **No finalizado (`phase != exited`)** → 3 tabs: Proyecto (cuerpo editorial + noticias relevantes) / Avance (timeline + Estado Actual matterport) / Activo (asset info + plano + tour virtual).
+- **Finalizado (`phase == exited`)** → 2 tabs: Proyecto / Activo (sin Avance).
+
+La galería deja de ser sección fija; el operador la inserta como `GalleryBlock` en el jsonb `content` desde admin si quiere carrusel embebido en Proyecto.
+
+**Por qué NO `ExtendedNestedScrollView` + `SliverAppBar` (la arquitectura de L3):**
+El hero de L1 es un `MediaHeroCarousel` con swipe horizontal nativo + tap-to-fullscreen del vídeo. El gesto load-bearing exige un `Listener(behavior: HitTestBehavior.translucent)` al nivel `Scaffold.body` (ver "Multi-image hero carousel" en DESIGN_SYSTEM.md). Empíricamente, ningún gesture handler recibe pointer events cuando el hero vive empotrado en `SliverAppBar.flexibleSpace` o en cualquier `FlexibleSpaceBar` (documentado en `docs/solutions/2026-05-21-pageview-inside-sliverappbar-swipe.md` — probadas 5 arquitecturas). L3 puede usar `SliverAppBar` porque su hero es una sola imagen/vídeo estático, sin swipe. L1 no.
+
+**Arquitectura escogida:** `Stack` con 3 capas. La capa inferior es un `Positioned(top: topPadding + kToolbarHeight)` con un `CustomScrollView` interno cuyos slivers son: `SliverToBoxAdapter` (hero spacer = `heroHeight - visibleTopInset`) + título/byline + `SliverPersistentHeader(pinned, LhotseTabBarDelegate)` + `SliverToBoxAdapter(AnimatedSwitcher)` con el `KeyedSubtree(key: ValueKey(activeTab))` del contenido del tab activo. El desplazamiento vertical del scroll view hace que el sliver pin caiga justo bajo el toolbar flotante (que vive como `Positioned(top: 0)` en la capa superior). El hero overlay (`AnimatedBuilder(_scrollController)`) sigue siendo un `Positioned` independiente al nivel raíz del Stack, extendiéndose edge-to-edge sobre la zona del toolbar para preservar la imagen al completo. `MediaQuery.removePadding(removeTop: true)` evita doble status-bar inset dentro del scroll view shifted.
+
+**Trade-offs aceptados:**
+- (−) Al cambiar de tab, el outer scroll mantiene la posición. No hay scroll-per-tab independiente (L3 sí lo tiene vía `LhotseTabScrollWrapper` dentro de `TabBarView`). Aceptado: la gramática "swipe horizontal del carousel" es load-bearing; scroll-per-tab es nice-to-have.
+- (−) El cálculo del `heroSpacer` y los thresholds de `_onScroll` cambian respecto al estado anterior (restan `topPadding + kToolbarHeight`). Documentado en línea.
+- (+) Cero código nuevo de gesture handling: el `Listener` body-level del L1 sigue intacto.
+- (+) Empty states explícitos por tab (Avance "Sin avances publicados por ahora.", Activo "Sin información del activo por ahora.") evitan tabs vacíos invisibles.
+- (+) `LhotseProjectTimeline` extraído desde L3 a `lib/core/widgets/` — un único punto de render compartido por L1 Avance y L3 Avance. `ProjectData.assetInfo` espeja `CoinvestmentProjectDetails.assetInfo` (sin cadastral ref, que es contractual y vive sólo en L3).
+
+**Tab controller dinámico:** la lista de tabs se calcula por `project.phase` en cada build; `_ensureTabController(length)` recrea el `TabController` cuando cambia la longitud (sólo ocurre la primera vez si `widget.initialProject` es null y el provider resuelve con `phase == exited`). El `currentTab` se clampa al rango válido para soportar la transición sin out-of-bounds.
+
+**Filtro de noticias (decisión del producto):** las noticias `subtype == progress` (avance de obra) NO aparecen en el L1 comercial. Son contenido reservado al L3 (visible para inversores en el proyecto). El L1 sigue surfaceando sólo editorial/press en Proyecto (filtro `subtype != progress`, idéntico al anterior).
+
+**Files touched:**
+- `lib/features/home/presentation/project_detail_screen.dart` — refactor principal (tabs, empty states, hero overlay con offset).
+- `lib/core/widgets/lhotse_project_timeline.dart` — nuevo (extraído de `coinversion_detail_screen.dart`).
+- `lib/features/investments/presentation/coinversion_detail_screen.dart` — `_InvestmentTimeline` + `_PulsingNode` eliminados; importa `LhotseProjectTimeline`.
+- `lib/core/domain/project_data.dart` — getter `assetInfo` (espejo del L3).
+- `docs/DESIGN_SYSTEM.md` — sección "Detail screen — ProjectDetail" reescrita.
+
+## ADR-81: ContentBlock `cta` — botón embebido en el cuerpo editorial
+
+**Status:** Accepted, 2026-05-26
+**Context:** El cuerpo editorial de un proyecto (`projects.content`, ver ADR-78) admitía cinco tipos (heading/text/image/gallery/video) pero ningún affordance accionable. El operador necesita poder insertar un CTA arbitrario (reserva de visita, formulario externo, calendario, microsite de la marca, etc.) sin sacar al usuario de la app.
+
+**Decision.** Sexto tipo `cta` en el sealed union (`ContentBlock.cta({ String label, String url })`), discriminador `'cta'` snake_case. El renderer (`_CtaView` en `project_content_renderer.dart`) clona el patrón visual de `_WebCta` del detalle de Firmas: full-width fondo `AppColors.primary` (negro), texto `labelUppercaseMd` 12pt w500 letterSpacing 1.2 en `AppColors.textOnDark`, padding vertical 16, sin radius, padding horizontal `AppSpacing.lg` (respeta la columna editorial). El label se uppercasea en render — el operador escribe casing natural en admin. Tap → `Navigator.push(MaterialPageRoute(builder: (_) => EmbeddedWebViewScreen(url: url)))` — mismo widget ya en producción para CTAs de Firmas, links legales de Profile y links externos de news_detail (chrome thin: back chevron + loading + error "Página no disponible", sin toolbar con dominio ni título).
+
+**Política de URL.** Sólo `https://`. Validado en el Zod del admin (`lib/schemas/content-block.ts`):
+```ts
+url: z.string().trim().url().regex(/^https:\/\//i, "El enlace debe empezar por https://"),
+label: z.string().trim().min(1).max(40),  // baseline iPhone 390pt, una línea Campton uppercase
+```
+La app asume validación upstream: si llega un URL malformado, `flutter_inappwebview` mostrará el error state. No hay allowlist de dominios — el operador tiene autoridad editorial sobre links de marketing igual que la tiene sobre el cuerpo del texto.
+
+**Por qué reusar `EmbeddedWebViewScreen` y no crear widget nuevo.** Tres argumentos:
+1. Coherencia de chrome: el usuario ya conoce el patrón (Firmas, perfil legal, news externas). Inventar un chrome distinto para CTAs del body sería ruido.
+2. Cero código nuevo de webview: el ciclo de vida (`_ready`/`_failed`), settings de `InAppWebView` (`javaScriptEnabled: true`, `supportZoom: true`, `useHybridComposition: true`), spinner y error state están probados.
+3. El comentario load-bearing del widget ("no title text in the chrome — the embedded page owns its own heading") aplica idéntico al CTA: cualquier landing aterrizada lleva su propio header.
+
+**Por qué NO un toolbar con dominio o navegación back/forward.** Apple Settings, Sotheby's, Robinhood y JPM Private Bank mantienen sus webviews chrome-light por la misma razón documentada en `EmbeddedWebViewScreen`: doblar la cabecera de la página en una barra nativa rompe la restraint editorial y lee como redundancia. El usuario sabe que está en una página externa porque el contenido cambia; no necesita un crumb permanente.
+
+**Sin migración SQL.** `projects.content` es jsonb libre sin CHECK constraint (decisión documentada en ADR-78). El nuevo tipo es aditivo. Clientes legacy hacen forward-compat: `ProjectData._parseContent` skip silenciosamente cualquier bloque cuyo `type` no reconozca (`project_data.dart:160-173`). Sin redespliegues forzados; los clientes antiguos simplemente no verán el CTA hasta actualizar.
+
+**Consequences:**
+- (+) Un solo render path para CTAs en todo el sistema (Firmas brand detail + body editorial de proyectos). Cambiar la estética = un commit.
+- (+) Operador puede vincular cualquier flow externo sin desarrollar custom screens (calendario Calendly, formulario Typeform, microsite de marca).
+- (+) Webview embebido = el usuario no sale de la app, no se pierde el contexto del feed.
+- (−) Sin allowlist: el operador podría meter un link a un site no-Lhotse / no-marca. Aceptado: misma libertad que ya tiene para escribir el texto del cuerpo o subir imágenes. Si en operación surge abuso, allowlist se añade como un Zod refinement sin tocar app.
+- (−) El CTA escribe sobre la columna editorial restringida (lateral lg 24pt). No es edge-to-edge como _WebCta de Firmas (que vive en un BrandDetail screen con su propio chrome flotante). Aceptado: dentro del flujo del cuerpo editorial, el botón debe respetar los márgenes del resto de bloques para mantener el ritmo de lectura.
+
+**Files touched:**
+- App: `lib/core/domain/content_block.dart` (nuevo factory), `lib/features/home/presentation/widgets/project_content_renderer.dart` (case + `_CtaView`).
+- Admin: `lib/schemas/content-block.ts` (Zod variant + labels/hints), `components/projects/content-blocks-editor.tsx` (`CtaBlockEditor` + AddBlockMenu entry), `components/projects/content-preview.tsx` (`CtaPreview`).
+- Sin migración SQL.
+
+## ADR-82: Reorder manual global de proyectos y noticias
+
+**Status:** Accepted, 2026-05-26
+**Context:** Hasta hoy las listas globales de proyectos y noticias (catálogos de Firmas, brand detail tabs, Strategy "Nuevos proyectos") se ordenaban por timestamp (`projects.created_at DESC` / `news.date DESC`). El operador no podía destacar editorialmente un proyecto/noticia. El cliente lo pidió como funcionalidad de admin con drag-and-drop, "simple".
+
+**Decision.** Añadir una columna `sort_order INTEGER NOT NULL DEFAULT 0` a `projects` y `news`. Los catálogos pasan a ordenarse por `sort_order ASC` con `created_at DESC` (proyectos) o `date DESC` (noticias) como tie-breaker. El admin gana dos páginas dedicadas `/projects/reorder` y `/news/reorder` con drag-and-drop (clonando el patrón ya en producción de `brands-reorder-list`).
+
+**Por qué un `sort_order` global plano y no por marca (tabla puente).** Tres argumentos:
+1. **Simetría con `brands`**: el operador ya conoce el flujo. Reusa el componente, la server action two-phase, el helper `nextSortOrder`. Cero curva de aprendizaje.
+2. **Coherencia entre superficies**: el mismo `sort_order` se respeta en cat. Firmas global, brand detail tab Proyectos, Strategy "Nuevos proyectos" y search results. Una sola decisión editorial cubre todas las listas.
+3. **Volumen real**: Lhotse cataloga decenas de proyectos, no miles. Un orden por marca añadiría una tabla puente + UI duplicada por marca sin un caso de uso claro que lo demande hoy.
+
+**Por qué NO afecta al feed de Inicio.** El home feed (`home_feed_items`) ya tiene su propio `sort_order` para curación editorial mixta (proyectos + noticias + marcas + activos en un único stream). Mezclar el sort_order genérico de catálogo con el del feed rompería la posibilidad de tener un orden editorial diferenciado entre "ficha pública del catálogo" y "post curado en el feed".
+
+**Surfaces afectadas (cómo se aplica el nuevo orden):**
+- Catálogo Firmas → Proyectos / Noticias (`ProjectsArchiveBody`, `NewsArchiveBody`): orden directo.
+- Brand detail → tab Proyectos / Noticias: consume los mismos providers, hereda el orden.
+- Strategy "Nuevos proyectos": orden respetado **dentro del filtro existente** (`is_fundraising_open=true` AND el usuario no tiene contrato asociado, ver `investments_screen.dart:148-152`). Es decir, el sort_order no cambia QUÉ se muestra, sólo CÓMO se ordena lo que ya pasa el filtro.
+- Search results: heredan del provider, automático.
+- **NO afectado**: `BrandInvestmentsScreen` (L2 Strategy) ordena contratos del inversor por su propia lógica de vencimiento/firma; el sort_order de catálogo no aplica ahí. Feed de Inicio: orden independiente vía `home_feed_items`.
+
+**Two-phase update.** Replicado de `reorderBrands`: paso 1 asigna valores negativos `-(i+1)` por fila, paso 2 reemplaza por positivos `(i+1)*10`. Sin el paso negativo, el UPDATE por fila colisionaría con el valor positivo de otra fila si la migración hubiera dejado uno de los nuevos sort_orders en un valor ya existente (la columna no tiene UNIQUE pero el patrón es resiliente igualmente y consistente con el resto). `revalidatePath("/projects")` + `revalidatePath("/projects/reorder")` (idem news) tras el commit.
+
+**Backfill en la migración** (preserva el orden visible existente al usuario en el primer load tras desplegar):
+```sql
+UPDATE projects p SET sort_order = sub.rn * 10
+  FROM (SELECT id, row_number() OVER (ORDER BY created_at DESC) rn FROM projects) sub
+ WHERE p.id = sub.id;
+UPDATE news n SET sort_order = sub.rn * 10
+  FROM (SELECT id, row_number() OVER (ORDER BY date DESC) rn FROM news) sub
+ WHERE n.id = sub.id;
+```
+El `×10` deja huecos para slot inserts manuales en el futuro (e.g., insertar entre `30` y `40` con valor `35` sin recompactar).
+
+**Vista `projects_with_metrics` recreada** (DROP + CREATE) añadiendo `p.sort_order` al SELECT. `CREATE OR REPLACE VIEW` no permite añadir columnas, y `ALTER VIEW … SET (security_invoker = true)` es load-bearing (CREATE no preserva reloptions). `NOTIFY pgrst, 'reload schema'` flushea el cache de PostgREST.
+
+**Default al crear** desde admin: `createProject` y `createNews` llaman a `nextSortOrder(supabase, table)` (helper compartido en `lib/data/sort-order.ts`) que devuelve `max + 10`. Los nuevos siempre van al final; el operador los promueve manualmente desde el reorder page si quiere destacarlos.
+
+**Consequences:**
+- (+) Un patrón único de "reorder list" en el admin (brands, projects, news comparten gramática). Cualquier cambio futuro al componente se propaga.
+- (+) Sin migración SQL para clientes legacy del Flutter: el campo es aditivo y los Supabase select(`*`) ya lo traen automáticamente. Si un cliente Flutter antiguo no consulta `sort_order` en el `.order(...)`, recibe los rows en el orden que decida PostgreSQL — funcional aunque no respete la nueva intención editorial. Acceptable para una transición de un release.
+- (+) El backfill preserva el orden visible al usuario en el momento del despliegue. Sin "salto" perceptible.
+- (−) Si el admin elimina un proyecto, queda un hueco en la secuencia (e.g., 10, 20, 40, 50). Es cosmético, no rompe nada — el orden relativo se mantiene. La compactación se haría en un mantenimiento offline si llega a importar.
+- (−) Una migración futura que añada `UNIQUE(sort_order)` rompería el two-phase de brands+projects+news (los valores temporales `-(i+1)` colisionarían con los negativos persistidos durante el INSERT…SELECT del two-phase). Aceptado: no se planea UNIQUE; el sort_order es un ordinal blando.
+
+**Files touched:**
+- DB: `docs/sql/migrations/20260526120000_projects_news_sort_order.sql` (nuevo, ALTER TABLE + backfill + recreate view).
+- App: `lib/core/data/projects_provider.dart`, `lib/core/data/news_provider.dart`, `lib/core/data/open_round_projects_provider.dart` (order chain con sort_order primario + tie-breaker temporal).
+- Admin: `lib/db/database.types.ts` (campo en Row/Insert/Update), `lib/data/sort-order.ts` (helper nuevo), `app/(admin)/projects/actions.ts` (+ default + `reorderProjects`), `app/(admin)/news/actions.ts` (+ default + `reorderNews`), `app/(admin)/projects/reorder/page.tsx` (nuevo), `app/(admin)/news/reorder/page.tsx` (nuevo), `components/projects/projects-reorder-list.tsx` (nuevo), `components/news/news-reorder-list.tsx` (nuevo), botones "Reordenar" en `/projects` y `/news`.
+
