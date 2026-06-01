@@ -342,3 +342,25 @@ Release builds (`flutter build appbundle --release`) are signed with the **uploa
 - **The keystore is needed for every release build** — it must exist at the path in `key.properties`. All Play Store versions must be signed with this same key.
 
 Enroll the app in **Play App Signing** in the Play Console: Google holds the distribution key; our `.jks` is only the upload key (resettable if lost). Build command: `flutter build appbundle --release --dart-define-from-file=.env`.
+
+## Release — env (dart-defines) ⚠️ load-bearing
+
+The app reads its secrets as **compile-time dart-defines**, NOT a runtime `.env` file:
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` (`lib/main.dart`) and `ONESIGNAL_APP_ID`
+(`lib/core/notifications/onesignal_service.dart`) via `const String.fromEnvironment(...)`. They are
+injected with `--dart-define-from-file=.env` and stored (base64) in `DART_DEFINES` inside
+`ios/Flutter/Generated.xcconfig`; `Info.plist` reads version from `$(FLUTTER_BUILD_NAME/NUMBER)`.
+
+- **EVERY `flutter build`/`run` of this app MUST pass `--dart-define-from-file=.env` — including
+  `flutter build ios --config-only`.** Running ANY flutter build/run WITHOUT the flag regenerates
+  `Generated.xcconfig` and **wipes the three defines** → the build/archive ships with empty
+  `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`ONESIGNAL_APP_ID` (Supabase + push silently broken; no crash,
+  `main.dart` does not validate).
+- `Generated.xcconfig` is **gitignored** (`ios/.gitignore`) → this never shows up in code review.
+- Canonical release command: **`flutter build ipa --dart-define-from-file=.env`** (or the `/deploy`
+  skill). Do NOT archive bare in Xcode — Xcode does not inject the defines; it relies on the
+  xcconfig already carrying them from a prior flutter build *with the flag*.
+- Verify before uploading: decode `DART_DEFINES` from `Generated.xcconfig` and confirm the three
+  keys are present.
+- **Prior occurrence:** 2026-06-01 — build `1.0.1+15` was uploaded with empty env after a
+  `flutter build ios --config-only` run **without** `--dart-define-from-file=.env` wiped them.
