@@ -15,7 +15,6 @@ import '../../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../../core/widgets/lhotse_brand_filter_row.dart';
 import '../../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../../core/widgets/lhotse_search_field.dart';
-import '../../../../core/widgets/scroll_aware_filter_bar.dart';
 import '../../../home/presentation/widgets/project_showcase_card.dart';
 
 enum _ActiveTool { none, brands, search }
@@ -65,24 +64,26 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
   final Set<String> _selectedBrands = {};
   String _searchQuery = '';
   final _searchController = TextEditingController();
-  final _scrollController = ScrollController();
 
   @override
   void dispose() {
     _searchController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
   List<ProjectData> _applyFilters(List<ProjectData> projects) {
     var result = projects.toList();
     if (_selectedStatus != null) {
-      result = result.where((p) => switch (_selectedStatus!) {
-            _StatusFilter.inDevelopment =>
-              p.phase == ProjectPhase.preConstruction ||
-                  p.phase == ProjectPhase.construction,
-            _StatusFilter.exited => p.phase == ProjectPhase.exited,
-          }).toList();
+      result = result
+          .where(
+            (p) => switch (_selectedStatus!) {
+              _StatusFilter.inDevelopment =>
+                p.phase == ProjectPhase.preConstruction ||
+                    p.phase == ProjectPhase.construction,
+              _StatusFilter.exited => p.phase == ProjectPhase.exited,
+            },
+          )
+          .toList();
     }
     if (_selectedBrands.isNotEmpty) {
       result = result.where((p) => _selectedBrands.contains(p.brand)).toList();
@@ -137,8 +138,9 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
     final projects = projectsAsync.value ?? const [];
     final allBrands = brandsAsync.value ?? const [];
     final projectBrandNames = projects.map((p) => p.brand).toSet();
-    final brands =
-        allBrands.where((b) => projectBrandNames.contains(b.name)).toList();
+    final brands = allBrands
+        .where((b) => projectBrandNames.contains(b.name))
+        .toList();
     final filtered = _applyFilters(projects);
 
     // Defensive: if the brand pool collapses to empty (last project of a
@@ -160,54 +162,55 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
 
     return Column(
       children: [
-        ScrollAwareFilterBar(
-          scrollController: _scrollController,
-          expanded: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _FilterBar(
-                selectedStatus: _selectedStatus,
-                activeTool: _activeTool,
-                hasBrandSelection: _selectedBrands.isNotEmpty,
-                showBrandsTool: brands.isNotEmpty,
-                onStatusTap: _setStatus,
-                onBrandsTap: () => _toggleTool(_ActiveTool.brands),
-                onSearchTap: () => _toggleTool(_ActiveTool.search),
-              ),
-              if (_activeTool == _ActiveTool.search)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-                  child: SizedBox(
-                    height: 52,
-                    child: Center(
-                      child: LhotseSearchField(
-                        controller: _searchController,
-                        hint: 'Buscar proyectos, marcas, ubicaciones...',
-                        autofocus: true,
-                        onChanged: (v) => setState(() => _searchQuery = v),
-                        onClose: () {
-                          setState(() {
-                            _searchQuery = '';
-                            _searchController.clear();
-                            _activeTool = _ActiveTool.none;
-                          });
-                        },
-                      ),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _FilterBar(
+              selectedStatus: _selectedStatus,
+              activeTool: _activeTool,
+              hasBrandSelection: _selectedBrands.isNotEmpty,
+              showBrandsTool: brands.isNotEmpty,
+              onStatusTap: _setStatus,
+              onBrandsTap: () => _toggleTool(_ActiveTool.brands),
+              onSearchTap: () => _toggleTool(_ActiveTool.search),
+            ),
+            if (_activeTool == _ActiveTool.search)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
+                child: SizedBox(
+                  height: 52,
+                  child: Center(
+                    child: LhotseSearchField(
+                      controller: _searchController,
+                      hint: 'Buscar proyectos, marcas, ubicaciones...',
+                      autofocus: true,
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                      onClose: () {
+                        setState(() {
+                          _searchQuery = '';
+                          _searchController.clear();
+                          _activeTool = _ActiveTool.none;
+                        });
+                      },
                     ),
                   ),
-                )
-              else if (_activeTool == _ActiveTool.brands)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: LhotseBrandFilterRow(
-                    brands: brands,
-                    selectedBrands: _selectedBrands,
-                    onBrandTap: _toggleBrand,
-                  ),
                 ),
-            ],
-          ),
+              )
+            else if (_activeTool == _ActiveTool.brands)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: LhotseBrandFilterRow(
+                  brands: brands,
+                  selectedBrands: _selectedBrands,
+                  onBrandTap: _toggleBrand,
+                ),
+              ),
+          ],
         ),
         Expanded(
           child: projectsAsync.hasError
@@ -219,27 +222,29 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
                   },
                 )
               : projectsAsync.isLoading && projects.isEmpty
-                  ? const LhotseAsyncLoading()
-                  : ListView.separated(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.only(
-                          top: AppSpacing.md, bottom: AppSpacing.xxl),
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: AppSpacing.lg),
-                      itemBuilder: (context, i) {
-                        return ProjectShowcaseCard(
-                          project: filtered[i],
-                          isLocked: filtered[i].isVip &&
-                              ref.read(currentUserRoleProvider) !=
-                                  UserRole.investorVip,
-                          onTap: () => context.push(
-                            '/projects/${filtered[i].id}',
-                            extra: filtered[i],
-                          ),
-                        );
-                      },
-                    ),
+              ? const LhotseAsyncLoading()
+              : ListView.separated(
+                  padding: const EdgeInsets.only(
+                    top: AppSpacing.md,
+                    bottom: AppSpacing.xxl,
+                  ),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: AppSpacing.lg),
+                  itemBuilder: (context, i) {
+                    return ProjectShowcaseCard(
+                      project: filtered[i],
+                      isLocked:
+                          filtered[i].isVip &&
+                          ref.read(currentUserRoleProvider) !=
+                              UserRole.investorVip,
+                      onTap: () => context.push(
+                        '/projects/${filtered[i].id}',
+                        extra: filtered[i],
+                      ),
+                    );
+                  },
+                ),
         ),
       ],
     );
@@ -274,7 +279,11 @@ class _FilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -321,7 +330,8 @@ class _FilterBar extends StatelessWidget {
                       child: PhosphorIcon(
                         PhosphorIconsThin.stack,
                         size: 20,
-                        color: activeTool == _ActiveTool.brands ||
+                        color:
+                            activeTool == _ActiveTool.brands ||
                                 hasBrandSelection
                             ? AppColors.textPrimary
                             : AppColors.accentMuted,

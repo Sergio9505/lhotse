@@ -10,39 +10,7 @@ import '../data/bunny_thumbnail.dart';
 import '../data/playable_video_url_provider.dart';
 import '../domain/media_item.dart';
 import '../theme/app_theme.dart';
-import 'lhotse_bottom_sheet.dart';
 import 'lhotse_image.dart';
-
-/// Opens a bottom sheet with all gallery items in a vertical scroll.
-/// Tapping any item opens the paged gallery viewer at that index.
-void showAllGallery(
-    BuildContext context, String title, List<MediaItem> items) {
-  showLhotseBottomSheet(
-    context: context,
-    title: title,
-    itemCount: items.length,
-    listPadding: EdgeInsets.fromLTRB(
-      AppSpacing.lg,
-      0,
-      AppSpacing.lg,
-      MediaQuery.of(context).padding.bottom + AppSpacing.md,
-    ),
-    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.lg),
-    itemBuilder: (context, i) {
-      final item = items[i];
-      return GestureDetector(
-        onTap: () => showMediaGallery(context, items: items, initialIndex: i),
-        child: SizedBox(
-          height: 200,
-          width: double.infinity,
-          child: item.type == MediaType.image
-              ? LhotseImage(item.url)
-              : VideoThumbnailTile(url: item.url),
-        ),
-      );
-    },
-  );
-}
 
 /// Opens a paged full-screen gallery viewer starting at [initialIndex].
 /// Supports swipe between all items, pinch-to-zoom and double-tap on images,
@@ -196,12 +164,7 @@ class _MediaGalleryViewerState extends State<_MediaGalleryViewer> {
       DeviceOrientation.landscapeRight,
     ]);
     _currentPage = widget.initialIndex;
-    // Center virtual range so the user can swipe both ways indefinitely
-    // (mirrors the `home_screen.dart` feed pattern).
-    final centered = widget.items.length > 1
-        ? widget.items.length * 5000 + widget.initialIndex
-        : widget.initialIndex;
-    _pageController = PageController(initialPage: centered);
+    _pageController = PageController(initialPage: widget.initialIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _precacheAdjacent(widget.initialIndex);
     });
@@ -248,16 +211,14 @@ class _MediaGalleryViewerState extends State<_MediaGalleryViewer> {
               physics: isZoomed
                   ? const NeverScrollableScrollPhysics()
                   : const BouncingScrollPhysics(),
-              itemCount: widget.items.length > 1 ? null : widget.items.length,
+              itemCount: widget.items.length,
               onPageChanged: (i) {
-                final next = i % widget.items.length;
-                setState(() => _currentPage = next);
-                _precacheAdjacent(next);
+                setState(() => _currentPage = i);
+                _precacheAdjacent(i);
               },
               itemBuilder: (context, i) {
-                final idx = i % widget.items.length;
-                final item = widget.items[idx];
-                final isActive = idx == _currentPage;
+                final item = widget.items[i];
+                final isActive = i == _currentPage;
                 return item.type == MediaType.video
                     ? _VideoPage(item: item, isActive: isActive)
                     : _ImagePage(

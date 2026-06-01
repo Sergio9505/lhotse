@@ -101,58 +101,78 @@ class _AcceptConsentScreenState extends ConsumerState<AcceptConsentScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Text(
-                  'Antes de continuar',
-                  style: AppTypography.editorialTitle.copyWith(
-                    color: AppColors.textPrimary,
+              // Scrolls when the legal copy + checkboxes don't fit (small
+              // screens or large Dynamic Type), so the pinned CTA below stays
+              // reachable.
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg),
+                        child: Text(
+                          'Antes de continuar',
+                          style: AppTypography.editorialTitle.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg),
+                        child: Text(
+                          'Necesitamos que aceptes los términos para acceder a tu '
+                          'cuenta.',
+                          style: AppTypography.annotationParagraph.copyWith(
+                            color: AppColors.accentMuted,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg),
+                        child: LegalConsentCheckbox(
+                          value: _legalAccepted,
+                          onChanged: (v) =>
+                              setState(() => _legalAccepted = v),
+                          onTermsTap: () =>
+                              context.push(AppRoutes.profileTerms),
+                          onPrivacyTap: () =>
+                              context.push(AppRoutes.profilePrivacy),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg),
+                        child: MarketingConsentCheckbox(
+                          value: _marketingConsent,
+                          onChanged: (v) =>
+                              setState(() => _marketingConsent = v),
+                        ),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg),
+                          child: Text(
+                            _error!,
+                            style: AppTypography.annotation.copyWith(
+                              color: AppColors.danger,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Text(
-                  'Necesitamos que aceptes los términos para acceder a tu '
-                  'cuenta.',
-                  style: AppTypography.annotationParagraph.copyWith(
-                    color: AppColors.accentMuted,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: LegalConsentCheckbox(
-                  value: _legalAccepted,
-                  onChanged: (v) => setState(() => _legalAccepted = v),
-                  onTermsTap: () => context.push(AppRoutes.profileTerms),
-                  onPrivacyTap: () => context.push(AppRoutes.profilePrivacy),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: MarketingConsentCheckbox(
-                  value: _marketingConsent,
-                  onChanged: (v) => setState(() => _marketingConsent = v),
-                ),
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: AppSpacing.lg),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                  child: Text(
-                    _error!,
-                    style: AppTypography.annotation.copyWith(
-                      color: AppColors.danger,
-                    ),
-                  ),
-                ),
-              ],
-              const Spacer(),
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   AppSpacing.lg,

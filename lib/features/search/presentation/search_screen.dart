@@ -84,20 +84,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }).toList();
   }
 
-  /// Idle "DESTACADOS" selection: projects open to investment that the
-  /// current user can actually access (filters out VIP-locked ones for
-  /// non-VIP roles). Falls back to the first three projects of the list
-  /// when the filter produces nothing — the section is never empty as
-  /// long as `projects` itself has rows.
-  List<ProjectData> _selectFeatured(List<ProjectData> projects) {
-    final accessible = projects
-        .where((p) => p.isFundraisingOpen && !isProjectLocked(ref, p))
-        .take(3)
-        .toList();
-    if (accessible.isNotEmpty) return accessible;
-    return projects.take(3).toList();
-  }
-
   List<DocumentData> _searchDocsDirect(List<DocumentData> docs) {
     if (_query.isEmpty) return [];
     final q = normalizeForSearch(_query);
@@ -406,7 +392,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   )
                 : _IdleContent(
                     recentSearches: _recentSearches,
-                    featuredProjects: _selectFeatured(projects),
                     onTagTap: _onTagTap,
                   ),
           ),
@@ -421,12 +406,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 class _IdleContent extends StatelessWidget {
   const _IdleContent({
     required this.recentSearches,
-    required this.featuredProjects,
     required this.onTagTap,
   });
 
   final List<String> recentSearches;
-  final List<ProjectData> featuredProjects;
   final ValueChanged<String> onTagTap;
 
   @override
@@ -442,8 +425,28 @@ class _IdleContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
         ],
-        _FeaturedSection(projects: featuredProjects),
+        const _SearchPrompt(),
       ],
+    );
+  }
+}
+
+/// Idle-state guidance. Replaces the former DESTACADOS section: the buscador
+/// shows nothing until the user types, just a sober functional prompt of what
+/// can be searched.
+class _SearchPrompt extends StatelessWidget {
+  const _SearchPrompt();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Text(
+        'Busca proyectos, firmas, ubicaciones y documentos.',
+        style: AppTypography.bodyReading.copyWith(
+          color: AppColors.accentMuted,
+        ),
+      ),
     );
   }
 }
@@ -509,26 +512,6 @@ class _TrendingChip extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _FeaturedSection extends StatelessWidget {
-  const _FeaturedSection({required this.projects});
-
-  final List<ProjectData> projects;
-
-  @override
-  Widget build(BuildContext context) {
-    if (projects.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const LhotseSectionLabel(label: 'DESTACADOS'),
-        const SizedBox(height: AppSpacing.md),
-        for (final project in projects)
-          _ProjectResultItem(project: project),
-      ],
     );
   }
 }

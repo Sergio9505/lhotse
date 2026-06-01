@@ -601,10 +601,10 @@ class _AvanceTab extends StatelessWidget {
             key: const PageStorageKey('l3-coinversion-news'),
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: news.length > 1 ? news.length * 1000 : news.length,
+            itemCount: news.length,
             separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, i) {
-              final n = news[i % news.length];
+              final n = news[i];
               return LhotseNewsCard.compact(
                 title: n.title,
                 imageUrl: n.imageUrl,
@@ -706,11 +706,7 @@ class _ProyectoTab extends StatelessWidget {
         ],
         if (renderMedia.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xxl),
-          _GallerySectionHeader(
-            label: 'RENDERS',
-            items: renderMedia,
-            title: 'RENDERS',
-          ),
+          const _GallerySectionHeader(label: 'RENDERS'),
           const SizedBox(height: AppSpacing.md),
           _InvestmentGallery(
             renderMedia: renderMedia,
@@ -726,45 +722,23 @@ class _ProyectoTab extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Gallery section header with ↗ action
+// Gallery section header
 // ---------------------------------------------------------------------------
 
 class _GallerySectionHeader extends StatelessWidget {
-  const _GallerySectionHeader({
-    required this.label,
-    required this.items,
-    required this.title,
-  });
+  const _GallerySectionHeader({required this.label});
 
   final String label;
-  final List<MediaItem> items;
-  final String title;
 
   @override
   Widget build(BuildContext context) {
-    final hasMore = items.length >= 2;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: AppTypography.labelUppercaseMd.copyWith(
-              color: AppColors.accentMuted,
-            ),
-          ),
-          if (hasMore) ...[
-            const SizedBox(width: AppSpacing.sm),
-            GestureDetector(
-              onTap: () => showAllGallery(context, title, items),
-              child: const PhosphorIcon(
-                PhosphorIconsThin.arrowUpRight,
-                size: 16,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ],
+      child: Text(
+        label,
+        style: AppTypography.labelUppercaseMd.copyWith(
+          color: AppColors.accentMuted,
+        ),
       ),
     );
   }
@@ -1263,16 +1237,15 @@ class _InvestmentGallery extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding:
                 const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: items.length > 1 ? items.length * 1000 : items.length,
+            itemCount: items.length,
             separatorBuilder: (_, _) =>
                 const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, i) {
-              final idx = i % items.length;
               return _GalleryCard(
                   width: cardWidth,
-                  item: items[idx],
+                  item: items[i],
                   items: items,
-                  index: idx);
+                  index: i);
             },
           ),
         ),

@@ -578,18 +578,6 @@ class _AssetTab extends StatelessWidget {
                     color: AppColors.accentMuted,
                   ),
                 ),
-                if (galleryMedia.length >= 2) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  GestureDetector(
-                    onTap: () =>
-                        showAllGallery(context, 'GALERÍA', galleryMedia),
-                    child: const PhosphorIcon(
-                      PhosphorIconsThin.arrowUpRight,
-                      size: 16,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -601,19 +589,16 @@ class _AssetTab extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding:
                   const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              itemCount: galleryMedia.length > 1
-                  ? galleryMedia.length * 1000
-                  : galleryMedia.length,
+              itemCount: galleryMedia.length,
               separatorBuilder: (_, _) =>
                   const SizedBox(width: AppSpacing.sm),
               itemBuilder: (context, i) {
-                final idx = i % galleryMedia.length;
-                final item = galleryMedia[idx];
+                final item = galleryMedia[i];
                 return GestureDetector(
                   onTap: () => showMediaGallery(
                       context,
                       items: galleryMedia,
-                      initialIndex: idx),
+                      initialIndex: i),
                   child: Container(
                     width: cardWidth,
                     decoration: const BoxDecoration(

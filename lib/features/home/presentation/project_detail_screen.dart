@@ -170,28 +170,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     setState(() {
       _carouselOffset = _animFrom + (_animTo - _animFrom) * t;
     });
-    // When the snap completes, fold the offset back into [0, totalWidth) and
-    // the index into [0, count) to keep them bounded across long loop chains.
-    // The renderer's modulo math is identical before/after — visually nothing
-    // changes; this only protects against floating-point drift over time.
-    if (_carouselAnim.isCompleted) {
-      _normalizeCarousel();
-    }
-  }
-
-  void _normalizeCarousel() {
-    final pageWidth = _lastPageWidth;
-    final count = _lastImageCount;
-    if (pageWidth <= 0 || count <= 1) return;
-    final totalWidth = count * pageWidth;
-    final wrapped = _carouselOffset.remainder(totalWidth);
-    final normalized = wrapped < 0 ? wrapped + totalWidth : wrapped;
-    final newIndex = ((_carouselIndex % count) + count) % count;
-    if (normalized == _carouselOffset && newIndex == _carouselIndex) return;
-    setState(() {
-      _carouselOffset = normalized;
-      _carouselIndex = newIndex;
-    });
   }
 
   void _animateCarouselTo(double target, int targetIndex) {
@@ -202,11 +180,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     }
     _carouselAnim.forward(from: 0);
   }
-
-  // Captured at the start of each build of the hero gallery — used by the
-  // settle normalization once the snap animation ends.
-  double _lastPageWidth = 0;
-  int _lastImageCount = 0;
 
   /// Snap to nearest page based on velocity + position. Mirrors the feel of
   /// `PageScrollPhysics.createBallisticSimulation`. A fast flick (>300 px/s)
@@ -223,8 +196,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     } else {
       target = currentPageF.round();
     }
-    // No clamp — looping allows the target to fall outside [0, count-1].
-    // The renderer wraps via modulo; we normalize at settle end.
+    target = target.clamp(0, count - 1);
     _animateCarouselTo(target.toDouble() * pageWidth, target);
   }
 
@@ -258,10 +230,9 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     await _videoKey.currentState?.resumeFrom(result ?? start);
   }
 
-  /// Bottom sheet with all news linked to this project. Mirrors the
-  /// `showAllGallery` pattern but with `LhotseNewsCard` (full 3:2
-  /// editorial card, not compact) stacked vertically. Each card keeps
-  /// its `heroTag` so the shared-element flight to news_detail still
+  /// Bottom sheet with all news linked to this project. `LhotseNewsCard`
+  /// (full 3:2 editorial card, not compact) stacked vertically. Each card
+  /// keeps its `heroTag` so the shared-element flight to news_detail still
   /// lands smoothly from the sheet.
   void _showAllRelatedNews(
     BuildContext context,
@@ -343,8 +314,8 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     if (scrollOffset > _kFullyExpandedTolerance) return;
 
     final delta = e.position.dx - _dragAnchorX;
-    // No clamp — looping is unbounded in both directions.
-    final next = _dragAnchorOffset - delta;
+    final next =
+        (_dragAnchorOffset - delta).clamp(0.0, (count - 1) * pageWidth);
     if (next == _carouselOffset) return;
     setState(() => _carouselOffset = next);
   }
@@ -474,10 +445,6 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
     _heroHeight = mq.size.height * 0.55;
     final pageWidth = mq.size.width;
     final imageCount = project.imageUrls.length;
-    // Cache for the post-settle normalizer (the animation tick has no access
-    // to layout — these are the latest known dims when the gesture settles).
-    _lastPageWidth = pageWidth;
-    _lastImageCount = imageCount;
 
     final visibleTabs = _visibleTabs(project);
     _ensureTabController(visibleTabs.length);
@@ -1002,13 +969,11 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
             scrollDirection: Axis.horizontal,
             padding:
                 const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            itemCount: relatedNews.length > 1
-                ? relatedNews.length * 1000
-                : relatedNews.length,
+            itemCount: relatedNews.length,
             separatorBuilder: (_, _) =>
                 const SizedBox(width: AppSpacing.sm),
             itemBuilder: (context, i) {
-              final n = relatedNews[i % relatedNews.length];
+              final n = relatedNews[i];
               return LhotseNewsCard.compact(
                 title: n.title,
                 imageUrl: n.imageUrl,

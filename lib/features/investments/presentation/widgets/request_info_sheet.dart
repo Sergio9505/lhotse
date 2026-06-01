@@ -192,8 +192,6 @@ class _RequestInfoCarousel extends StatelessWidget {
     }
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final count = items.length;
-    final loop = count > 1;
 
     return SizedBox(
       height: 200,
@@ -201,16 +199,15 @@ class _RequestInfoCarousel extends StatelessWidget {
         key: PageStorageKey('request-info-carousel-${identityHashCode(items)}'),
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        itemCount: loop ? count * 1000 : count,
+        itemCount: items.length,
         separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, i) {
-          final idx = i % count;
-          final item = items[idx];
+          final item = items[i];
           return GestureDetector(
             onTap: () => showMediaGallery(
               context,
               items: items,
-              initialIndex: idx,
+              initialIndex: i,
             ),
             child: Container(
               width: screenWidth * 0.75,

@@ -294,18 +294,6 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                               color: AppColors.accentMuted,
                             ),
                           ),
-                          if (detail.galleryMedia.length >= 2) ...[
-                            const SizedBox(width: AppSpacing.sm),
-                            GestureDetector(
-                              onTap: () => showAllGallery(
-                                  context, 'GALERÍA', detail.galleryMedia),
-                              child: const PhosphorIcon(
-                                PhosphorIconsThin.arrowUpRight,
-                                size: 14,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                     ),
@@ -317,20 +305,16 @@ class _AssetDetailScreenState extends ConsumerState<AssetDetailScreen> {
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg),
-                        itemCount: detail.galleryMedia.length > 1
-                            ? detail.galleryMedia.length * 1000
-                            : detail.galleryMedia.length,
+                        itemCount: detail.galleryMedia.length,
                         separatorBuilder: (_, _) =>
                             const SizedBox(width: AppSpacing.sm),
                         itemBuilder: (context, i) {
-                          final count = detail.galleryMedia.length;
-                          final idx = i % count;
-                          final item = detail.galleryMedia[idx];
+                          final item = detail.galleryMedia[i];
                           return GestureDetector(
                             onTap: () => showMediaGallery(
                                 context,
                                 items: detail.galleryMedia,
-                                initialIndex: idx),
+                                initialIndex: i),
                             child: Container(
                               width: screenWidth * 0.75,
                               decoration: const BoxDecoration(

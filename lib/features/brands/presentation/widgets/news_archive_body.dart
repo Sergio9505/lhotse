@@ -14,7 +14,6 @@ import '../../../../core/widgets/lhotse_brand_filter_row.dart';
 import '../../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../../core/widgets/lhotse_news_card.dart';
 import '../../../../core/widgets/lhotse_search_field.dart';
-import '../../../../core/widgets/scroll_aware_filter_bar.dart';
 
 enum _ActiveTool { none, brands, search }
 
@@ -31,12 +30,10 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
   final Set<String> _selectedBrands = {};
   String _searchQuery = '';
   final _searchController = TextEditingController();
-  final _scrollController = ScrollController();
 
   @override
   void dispose() {
     _searchController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -44,8 +41,7 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
     // Global exclusion: construction-progress news are scoped to the project's
     // L3 Avance tab and never surface in this archive — independent of any
     // other filter the user toggles.
-    var result =
-        news.where((n) => n.subtype != NewsSubtype.progress).toList();
+    var result = news.where((n) => n.subtype != NewsSubtype.progress).toList();
     if (_activeType != null) {
       result = result.where((n) => n.type == _activeType).toList();
     }
@@ -119,8 +115,9 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
         .whereType<String>()
         .toSet();
     final allBrands = brandsAsync.value ?? const [];
-    final brands =
-        allBrands.where((b) => newsBrandNames.contains(b.name)).toList();
+    final brands = allBrands
+        .where((b) => newsBrandNames.contains(b.name))
+        .toList();
     final hasBrandSelection = _selectedBrands.isNotEmpty;
 
     // Defensive: if the brand pool collapses to empty (last non-progress
@@ -142,126 +139,132 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
 
     return Column(
       children: [
-        ScrollAwareFilterBar(
-          scrollController: _scrollController,
-          expanded: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          LhotseFilterChip(
+                            label: 'GRUPO',
+                            isActive: _activeType == NewsType.project,
+                            onTap: () => _setType(
+                              _activeType == NewsType.project
+                                  ? null
+                                  : NewsType.project,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          LhotseFilterChip(
+                            label: 'PRENSA',
+                            isActive: _activeType == NewsType.press,
+                            onTap: () => _setType(
+                              _activeType == NewsType.press
+                                  ? null
+                                  : NewsType.press,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(width: 1, height: 16, color: AppColors.border),
+                  if (brands.isNotEmpty) ...[
+                    const SizedBox(width: AppSpacing.md),
+                    GestureDetector(
+                      onTap: () => _toggleTool(_ActiveTool.brands),
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: Stack(
+                          clipBehavior: Clip.none,
                           children: [
-                            LhotseFilterChip(
-                              label: 'GRUPO',
-                              isActive: _activeType == NewsType.project,
-                              onTap: () => _setType(
-                                _activeType == NewsType.project
-                                    ? null
-                                    : NewsType.project,
+                            Center(
+                              child: PhosphorIcon(
+                                PhosphorIconsThin.stack,
+                                size: 20,
+                                color:
+                                    _activeTool == _ActiveTool.brands ||
+                                        hasBrandSelection
+                                    ? AppColors.textPrimary
+                                    : AppColors.accentMuted,
                               ),
                             ),
-                            const SizedBox(width: AppSpacing.sm),
-                            LhotseFilterChip(
-                              label: 'PRENSA',
-                              isActive: _activeType == NewsType.press,
-                              onTap: () => _setType(
-                                _activeType == NewsType.press
-                                    ? null
-                                    : NewsType.press,
+                            if (hasBrandSelection)
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.textPrimary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),
                     ),
-                    Container(width: 1, height: 16, color: AppColors.border),
-                    if (brands.isNotEmpty) ...[
-                      const SizedBox(width: AppSpacing.md),
-                      GestureDetector(
-                        onTap: () => _toggleTool(_ActiveTool.brands),
-                        child: SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Center(
-                                child: PhosphorIcon(
-                                  PhosphorIconsThin.stack,
-                                  size: 20,
-                                  color: _activeTool == _ActiveTool.brands ||
-                                          hasBrandSelection
-                                      ? AppColors.textPrimary
-                                      : AppColors.accentMuted,
-                                ),
-                              ),
-                              if (hasBrandSelection)
-                                Positioned(
-                                  top: 0,
-                                  right: 0,
-                                  child: Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.textPrimary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(width: AppSpacing.md),
-                    GestureDetector(
-                      onTap: () => _toggleTool(_ActiveTool.search),
-                      child: PhosphorIcon(
-                        PhosphorIconsThin.magnifyingGlass,
-                        size: 20,
-                        color: _activeTool == _ActiveTool.search
-                            ? AppColors.textPrimary
-                            : AppColors.accentMuted,
-                      ),
-                    ),
                   ],
+                  const SizedBox(width: AppSpacing.md),
+                  GestureDetector(
+                    onTap: () => _toggleTool(_ActiveTool.search),
+                    child: PhosphorIcon(
+                      PhosphorIconsThin.magnifyingGlass,
+                      size: 20,
+                      color: _activeTool == _ActiveTool.search
+                          ? AppColors.textPrimary
+                          : AppColors.accentMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_activeTool == _ActiveTool.search)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
+                child: SizedBox(
+                  height: 52,
+                  child: Center(
+                    child: LhotseSearchField(
+                      controller: _searchController,
+                      hint: 'Buscar noticias, firmas, regiones...',
+                      autofocus: true,
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                      onClose: () => _toggleTool(_ActiveTool.search),
+                    ),
+                  ),
+                ),
+              )
+            else if (_activeTool == _ActiveTool.brands)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: LhotseBrandFilterRow(
+                  brands: brands,
+                  selectedBrands: _selectedBrands,
+                  onBrandTap: _toggleBrand,
                 ),
               ),
-              if (_activeTool == _ActiveTool.search)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-                  child: SizedBox(
-                    height: 52,
-                    child: Center(
-                      child: LhotseSearchField(
-                        controller: _searchController,
-                        hint: 'Buscar noticias, firmas, regiones...',
-                        autofocus: true,
-                        onChanged: (v) => setState(() => _searchQuery = v),
-                        onClose: () => _toggleTool(_ActiveTool.search),
-                      ),
-                    ),
-                  ),
-                )
-              else if (_activeTool == _ActiveTool.brands)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: LhotseBrandFilterRow(
-                    brands: brands,
-                    selectedBrands: _selectedBrands,
-                    onBrandTap: _toggleBrand,
-                  ),
-                ),
-            ],
-          ),
+          ],
         ),
         Expanded(
           child: newsAsync.when(
@@ -280,9 +283,10 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                     ),
                   )
                 : ListView.separated(
-                    controller: _scrollController,
                     padding: const EdgeInsets.only(
-                        top: AppSpacing.md, bottom: AppSpacing.xxl),
+                      top: AppSpacing.md,
+                      bottom: AppSpacing.xxl,
+                    ),
                     itemCount: news.length,
                     separatorBuilder: (_, _) =>
                         const SizedBox(height: AppSpacing.lg),
@@ -294,8 +298,10 @@ class _NewsArchiveBodyState extends ConsumerState<NewsArchiveBody> {
                         heroTag: 'news-hero-${item.id}',
                         brand: item.brand,
                         subtitle: _editorialDeck(item.subtitle),
-                        date:
-                            DateFormat('d MMM yyyy', 'es_ES').format(item.date),
+                        date: DateFormat(
+                          'd MMM yyyy',
+                          'es_ES',
+                        ).format(item.date),
                         videoUrl: item.videoUrl,
                         onTap: () =>
                             context.push('/news/${item.id}', extra: item),

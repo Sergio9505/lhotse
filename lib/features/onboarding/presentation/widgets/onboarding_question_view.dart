@@ -22,66 +22,82 @@ class OnboardingQuestionView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Step indicator ──────────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Text(
-            stepLabel,
-            style: AppTypography.labelUppercaseSm.copyWith(
-              color: AppColors.accentMuted,
+        // ── Scrollable content ───────────────────────────────────────────────
+        // Scrolls when the question + options don't fit (small screens or large
+        // Dynamic Type), so the pinned CTA below always stays reachable.
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Step indicator ──────────────────────────────────────────
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  child: Text(
+                    stepLabel,
+                    style: AppTypography.labelUppercaseSm.copyWith(
+                      color: AppColors.accentMuted,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: AppSpacing.xl),
+
+                // ── Question ────────────────────────────────────────────────
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  child: Text(
+                    q.question,
+                    style: AppTypography.editorialTitle.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+
+                if (q.helper != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: Text(
+                      q.helper!,
+                      style: AppTypography.annotationParagraph.copyWith(
+                        color: AppColors.accentMuted,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: AppSpacing.xl),
+
+                // ── Options ─────────────────────────────────────────────────
+                _OptionList(q: q, state: state, controller: controller),
+
+                const SizedBox(height: AppSpacing.lg),
+
+                // ── Error ────────────────────────────────────────────────────
+                if (state.error != null)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: Text(
+                      state.error!,
+                      style: AppTypography.annotation.copyWith(
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: AppSpacing.lg),
+              ],
             ),
           ),
         ),
 
-        const SizedBox(height: AppSpacing.xl),
-
-        // ── Question ────────────────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Text(
-            q.question,
-            style: AppTypography.editorialTitle.copyWith(
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-
-        if (q.helper != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text(
-              q.helper!,
-              style: AppTypography.annotationParagraph.copyWith(
-                color: AppColors.accentMuted,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-        ],
-
-        const SizedBox(height: AppSpacing.xl),
-
-        // ── Options ─────────────────────────────────────────────────────────
-        _OptionList(q: q, state: state, controller: controller),
-
-        const SizedBox(height: AppSpacing.lg),
-
-        // ── Error ────────────────────────────────────────────────────────────
-        if (state.error != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text(
-              state.error!,
-              style: AppTypography.annotation.copyWith(
-                color: AppColors.danger,
-              ),
-            ),
-          ),
-
-        const Spacer(),
-
-        // ── CTA ──────────────────────────────────────────────────────────────
+        // ── CTA (pinned) ──────────────────────────────────────────────────────
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.lg,

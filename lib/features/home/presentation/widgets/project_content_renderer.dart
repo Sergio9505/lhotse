@@ -203,8 +203,8 @@ class _CtaView extends StatelessWidget {
 /// project_detail_screen.dart:531-608 (post-cierre gallery) and
 /// _InvestmentGallery in coinversion_detail_screen.dart:1347-1414 (L3
 /// Avance renders). Cards at 75% screen width with a peek of the next,
-/// infinite loop when N≥2 (`itemCount * 1000` + modulo), no dots
-/// indicator. Tap on any card opens `showMediaGallery` at that index.
+/// finite (stops at the last card), no dots indicator. Tap on any card
+/// opens `showMediaGallery` at that index.
 ///
 /// Items are `MediaItem`s — image cards render `LhotseImage`, video cards
 /// render `VideoThumbnailTile` (auto-shows the Bunny static thumbnail when
@@ -218,8 +218,6 @@ class _GalleryView extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
     final screenWidth = MediaQuery.of(context).size.width;
-    final count = items.length;
-    final loop = count > 1;
 
     return SizedBox(
       height: 200,
@@ -227,16 +225,15 @@ class _GalleryView extends StatelessWidget {
         key: PageStorageKey('content-gallery-${identityHashCode(items)}'),
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        itemCount: loop ? count * 1000 : count,
+        itemCount: items.length,
         separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, i) {
-          final idx = i % count;
-          final item = items[idx];
+          final item = items[i];
           return GestureDetector(
             onTap: () => showMediaGallery(
               context,
               items: items,
-              initialIndex: idx,
+              initialIndex: i,
             ),
             child: Container(
               width: screenWidth * 0.75,

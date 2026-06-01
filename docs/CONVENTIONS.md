@@ -222,6 +222,9 @@ Disk cache lives on `cached_network_image`'s side; in-memory decoded cache lives
 | `SliverAppBar` (pinned) | Collapsing hero image → pinned title on scroll. No tabs. | ProjectDetail |
 | `SliverPersistentHeader` | A single sticky section header within a scroll | BrandInvestments sticky labels |
 | **`NestedScrollView` + `SliverAppBar` + `TabBarView`** | Collapsing header + pinned tabs + independent scroll per tab | CoinversionDetail |
+| **`Column[ Expanded(SingleChildScrollView(content)), CTA ]`** | Form/step screen with a bottom CTA that must always stay reachable. The content above scrolls; the CTA is pinned below. | Onboarding question, AcceptConsent |
+
+⚠️ **Never** `Column[ ...content, Spacer(), CTA ]` without a scroll view for a screen with a bottom CTA: the `Spacer` cannot yield negative space, so on small screens or high Dynamic Type the content overflows and the CTA becomes unreachable (no scroll). Use the pinned-CTA + `Expanded(SingleChildScrollView)` pattern above instead.
 
 ### NestedScrollView pattern (for tabbed detail screens):
 ```dart
@@ -327,3 +330,14 @@ Opt-in app-lock built on `local_auth`. Mirrors push notifications: branded soft-
 **Copy lives in `lib/features/auth/presentation/biometric_*`.** Formal "usted" tone, no exclamations, no fear-mongering. Reasons passed to the OS prompt (`localizedReason`) are short and action-oriented; the branded framing lives in our own UI behind the system sheet.
 
 See **ADR-77** for the full rationale and load-bearing rules.
+
+## Release — Android signing
+
+Release builds (`flutter build appbundle --release`) are signed with the **upload key**, read from `android/key.properties` (gitignored) via the `signingConfig` in `android/app/build.gradle.kts`. If `key.properties` is absent the build falls back to debug keys (so CI without secrets still builds, but the `.aab` is NOT uploadable to Play).
+
+- **Keystore location (local):** `~/keystores/lhotse-upload.jks`
+- **Alias:** `upload`
+- **Credentials:** never in git — stored in Drive + password manager. The `.jks` is also backed up in Drive.
+- **The keystore is needed for every release build** — it must exist at the path in `key.properties`. All Play Store versions must be signed with this same key.
+
+Enroll the app in **Play App Signing** in the Play Console: Google holds the distribution key; our `.jks` is only the upload key (resettable if lost). Build command: `flutter build appbundle --release --dart-define-from-file=.env`.

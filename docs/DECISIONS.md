@@ -2560,3 +2560,80 @@ Resultado en `user_portfolio` (verificado): Andhy baja a 397 500€ / 2 contrato
 - Admin: `lib/schemas/content-block.ts` (galleryItem shape). `components/projects/content-blocks-editor.tsx` (refactor `SingleVideoSlot` + `GalleryBlockEditor` + nuevo `VideoSourcePicker` + `AddVideoTile`). `components/projects/content-preview.tsx` (gallery preview render condicional).
 - Sin migración SQL.
 
+---
+
+## ADR-85: Buscador — idle sin DESTACADOS, solo prompt funcional
+
+**Date:** 2026-06-01
+**Status:** Accepted (supersedes the DESTACADOS part of ADR-74)
+
+**Context:** ADR-74 redujo DESTACADOS a la densidad de un search-result, pero mantuvo la sección en el idle: tres proyectos en captación curados en cliente (`_selectFeatured`, con fallback a los primeros tres). El cliente no quiere ver resultados en el estado vacío — la pantalla debe estar limpia hasta que el usuario teclea. El header DESTACADOS, además, sugiere una curación editorial que el buscador (herramienta neutra) no debe proyectar.
+
+**Decision:**
+1. **Eliminar la sección DESTACADOS del idle** (`_FeaturedSection` + helper `_selectFeatured`). El estado vacío ya no muestra ningún proyecto.
+2. **Sustituirla por `_SearchPrompt`**: una línea sobria y muted ("Busca proyectos, firmas, ubicaciones y documentos.", `bodyReading` + `accentMuted`) que ocupa el hueco e indica qué se puede buscar. RECIENTES se conserva por encima si hay búsquedas previas.
+3. **Resultados activos sin cambios.** Se descartó crear una categoría "Nuevos proyectos" (evitar entropía): `_searchProjects` ya devuelve cualquier proyecto que matchee por texto sin filtrar por fase, así que los proyectos en captación siguen apareciendo dentro de PROYECTOS.
+
+**Consequences:**
+- (+) Estado vacío limpio y honesto — el buscador no finge ser un escaparate.
+- (+) Cero entropía nueva: no se añade categoría ni componente de catálogo; solo un texto.
+- (+) `openProjectOrLock` sigue gobernando el gating de los resultados; `isProjectLocked` deja de usarse en este archivo (el import de `project_access_gate.dart` se mantiene por `openProjectOrLock`).
+- (−) Se pierde la vitrina pasiva de oportunidades en captación que daba DESTACADOS. Aceptado: el cliente lo pidió explícitamente y esa función la cubren Home (L1) y el catálogo de Firmas.
+
+**Files touched:**
+- `lib/features/search/presentation/search_screen.dart` (drop `_selectFeatured` + `_FeaturedSection`, nuevo `_SearchPrompt`, `_IdleContent` sin `featuredProjects`).
+- `docs/DOMAIN.md`, `docs/DESIGN_SYSTEM.md` (descripción del idle del buscador).
+
+---
+
+## ADR-86: Carruseles horizontales vuelven a ser finitos (sin loop)
+
+**Date:** 2026-06-01
+**Status:** Accepted (revierte la parte de *infinite loop* de `1019bf2`, mantiene el *uncap*)
+
+**Context:** El commit `1019bf2` hizo dos cosas a la vez: (1) quitó los topes (5 imágenes / 3 noticias) que truncaban con un botón "ver todas", y (2) convirtió todos los carruseles horizontales de detalle en infinitos (scroll cíclico). El cliente quiere que **todos los carruseles horizontales vuelvan a ser finitos** — que paren en el último item, sin envolver —, **incluido el hero del header**. El loop infinito daba una sensación de "sin fin" no deseada.
+
+**Decision:** Eliminar el mecanismo de loop en los tres patrones, **manteniendo el uncap** (se muestran todos los items, sin restaurar los topes 5/3; la flecha "ver todas" se queda con condición `>= 2`):
+1. **Galerías inline** (`ListView.separated`): `itemCount: length * 1000` + `i % count` → `itemCount: length` + índice `i` directo. Sitios: `project_content_renderer` (galería de contenido), related news de `project_detail`, galerías de `asset_detail`, `coinversion_detail` (news + `_InvestmentGallery`), `direct_purchase_detail`, `completed_detail`, y el carrusel de renders de `request_info_sheet`.
+2. **Hero del header** (`MediaHeroCarousel` + estado de gesto): el renderer vuelve a un único anillo (`for i in 0..count`, `left: i * pageWidth - galleryOffset`, `Hero` en slot 0, dots sin módulo). Las pantallas `project_detail` y `news_detail` restauran el `.clamp(0, count-1)` del snap y el `.clamp(0, (count-1)*pageWidth)` del drag, y eliminan `_normalizeCarousel` + los campos `_lastPageWidth`/`_lastImageCount` (solo servían al normalizador modular).
+3. **Visor fullscreen** (`lhotse_gallery_helpers`, `PageView`): `initialPage: length * 5000` → `initialIndex`; `itemCount: null` → `length`; `onPageChanged`/`itemBuilder` sin módulo. El contador "N / M" vuelve a leer el índice real.
+
+**Consequences:**
+- (+) Carruseles con final claro — el usuario percibe los límites de la colección. El hero del header ya no envuelve.
+- (+) Se mantiene el uncap: siguen mostrándose todos los items, sin reintroducir el patrón truncado+sheet.
+- (+) El `Hero(tag:)` vuelve al slot 0 (comportamiento original del shared-element flight, coherente con el doc-comment de `MediaHeroCarousel`).
+- (−) El feed VERTICAL de Home (`home_screen.dart`) sigue siendo infinito — queda fuera de alcance por decisión explícita (es vertical, no horizontal).
+
+**Files touched:**
+- `lib/core/widgets/media_hero_carousel.dart`, `lib/core/widgets/lhotse_gallery_helpers.dart`.
+- `lib/features/home/presentation/project_detail_screen.dart`, `news_detail_screen.dart`, `asset_detail_screen.dart`, `widgets/project_content_renderer.dart`.
+- `lib/features/investments/presentation/coinversion_detail_screen.dart`, `direct_purchase_detail_screen.dart`, `completed_detail_screen.dart`, `widgets/request_info_sheet.dart`.
+- `docs/DESIGN_SYSTEM.md` (descripciones de hero carousel + noticias relevantes).
+
+---
+
+## ADR-87: Galerías de imágenes sin bottom sheet "ver todas" — visor fullscreen como único browse-all
+
+**Date:** 2026-06-01
+**Status:** Accepted (depende de ADR-86 — visor fullscreen finito)
+
+**Context:** `asset_detail` y las pantallas de inversión (coinversión / compra / finalizado) tenían en la sección GALERÍA/RENDERS una flecha `arrowUpRight` → `showAllGallery`, un bottom sheet con la lista **vertical** de todas las imágenes. Project detail, en cambio, ya no la tenía (ADR-80: galerías como `GalleryBlock` editorial sin flecha) — asimetría que el usuario detectó. Tras ADR-86 el visor fullscreen (`showMediaGallery`) es **finito**: se desliza izq/der por todas las imágenes con contador "N / M". El bottom sheet vertical pasa a ser una capa redundante (mismo contenido, otra orientación).
+
+**Decision:** Eliminar el bottom sheet de **imágenes** en toda la app y unificar la galería en un solo patrón: **carrusel + tap → visor fullscreen** (swipe + contador).
+1. Quitar la flecha + `showAllGallery` de `asset_detail`, `coinversion_detail` (`_GallerySectionHeader` simplificado a label-only), `direct_purchase_detail`, `completed_detail`.
+2. Borrar el helper `showAllGallery` de `lhotse_gallery_helpers.dart` (queda solo `showMediaGallery`).
+3. La flecha "ver todas" de **NOTICIAS** se mantiene (`_showAllRelatedNews`, sheet de `LhotseNewsCard`): las noticias navegan a su detalle, no tienen equivalente en el visor de imágenes.
+4. Project detail (`_GalleryView`) no cambia — ya era carrusel + tap→fullscreen; ahora todo es coherente.
+
+**Consequences:**
+- (+) Un único modelo de galería en toda la app — desaparece la asimetría project vs asset/inversión.
+- (+) Sin capa redundante: el visor finito ya permite ver todas las imágenes y saber cuántas hay.
+- (+) Menos UI = más editorial/premium, coherente con la voz de la app.
+- (−) Se pierde la vista "rejilla/lista" de overview rápido. Aceptado: el carrusel ya muestra varias con peek y el fullscreen cubre el browse-all.
+
+**Files touched:**
+- `lib/core/widgets/lhotse_gallery_helpers.dart` (drop `showAllGallery` + import muerto).
+- `lib/features/home/presentation/asset_detail_screen.dart`, `project_detail_screen.dart` (comentario).
+- `lib/features/investments/presentation/coinversion_detail_screen.dart`, `direct_purchase_detail_screen.dart`, `completed_detail_screen.dart`.
+- `docs/DESIGN_SYSTEM.md`.
+
