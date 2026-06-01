@@ -79,39 +79,53 @@ class _OnboardingDoneScreenState extends State<OnboardingDoneScreen> {
                 context.go(AppRoutes.home);
               }
             },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Spacer(flex: 2),
-                const _BrandLockup(),
-                const SizedBox(height: 96),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                  ),
-                  child: Text(
-                    greeting,
-                    textAlign: TextAlign.center,
-                    style: AppTypography.editorialTitle.copyWith(
-                      color: Colors.white,
-                      fontStyle: FontStyle.italic,
+            // Scrolls when the centred lockup + greeting + CTA don't fit
+            // (large Dynamic Type / small screens). ConstrainedBox(minHeight)
+            // + IntrinsicHeight keeps the Spacer-based vertical centring when
+            // it fits, and lets it grow past the viewport when it doesn't.
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints:
+                      BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Spacer(flex: 2),
+                        const _BrandLockup(),
+                        const SizedBox(height: 96),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                          ),
+                          child: Text(
+                            greeting,
+                            textAlign: TextAlign.center,
+                            style: AppTypography.editorialTitle.copyWith(
+                              color: Colors.white,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                        const Spacer(flex: 3),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            0,
+                            AppSpacing.lg,
+                            AppSpacing.xl,
+                          ),
+                          child: _ContinueCta(
+                            enabled: !_handling,
+                            onTap: _onContinue,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                const Spacer(flex: 3),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    0,
-                    AppSpacing.lg,
-                    AppSpacing.xl,
-                  ),
-                  child: _ContinueCta(
-                    enabled: !_handling,
-                    onTap: _onContinue,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -175,61 +189,31 @@ class _ContinueCtaState extends State<_ContinueCta> {
 
 // ── Brand stamp ─────────────────────────────────────────────────────────────
 //
-// Mirrors `WelcomeScreen`'s hero lockup: SVG mark 36pt + two-line LHOTSE/GROUP
-// wordmark in `splashWordmark` (24pt) inside a 48pt column. Same grammar so
-// the user finishes onboarding looking at the same brand stamp that opened
-// the auth flow.
+// Single SVG lockup (isotype + LHOTSE + GROUP integrated) — the same asset
+// `WelcomeScreen` uses, at fixed 192×48. It is a logo, so it must NOT scale
+// with Dynamic Type (a composed Text wordmark in a fixed box overflows at
+// large text sizes). Both width+height are passed to sidestep the flutter_svg
+// width-inflation gotcha (~/.claude/CLAUDE.md). User finishes onboarding
+// looking at the same brand stamp that opened the auth flow.
 
 class _BrandLockup extends StatelessWidget {
   const _BrandLockup();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SvgPicture.asset(
-          'assets/images/lhotse_logo.svg',
-          height: 36,
+    return Center(
+      child: SizedBox(
+        width: 192,
+        height: 48,
+        child: SvgPicture.asset(
+          'assets/images/lhotse_wordmark.svg',
+          fit: BoxFit.contain,
           colorFilter: const ColorFilter.mode(
             Colors.white,
             BlendMode.srcIn,
           ),
         ),
-        const SizedBox(width: 12),
-        SizedBox(
-          height: 48,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'LHOTSE',
-                style: AppTypography.splashWordmark.copyWith(
-                  color: AppColors.textOnDark,
-                ),
-                strutStyle: const StrutStyle(
-                  fontSize: 24,
-                  height: 1.0,
-                  forceStrutHeight: true,
-                ),
-              ),
-              Text(
-                'GROUP',
-                style: AppTypography.splashWordmark.copyWith(
-                  color: AppColors.textOnDark,
-                ),
-                strutStyle: const StrutStyle(
-                  fontSize: 24,
-                  height: 1.0,
-                  forceStrutHeight: true,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

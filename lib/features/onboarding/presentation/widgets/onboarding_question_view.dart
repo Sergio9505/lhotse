@@ -13,6 +13,14 @@ class OnboardingQuestionView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(onboardingControllerProvider);
+
+    // After the last question `stepIndex` advances to `length` for one frame
+    // before the host navigates to the done screen. Guard the index access so
+    // that transient frame doesn't throw a RangeError.
+    if (state.stepIndex >= kOnboardingQuestions.length) {
+      return const SizedBox.shrink();
+    }
+
     final controller = ref.read(onboardingControllerProvider.notifier);
     final q = kOnboardingQuestions[state.stepIndex];
     final bottomPadding = MediaQuery.of(context).padding.bottom;

@@ -223,8 +223,9 @@ Disk cache lives on `cached_network_image`'s side; in-memory decoded cache lives
 | `SliverPersistentHeader` | A single sticky section header within a scroll | BrandInvestments sticky labels |
 | **`NestedScrollView` + `SliverAppBar` + `TabBarView`** | Collapsing header + pinned tabs + independent scroll per tab | CoinversionDetail |
 | **`Column[ Expanded(SingleChildScrollView(content)), CTA ]`** | Form/step screen with a bottom CTA that must always stay reachable. The content above scrolls; the CTA is pinned below. | Onboarding question, AcceptConsent |
+| **`LayoutBuilder → SingleChildScrollView → ConstrainedBox(minHeight: maxHeight) → IntrinsicHeight → Column[ Spacer, content, Spacer ]`** | Centred "rite" screen (logo + greeting + CTA) that must keep vertical centring when it fits but scroll when it overflows. The `Spacer`s centre when there's room; the min-height + intrinsic-height let it grow past the viewport. | OnboardingDone |
 
-⚠️ **Never** `Column[ ...content, Spacer(), CTA ]` without a scroll view for a screen with a bottom CTA: the `Spacer` cannot yield negative space, so on small screens or high Dynamic Type the content overflows and the CTA becomes unreachable (no scroll). Use the pinned-CTA + `Expanded(SingleChildScrollView)` pattern above instead.
+⚠️ **Never** `Column[ ...content, Spacer(), CTA ]` (incl. `Spacer(flex:)`) without a scroll view for a screen with a bottom CTA or fixed content: the `Spacer` cannot yield negative space, so on small screens or high Dynamic Type the content overflows and the CTA becomes unreachable / a bottom overflow appears. Use the pinned-CTA pattern (forms) or the centred-rite pattern (logo/greeting screens) above.
 
 ### NestedScrollView pattern (for tabbed detail screens):
 ```dart
