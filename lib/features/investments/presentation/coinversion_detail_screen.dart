@@ -585,15 +585,7 @@ class _AvanceTab extends StatelessWidget {
         ],
         if (news.isNotEmpty) ...[
         const SizedBox(height: AppSpacing.xxl),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Text(
-            'NOTICIAS DEL PROYECTO',
-            style: AppTypography.labelUppercaseMd.copyWith(
-              color: AppColors.accentMuted,
-            ),
-          ),
-        ),
+        const LhotseSectionLabel(label: 'NOTICIAS DEL PROYECTO'),
         const SizedBox(height: AppSpacing.sm),
         SizedBox(
           height: 160,

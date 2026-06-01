@@ -2,6 +2,7 @@ class ProjectPhase {
   const ProjectPhase({
     required this.name,
     this.title,
+    this.description,
     required this.startDate,
     required this.endDate,
     this.isCompleted = false,
@@ -9,6 +10,7 @@ class ProjectPhase {
 
   final String name; // "Fase 1", "Fase 2", "Fase 3"
   final String? title; // "Lienzo en blanco", "Diseño en marcha"
+  final String? description; // brief phase description shown in the timeline caption
   final DateTime startDate;
   final DateTime endDate;
   final bool isCompleted;
@@ -16,6 +18,7 @@ class ProjectPhase {
   factory ProjectPhase.fromJson(Map<String, dynamic> json) => ProjectPhase(
         name: json['name'] as String,
         title: json['title'] as String?,
+        description: json['description'] as String?,
         startDate: DateTime.parse(json['start_date'] as String),
         endDate: DateTime.parse(json['end_date'] as String),
         isCompleted: json['is_completed'] as bool? ?? false,

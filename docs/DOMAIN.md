@@ -105,7 +105,7 @@ Lhotse Group is a holding company specializing in redefining wealth management a
 - **Brand investments**: typed detail per domain (compraDirecta / coinversión / rentaFija). Navigation via GoRouter extra (pre-loaded typed model).
 - **Investment detail routing**: typed routes — `/investments/detail/purchase/:id`, `/investments/detail/coinvestment/:id`, `/investments/detail/completed/purchase/:id`, `/investments/detail/completed/coinvestment/:id`, `/investments/detail/:id` (RF inline)
 - **CompraDirecta detail**: PurchaseContractData — purchase value, rental yield, revaluation, mortgage details (3 tabs: ACTIVO / FINANCIACIÓN / DOCS)
-- **Coinversión detail**: CoinvestmentContractData — scenarios from project_scenarios, phases from project_phases, render/progress images from projects table (4 tabs: AVANCE / ACTIVO / FINANZAS / DOCS)
+- **Coinversión detail**: CoinvestmentContractData — scenarios from project_scenarios, phases from project_phases (`name` "Fase n" + `title` nombre corto + `description` breve + fechas), render/progress images from projects table (4 tabs: AVANCE / ACTIVO / FINANZAS / DOCS)
 - **Renta Fija**: inline in InvestmentDetailScreen — contract metrics, no L3 detail
 - **Completed detail**: CompletedContractData adapter (maps from either purchase or coinvest)
 - **Alquiler**: rental_contracts + rental_payments. Rental income shown in purchase contract detail (rental_yield_pct derived in view). No separate screen yet.

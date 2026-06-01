@@ -2637,3 +2637,30 @@ Resultado en `user_portfolio` (verificado): Andhy baja a 397 500€ / 2 contrato
 - `lib/features/investments/presentation/coinversion_detail_screen.dart`, `direct_purchase_detail_screen.dart`, `completed_detail_screen.dart`.
 - `docs/DESIGN_SYSTEM.md`.
 
+---
+
+## ADR-88: Timeline de fases — alineación por columnas + bloque de detalle (horizontal, no vertical)
+
+**Date:** 2026-06-01
+**Status:** Accepted
+
+**Context:** `LhotseProjectTimeline` ("TIEMPOS DEL PROYECTO", L3 coinversión Avance + L1 Avance) tenía las etiquetas desalineadas respecto a sus nodos: la fila de nodos repartía `nodo–línea–nodo` (nodos en los extremos, fracción `i/(N-1)`) y la fila de etiquetas usaba N columnas iguales (centros en `(i+0.5)/N`). Los extremos (FASE 1 y la última) eran los más descuadrados; el nodo activo (18px) vs el resto (8px) añadía desfase. Además solo la fase activa mostraba un `title`; el cliente quería **nombre + breve descripción de cada fase**.
+
+**Decision:** Mantener el track **horizontal** y resolver ambas cosas:
+1. **Alineación por columnas**: una sola `Row` de N `Expanded`; cada fase es una columna con el nodo centrado entre dos medias-líneas (`Row[ Expanded(half), node, Expanded(half) ]`, half vacía en los extremos). Nodo y etiqueta comparten centro → alineados siempre, incluidas primera y última. La línea es la suma de medias-líneas (de centro a centro). El nodo activo deja de medir distinto en layout (mismo slot).
+2. **Bloque de detalle**: caption full-width debajo del track con `FASE n · {title}` + `description` de la fase **seleccionada** (por defecto la activa); las fases son **tappables** (StatefulWidget, `_selected`). Se quita el `title` inline bajo el nodo activo (iguala alturas de columna).
+3. **Datos**: nueva columna `project_phases.description` (migración aditiva nullable; la vista `projects_with_metrics` solo usa `project_id` → no afectada).
+
+**Por qué horizontal+bloque y no vertical (stepper):** el tab Avance es un stack de **bandas anchas** (timeline → imagen 16:9 "AVANCE DE OBRA" → carrusel "NOTICIAS"). Un stepper vertical introduciría una gramática de lista distinta en medio de bandas. El track horizontal + caption mantiene la cadencia "banda + texto" del resto del tab, y el detalle por fase se resuelve con divulgación progresiva (tap) sin abrir otra hoja.
+
+**Consequences:**
+- (+) Alineación correcta en todas las fases; nombre + descripción por fase sin romper la composición.
+- (+) Coherente con la gramática de bandas del tab; sin hojas extra.
+- (−) Solo se ve la descripción de una fase a la vez (la seleccionada); para ver otra hay que tocar. Aceptado: divulgación progresiva premium.
+- Bonus: header "NOTICIAS DEL PROYECTO" (L3) pasa a `LhotseSectionLabel` (consistencia con el resto de section labels).
+
+**Files touched:**
+- `lib/core/widgets/lhotse_project_timeline.dart` (rediseño), `lib/core/domain/project_phase.dart` (+`description`).
+- `lib/features/investments/presentation/coinversion_detail_screen.dart` (header NOTICIAS).
+- Migración `add_project_phase_description`. `docs/DESIGN_SYSTEM.md`, `docs/DOMAIN.md`.
+
