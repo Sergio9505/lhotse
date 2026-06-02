@@ -1,15 +1,21 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Network access (Image.network, API calls) -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Camera and photo library access for profile picture -->
+    <!-- Camera capture for profile picture -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <!-- Android 13+ -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- Android 12 and below -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
     <!-- Biometric authentication (Face ID / fingerprint) for app lock -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <!-- Strip media-library permissions injected transitively by open_filex.
+         Avatar picking uses the permissionless Android Photo Picker (image_picker);
+         open_filex only opens app-cached files via FileProvider. The app never
+         browses the user's photo/video/audio library, so these permissions would
+         otherwise trigger Google Play's "Photo and Video Permissions" declaration. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
 
     <application
         android:label="lhotse"

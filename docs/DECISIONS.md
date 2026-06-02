@@ -2664,6 +2664,29 @@ Resultado en `user_portfolio` (verificado): Andhy baja a 397 500€ / 2 contrato
 - `lib/features/investments/presentation/coinversion_detail_screen.dart` (header NOTICIAS).
 - Migración `add_project_phase_description`. `docs/DESIGN_SYSTEM.md`, `docs/DOMAIN.md`.
 
+## ADR-89: Android — avatar vía Android Photo Picker (permissionless); eliminar permisos `READ_MEDIA_*`
+
+**Date:** 2026-06-02
+**Status:** Accepted
+
+**Context:** Google Play Console exige justificar `READ_MEDIA_IMAGES` y `READ_MEDIA_VIDEO` en la pantalla "Photo and Video Permissions" — gatillada por los permisos del manifest fusionado del AAB, no por la metadata de la ficha ni el Data Safety form. Auditando el origen: `READ_MEDIA_IMAGES` se declaró a mano en `AndroidManifest.xml` (commit `99f22a7`, al construir la subida de avatar, siguiendo la guía clásica de `image_picker` para galería en Android 13+) y, además, `READ_MEDIA_VIDEO`/`READ_MEDIA_AUDIO`/`READ_MEDIA_IMAGES` los inyecta transitivamente `open_filex` (que solo abre ficheros ya cacheados vía `FileProvider`). `READ_MEDIA_VIDEO` **no tiene ningún uso real** en la app. Dato decisivo: la versión actual de `image_picker_android` **ya no declara ningún `READ_MEDIA_*`** porque usa el **Android Photo Picker** (permissionless) — la galería del avatar funciona sin permiso.
+
+**Decision:**
+1. **No migrar de plugin.** `image_picker` es la elección correcta para el caso (avatar infrecuente, cámara+galería con una API, devuelve `path` para `image_cropper`, mismo código en iOS); ya delega en el Android Photo Picker internamente. "Migrar al photo picker" que recomienda Google ya está cumplido.
+2. **Eliminar las declaraciones obsoletas** del manifest: quitar la línea manual de `READ_MEDIA_IMAGES` y la de `READ_EXTERNAL_STORAGE`; conservar `INTERNET`, `CAMERA`, `USE_BIOMETRIC`.
+3. **Anular las inyectadas por `open_filex`** con `tools:node="remove"` para `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO` y `READ_EXTERNAL_STORAGE`.
+4. **iOS no se toca**: gestiona fotos/cámara vía `Info.plist` (`NSCameraUsageDescription` + `NSPhotoLibraryUsageDescription`); Apple no tiene esta pantalla de justificación.
+
+**Transición:** para el compilado ya subido se rellenó la justificación del formulario (avatar para IMAGES; "declarado transitivamente por un visor de ficheros, se elimina en la próxima release" para VIDEO) y se mandó a revisión. El siguiente AAB ya no declara ningún `READ_MEDIA_*` → la pantalla desaparece.
+
+**Consequences:**
+- (+) El próximo AAB no declara permisos de media; sin pantalla de declaración ni escrutinio de política recurrente.
+- (+) Mejor postura de privacidad sin perder funcionalidad (avatar cámara+galería intacto).
+- (−) Si en el futuro se añade selección de vídeo del dispositivo, habrá que reintroducir el permiso correspondiente y volver a justificarlo. Aceptado: no hay tal feature.
+
+**Files touched:**
+- `android/app/src/main/AndroidManifest.xml`.
+
 
 ## ADR-90: Release gate — portfolio solo coinversión; enum `BusinessModel` completa los 4 valores de marca
 
