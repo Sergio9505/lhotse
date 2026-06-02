@@ -2664,3 +2664,30 @@ Resultado en `user_portfolio` (verificado): Andhy baja a 397 500€ / 2 contrato
 - `lib/features/investments/presentation/coinversion_detail_screen.dart` (header NOTICIAS).
 - Migración `add_project_phase_description`. `docs/DESIGN_SYSTEM.md`, `docs/DOMAIN.md`.
 
+
+## ADR-90: Release gate — portfolio solo coinversión; enum `BusinessModel` completa los 4 valores de marca
+
+**Date:** 2026-06-02
+**Status:** Accepted
+
+**Context:** En esta primera versión solo queremos exponer **coinversión** en la zona de inversión del usuario, sin eliminar los demás modelos (compra directa, renta fija, alquiler) que ya están implementados en DB, providers y pantallas para futuras versiones. Hechos verificados sobre datos reales:
+- El modelo de negocio es propiedad de la **marca**, no del proyecto. Los 6 proyectos pertenecen 100% a marcas coinversión (el `projects` table es coinversión-only por diseño) → catálogo, feed y búsqueda de proyectos no necesitan filtro.
+- **Firmas debe seguir mostrando todas las marcas `is_visible = true`** de cualquier modelo (escaparate completo del grupo) — decisión explícita del cliente. No se filtra `brandsProvider`.
+- La única superficie a restringir es el **portfolio (Estrategia)**: hoy muestra los contratos reales del usuario en los 3 modelos (existen 5 contratos no-coinversión sembrados).
+- El enum `BusinessModel` solo modelaba 3 valores; `BusinessModelLabel.fromString('rental')` caía al `default => coinvestment`. Bug **visible**: la marca de modelo `rental` que está `is_visible=true` se renderizaba como "Coinversión" en Firmas/feed/detalle. La DB (`brands.business_model` CHECK) tiene 4 valores: `coinvestment | direct_purchase | fixed_income | rental`.
+
+**Decision:**
+1. **Completar el enum en la raíz.** `BusinessModel` pasa a `{ directPurchase, coinvestment, fixedIncome, rental }`, con `fromString('rental') => rental` y `displayName => 'Alquiler'`. El enum es el espejo estático (compile-time) del CHECK de la DB, siguiendo la convención de enum trilingüe (no se trae de la DB en runtime: se pierde la exhaustividad y la type-safety). Esto corrige de paso el mislabel de la marca rental.
+2. **Filtrar el portfolio por enum, no por string suelto, en el provider.** `userPortfolioProvider` filtra por `_kVisiblePortfolioModels = {BusinessModel.coinvestment}`. Se filtra en el provider (fuente única) y no en la pantalla, para que todos los consumidores vean datos coherentes. El filtro por enum ya es correcto porque `rental` mapea a `rental` (excluido) en lugar de colarse como coinversión.
+
+**Por qué a nivel de marca y no de proyecto:** `BusinessModel` clasifica la marca; "rental no es un cuarto botón" (DOMAIN.md) se refiere a los tipos de contrato investor-facing, que no cambian. Añadir `rental` al clasificador de marca es fidelidad a la DB, no un nuevo modelo de UI.
+
+**Consequences:**
+- (+) Reversibilidad de una línea: añadir `BusinessModel.directPurchase, .fixedIncome, .rental` a `_kVisiblePortfolioModels` restaura el estado actual. Nada se borra.
+- (+) Corrige el mislabel de la marca rental en todas las superficies que usan `displayName`.
+- (−) La lista de valores vive duplicada en el CHECK de la DB y en el enum; se sincronizan a mano en cada migración (coste aceptado de la convención de enum trilingüe).
+- Edge case: un usuario con SOLO contratos no-coinversión verá el empty-state del portfolio. Los deep links directos a una L2/L3 no-coinversión siguen funcionando (`userPortfolioEntryProvider` y los providers de contrato no se filtran).
+
+**Files touched:**
+- `lib/core/domain/brand_data.dart` (valor `rental` en enum + `fromString` + `displayName`).
+- `lib/features/investments/data/investments_provider.dart` (`_kVisiblePortfolioModels` + filtro en `userPortfolioProvider`).

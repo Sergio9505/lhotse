@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/data/supabase_provider.dart';
+import '../../../core/domain/brand_data.dart';
 import '../../../core/domain/profit_scenario.dart';
 import '../../../core/domain/project_phase.dart';
 import '../domain/purchase_asset_details.dart';
@@ -181,6 +182,12 @@ final userPortfolioEntryProvider =
   return data != null ? PortfolioEntry.fromJson(data) : null;
 });
 
+/// Business models surfaced in the investor portfolio for this release. Other
+/// models stay fully implemented (DB + screens + Firmas catalog) but are hidden
+/// from the portfolio until a future version re-enables them here. To re-enable
+/// a model, add its enum value to this set. See ADR-90.
+const _kVisiblePortfolioModels = {BusinessModel.coinvestment};
+
 final userPortfolioProvider =
     FutureProvider<List<PortfolioEntry>>((ref) async {
   final userId = ref.watch(currentUserIdProvider).valueOrNull;
@@ -192,6 +199,8 @@ final userPortfolioProvider =
       .order('total_amount', ascending: false);
   return (data as List<dynamic>)
       .map((e) => PortfolioEntry.fromJson(e as Map<String, dynamic>))
+      .where((e) => _kVisiblePortfolioModels
+          .contains(BusinessModelLabel.fromString(e.businessModel)))
       .toList();
 });
 

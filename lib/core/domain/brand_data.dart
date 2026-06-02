@@ -1,16 +1,21 @@
-enum BusinessModel { directPurchase, coinvestment, fixedIncome }
+// Brand-level classifier — mirrors the `brands.business_model` DB CHECK
+// (coinvestment | direct_purchase | fixed_income | rental). `rental` is a
+// brand classification, NOT an investor-facing contract button (see DOMAIN.md).
+enum BusinessModel { directPurchase, coinvestment, fixedIncome, rental }
 
 extension BusinessModelLabel on BusinessModel {
   String get displayName => switch (this) {
         BusinessModel.directPurchase => 'Adquisición',
         BusinessModel.coinvestment => 'Coinversión',
         BusinessModel.fixedIncome => 'Renta Fija',
+        BusinessModel.rental => 'Alquiler',
       };
 
   static BusinessModel fromString(String value) => switch (value) {
         'direct_purchase' => BusinessModel.directPurchase,
         'coinvestment' => BusinessModel.coinvestment,
         'fixed_income' => BusinessModel.fixedIncome,
+        'rental' => BusinessModel.rental,
         _ => BusinessModel.coinvestment,
       };
 }
