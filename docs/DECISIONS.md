@@ -2714,3 +2714,29 @@ Resultado en `user_portfolio` (verificado): Andhy baja a 397 500€ / 2 contrato
 **Files touched:**
 - `lib/core/domain/brand_data.dart` (valor `rental` en enum + `fromString` + `displayName`).
 - `lib/features/investments/data/investments_provider.dart` (`_kVisiblePortfolioModels` + filtro en `userPortfolioProvider`).
+
+## ADR-91: Vídeo de bienvenida del CEO — pantalla bloqueante one-time en Inicio (fuera del feed)
+
+**Date:** 2026-06-02
+**Status:** Accepted
+
+**Context:** El vídeo del CEO ('Bienvenido') vivía como una fila `news` enganchada en `home_feed_items` (`sort_order=1`), apareciendo como primera tarjeta permanente del feed de Inicio y en el archivo de Noticias. Queremos que se reproduzca **una sola vez** la primera vez que el usuario llega a Inicio ya configurado (onboarding + OTP + permisos), como bienvenida bloqueante donde el CEO explica el porqué de la app, y que no aparezca como noticia en ningún sitio.
+
+**Decision:**
+1. **Fuera del feed/news.** Migración `remove_welcome_news_from_feed`: `DELETE` de la fila `home_feed_items` **y** de la noticia 'Bienvenido'. Al borrar la noticia entera desaparece de feed, Noticias y Buscar sin filtros ni flags. La URL Bunny se fija como constante `kWelcomeVideoUrl` en `welcome_video_screen.dart` (trade-off: cambiar el vídeo requiere release; el admin ya no lo edita como noticia).
+2. **Pantalla bloqueante, no bottom sheet.** `WelcomeVideoScreen` se presenta como ruta fullscreen en el `rootNavigator` (cubre el bottom nav). Gramática de vídeo de marca del splash (fondo negro, single-shot, **con audio** porque es un mensaje del CEO) — NO el `FullscreenVideoPlayer` del feed (scrubber, seek ±10s, mute toggle, drag-dismiss = gramática de contenido). Encaje **`cover`** full-bleed (FittedBox): el vídeo del CEO es vertical con margen amplio → llena edge-to-edge recortando ~11%/lado sin tocar al sujeto (contain dejaba bandas negras, verificado con captura). Controles mínimos: chip **"SALTAR"** que aparece a los ~4s (deja que la entrada del CEO aterrice) + barra de progreso fina no interactiva abajo. `PopScope(canPop: false)` desactiva el back → bloquea cualquier acción salvo ver o saltar. Gestión `AVAudioSession` (`.playback` al init, `.ambient` al dispose) + `pause()` antes de `dispose()` (gotchas iOS). Fallo de carga → cierra sin marcar (reintenta en el siguiente arranque); fin del vídeo o SALTAR → marca visto.
+3. **Persistencia por usuario en DB**, no SharedPreferences. Columna `welcome_seen_at` en `user_onboarding` (junto a `completed_at`) vía `OnboardingRepository.hasSeenWelcome()`/`markWelcomeSeen()`. Es estado de journey per-cuenta (no un nudge de dispositivo como push/biometric): **una vez por cuenta, sobrevive reinstalación y cambio de móvil**. Reset on-demand vía `UPDATE user_onboarding SET welcome_seen_at = NULL`. Lectura **fail-open**: si falla, no se muestra (no bloquear al usuario por error transitorio).
+4. **Orquestación determinista en el shell.** Se consolida la secuencia de primer arranque (1×/proceso) en `shell_screen.dart` en orden awaiteado: **push → biometric → vídeo de bienvenida**. El biometric soft-ask se **movió** desde `home_screen.dart` a esta cadena (se preserva delay 800 ms, `shouldShowSoftAsk`, snackbar) para que el orden vs el vídeo sea determinista y se elimine el solapamiento previo shell/home. El vídeo solo se muestra en la pestaña Inicio (`navigationShell.currentIndex == 0`).
+
+**Por qué bloqueante y en el shell:** estar en el shell ⇒ BootReady (el router ya garantizó consent + OTP + onboarding), así que la precondición "configurado" se cumple por construcción; solo había que encadenar el vídeo tras los sheets de permisos. Una bottom sheet no encaja para un vídeo full-bleed forzado del CEO.
+
+**Consequences:**
+- (+) El vídeo es un momento de bienvenida limpio, una vez por cuenta, sin ensuciar el feed ni Noticias.
+- (+) Orden de interstitials determinista (push → biometric → bienvenida); se elimina el posible apilamiento shell/home previo.
+- (−) Cambiar el vídeo de bienvenida requiere editar `kWelcomeVideoUrl` + release (ya no editable desde admin de noticias). Aceptado.
+- (−) El biometric soft-ask ya no se dispara desde Home sino desde el shell; mismo timing efectivo (el shell envuelve Inicio).
+- El asset orphan `assets/videos/lhotse_welcome.mp4` se deja como está (no se usa ni se borra).
+
+**Files touched:**
+- Migraciones `add_welcome_seen_at_to_user_onboarding`, `remove_welcome_news_from_feed`.
+- `lib/features/home/presentation/welcome_video_screen.dart` (nuevo), `lib/features/onboarding/data/onboarding_repository.dart`, `lib/app/shell_screen.dart`, `lib/features/home/presentation/home_screen.dart`.

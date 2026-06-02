@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/auth/biometric_lock_controller.dart';
 import '../../../core/data/assets_provider.dart';
 import '../../../core/data/brands_provider.dart';
 import '../../../core/data/news_provider.dart';
@@ -9,7 +8,6 @@ import '../../../core/data/projects_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_mark.dart';
-import '../../auth/presentation/biometric_soft_ask_sheet.dart';
 import '../data/home_feed_provider.dart';
 import '../domain/feed_item.dart';
 import 'widgets/feed_card.dart';
@@ -33,38 +31,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _activePage = 0;
   bool _didCenter = false;
   final Set<String> _precachedUrls = {};
-
-  @override
-  void initState() {
-    super.initState();
-    // Defer the biometric soft-ask until the feed has had a beat to paint —
-    // premium UX is "let the user see the app first, then ask". Mirrors the
-    // push opt-in delay pattern. The controller's `shouldShowSoftAsk` is the
-    // single source of truth (decided + cap + biometric-available checks).
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskForBiometric());
-  }
-
-  Future<void> _maybeAskForBiometric() async {
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    try {
-      await ref.read(biometricLockControllerProvider.future);
-    } catch (_) {
-      return;
-    }
-    if (!mounted) return;
-    final lock = ref.read(biometricLockControllerProvider.notifier);
-    if (!await lock.shouldShowSoftAsk()) return;
-    if (!mounted) return;
-    final activated = await showBiometricSoftAsk(context, ref);
-    if (!mounted || !activated) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Face ID activado.'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
 
   /// Half-range for the virtual page index. With `itemCount: null` the feed
   /// is unbounded forward; we jump to `items.length * _virtualLoops` on first

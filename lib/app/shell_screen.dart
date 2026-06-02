@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../core/auth/biometric_lock_controller.dart';
 import '../core/notifications/onesignal_service.dart';
 import '../core/theme/app_theme.dart';
+import '../features/auth/presentation/biometric_soft_ask_sheet.dart';
+import '../features/home/presentation/welcome_video_screen.dart';
 import '../features/notifications/data/notifications_provider.dart';
 import '../features/notifications/presentation/push_soft_ask_sheet.dart';
+import '../features/onboarding/data/onboarding_repository.dart';
 
 // Navbar labels — uppercase, consistent with app typography
 const _kLabelInicio = 'INICIO';
@@ -35,15 +39,65 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     super.initState();
     if (_coldStartSoftAskAttempted) return;
     _coldStartSoftAskAttempted = true;
+    // First-run interstitials, in a single deterministic order so they never
+    // stack: (1) push permission → (2) Face ID opt-in → (3) CEO welcome video.
+    // The welcome video must come AFTER the permission sheets (it blocks the
+    // app), so it lives at the tail of this awaited chain.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Short delay so the user sees Inicio before the sheet appears.
+      // Short delay so the user sees Inicio before the first sheet appears.
       await Future<void>.delayed(const Duration(milliseconds: 800));
       if (!mounted) return;
+
+      // (1) Push (communication) permission soft-ask.
       if (await OneSignalService.canShowSoftAsk()) {
         if (!mounted) return;
         await showPushSoftAsk(context);
       }
+
+      // (2) Face ID / biometric opt-in (moved here from HomeScreen so the
+      // ordering vs the welcome video is deterministic).
+      if (!mounted) return;
+      await _maybeAskForBiometric();
+
+      // (3) One-time CEO welcome video — blocking, after the permission flow.
+      if (!mounted) return;
+      await _maybeShowWelcomeVideo();
     });
+  }
+
+  Future<void> _maybeAskForBiometric() async {
+    try {
+      await ref.read(biometricLockControllerProvider.future);
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+    final lock = ref.read(biometricLockControllerProvider.notifier);
+    if (!await lock.shouldShowSoftAsk()) return;
+    if (!mounted) return;
+    final activated = await showBiometricSoftAsk(context, ref);
+    if (!mounted || !activated) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Face ID activado.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _maybeShowWelcomeVideo() async {
+    // Only on the Inicio tab — the welcome lives on Home (a brand-new user
+    // lands there). If somehow on another tab, defer to a future session.
+    if (widget.navigationShell.currentIndex != 0) return;
+    bool seen;
+    try {
+      seen = await ref.read(onboardingRepositoryProvider).hasSeenWelcome();
+    } catch (_) {
+      // Fail open: a read error must never block the user behind the video.
+      return;
+    }
+    if (seen || !mounted) return;
+    await showWelcomeVideo(context);
   }
 
   @override

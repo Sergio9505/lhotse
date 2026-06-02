@@ -288,6 +288,16 @@ Regla del sistema — el contexto de reproducción determina el tratamiento del 
 - **Resilience**: if `VideoPlayerController.initialize()` throws (corrupt asset, unsupported codec) the screen skips the fade and navigates immediately. A broken intro must never block boot.
 - **Implementation**: `lib/features/auth/presentation/splash_screen.dart`. See ADR-72 (supersedes ADR-57, ADR-67, ADR-69).
 
+## Welcome Video (CEO, one-time) — ADR-91
+
+One-time CEO welcome shown the first time a user reaches Inicio fully set up. Brand-video grammar (like the splash), NOT the feed's content player.
+
+- **Rendering**: `WelcomeVideoScreen` (`lib/features/home/presentation/welcome_video_screen.dart`) — full-bleed `FittedBox(BoxFit.cover)` over a black `Scaffold`, single-shot (`setLooping(false)`). Cover (not contain): the CEO video is portrait with generous margin, so filling edge-to-edge (cropping ~11%/side) keeps the subject framed and reads immersive — contain left black bars top/bottom (verified against a real capture). **Audio ON** (`setVolume(1)`) — splash is muted; this isn't. `AVAudioSession` raised to `.playback` on init, back to `.ambient` on dispose; `pause()` before `dispose()`.
+- **Blocking + controls**: presented on the `rootNavigator` (covers bottom nav). `PopScope(canPop: false)` disables system back. The skip is a translucent **"SALTAR"** text chip (top-right, `labelUppercaseSm`/`textOnDark`, `viewPaddingOf` offset) that **appears after ~4s** (the CEO's opening lands before it's skippable). A thin **non-interactive progress bar** (`VideoProgressIndicator(allowScrubbing: false)`) sits at the bottom. NO scrubber / seek / mute toggle / drag-dismiss (those are feed-content grammar). Video end or SALTAR → mark seen + close; load failure → close without marking (retries next launch).
+- **Source**: Bunny URL pinned as `kWelcomeVideoUrl`, signed via `playableVideoUrlProvider`. The old 'Bienvenido' news row was deleted from feed + Noticias (ADR-91). Orphan asset `lhotse_welcome.mp4` is unused (left in place).
+- **Once per account**: `user_onboarding.welcome_seen_at` (DB, survives reinstall), via `OnboardingRepository.hasSeenWelcome()/markWelcomeSeen()`. Read fails open (error → don't show).
+- **Orchestration**: tail of the shell's deterministic first-run chain **push → biometric → welcome** (`shell_screen.dart`); only on the Inicio tab.
+
 ## VIP Projects
 - `PRIVATE` chip top-right of the hero image — **fill black** (`AppColors.primary`), white caption w500 letterSpacing 1.5. Coexists with the outline phase chip top-left; the fill/outline contrast creates automatic hierarchy.
 - Tap on a locked VIP card → `showVipLockSheet()` — beige bottom sheet with a lock icon, hairline separator, and a monochromatic CTA.
