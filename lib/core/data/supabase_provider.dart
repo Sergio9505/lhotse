@@ -45,3 +45,19 @@ final currentUserRoleProvider = Provider<UserRole>((ref) {
   return ref.watch(currentUserProfileProvider).valueOrNull?.role ??
       UserRole.viewer;
 });
+
+// ─── Current user's investor company id ───────────────────────────────────────
+// The company the user belongs to (user_profiles.company_id), or null. Used to
+// surface company-vehicle contracts/documents (investor_company_id = this) in
+// addition to the user's personal ones. Auto-invalidates when userId changes.
+final currentUserCompanyIdProvider = FutureProvider<String?>((ref) async {
+  final userId = ref.watch(currentUserIdProvider).valueOrNull;
+  if (userId == null) return null;
+  final data = await ref
+      .watch(supabaseClientProvider)
+      .from('user_profiles')
+      .select('company_id')
+      .eq('id', userId)
+      .maybeSingle();
+  return data?['company_id'] as String?;
+});

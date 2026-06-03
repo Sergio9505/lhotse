@@ -43,13 +43,15 @@ Future<List<Map<String, dynamic>>> _fetchDocuments(
           .eq('id', params.id)
           .maybeSingle();
       final assetId = row?['asset_id'] as String?;
+      // Rely on RLS to scope the rental to the viewer (own OR their company),
+      // so a company-owned rental on this asset also contributes its docs.
       final rentalRow = assetId == null
           ? null
           : await supabase
               .from('rental_contracts')
               .select('id')
               .eq('asset_id', assetId)
-              .eq('user_id', userId)
+              .limit(1)
               .maybeSingle();
       final rentalId = rentalRow?['id'] as String?;
       final clauses = [

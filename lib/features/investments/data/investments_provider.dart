@@ -228,13 +228,20 @@ final userContractedProjectIdsProvider =
     FutureProvider<Set<String>>((ref) async {
   final userId = ref.watch(currentUserIdProvider).valueOrNull;
   if (userId == null) return const {};
+  final companyId = ref.watch(currentUserCompanyIdProvider).valueOrNull;
   final client = ref.watch(supabaseClientProvider);
 
+  // Vehicle filter: the user's own contracts plus those of their company.
+  // The explicit filter (not pure RLS) still neutralises the admin read-all
+  // override (see docstring) while now also covering company-vehicle contracts.
+  final orVehicle =
+      companyId != null ? 'user_id.eq.$userId,investor_company_id.eq.$companyId' : null;
+
   // (1) Coinvestment — project_id is on the contract row.
-  final coinvRows = await client
-      .from('coinvestment_contracts')
-      .select('project_id')
-      .eq('user_id', userId);
+  final coinvSel = client.from('coinvestment_contracts').select('project_id');
+  final coinvRows = orVehicle != null
+      ? await coinvSel.or(orVehicle)
+      : await coinvSel.eq('user_id', userId);
   final coinvIds = (coinvRows as List<dynamic>)
       .map((r) => (r as Map<String, dynamic>)['project_id'] as String?)
       .whereType<String>()
@@ -242,10 +249,10 @@ final userContractedProjectIdsProvider =
 
   // (2) Purchase — only asset_id on the contract; resolve to project via
   // the projects.asset_id FK in a single follow-up batch query.
-  final purchaseRows = await client
-      .from('purchase_contracts')
-      .select('asset_id')
-      .eq('user_id', userId);
+  final purchaseSel = client.from('purchase_contracts').select('asset_id');
+  final purchaseRows = orVehicle != null
+      ? await purchaseSel.or(orVehicle)
+      : await purchaseSel.eq('user_id', userId);
   final assetIds = (purchaseRows as List<dynamic>)
       .map((r) => (r as Map<String, dynamic>)['asset_id'] as String?)
       .whereType<String>()
