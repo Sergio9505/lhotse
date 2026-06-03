@@ -10,6 +10,7 @@ import '../../../core/data/supabase_provider.dart';
 import '../../../core/domain/project_data.dart';
 import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/launch_whatsapp.dart';
 import '../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../core/widgets/lhotse_image.dart';
 import '../../../core/widgets/lhotse_mark.dart';
@@ -18,7 +19,6 @@ import '../../home/presentation/widgets/vip_lock_sheet.dart';
 import '../../profile/data/user_requests_provider.dart';
 import '../data/investments_provider.dart';
 import '../domain/portfolio_entry.dart';
-import 'widgets/request_info_sheet.dart';
 
 final _eurFormat = NumberFormat('#,##0', 'es_ES');
 
@@ -209,15 +209,17 @@ class _OpportunityRowState extends ConsumerState<_OpportunityRow> {
   void _onTap() {
     final project = widget.project;
     // VIP-locked projects: investors without VIP role get the existing
-    // vip_access flow instead of project_info — consistent with how the
-    // rest of the app gates VIP content. Admins are normalised to
-    // investor_vip in the client, so they fall through to the info sheet.
+    // vip_access flow instead of opening the project — consistent with how
+    // the rest of the app gates VIP content. Admins are normalised to
+    // investor_vip in the client, so they fall through to the L3 preview.
     final role = ref.read(currentUserRoleProvider);
     if (project.isVip && role != UserRole.investorVip) {
       showVipLockSheet(context);
       return;
     }
-    showRequestInfoSheet(context, project);
+    // Open the L3 coinversion detail in preview mode (Mi participación 0€ +
+    // floating WhatsApp CTA). The request-info bottom sheet is retired. ADR-92.
+    context.push('/investments/opportunity/${project.id}', extra: project);
   }
 
   @override
@@ -699,24 +701,26 @@ class _ContactButton extends ConsumerStatefulWidget {
 class _ContactButtonState extends ConsumerState<_ContactButton> {
   bool _pressed = false;
 
-  Future<void> _submit(bool exists) async {
-    try {
-      await submitUserRequest(ref, UserRequestType.investInfo);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(exists
-              ? 'Ya tienes una solicitud en estudio.'
-              : 'Solicitud recibida. Te contactaremos pronto.'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+  // Single pattern (ADR-92): always opens WhatsApp; creates the invest_info
+  // request only if none is open yet (idempotent). No "EN ESTUDIO" state.
+  Future<void> _onTap() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final exists = ref
+            .read(userRequestExistsProvider(UserRequestType.investInfo))
+            .valueOrNull ??
+        false;
+    if (!exists) {
+      try {
+        await submitUserRequest(ref, UserRequestType.investInfo);
+      } catch (_) {/* swallow — WhatsApp hand-off is the primary action */}
+    }
+    final ok = await launchWhatsApp(
+      'Hola, me gustaría recibir información para empezar a invertir con Lhotse.',
+    );
+    if (!ok && mounted) {
+      messenger.showSnackBar(
         const SnackBar(
-          content:
-              Text('No se pudo enviar la solicitud. Inténtalo de nuevo.'),
+          content: Text('No se pudo abrir WhatsApp. Inténtalo de nuevo.'),
           duration: Duration(seconds: 3),
         ),
       );
@@ -725,31 +729,23 @@ class _ContactButtonState extends ConsumerState<_ContactButton> {
 
   @override
   Widget build(BuildContext context) {
-    final exists = ref
-            .watch(userRequestExistsProvider(UserRequestType.investInfo))
-            .valueOrNull ??
-        false;
-    final label = exists ? 'SOLICITUD EN ESTUDIO' : 'CONTACTAR';
-
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown: exists ? null : (_) => setState(() => _pressed = true),
-      onTapUp: exists
-          ? null
-          : (_) {
-              setState(() => _pressed = false);
-              _submit(false);
-            },
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        _onTap();
+      },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 120),
-        opacity: exists ? 0.6 : (_pressed ? 0.6 : 1.0),
+        opacity: _pressed ? 0.6 : 1.0,
         child: Container(
           height: 52,
           alignment: Alignment.center,
           color: AppColors.primary,
           child: Text(
-            label,
+            'CONTACTAR',
             style: AppTypography.labelUppercaseMd.copyWith(
               color: Colors.white,
               letterSpacing: 1.2,

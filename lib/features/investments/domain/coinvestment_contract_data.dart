@@ -1,5 +1,9 @@
 import '../../../core/domain/contract_status.dart';
 import '../../../core/domain/profit_scenario.dart';
+// `show ProjectData`: project_data.dart also defines a `ProjectPhase` (physical
+// stage) that would clash with project_phase.dart's `ProjectPhase` (timeline)
+// used by the `phases` field below.
+import '../../../core/domain/project_data.dart' show ProjectData;
 import '../../../core/domain/project_phase.dart';
 
 /// Per-contract data used by list screens + detail hero.
@@ -77,6 +81,26 @@ class CoinvestmentContractData {
         profitScenarios: profitScenarios ?? this.profitScenarios,
         phases: phases ?? this.phases,
       );
+
+  /// Synthetic, contract-less instance for the "Nuevo proyecto" preview L3
+  /// (Estrategia → Nuevos proyectos). The user has no contract yet, so
+  /// `amount` is 0 ("Mi participación: 0€") and `id` is empty (the Docs tab,
+  /// keyed on the contract id, is hidden in preview mode). Project-level
+  /// sub-data (scenarios, phases, renders…) still loads via the `projectId`.
+  /// See ADR-92.
+  factory CoinvestmentContractData.preview(ProjectData project) {
+    return CoinvestmentContractData(
+      id: '',
+      projectId: project.id,
+      brandId: project.brandId ?? '',
+      amount: 0,
+      status: ContractStatus.pending,
+      projectName: project.name,
+      projectLocation: project.city,
+      projectImageUrl: project.imageUrl ?? '',
+      videoUrl: project.videoUrl,
+    );
+  }
 
   factory CoinvestmentContractData.fromJson(Map<String, dynamic> json) {
     return CoinvestmentContractData(

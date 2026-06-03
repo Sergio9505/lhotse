@@ -98,6 +98,9 @@ abstract final class AppRoutes {
   static const brandInvestments = '/investments/brand/:brandId';
   static const purchaseDetail = '/investments/detail/purchase/:id';
   static const coinvestmentDetail = '/investments/detail/coinvestment/:id';
+  // "Nuevo proyecto" en captación, abierto desde Estrategia. Reutiliza el L3 de
+  // coinversión en modo preview (Mi participación 0€ + CTA WhatsApp). ADR-92.
+  static const opportunityDetail = '/investments/opportunity/:id';
   static const completedPurchaseDetail = '/investments/detail/completed/purchase/:id';
   static const completedCoinvestmentDetail = '/investments/detail/completed/coinvestment/:id';
   static const profile = '/profile';
@@ -485,6 +488,23 @@ final routerProvider = Provider<GoRouter>((ref) {
                   child: CoinversionDetailScreen(
                     contract: extra.contract,
                     brandName: extra.brandName,
+                  ),
+                );
+              },
+            ),
+            // "Nuevo proyecto" en captación (Estrategia). Reutiliza el L3 de
+            // coinversión en modo preview: Mi participación 0€ + CTA WhatsApp.
+            // Recibe el ProjectData y sintetiza un contrato sin importe. ADR-92.
+            GoRoute(
+              path: AppRoutes.opportunityDetail,
+              pageBuilder: (context, state) {
+                final project = state.extra as ProjectData;
+                return _fadePage(
+                  key: state.pageKey,
+                  child: CoinversionDetailScreen(
+                    contract: CoinvestmentContractData.preview(project),
+                    brandName: project.brand,
+                    isPreview: true,
                   ),
                 );
               },

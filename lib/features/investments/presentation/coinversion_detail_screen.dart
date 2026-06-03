@@ -16,6 +16,7 @@ import '../../../core/domain/news_item_data.dart';
 import '../../../core/domain/profit_scenario.dart';
 import '../../../core/domain/project_phase.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/launch_whatsapp.dart';
 import '../../../core/utils/open_supabase_doc.dart';
 import '../../../core/utils/precache_helpers.dart';
 import '../../../core/utils/strip_iso_suffix.dart';
@@ -36,6 +37,7 @@ import '../../../core/widgets/lhotse_filter_chip.dart';
 import '../../../core/widgets/lhotse_news_card.dart';
 import '../../../core/widgets/lhotse_section_label.dart';
 import '../../home/presentation/widgets/virtual_tour_section.dart';
+import '../../profile/data/user_requests_provider.dart';
 import '../data/investments_provider.dart';
 import '../domain/coinvestment_contract_data.dart';
 
@@ -55,6 +57,7 @@ class CoinversionDetailScreen extends ConsumerStatefulWidget {
     super.key,
     required this.contract,
     this.brandName,
+    this.isPreview = false,
   });
 
   final CoinvestmentContractData contract;
@@ -62,6 +65,12 @@ class CoinversionDetailScreen extends ConsumerStatefulWidget {
   /// Passed via router extra from the L2 Strategy flow. Null on deep-link
   /// entries — screen falls back to `brandByIdProvider(contract.brandId)`.
   final String? brandName;
+
+  /// Preview mode for a fundraising-open project the user has NOT invested in
+  /// yet (Estrategia → Nuevos proyectos). The hero amount reads 0€
+  /// ("Mi participación"), the Docs tab is hidden (no contract documents), and
+  /// a floating "Solicitar información" CTA is shown across all tabs. ADR-92.
+  final bool isPreview;
 
   @override
   ConsumerState<CoinversionDetailScreen> createState() =>
@@ -95,7 +104,9 @@ class _CoinversionDetailScreenState
   void initState() {
     super.initState();
     _outerController.addListener(_onOuterScroll);
-    _tabController = TabController(length: 4, vsync: this);
+    // Preview (no contract) hides the Docs tab → 3 tabs instead of 4.
+    _tabController =
+        TabController(length: widget.isPreview ? 3 : 4, vsync: this);
   }
 
   @override
@@ -159,6 +170,10 @@ class _CoinversionDetailScreenState
     final c = widget.contract;
     final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    // In preview mode the floating CTA sits at the bottom; give the tab content
+    // extra bottom clearance so the last item isn't hidden behind it.
+    final tabBottomPadding =
+        widget.isPreview ? bottomPadding + 96 : bottomPadding;
 
     // Warm the ImageCache as soon as the project's media lands. Detail
     // contains renders + progress + project images that the user will
@@ -246,7 +261,9 @@ class _CoinversionDetailScreenState
       value: _heroGone ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
       child: Scaffold(
           backgroundColor: AppColors.background,
-          body: ExtendedNestedScrollView(
+          body: Stack(
+            children: [
+              ExtendedNestedScrollView(
             controller: _outerController,
             onlyOneScrollInBody: true,
             pinnedHeaderSliverHeightBuilder: () =>
@@ -430,11 +447,12 @@ class _CoinversionDetailScreenState
                 pinned: true,
                 delegate: LhotseTabBarDelegate(
                   controller: _tabController,
-                  tabs: const [
-                    Tab(text: 'Avance'),
-                    Tab(text: 'Activo'),
-                    Tab(text: 'Finanzas'),
-                    Tab(text: 'Docs'),
+                  tabs: [
+                    const Tab(text: 'Avance'),
+                    const Tab(text: 'Activo'),
+                    const Tab(text: 'Finanzas'),
+                    // No contract in preview → no documents tab.
+                    if (!widget.isPreview) const Tab(text: 'Docs'),
                   ],
                 ),
               ),
@@ -456,7 +474,7 @@ class _CoinversionDetailScreenState
                     news: relatedNews,
                     cardWidth: screenWidth * 0.75,
                   ),
-                  bottomPadding: bottomPadding,
+                  bottomPadding: tabBottomPadding,
                 ),
                 LhotseTabScrollWrapper(
                   child: _ProyectoTab(
@@ -467,7 +485,7 @@ class _CoinversionDetailScreenState
                     virtualTourUrl: projectDetail?.virtualTourUrl,
                     tourImageUrl: virtualTourImageUrl,
                   ),
-                  bottomPadding: bottomPadding,
+                  bottomPadding: tabBottomPadding,
                 ),
                 LhotseTabScrollWrapper(
                   child: _FinancieroTab(
@@ -477,19 +495,34 @@ class _CoinversionDetailScreenState
                     onScenarioSelected: (i) =>
                         setState(() => _selectedScenario = i),
                   ),
-                  bottomPadding: bottomPadding,
+                  bottomPadding: tabBottomPadding,
                 ),
-                _DocumentosTab(
-                  modelType: 'coinvestment',
-                  modelId: c.id,
-                  activeFilters: _activeDocFilters,
-                  onToggleFilter: _toggleDocFilter,
-                  onClearFilters: () =>
-                      setState(() => _activeDocFilters.clear()),
-                  bottomPadding: bottomPadding,
-                ),
+                // No contract in preview → no documents tab.
+                if (!widget.isPreview)
+                  _DocumentosTab(
+                    modelType: 'coinvestment',
+                    modelId: c.id,
+                    activeFilters: _activeDocFilters,
+                    onToggleFilter: _toggleDocFilter,
+                    onClearFilters: () =>
+                        setState(() => _activeDocFilters.clear()),
+                    bottomPadding: bottomPadding,
+                  ),
               ],
             ),
+              ),
+              // Floating CTA across all tabs (preview only). ADR-92.
+              if (widget.isPreview)
+                Positioned(
+                  left: AppSpacing.lg,
+                  right: AppSpacing.lg,
+                  bottom: bottomPadding + AppSpacing.lg,
+                  child: _RequestInfoCta(
+                    projectId: c.projectId,
+                    projectName: c.projectName,
+                  ),
+                ),
+            ],
           ),
         ),
     );
@@ -497,6 +530,86 @@ class _CoinversionDetailScreenState
 
 }
 
+
+// ===========================================================================
+// Floating CTA — "Solicitar información" (preview L3 only)
+// ===========================================================================
+// Registers a `project_info` lead (idempotent, best-effort) and opens WhatsApp
+// with a pre-filled message. Always actionable — reopening WhatsApp is valid,
+// so it is not locked to an "EN ESTUDIO" state. See ADR-92.
+class _RequestInfoCta extends ConsumerStatefulWidget {
+  const _RequestInfoCta({required this.projectId, required this.projectName});
+
+  final String projectId;
+  final String projectName;
+
+  @override
+  ConsumerState<_RequestInfoCta> createState() => _RequestInfoCtaState();
+}
+
+class _RequestInfoCtaState extends ConsumerState<_RequestInfoCta> {
+  bool _pressed = false;
+
+  Future<void> _onTap() async {
+    final messenger = ScaffoldMessenger.of(context);
+    // Register the lead only if there's no open request yet; WhatsApp always
+    // opens (the contact hand-off is the primary action). ADR-92.
+    final exists = ref
+            .read(userProjectRequestExistsProvider(widget.projectId))
+            .valueOrNull ??
+        false;
+    if (!exists) {
+      try {
+        await submitUserRequest(
+          ref,
+          UserRequestType.projectInfo,
+          projectId: widget.projectId,
+        );
+      } catch (_) {/* swallow — the WhatsApp hand-off is the primary action */}
+    }
+    final ok = await launchWhatsApp(
+      'Hola, me gustaría recibir más información sobre el proyecto '
+      '${widget.projectName}.',
+    );
+    if (!ok && mounted) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo abrir WhatsApp. Inténtalo de nuevo.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        _onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 120),
+        opacity: _pressed ? 0.6 : 1.0,
+        child: Container(
+          height: 52,
+          alignment: Alignment.center,
+          color: AppColors.primary,
+          child: Text(
+            'SOLICITAR INFORMACIÓN',
+            style: AppTypography.labelUppercaseMd.copyWith(
+              color: AppColors.textOnDark,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 // ===========================================================================
 // TAB: FINANCIERO

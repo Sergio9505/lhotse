@@ -2740,3 +2740,32 @@ Resultado en `user_portfolio` (verificado): Andhy baja a 397 500€ / 2 contrato
 **Files touched:**
 - Migraciones `add_welcome_seen_at_to_user_onboarding`, `remove_welcome_news_from_feed`.
 - `lib/features/home/presentation/welcome_video_screen.dart` (nuevo), `lib/features/onboarding/data/onboarding_repository.dart`, `lib/app/shell_screen.dart`, `lib/features/home/presentation/home_screen.dart`.
+
+## ADR-92: "Nuevos proyectos" abre el L3 en modo preview (0€) + CTA WhatsApp + oferta por audiencia
+
+**Date:** 2026-06-03
+**Status:** Accepted
+
+**Context:** En Estrategia (L1) la sección "Nuevos proyectos" abría un bottom sheet (`showRequestInfoSheet`) con renders + tagline + un CTA que creaba `user_requests(project_info)`. El cliente quiere (a) que el tap lleve a una pantalla L3 real del proyecto —la misma que verá cuando invierta— con "Mi participación: 0€", (b) un CTA flotante "Solicitar información" presente en todos los tabs que registre el lead **y** abra WhatsApp directamente al **+34 614 24 49 39**, y (c) poder **ofrecer un proyecto en captación solo a usuarios concretos** desde el admin (`lhotse_admin`), editable por proyecto.
+
+**Decision:**
+1. **Reutilizar el L3 de coinversión en modo preview.** `CoinversionDetailScreen` gana `isPreview` (default false). El tap navega a `/investments/opportunity/:id` (extra: `ProjectData`), que sintetiza un `CoinvestmentContractData.preview(project)` con `amount: 0` e `id: ''`. "Mi participación" muestra 0€ sin tocar el layout. En preview se **oculta el tab Docs** (depende del `contract.id` inexistente → 3 tabs: Avance/Activo/Finanzas); el resto de sub-data (escenarios, fases, renders) carga por `projectId`. Se mantiene el gate VIP previo en `_OpportunityRow`. El bottom sheet `request_info_sheet.dart` se retira.
+2. **CTA flotante en todos los tabs.** El `Scaffold.body` se envuelve en un `Stack`; en preview se añade un `Positioned` inferior con `_RequestInfoCta` (patrón del CTA flotante de `brand_detail_screen.dart`). onTap → `submitUserRequest(projectInfo)` (best-effort, idempotente; el partial-unique ya absorbe duplicados) → `launchWhatsApp(projectName)` (`lib/core/utils/launch_whatsapp.dart`, `wa.me` + mensaje prefijado). Siempre accionable (reabrir WhatsApp es válido) → NO se bloquea con "EN ESTUDIO". El contenido de los tabs recibe ~96pt extra de bottom padding para despejar el CTA.
+3. **Oferta por audiencia: booleano derivado + tabla + vista server-side.** Migración `project_audience_offer`: `projects.is_audience_restricted` (bool, default false) + tabla `project_audience(project_id, user_id)` con RLS own-row + vista `user_open_round_projects` (`security_invoker`). La vista devuelve los proyectos en captación ofrecidos al usuario: `is_fundraising_open AND (NOT is_audience_restricted OR EXISTS(project_audience WHERE user_id = auth.uid()))`. Entrega `brands`/`assets` anidados vía `to_jsonb` → el parser `ProjectData.fromSupabaseRow` no cambia. `openRoundProjectsProvider` pasa a leer la vista (curación server-side; sin filtro cliente).
+
+**Por qué booleano derivado y no inferir todo de la tabla:** bajo la convención de vistas `security_invoker`, la RLS own-row de `project_audience` impide a un usuario normal evaluar "¿este proyecto tiene audiencia (de otros)?" — solo ve sus propias filas. Inferir "¿restringido?" exigiría una función `SECURITY DEFINER` (excepción a la convención). Separar las dos preguntas — "¿restringido?" en `projects.is_audience_restricted` (legible por la vista) y "¿estoy yo?" en `project_audience` (own-row) — mantiene todo dentro de `security_invoker` sin trucos. El drift se elimina haciendo el booleano **derivado**: el server action de `lhotse_admin` lo pone a `true` sii hay usuarios seleccionados (una sola palanca en la UI).
+
+**Por qué curación y NO RLS sobre `projects`:** la restricción decide solo la **oferta** en Estrategia, nunca el **acceso**. No se añade RLS a `projects` → catálogo (Firmas→Proyectos), Buscar y el detalle siguen visibles para todos. La cartera/firma del inversor se construye desde sus **contratos**, no desde `projects` ni la vista → un inversor con contrato ve su proyecto con su participación real aunque esté restringido y no esté en el whitelist. Además ya queda fuera de "Nuevos proyectos" por `userContractedProjectIdsProvider`.
+
+**Consequences:**
+- (+) El usuario explora la oportunidad como un proyecto real (misma gramática que cuando invierte) y contacta por WhatsApp en un tap, con el lead registrado.
+- (+) El admin controla la oferta por proyecto y por usuario sin exponer el proyecto en otras superficies.
+- (+) Curación server-side: los proyectos restringidos ni se descargan a quien no le tocan.
+- (+) **Patrón único de CTA de solicitud** (extendido a `invest_info` + `vip_access`, no solo `project_info`): `tap → crea la solicitud solo si no hay abierta (idempotente) → abre SIEMPRE WhatsApp`. Se **retira el estado "SOLICITUD EN ESTUDIO"** (label/disable/body alternativo) de `_ContactButton`, `vip_lock_sheet` y el banner de Perfil — el CTA queda siempre accionable porque WhatsApp es un canal de contacto. `launchWhatsApp` se generaliza a `launchWhatsApp(String message)`.
+- (−) Cambiar el número de WhatsApp requiere editar `kLhotseWhatsappNumber` + release. Aceptado.
+- (−) La lista de oportunidades depende ahora de una vista; cualquier campo nuevo que el parser necesite debe existir en `projects.*` (la vista hace `p.*`).
+
+**Files touched:**
+- Migración `20260603140000_project_audience_offer.sql` (columna + tabla + RLS + vista `user_open_round_projects`).
+- `lib/core/data/open_round_projects_provider.dart` (lee la vista), `lib/app/router.dart` (ruta `opportunityDetail`), `lib/features/investments/domain/coinvestment_contract_data.dart` (`preview`), `lib/features/investments/presentation/coinversion_detail_screen.dart` (`isPreview` + CTA), `lib/features/investments/presentation/investments_screen.dart` (navegación), `lib/core/utils/launch_whatsapp.dart` (nuevo). Borrado: `request_info_sheet.dart`.
+- `lhotse_admin`: selector de audiencia en el form de proyecto (deriva `is_audience_restricted` + sincroniza `project_audience`).

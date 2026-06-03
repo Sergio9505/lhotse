@@ -10,6 +10,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/data/supabase_provider.dart';
 import '../../../core/domain/user_role.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/launch_whatsapp.dart';
 import '../../../core/widgets/lhotse_shell_header.dart';
 import '../../auth/data/auth_repository.dart';
 import '../data/avatar_repository.dart';
@@ -528,29 +529,28 @@ class _PrivateBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final exists = ref
-            .watch(userRequestExistsProvider(UserRequestType.vipAccess))
-            .valueOrNull ??
-        false;
-    final label = exists ? 'SOLICITUD EN ESTUDIO' : 'SOLICITAR INVITACIÓN';
+    const label = 'SOLICITAR INVITACIÓN';
 
+    // Single pattern (ADR-92): always opens WhatsApp; creates the vip_access
+    // request only if none is open yet (idempotent). No "EN ESTUDIO" state.
     Future<void> onTap() async {
-      try {
-        await submitUserRequest(ref, UserRequestType.vipAccess);
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(exists
-                ? 'Ya tienes una solicitud en estudio.'
-                : 'Solicitud recibida. Te contactaremos pronto.'),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      } catch (_) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      final exists = ref
+              .read(userRequestExistsProvider(UserRequestType.vipAccess))
+              .valueOrNull ??
+          false;
+      if (!exists) {
+        try {
+          await submitUserRequest(ref, UserRequestType.vipAccess);
+        } catch (_) {/* swallow — WhatsApp hand-off is the primary action */}
+      }
+      final ok = await launchWhatsApp(
+        'Hola, me gustaría solicitar acceso a Lhotse Private (inversión VIP).',
+      );
+      if (!ok) {
+        messenger.showSnackBar(
           const SnackBar(
-            content: Text('No se pudo enviar la solicitud. Inténtalo de nuevo.'),
+            content: Text('No se pudo abrir WhatsApp. Inténtalo de nuevo.'),
             duration: Duration(seconds: 3),
           ),
         );
@@ -582,32 +582,27 @@ class _PrivateBanner extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          // CTA — state-aware: existing request → disabled "EN ESTUDIO".
+          // CTA — always actionable: opens WhatsApp + creates the request once.
           GestureDetector(
-            onTap: exists ? null : onTap,
+            onTap: onTap,
             behavior: HitTestBehavior.opaque,
-            child: Opacity(
-              opacity: exists ? 0.6 : 1.0,
-              child: Row(
-                children: [
-                  Text(
-                    label,
-                    // EXCEPTION: ls 1.2 — CTA on dark pill, tighter than labelUppercaseMd 1.8
-                    style: AppTypography.labelUppercaseMd.copyWith(
-                      color: AppColors.textOnDark,
-                      letterSpacing: 1.2,
-                    ),
+            child: Row(
+              children: [
+                Text(
+                  label,
+                  // EXCEPTION: ls 1.2 — CTA on dark pill, tighter than labelUppercaseMd 1.8
+                  style: AppTypography.labelUppercaseMd.copyWith(
+                    color: AppColors.textOnDark,
+                    letterSpacing: 1.2,
                   ),
-                  if (!exists) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    const PhosphorIcon(
-                      PhosphorIconsThin.arrowRight,
-                      size: 14,
-                      color: AppColors.textOnDark,
-                    ),
-                  ],
-                ],
-              ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                const PhosphorIcon(
+                  PhosphorIconsThin.arrowRight,
+                  size: 14,
+                  color: AppColors.textOnDark,
+                ),
+              ],
             ),
           ),
         ],
