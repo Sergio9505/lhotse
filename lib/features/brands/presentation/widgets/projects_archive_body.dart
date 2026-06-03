@@ -1,55 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../../core/data/brands_provider.dart';
 import '../../../../core/data/projects_provider.dart';
 import '../../../../core/data/supabase_provider.dart';
-import '../../../../core/domain/content_block.dart';
 import '../../../../core/domain/project_data.dart';
 import '../../../../core/domain/user_role.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/search_utils.dart';
 import '../../../../core/widgets/lhotse_async_list_states.dart';
 import '../../../../core/widgets/lhotse_brand_filter_row.dart';
-import '../../../../core/widgets/lhotse_filter_chip.dart';
-import '../../../../core/widgets/lhotse_search_field.dart';
 import '../../../home/presentation/widgets/project_showcase_card.dart';
 
-enum _ActiveTool { none, brands, search }
-
-/// Status filter for the projects catalog. `inDevelopment` matches both
-/// `preConstruction` (any fundraising state) and `construction`, collapsing
-/// the two phases into a single user-facing state. `null` shows everything
-/// (TODOS).
-enum _StatusFilter { inDevelopment, exited }
-
-/// Flattens the text content of a project body (headings + paragraphs) into
-/// a single string for the catalog's client-side search haystack. Media
-/// blocks (image/gallery/video) are intentionally skipped — they carry no
-/// searchable text in the MVP.
-String _contentSearchText(List<ContentBlock> blocks) {
-  final parts = <String>[];
-  for (final block in blocks) {
-    switch (block) {
-      case HeadingBlock(:final text):
-        parts.add(text);
-      case TextBlock(:final text):
-        parts.add(text);
-      case CtaBlock(:final label):
-        parts.add(label);
-      case ImageBlock():
-      case GalleryBlock():
-      case VideoBlock():
-        break;
-    }
-  }
-  return parts.join(' ');
-}
-
-/// Reusable projects catalog body (filter bar + card list). Hosted by the
-/// Search tab's idle state as the "CATÁLOGO COMPLETO" archive.
+/// Projects catalog body for the Firmas › PROYECTOS sub-tab.
+///
+/// Filters **only by brand**, and the brand filter is **mandatory**: exactly
+/// one firma is always selected (defaults to the first brand — Myttas — and
+/// tapping the active one does not clear it). This is the CEO's "filter quickly
+/// by firma" requirement. There's no status filter — the selected firm's
+/// projects are shown in full, **ordered in-development first, then
+/// finalized**; the status is read from each card's byline. No text search
+/// here (lives in the global Buscar tab).
 class ProjectsArchiveBody extends ConsumerStatefulWidget {
   const ProjectsArchiveBody({super.key});
 
@@ -59,77 +30,7 @@ class ProjectsArchiveBody extends ConsumerStatefulWidget {
 }
 
 class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
-  _StatusFilter? _selectedStatus;
-  _ActiveTool _activeTool = _ActiveTool.none;
-  final Set<String> _selectedBrands = {};
-  String _searchQuery = '';
-  final _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  List<ProjectData> _applyFilters(List<ProjectData> projects) {
-    var result = projects.toList();
-    if (_selectedStatus != null) {
-      result = result
-          .where(
-            (p) => switch (_selectedStatus!) {
-              _StatusFilter.inDevelopment =>
-                p.phase == ProjectPhase.preConstruction ||
-                    p.phase == ProjectPhase.construction,
-              _StatusFilter.exited => p.phase == ProjectPhase.exited,
-            },
-          )
-          .toList();
-    }
-    if (_selectedBrands.isNotEmpty) {
-      result = result.where((p) => _selectedBrands.contains(p.brand)).toList();
-    }
-    if (_searchQuery.isNotEmpty) {
-      final q = normalizeForSearch(_searchQuery);
-      result = result.where((p) {
-        final haystack = [
-          p.name,
-          p.brand,
-          p.architect,
-          p.city,
-          p.country,
-          p.tagline,
-          _contentSearchText(p.content),
-        ].map(normalizeForSearch).join(' ');
-        return haystack.contains(q);
-      }).toList();
-    }
-    return result;
-  }
-
-  void _setStatus(_StatusFilter? status) {
-    setState(() => _selectedStatus = status);
-  }
-
-  void _toggleTool(_ActiveTool tool) {
-    setState(() {
-      _activeTool = _activeTool == tool ? _ActiveTool.none : tool;
-    });
-  }
-
-  void _toggleBrand(String brandName) {
-    // Single-select: tap the already-selected brand clears; tap a different
-    // brand replaces. Users browse brand-by-brand rather than compare several
-    // catalogs at once.
-    setState(() {
-      if (_selectedBrands.contains(brandName)) {
-        _selectedBrands.clear();
-      } else {
-        _selectedBrands
-          ..clear()
-          ..add(brandName);
-      }
-    });
-  }
+  String? _selectedBrand;
 
   @override
   Widget build(BuildContext context) {
@@ -141,77 +42,35 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
     final brands = allBrands
         .where((b) => projectBrandNames.contains(b.name))
         .toList();
-    final filtered = _applyFilters(projects);
 
-    // Defensive: if the brand pool collapses to empty (last project of a
-    // brand removed while the user has it open), drop any stale selection
-    // and close the tool so the user doesn't get trapped behind a hidden
-    // trigger.
-    if (brands.isEmpty &&
-        (_selectedBrands.isNotEmpty || _activeTool == _ActiveTool.brands)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        setState(() {
-          _selectedBrands.clear();
-          if (_activeTool == _ActiveTool.brands) {
-            _activeTool = _ActiveTool.none;
-          }
-        });
-      });
-    }
+    // Mandatory single-select: always one brand. Default to the first brand
+    // (Myttas today); fall back to it if the stored selection disappeared.
+    final selectedBrand =
+        (_selectedBrand != null &&
+            brands.any((b) => b.name == _selectedBrand))
+        ? _selectedBrand
+        : brands.firstOrNull?.name;
+
+    // In-development first, then finalized; operator `sort_order` preserved
+    // within each group (the source list is already operator-ordered).
+    final brandProjects = projects.where((p) => p.brand == selectedBrand);
+    final filtered = <ProjectData>[
+      ...brandProjects.where((p) => p.phase != ProjectPhase.exited),
+      ...brandProjects.where((p) => p.phase == ProjectPhase.exited),
+    ];
 
     return Column(
       children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _FilterBar(
-              selectedStatus: _selectedStatus,
-              activeTool: _activeTool,
-              hasBrandSelection: _selectedBrands.isNotEmpty,
-              showBrandsTool: brands.isNotEmpty,
-              onStatusTap: _setStatus,
-              onBrandsTap: () => _toggleTool(_ActiveTool.brands),
-              onSearchTap: () => _toggleTool(_ActiveTool.search),
+        // Tira 2 (única fila de filtro): row de marcas, obligatorio y visible.
+        if (brands.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: LhotseBrandFilterRow(
+              brands: brands,
+              selectedBrands: {?selectedBrand},
+              onBrandTap: (name) => setState(() => _selectedBrand = name),
             ),
-            if (_activeTool == _ActiveTool.search)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  0,
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                ),
-                child: SizedBox(
-                  height: 52,
-                  child: Center(
-                    child: LhotseSearchField(
-                      controller: _searchController,
-                      hint: 'Buscar proyectos, marcas, ubicaciones...',
-                      autofocus: true,
-                      onChanged: (v) => setState(() => _searchQuery = v),
-                      onClose: () {
-                        setState(() {
-                          _searchQuery = '';
-                          _searchController.clear();
-                          _activeTool = _ActiveTool.none;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              )
-            else if (_activeTool == _ActiveTool.brands)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: LhotseBrandFilterRow(
-                  brands: brands,
-                  selectedBrands: _selectedBrands,
-                  onBrandTap: _toggleBrand,
-                ),
-              ),
-          ],
-        ),
+          ),
         Expanded(
           child: projectsAsync.hasError
               ? LhotseAsyncError(
@@ -225,7 +84,7 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
               ? const LhotseAsyncLoading()
               : ListView.separated(
                   padding: const EdgeInsets.only(
-                    top: AppSpacing.md,
+                    top: AppSpacing.sm,
                     bottom: AppSpacing.xxl,
                   ),
                   itemCount: filtered.length,
@@ -247,127 +106,6 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
                 ),
         ),
       ],
-    );
-  }
-}
-
-class _FilterBar extends StatelessWidget {
-  const _FilterBar({
-    required this.selectedStatus,
-    required this.activeTool,
-    required this.hasBrandSelection,
-    required this.showBrandsTool,
-    required this.onStatusTap,
-    required this.onBrandsTap,
-    required this.onSearchTap,
-  });
-
-  final _StatusFilter? selectedStatus;
-  final _ActiveTool activeTool;
-  final bool hasBrandSelection;
-
-  /// When false (no project has an associated brand), hide the `stack`
-  /// trigger entirely — the brand filter is empty and useless. The search
-  /// icon and chips remain visible.
-  final bool showBrandsTool;
-
-  final ValueChanged<_StatusFilter?> onStatusTap;
-  final VoidCallback onBrandsTap;
-  final VoidCallback onSearchTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  LhotseFilterChip(
-                    label: 'EN DESARROLLO',
-                    isActive: selectedStatus == _StatusFilter.inDevelopment,
-                    onTap: () => onStatusTap(
-                      selectedStatus == _StatusFilter.inDevelopment
-                          ? null
-                          : _StatusFilter.inDevelopment,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  LhotseFilterChip(
-                    label: 'FINALIZADOS',
-                    isActive: selectedStatus == _StatusFilter.exited,
-                    onTap: () => onStatusTap(
-                      selectedStatus == _StatusFilter.exited
-                          ? null
-                          : _StatusFilter.exited,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Container(width: 1, height: 16, color: AppColors.border),
-          if (showBrandsTool) ...[
-            const SizedBox(width: AppSpacing.md),
-            GestureDetector(
-              onTap: onBrandsTap,
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Center(
-                      child: PhosphorIcon(
-                        PhosphorIconsThin.stack,
-                        size: 20,
-                        color:
-                            activeTool == _ActiveTool.brands ||
-                                hasBrandSelection
-                            ? AppColors.textPrimary
-                            : AppColors.accentMuted,
-                      ),
-                    ),
-                    if (hasBrandSelection)
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: AppColors.textPrimary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: AppSpacing.md),
-          GestureDetector(
-            onTap: onSearchTap,
-            child: PhosphorIcon(
-              PhosphorIconsThin.magnifyingGlass,
-              size: 18,
-              color: activeTool == _ActiveTool.search
-                  ? AppColors.textPrimary
-                  : AppColors.accentMuted,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
