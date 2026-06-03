@@ -95,8 +95,12 @@ class _BrandsGrid extends ConsumerWidget {
     final brandsAsync = ref.watch(brandsProvider);
     return brandsAsync.when(
       data: (brands) => GridView.builder(
+        // Firmas is a grid (no filter), so it does NOT reserve the Proyectos/
+        // Noticias controls zone — that left an empty void above the grid.
+        // A comfortable own top (lg) instead: not stuck to the tabs, no void.
+        // The controls-zone alignment stays for the Proyectos↔Noticias pair.
         padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
+            AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xl),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: AppSpacing.lg,

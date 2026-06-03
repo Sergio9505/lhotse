@@ -54,3 +54,19 @@ abstract final class HeroLayout {
       belowAmount -
       amountMax;
 }
+
+/// Layout tokens for the Firmas hub sub-tabs (Firmas grid / Proyectos /
+/// Noticias). The three reserve a **fixed-height controls zone** under the
+/// sub-tab row so the content (grid/cards) starts at the same Y on every tab —
+/// no vertical jump when switching. Firmas reserves it empty.
+abstract final class BrandsLayout {
+  /// Height of the filter controls zone (brand-logo row in Proyectos, chip set
+  /// in Noticias, empty in Firmas). Must be ≥ the brand row height
+  /// (`LhotseBrandFilterRow` rowHeight ≈ 52 with the current calibration); bump
+  /// if the logo calibration grows.
+  static const controlsHeight = 52.0;
+
+  /// Y at which the content (first card/grid cell) starts, below the sub-tab
+  /// row, identical across the three sub-tabs.
+  static const contentTop = controlsHeight + AppSpacing.sm;
+}

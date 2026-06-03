@@ -83,10 +83,9 @@ class _ProjectsArchiveBodyState extends ConsumerState<ProjectsArchiveBody> {
               : projectsAsync.isLoading && projects.isEmpty
               ? const LhotseAsyncLoading()
               : ListView.separated(
-                  padding: const EdgeInsets.only(
-                    top: AppSpacing.sm,
-                    bottom: AppSpacing.xxl,
-                  ),
+                  // top 0: the brand row's bottom gap (AppSpacing.sm) already
+                  // sets the controls→content distance (BrandsLayout.contentTop).
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
                   itemCount: filtered.length,
                   separatorBuilder: (_, _) =>
                       const SizedBox(height: AppSpacing.lg),
