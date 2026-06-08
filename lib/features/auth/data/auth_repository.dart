@@ -114,8 +114,13 @@ class AuthRepository {
         type: OtpType.phoneChange,
       );
 
+  // shouldCreateUser:false — without it, gotrue defaults to create_user:true on
+  // the phone branch and silently creates an empty "ghost" account when the
+  // phone is not yet in auth.users (e.g. admin-created accounts whose phone was
+  // never written to auth.users.phone). Recovery must only target existing
+  // accounts; a missing phone throws AuthException, handled by the screen.
   Future<void> sendPhoneOtp(String phone) =>
-      _client.auth.signInWithOtp(phone: phone);
+      _client.auth.signInWithOtp(phone: phone, shouldCreateUser: false);
 
   Future<AuthResponse> verifyPhoneOtp({
     required String phone,

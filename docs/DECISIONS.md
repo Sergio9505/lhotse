@@ -2769,3 +2769,29 @@ Resultado en `user_portfolio` (verificado): Andhy baja a 397 500€ / 2 contrato
 - Migración `20260603140000_project_audience_offer.sql` (columna + tabla + RLS + vista `user_open_round_projects`).
 - `lib/core/data/open_round_projects_provider.dart` (lee la vista), `lib/app/router.dart` (ruta `opportunityDetail`), `lib/features/investments/domain/coinvestment_contract_data.dart` (`preview`), `lib/features/investments/presentation/coinversion_detail_screen.dart` (`isPreview` + CTA), `lib/features/investments/presentation/investments_screen.dart` (navegación), `lib/core/utils/launch_whatsapp.dart` (nuevo). Borrado: `request_info_sheet.dart`.
 - `lhotse_admin`: selector de audiencia en el form de proyecto (deriva `is_audience_restricted` + sincroniza `project_audience`).
+
+## ADR-93: El teléfono se escribe en `auth.users.phone` (Auth Admin API), nunca en el espejo `user_profiles.phone`
+
+**Date:** 2026-06-08
+**Status:** Accepted
+
+**Context:** Inversores creados desde `lhotse_admin` se veían como **viewer** y no veían sus inversiones tras "recuperar contraseña". Causa: el admin escribía el teléfono **solo en `user_profiles.phone`** (`createUser` no pasaba `phone` a `auth.admin.createUser`; `updateUserProfile` hacía un UPDATE directo al perfil), pero `auth.users.phone` es la fuente de verdad del login/recovery por SMS (ADR-63) y `user_profiles.phone` es un espejo de solo-lectura sincronizado por el trigger `handle_user_updated`. Con el teléfono ausente en `auth`, el recovery por SMS (`signInWithOtp(phone:)`, que por defecto usa `create_user: true` en gotrue) no encontraba la cuenta y **creaba una cuenta-fantasma** vacía (sin email, rol viewer, 0 contratos); el inversor reseteaba la contraseña ahí y quedaba en la cuenta equivocada. Se acumularon 8 fantasmas y 50 cuentas irrecuperables.
+
+**Decision:**
+1. **`auth.users.phone` = SoT; el espejo nunca se escribe a mano.** Toda alta/edición de usuario escribe el teléfono vía la **Auth Admin API** y deja que el trigger sincronice `user_profiles.phone`. En `lhotse_admin`: `createUser` pasa `phone` + `phone_confirm`; `updateUserProfile` usa `auth.admin.updateUserById({ phone, phone_confirm })` y **se quita `phone` del UPDATE de `user_profiles`**. Normalización a dígitos E.164. La edición solo escribe `auth` cuando el teléfono es no vacío (no se "limpia" con string vacío para no romper el guardado de cuentas sin móvil).
+2. **`shouldCreateUser: false` en recovery.** `AuthRepository.sendPhoneOtp` pasa `shouldCreateUser: false` para que un teléfono inexistente lance `AuthException` (ya manejado por `forgot_password_screen`, que muestra un mensaje genérico sin filtrar si el teléfono existe) en vez de crear una fantasma.
+3. **Remediación de datos** (migración `20260608190000`): borrar las 8 fantasma (CASCADE), backfillear `auth.users.phone` para 45 cuentas con teléfono único, y nulificar el espejo de las 5 en colisión (UNIQUE de `auth.users.phone`) → entran en el listado "sin móvil" para asignación manual desde el admin. El guard `u.phone IS NULL` excluye cuentas con teléfono verificado.
+
+**Por qué no setear `phone_confirmed_at` en el backfill:** el OTP del primer recovery lo confirma. La Admin API en altas/ediciones sí usa `phone_confirm: true` porque el operador afirma el número.
+
+**Consequences:**
+- (+) Un inversor recupera contraseña por SMS sobre su cuenta real y ve sus inversiones; no se generan más fantasmas.
+- (+) El alta por app ya era correcta (signup obligatorio con teléfono + OTP, ADR-63) — no se toca.
+- (−) Cambiar a teléfono vacío no es operación del form admin (clearing vía SQL/soporte). Aceptado.
+- (−) Las 5 colisiones y 39 cuentas sin teléfono de origen requieren asignación manual en el admin (listado "sin móvil"). El backfill automático no puede resolverlas.
+
+**Files touched:**
+- Migración `20260608190000_auth_phone_backfill_remove_ghosts.sql`.
+- `lib/features/auth/data/auth_repository.dart` (`shouldCreateUser: false`).
+- `lhotse_admin/app/(admin)/users/actions.ts` (`createUser` + `updateUserProfile`), `components/forms/user-create-form.tsx` (campo teléfono), `lib/schemas/user.ts` (`phone` en `userCreateSchema`).
+- Solución: `docs/solutions/2026-06-08-phone-only-ghost-accounts-on-recovery.md`.

@@ -260,6 +260,8 @@ DefaultTabController(
 
 Supabase Auth via `AuthRepository` (`lib/features/auth/data/auth_repository.dart`). **Email + password is the primary login identity**; phone (E.164) is a **second factor**: SMS OTP confirms the user's mobile at signup, and is the sole recovery channel for password resets. SMS provider is **Twilio**, configured in Supabase dashboard (no OneSignal in this flow — see ADR-63). "Confirm email" must be **OFF** in Supabase Auth so the session is active right after `signUp`.
 
+**`auth.users.phone` is the single source of truth for phone identity** (ADR-93). `user_profiles.phone` is a read-only mirror synced by the `handle_user_updated` trigger. Any user create/edit — in the app OR in `lhotse_admin` — writes the phone via the Auth (Admin) API (`updateUser`/`admin.createUser`/`admin.updateUserById`), **never** with a direct `UPDATE user_profiles SET phone`. Writing only the mirror leaves the account unrecoverable by SMS and spawns ghost accounts.
+
 ### Signup flow (two-step, atomic from user's perspective)
 1. `signUp(email, password, data:{full_name})` — creates the account, session active.
 2. `attachPhone(phone)` — wraps `auth.updateUser(phone: ...)`; Supabase sends the SMS via Twilio automatically (no extra call).
@@ -270,7 +272,7 @@ Supabase Auth via `AuthRepository` (`lib/features/auth/data/auth_repository.dart
 **Never pass `phone` directly to `signUp`.** GoTrue does not accept email + phone in the same `signUp` call; it returns an opaque error and the user sees the generic "Error al crear la cuenta. Inténtalo de nuevo." (this was the bug fixed by reverting from the original phone-first design — see ADR-63 update).
 
 ### Password recovery flow (SMS-only)
-1. `sendPhoneOtp(phone)` — `signInWithOtp`, no session yet.
+1. `sendPhoneOtp(phone)` — `signInWithOtp(phone:, shouldCreateUser: false)`, no session yet. The `shouldCreateUser: false` is **load-bearing**: gotrue defaults it to `true` on the phone branch and would silently create an empty ghost account when the phone isn't in `auth.users`. A missing phone throws `AuthException`, handled by `ForgotPasswordScreen` (generic message, no enumeration). See ADR-93.
 2. `/otp-verify` with `OtpPurpose.passwordRecovery`.
 3. `verifyPhoneOtp(phone, token)` (uses `OtpType.sms`) — creates a session.
 4. `/reset-password` → `updatePassword(newPassword)` → `signOut` → `/login`.
