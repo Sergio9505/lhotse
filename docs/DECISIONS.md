@@ -2795,3 +2795,11 @@ Resultado en `user_portfolio` (verificado): Andhy baja a 397 500€ / 2 contrato
 - `lib/features/auth/data/auth_repository.dart` (`shouldCreateUser: false`).
 - `lhotse_admin/app/(admin)/users/actions.ts` (`createUser` + `updateUserProfile`), `components/forms/user-create-form.tsx` (campo teléfono), `lib/schemas/user.ts` (`phone` en `userCreateSchema`).
 - Solución: `docs/solutions/2026-06-08-phone-only-ghost-accounts-on-recovery.md`.
+
+## ADR-94: Pin de versión de Flutter por proyecto con FVM
+- **Estado**: Aceptada
+- **Fecha**: 2026-07-21
+- **Contexto**: Un único SDK de Flutter global compartido por todos los proyectos de la máquina. lhotse_app es una app de producción (stores) que se compila **en local con el SDK global**, sin CI ni versión registrada — cada release rodaba sobre la versión que estuviera instalada, no determinista entre máquinas.
+- **Decisión**: Adoptar **FVM**. Pin a **3.44.5** en `.fvmrc` (versión actual de facto; no consta con cuál se publicó la 1.0.1+17, así que se congela la actual). `.fvm/` en `.gitignore`. Política: congelar en known-good y converger después con test.
+- **Alternativas**: seguir con el SDK global (drift); asdf/mise (menos idiomático).
+- **Consecuencias**: Builds deterministas local == release. **Antes de la próxima release a stores conviene un pase de test explícito** con la versión pinada. `.vscode/settings.json` gitignored → correr `fvm use` tras clonar. Requiere `brew install fvm`.

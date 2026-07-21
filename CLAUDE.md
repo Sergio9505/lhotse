@@ -13,11 +13,12 @@ Flutter 3.x + Dart, Riverpod, GoRouter, Freezed. Supabase backend — all screen
 
 ## Commands
 ```bash
-export PATH="$PATH:/Users/sergiosanchezmartin/dev/flutter/bin"
-flutter run --dart-define-from-file=.env          # Run app (dev)
-flutter analyze                                    # Lint
-flutter test                                       # Test
-dart run build_runner build --delete-conflicting-outputs  # Code gen (freezed)
+# Flutter version is pinned per-project via FVM (.fvmrc → 3.44.5). See docs/DECISIONS.md ADR-94.
+# One-time setup: brew install fvm && fvm install
+fvm flutter run --dart-define-from-file=.env      # Run app (dev)
+fvm flutter analyze                                # Lint
+fvm flutter test                                   # Test
+fvm dart run build_runner build --delete-conflicting-outputs  # Code gen (freezed)
 ```
 
 ## Architecture
@@ -64,7 +65,7 @@ See `docs/DOMAIN.md § User Roles`. TL;DR: Viewer (mirón, sin inversiones), Inv
 
 ## Post-task Checklist
 After completing any task that changes code:
-1. `flutter analyze` — must pass.
+1. `fvm flutter analyze` — must pass.
 2. Evaluate docs: update any section affected by the change (one concept lives in one doc — don't duplicate).
 3. Do NOT skip or defer — update docs in the same conversation.
 

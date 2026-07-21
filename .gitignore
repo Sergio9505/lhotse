@@ -48,3 +48,6 @@ app.*.map.json
 .env
 .claude/
 Campton Font/
+
+# FVM Version Cache
+.fvm/
